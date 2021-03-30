@@ -37,62 +37,6 @@ from load_data import *
 from transblock import * 
 
 
-def get_model_transormer(num_classes):
-    embed_dim = 32  # Embedding size for each token
-    num_heads = 2  # Number of attention heads
-    ff_dim = 32  # Hidden layer size in feed forward network inside transformer
-    preprocessor_file = "./albert_en_preprocess_3"
-    preprocessor = hub.load(preprocessor_file)
-    vocab_size = preprocessor.tokenize.get_special_tokens_dict()['vocab_size'].numpy()
-
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-
-    preprocessor_layer = hub.KerasLayer(preprocessor_file)
-
-    encoder_inputs = preprocessor_layer(text_input)['input_word_ids']
-
-    embedding_layer = TokenAndPositionEmbedding(encoder_inputs.shape[1], vocab_size, embed_dim)
-    x = embedding_layer(encoder_inputs)
-    transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
-    x = transformer_block(x)
-    x = layers.GlobalAveragePooling1D()(x)
-    x = layers.Dropout(0.1)(x)
-    x = layers.Dense(20, activation="relu")(x)
-    x = layers.Dropout(0.1)(x)
-    outputs = layers.Dense(num_classes, activation="softmax")(x)
-
-    #outputs = layers.Dense(1, activation="sigmoid")(x)
-    model = keras.Model(inputs=text_input, outputs=outputs)
-
-    model.compile("adam", "categorical_crossentropy", metrics=["accuracy"])
-    #model.compile("adam", "binary_crossentropy", metrics=["accuracy"])
-    return model
-
-def get_model_albert(num_classes):
-    # https://tfhub.dev/tensorflow/albert_en_base/2
-    encoder = hub.KerasLayer('/root/yanan/berts/albert_en_base_2', trainable=True)
-    # https://tfhub.dev/tensorflow/albert_en_preprocess/3
-    preprocessor = hub.KerasLayer("/root/yanan/berts/albert_en_preprocess_3")
-
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
-
-    encoder_inputs = preprocessor(text_input)
-
-    outputs = encoder(encoder_inputs)
-    pooled_output = outputs["pooled_output"]   # (None, 768)
-    sequence_output = outputs["sequence_output"] # (None, 128, 768)
-    #pooled_output_ = tf.keras.layers.Dense(256, activation="relu")(pooled_output)
-
-    if num_classes == 2:
-        out = layers.Dense(1, activation='sigmoid')(pooled_output)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=1e-5), "binary_crossentropy", metrics=["binary_accuracy"])
-    else:
-        out = layers.Dense(num_classes, activation="softmax")(pooled_output)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
-    return model
-
 def run_benchmark(dataset, augmentor, logger):
     accs = []
     for ite in range(3): 

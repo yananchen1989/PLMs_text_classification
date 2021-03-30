@@ -78,7 +78,7 @@ nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-
 # 
 
 #content = "Johnson Helps D-Backs End Nine-Game Slide (AP) AP - Randy Johnson took a four-hitter into the ninth inning to help the Arizona Diamondbacks end a nine-game losing streak Sunday, beating Steve Trachsel and the New York Mets 2-0."
-
+# generate selected samples which belong to the defined categories
 import csv
 save_train_file = open('cnn_dm_nli.csv', 'w')
 writer = csv.writer(save_train_file, delimiter='\t')
@@ -116,7 +116,25 @@ def acquire_nli_for_aug():
     df_nli['label'] = df_nli['label'].map(lambda x: cate_map[x]).map(lambda x: cate_ix[x])
     return df_nli
 
+from load_data import * 
+from transblock import * 
+
+ds = load_data(dataset='yahoo', samplecnt=-1)
+# inject the aug data 
 ds.df_train = ds.df_train.append(df_nli)
+
+(train_x,train_y),  (test_x, test_y), num_classes = get_keras_data(ds.df_train,  ds.df_test)
+
+model = get_model_transormer(num_classes)
+history = model.fit(
+    train_x,train_y, batch_size=32, epochs=100, validation_data=(test_x, test_y),verbose=1,
+    callbacks = [EarlyStopping(monitor='val_accuracy', patience=3, mode='max')]
+)
+best_val_acc = max(history.history['val_accuracy'])
+print('acc:', best_val_acc)
+
+
+
 
 
 
