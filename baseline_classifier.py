@@ -36,24 +36,6 @@ from aug_translation import *
 from load_data import * 
 from transblock import * 
 
-def get_keras_data(df_train, df_test):
-    # train
-    labels = df_test['label'].unique().tolist()
-    label_idx = {l:ix for ix, l in enumerate(labels)}
-
-    # transform format
-    x_train = df_train['content'].values.reshape(-1,1)
-    x_test = df_test['content'].values.reshape(-1,1)
-
-    num_classes = len(label_idx)
-
-    y_train = tf.keras.utils.to_categorical(\
-                      df_train['label'].map(lambda x: label_idx.get(x)).values, \
-                      num_classes = num_classes, dtype='int' )
-    y_test = tf.keras.utils.to_categorical(\
-                     df_test['label'].map(lambda x: label_idx.get(x)).values, \
-                     num_classes = num_classes, dtype='int' )        
-    return (x_train,y_train),  (x_test, y_test), num_classes
 
 def get_model_transormer(num_classes):
     embed_dim = 32  # Embedding size for each token
