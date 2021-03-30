@@ -20,7 +20,7 @@ logger = logging.getLogger()
 
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 #https://huggingface.co/joeddav/bart-large-mnli-yahoo-answers
-MODEL = "joeddav/bart-large-mnli-yahoo-answers"
+#MODEL = "joeddav/bart-large-mnli-yahoo-answers"
 # 'facebook/bart-large-mnli'  'joeddav/xlm-roberta-large-xnli'
 # from transformers import BartForSequenceClassification, BartTokenizer
 # tokenizer = BartTokenizer.from_pretrained(MODEL)
@@ -92,7 +92,31 @@ for content in sentences:
 
 
 
+#### reload the nli classify results and inject into the original dataset
+def acquire_nli_for_aug():
+    df_nli = pd.read_csv("./datasets_aug/cnn_dm_nli.csv", sep='\t', header=None)
+    df_nli.columns = ['content','label']
 
+    cates = []
+    with open('./datasets_aug/yahoo_news/classes.txt','r') as f:
+        for line in f:
+            cates.append(line.strip())
+
+    cate_ix = {cate:ix+1 for ix, cate in enumerate(cates)}
+
+    cate_map = {}
+    for cate in df_nli.label.unique():
+        for cate_ in cate_ix.keys():
+            if cate == 'Technology':
+                cate_map[cate] = 'Computers & Internet'
+            if cate in cate_:
+                cate_map[cate] = cate_ 
+                break
+
+    df_nli['label'] = df_nli['label'].map(lambda x: cate_map[x]).map(lambda x: cate_ix[x])
+    return df_nli
+
+ds.df_train = ds.df_train.append(df_nli)
 
 
 
