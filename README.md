@@ -4,6 +4,7 @@
 datasets come from huggingface :
 
 ag_news: https://huggingface.co/datasets/ag_news
+
 World
 Sports
 Business
@@ -12,6 +13,7 @@ Sci/Tech
 
 
 yahoo_news: https://huggingface.co/datasets/yahoo_answers_topics
+
 Society & Culture
 Science & Mathematics
 Health
@@ -24,6 +26,7 @@ Family & Relationships
 Politics & Government
 
 pop_news: https://huggingface.co/datasets/newspop
+
 economy
 microsoft
 obama
