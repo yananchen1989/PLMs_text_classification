@@ -48,17 +48,20 @@ class TokenAndPositionEmbedding(layers.Layer):
         x = self.token_emb(x)
         return x + positions
 
+preprocessor_file = "./albert_en_preprocess_3"
+model_file = "./albert_en_base_2"
+preprocessor_layer = hub.KerasLayer(preprocessor_file)
+
+
 def get_model_transormer(num_classes):
     embed_dim = 32  # Embedding size for each token
     num_heads = 2  # Number of attention heads
     ff_dim = 32  # Hidden layer size in feed forward network inside transformer
-    preprocessor_file = "./albert_en_preprocess_3"
+    
     preprocessor = hub.load(preprocessor_file)
     vocab_size = preprocessor.tokenize.get_special_tokens_dict()['vocab_size'].numpy()
 
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-
-    preprocessor_layer = hub.KerasLayer(preprocessor_file)
 
     encoder_inputs = preprocessor_layer(text_input)['input_word_ids']
 
@@ -81,13 +84,12 @@ def get_model_transormer(num_classes):
 
 def get_model_albert(num_classes):
     # https://tfhub.dev/tensorflow/albert_en_base/2
-    encoder = hub.KerasLayer('/root/yanan/berts/albert_en_base_2', trainable=True)
+    encoder = hub.KerasLayer(model_file, trainable=True)
     # https://tfhub.dev/tensorflow/albert_en_preprocess/3
-    preprocessor = hub.KerasLayer("/root/yanan/berts/albert_en_preprocess_3")
-
+    
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 
-    encoder_inputs = preprocessor(text_input)
+    encoder_inputs = preprocessor_layer(text_input)
 
     outputs = encoder(encoder_inputs)
     pooled_output = outputs["pooled_output"]   # (None, 768)
