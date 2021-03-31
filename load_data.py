@@ -19,14 +19,14 @@ class load_data():
 
     def get_yahoo_news(self):
         if self.samplecnt < 0:
-            df_train = pd.read_csv("/root/yanan/berts/datasets_aug/yahoo_news/train.csv", header=None).sample(frac=1)
+            df_train = pd.read_csv("../datasets_aug/yahoo_news/train.csv", header=None).sample(frac=1)
         else:
-            df_train = pd.read_csv("/root/yanan/berts/datasets_aug/yahoo_news/train.csv", header=None).sample(self.samplecnt)
+            df_train = pd.read_csv("../datasets_aug/yahoo_news/train.csv", header=None).sample(self.samplecnt)
         df_train = df_train.fillna(' ')
         df_train['content'] = df_train[1] + ' ' + df_train[2] + ' ' + df_train[3]
         df_train['label'] = df_train[0]
 
-        df_test = pd.read_csv("/root/yanan/berts/datasets_aug/yahoo_news/test.csv", header=None)
+        df_test = pd.read_csv("../datasets_aug/yahoo_news/test.csv", header=None)
         df_test = df_test.fillna(' ')
         df_test['content'] = df_test[1] + ' ' + df_test[2] + ' ' + df_test[3]
         df_test['label'] = df_test[0]
@@ -35,10 +35,10 @@ class load_data():
     # ag news
     def get_ag_news(self):
         if self.samplecnt < 0:
-            df_train = pd.read_csv("/root/yanan/berts/datasets_aug/ag_news/train.csv").sample(frac=1)
+            df_train = pd.read_csv("../datasets_aug/ag_news/train.csv").sample(frac=1)
         else:
-            df_train = pd.read_csv("/root/yanan/berts/datasets_aug/ag_news/train.csv").sample(self.samplecnt)
-        df_test = pd.read_csv("/root/yanan/berts/datasets_aug/ag_news/test.csv")
+            df_train = pd.read_csv("../datasets_aug/ag_news/train.csv").sample(self.samplecnt)
+        df_test = pd.read_csv("../datasets_aug/ag_news/test.csv")
         df_train['content'] = df_train['title'] + ' ' + df_train['content']
         df_test['content'] = df_test['title'] + ' ' + df_test['content']
         agnews_label = {1:"World", 2:"Sports", 3:"Business", 4:"Sci/Tech"}
@@ -48,7 +48,7 @@ class load_data():
     def get_bbc_news(self):
         infos = []
         for cate in ['business', 'entertainment', 'politics', 'sport', 'tech']:
-            files = glob.glob("/root/yanan/berts/datasets_aug/bbc/{}/*.txt".format(cate))
+            files = glob.glob("../datasets_aug/bbc/{}/*.txt".format(cate))
             for ff in files:
                 with open(ff, 'r', errors='ignore') as f :
                     content = f.read()
