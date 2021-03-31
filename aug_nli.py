@@ -93,12 +93,13 @@ for content in sentences:
 
 
 #### reload the nli classify results and inject into the original dataset
+import pandas as pd 
 def acquire_nli_for_aug():
-    df_nli = pd.read_csv("./datasets_aug/cnn_dm_nli.csv", sep='\t', header=None)
+    df_nli = pd.read_csv("../datasets_aug/cnn_dm_nli.csv", sep='\t', header=None)
     df_nli.columns = ['content','label']
 
     cates = []
-    with open('./datasets_aug/yahoo_news/classes.txt','r') as f:
+    with open('../datasets_aug/yahoo_news/classes.txt','r') as f:
         for line in f:
             cates.append(line.strip())
 
@@ -119,23 +120,33 @@ def acquire_nli_for_aug():
 from load_data import * 
 from transblock import * 
 
-ds = load_data(dataset='yahoo', samplecnt=-1)
+ds = load_data(dataset='yahoo', samplecnt=1000)
 # inject the aug data 
-ds.df_train = ds.df_train.append(df_nli)
+df_nli = acquire_nli_for_aug()
 
+print('no nli')
 (train_x,train_y),  (test_x, test_y), num_classes = get_keras_data(ds.df_train,  ds.df_test)
 
-model = get_model_transormer(num_classes)
+model = get_model_albert(num_classes)
 history = model.fit(
     train_x,train_y, batch_size=32, epochs=100, validation_data=(test_x, test_y),verbose=1,
     callbacks = [EarlyStopping(monitor='val_accuracy', patience=3, mode='max')]
 )
 best_val_acc = max(history.history['val_accuracy'])
-print('acc:', best_val_acc)
+print('no nli acc:', best_val_acc)
 
 
+print('has nli')
+ds.df_train = ds.df_train.append(df_nli)
+(train_x,train_y),  (test_x, test_y), num_classes = get_keras_data(ds.df_train,  ds.df_test)
 
-
+model = get_model_albert(num_classes)
+history = model.fit(
+    train_x,train_y, batch_size=32, epochs=100, validation_data=(test_x, test_y),verbose=1,
+    callbacks = [EarlyStopping(monitor='val_accuracy', patience=3, mode='max')]
+)
+best_val_acc = max(history.history['val_accuracy'])
+print('has nli acc:', best_val_acc)
 
 
 

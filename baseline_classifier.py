@@ -60,7 +60,7 @@ def run_benchmark(dataset, augmentor, logger):
 
         (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
 
-        model = get_model(num_classes)
+        model = get_model_albert(num_classes)
 
         logger.info("train begin==>")
         history = model.fit(
