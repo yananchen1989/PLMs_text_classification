@@ -8,16 +8,11 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 
-if not tf.__version__.startswith('2.4.'):
-    from multi_head_attention import *
 
 class TransformerBlock(layers.Layer):
     def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
-        super(TransformerBlock, self).__init__()
-        if tf.__version__.startswith('2.4.'):            
-            self.att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
-        else:
-            self.att = MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
+        super(TransformerBlock, self).__init__()          
+        self.att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
         self.ffn = keras.Sequential(
             [layers.Dense(ff_dim, activation="relu"), layers.Dense(embed_dim),]
         )
@@ -78,7 +73,7 @@ def get_model_transormer(num_classes):
     #outputs = layers.Dense(1, activation="sigmoid")(x)
     model = keras.Model(inputs=text_input, outputs=outputs)
 
-    model.compile("adam", "categorical_crossentropy", metrics=["accuracy"])
+    model.compile("adam", "categorical_crossentropy", metrics=["acc"])
     #model.compile("adam", "binary_crossentropy", metrics=["accuracy"])
     return model
 

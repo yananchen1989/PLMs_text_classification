@@ -116,37 +116,42 @@ def acquire_nli_for_aug():
 
     df_nli['label'] = df_nli['label'].map(lambda x: cate_map[x]).map(lambda x: cate_ix[x])
     return df_nli
-
-from load_data import * 
-from transblock import * 
-
-ds = load_data(dataset='yahoo', samplecnt=1000)
-# inject the aug data 
 df_nli = acquire_nli_for_aug()
+from load_data import * 
+from transblock import *  
 
-print('no nli')
-(train_x,train_y),  (test_x, test_y), num_classes = get_keras_data(ds.df_train,  ds.df_test)
+for ds in 
+for i in range(5):
+    ds = load_data(dataset='ag', samplecnt=1000)
+    # inject the aug data 
+    print('no nli')
+    (train_x,train_y),  (test_x, test_y), num_classes = get_keras_data(ds.df_train,  ds.df_test)
+    model = get_model_transormer(num_classes)
+    history = model.fit(
+        train_x,train_y, batch_size=32, epochs=100, validation_data=(test_x, test_y),verbose=1,
+        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+    )
+    best_val_acc = max(history.history['val_acc'])
+    print(' no nli acc:', best_val_acc)
 
-model = get_model_albert(num_classes)
-history = model.fit(
-    train_x,train_y, batch_size=32, epochs=100, validation_data=(test_x, test_y),verbose=1,
-    callbacks = [EarlyStopping(monitor='val_accuracy', patience=3, mode='max')]
-)
-best_val_acc = max(history.history['val_accuracy'])
-print('no nli acc:', best_val_acc)
 
 
-print('has nli')
-ds.df_train = ds.df_train.append(df_nli)
-(train_x,train_y),  (test_x, test_y), num_classes = get_keras_data(ds.df_train,  ds.df_test)
 
-model = get_model_albert(num_classes)
-history = model.fit(
-    train_x,train_y, batch_size=32, epochs=100, validation_data=(test_x, test_y),verbose=1,
-    callbacks = [EarlyStopping(monitor='val_accuracy', patience=3, mode='max')]
-)
-best_val_acc = max(history.history['val_accuracy'])
-print('has nli acc:', best_val_acc)
+
+with tf.device('/GPU:0'):
+    for i in range(3):
+        print('has nli')
+        ds = load_data(dataset='yahoo', samplecnt=1000)
+        ds.df_train = ds.df_train.append(df_nli)
+        (train_x,train_y),  (test_x, test_y), num_classes = get_keras_data(ds.df_train,  ds.df_test)
+
+        model = get_model_albert(num_classes)
+        history = model.fit(
+            train_x,train_y, batch_size=32, epochs=100, validation_data=(test_x, test_y),verbose=1,
+            callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+        )
+        best_val_acc = max(history.history['val_acc'])
+        print('has nli acc:', best_val_acc)
 
 
 

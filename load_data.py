@@ -57,6 +57,24 @@ class load_data():
         df_train, df_test = train_test_split(df_bbc, test_size=0.5)
         return df_train, df_test
 
+    def get_pop_news(self):
+        if self.samplecnt < 0:
+            df_train = pd.read_csv("../datasets_aug/pop_news/train.csv").sample(frac=1)
+        else:
+            df_train = pd.read_csv("../datasets_aug/pop_news/train.csv").sample(self.samplecnt)       
+        df_test = pd.read_csv("../datasets_aug/pop_news/test.csv")
+        df_train = df_train[['Headline','Title','Topic']]
+        df_test = df_test[['Headline','Title','Topic']]
+        df_train['content'] = df_train['Headline'] + ' ' + df_train['Title']
+        df_test['content'] = df_test['Headline'] + ' ' + df_test['Title']       
+        df_train.rename(
+                columns={"Topic": "label"},
+                inplace=True )
+        df_test.rename(
+                columns={"Topic": "label"},
+                inplace=True )        
+        return df_train, df_test
+
 def get_keras_data(df_train, df_test):
     # train
     labels = df_test['label'].unique().tolist()
