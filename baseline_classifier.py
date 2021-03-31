@@ -9,7 +9,7 @@ import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
-import gc,argparse
+import gc,argparse,datetime
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -22,12 +22,6 @@ if gpus:
       #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
   except RuntimeError as e:
     print(e)
-
-import datetime
-def beijing(sec, what):
-    beijing_time = datetime.datetime.now() + datetime.timedelta(hours=8)
-    return beijing_time.timetuple()
-logging.Formatter.converter = beijing
 
 
 from aug_fillinmask import *
@@ -92,14 +86,7 @@ parser.add_argument("--generate_m", default="ctrl", type=str)
 
 args = parser.parse_args()
 
-logging.basicConfig(
-    filename='log_{}_{}'.format(args.aug, args.ds),
-    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO, filemode='w'
-)
 
-logger = logging.getLogger()
 print("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
 
 if args.aug == 'fillin':
@@ -124,9 +111,9 @@ acc_mean = run_benchmark(args.ds, augmentor, logger)
 print("summary aug:{} dataset:{}  acc=>{}".format(args.aug, args.ds, acc_mean))
 
 '''
-nohup python baseline_classifier.py --aug generate --ds yahoo --generate_m gpt2 &
-nohup python baseline_classifier.py --aug fillin --ds ag --ner_set True &
-nohup python baseline_classifier.py --aug translate --ds ag --lang fr &
+nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl &
+nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set True &
+nohup python -u baseline_classifier.py --aug translate --ds ag --lang de > translate_ag_de.log &
 '''
 
 # unit test
