@@ -117,22 +117,23 @@ def acquire_nli_for_aug():
     df_nli['label'] = df_nli['label'].map(lambda x: cate_map[x]).map(lambda x: cate_ix[x])
     return df_nli
 df_nli = acquire_nli_for_aug()
+
+
 from load_data import * 
 from transblock import *  
 
-for ds in 
+df = 'ag'
 for i in range(5):
-    ds = load_data(dataset='ag', samplecnt=1000)
-    # inject the aug data 
-    print('no nli')
+    ds = load_data(dataset='ag', samplecnt=-1)
+
     (train_x,train_y),  (test_x, test_y), num_classes = get_keras_data(ds.df_train,  ds.df_test)
-    model = get_model_transormer(num_classes)
+    model = get_model_albert(num_classes)
     history = model.fit(
-        train_x,train_y, batch_size=32, epochs=100, validation_data=(test_x, test_y),verbose=1,
+        train_x,train_y, batch_size=32, epochs=100, validation_data=(test_x, test_y),verbose=2,
         callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
     )
     best_val_acc = max(history.history['val_acc'])
-    print(' no nli acc:', best_val_acc)
+    print('ds:{} iter:{} acc:{}'.format(ds, i, best_val_acc)) 
 
 
 

@@ -39,7 +39,7 @@ from transblock import *
 
 def run_benchmark(dataset, augmentor, logger):
     accs = []
-    for ite in range(3): 
+    for ite in range(5): 
 
         logger.info("iter ==> {}".format(ite))
 
@@ -129,6 +129,7 @@ logger.info("summary aug:{} dataset:{}  acc=>{}".format(args.aug, args.ds, acc_m
 '''
 nohup python baseline_classifier.py --aug generate --ds yahoo --generate_m gpt2 &
 nohup python baseline_classifier.py --aug fillin --ds ag --ner_set True &
+nohup python baseline_classifier.py --aug translate --ds ag --lang ru &
 '''
 
 # unit test
