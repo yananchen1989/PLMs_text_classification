@@ -9,7 +9,7 @@ import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
-import gc
+import gc,argparse
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -41,34 +41,34 @@ def run_benchmark(dataset, augmentor, logger):
     accs = []
     for ite in range(5): 
 
-        logger.info("iter ==> {}".format(ite))
+        print("iter ==> {}".format(ite))
 
         ds = load_data(dataset=dataset, samplecnt=1000)
 
         if augmentor is not None:
             # augmentation
-            logger.info("augmentating...")
+            print("augmentating...")
             ds.df_train['content_aug'] = ds.df_train['content'].map(lambda x: augmentor.augment(x))
-            logger.info("augmentated...")
+            print("augmentated...")
             
             ds.df_train_aug = pd.DataFrame(zip(ds.df_train['content_aug'].tolist()+ds.df_train['content'].tolist(), \
                                                      ds.df_train['label'].tolist()*2),
                                           columns=['content','label']).sample(frac=1)
         else:
-            logger.info("do not augmentation...")
+            print("do not augmentation...")
             ds.df_train_aug = ds.df_train
 
         (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
 
         model = get_model_albert(num_classes)
 
-        logger.info("train begin==>")
+        print("train begin==>")
         history = model.fit(
             x_train, y_train, batch_size=32, epochs=12, validation_data=(x_test, y_test), verbose=2,
             callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
         )
         best_val_acc = max(history.history['val_acc'])
-        logger.info("iter completed, tranin acc ==>{}".format(best_val_acc))
+        print("iter completed, tranin acc ==>{}".format(best_val_acc))
         accs.append(best_val_acc)
     # print("accs==>", accs)
     # print("dataset:{} mean acc ==>".format(dataset), sum(accs) / len(accs))
@@ -100,9 +100,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger()
-logger.info("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
-
-
+print("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
 
 if args.aug == 'fillin':
     augmentor = fillInmask(ner_set=args.ner_set)
@@ -118,18 +116,17 @@ elif args.aug == 'no':
 
 else:
     raise KeyError("args.aug illegal!")
-logger.info("model loaded")
-#for aug_method, augmentor in AUGMENTATION_FUNCTIONS.items():
+print("model loaded")
 
 
-logger.info("dataset begin ==> {}".format(args.ds))
+print("dataset begin ==> {}".format(args.ds))
 acc_mean = run_benchmark(args.ds, augmentor, logger)
-logger.info("summary aug:{} dataset:{}  acc=>{}".format(args.aug, args.ds, acc_mean))
+print("summary aug:{} dataset:{}  acc=>{}".format(args.aug, args.ds, acc_mean))
 
 '''
 nohup python baseline_classifier.py --aug generate --ds yahoo --generate_m gpt2 &
 nohup python baseline_classifier.py --aug fillin --ds ag --ner_set True &
-nohup python baseline_classifier.py --aug translate --ds ag --lang ru &
+nohup python baseline_classifier.py --aug translate --ds ag --lang fr &
 '''
 
 # unit test

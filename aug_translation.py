@@ -3,7 +3,7 @@ import sys,os,logging,argparse,gc
 import numpy as np
 import pandas as pd 
 
-from transformers import FSMTForConditionalGeneration, FSMTTokenizer
+#from transformers import FSMTForConditionalGeneration, FSMTTokenizer
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 class backTranslate():
@@ -58,7 +58,7 @@ class backTranslate():
 
 # unit test
 '''
-augmentor = backTranslate(lang='zh')
+augmentor = backTranslate(lang='ru')
 
 content = "Microsoft has said it will replace more than 14 million power cables for its Xbox consoles due to safety concerns."
 
