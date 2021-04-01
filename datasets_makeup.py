@@ -22,9 +22,30 @@ df.to_csv("cnn_dailymail_stories.csv", index=False)
 # prepare fine-tune data
 from load_data import * 
 
-ds_bbc = load_data(dataset='bbc', samplecnt=-1)
 ds_ag = load_data(dataset='ag', samplecnt=-1)
 ds_yahoo = load_data(dataset='yahoo', samplecnt=-1)
+
+
+agnews_label = {1:"World", 2:"Sports", 3:"Business", 4:"science and technology"}
+
+cates = []
+with open('../datasets_aug/yahoo_news/classes.txt','r') as f:
+    for line in f:
+        cates.append(line.strip())
+yahoo_label = {ix+1:cate for ix, cate in enumerate(cates)}
+
+
+ds_ag.df_train['label'] = ds_ag.df_train['label'].map(lambda x: agnews_label[x])
+ds_ag.df_test['label'] = ds_ag.df_test['label'].map(lambda x: agnews_label[x])
+
+
+ds_yahoo.df_train['label'] = ds_yahoo.df_train['label'].map(lambda x: yahoo_label[x])
+ds_yahoo.df_test['label'] = ds_yahoo.df_test['label'].map(lambda x: yahoo_label[x])
+
+
+
+
+
 
 
 df_all = pd.concat([df_cnndm['content'], \
