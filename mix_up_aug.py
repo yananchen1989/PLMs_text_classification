@@ -20,26 +20,11 @@ if gpus:
     print(e)
 
 import datetime,argparse
-def beijing(sec, what):
-    beijing_time = datetime.datetime.now() + datetime.timedelta(hours=8)
-    return beijing_time.timetuple()
-logging.Formatter.converter = beijing
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--ds", "-ds", default="", type=str)
 parser.add_argument("--samplecnt", "-samplecnt", default=1000, type=int)
 args = parser.parse_args()
-
-
-logging.basicConfig(
-    filename='log_mixup_{}'.format(args.ds),
-    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO, filemode='w'
-)
-
-logger = logging.getLogger()
 
 from load_data import * 
 
@@ -121,7 +106,7 @@ for i in range(5):
             )
     best_val_acc = max(history.history['val_acc'])
     print("best_val_acc==>", best_val_acc)
-    logger.info("iter:{} acc:{}".format(i, best_val_acc))
+    print("iter:{} acc:{}".format(i, best_val_acc))
 
 
 
