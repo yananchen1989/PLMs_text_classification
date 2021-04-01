@@ -31,13 +31,13 @@ from load_data import *
 from transblock import * 
 
 
-def run_benchmark(dataset, augmentor):
+def run_benchmark(dataset, augmentor, samplecnt):
     accs = []
     for ite in range(5): 
 
         print("iter ==> {}".format(ite))
 
-        ds = load_data(dataset=dataset, samplecnt=1000)
+        ds = load_data(dataset=dataset, samplecnt=samplecnt)
 
         if augmentor is not None:
             # augmentation
@@ -58,7 +58,7 @@ def run_benchmark(dataset, augmentor):
 
         print("train begin==>")
         history = model.fit(
-            x_train, y_train, batch_size=32, epochs=12, validation_data=(x_test, y_test), verbose=2,
+            x_train, y_train, batch_size=8, epochs=12, validation_data=(x_test, y_test), verbose=2,
             callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
         )
         best_val_acc = max(history.history['val_acc'])
@@ -80,6 +80,7 @@ def run_benchmark(dataset, augmentor):
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="", type=str)
 parser.add_argument("--ds", default="", type=str)
+parser.add_argument("--samplecnt", default=32, type=int)
 parser.add_argument("--ner_set", default=False, type=bool)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="ctrl", type=str)
@@ -107,8 +108,8 @@ print("model loaded")
 
 
 print("dataset begin ==> {}".format(args.ds))
-acc_mean = run_benchmark(args.ds, augmentor)
-print("summary aug:{} dataset:{}  acc=>{}".format(args.aug, args.ds, acc_mean))
+acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
+print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
 
 '''
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl &
