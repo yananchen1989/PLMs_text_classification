@@ -115,7 +115,7 @@ nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ct
 nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner_local.log &
 
 
-nohup python -u baseline_classifier.py --aug translate --ds ag --lang de > translate_ag_de.log &
+nohup python -u baseline_classifier.py --aug translate --ds yahoo --lang de > translate_yahoo_de.log &
 '''
 
 # unit test

@@ -4,8 +4,19 @@ import tensorflow as tf
 import pandas as pd 
 from sklearn.model_selection import train_test_split
 
+
+
+def sample_stratify(df, samplecnt):
+    if samplecnt < 0:
+        return df 
+    ll = []
+    for cate in df['label'].unique():
+        dfs = df.loc[df['label']==cate].sample(samplecnt)
+        ll.append(dfs)
+    return pd.concat(ll).sample(frac=1)
+
 class load_data():
-    def __init__(self, samplecnt = 1000, dataset='ag'):
+    def __init__(self, samplecnt = 100, dataset='ag'):
         self.samplecnt = samplecnt
         self.dataset = dataset
         if self.dataset == 'ag':
@@ -20,13 +31,11 @@ class load_data():
             raise KeyError("dataset illegal!")
 
     def get_yahoo_news(self):
-        if self.samplecnt < 0:
-            df_train = pd.read_csv("../datasets_aug/yahoo_news/train.csv", header=None).sample(frac=1)
-        else:
-            df_train = pd.read_csv("../datasets_aug/yahoo_news/train.csv", header=None).sample(self.samplecnt)
+        df_train = pd.read_csv("../datasets_aug/yahoo_news/train.csv", header=None)            
         df_train = df_train.fillna(' ')
         df_train['content'] = df_train[1] + ' ' + df_train[2] + ' ' + df_train[3]
         df_train['label'] = df_train[0]
+        df_train = sample_stratify(df_train, self.samplecnt)
 
         df_test = pd.read_csv("../datasets_aug/yahoo_news/test.csv", header=None)
         df_test = df_test.fillna(' ')
@@ -36,14 +45,12 @@ class load_data():
 
     # ag news
     def get_ag_news(self):
-        if self.samplecnt < 0:
-            df_train = pd.read_csv("../datasets_aug/ag_news/train.csv").sample(frac=1)
-        else:
-            df_train = pd.read_csv("../datasets_aug/ag_news/train.csv").sample(self.samplecnt)
+        df_train = pd.read_csv("../datasets_aug/ag_news/train.csv")
         df_test = pd.read_csv("../datasets_aug/ag_news/test.csv")
         df_train['content'] = df_train['title'] + ' ' + df_train['content']
         df_test['content'] = df_test['title'] + ' ' + df_test['content']
         agnews_label = {1:"World", 2:"Sports", 3:"Business", 4:"Sci/Tech"}
+        df_train = sample_stratify(df_train, self.samplecnt)
         return df_train, df_test
 
     # bbc 
@@ -60,10 +67,7 @@ class load_data():
         return df_train, df_test
 
     def get_pop_news(self):
-        if self.samplecnt < 0:
-            df_train = pd.read_csv("../datasets_aug/pop_news/train_file.csv").sample(frac=1)
-        else:
-            df_train = pd.read_csv("../datasets_aug/pop_news/train_file.csv").sample(self.samplecnt)       
+        df_train = pd.read_csv("../datasets_aug/pop_news/train_file.csv")    
         df_test = pd.read_csv("../datasets_aug/pop_news/test_file.csv")
         df_train = df_train[['Headline','Title','Topic']]
         df_test = df_test[['Headline','Title','Topic']]
@@ -74,7 +78,8 @@ class load_data():
                 inplace=True )
         df_test.rename(
                 columns={"Topic": "label"},
-                inplace=True )        
+                inplace=True )  
+        df_train = sample_stratify(df_train, self.samplecnt)      
         return df_train, df_test
 
 def get_keras_data(df_train, df_test):
