@@ -143,7 +143,7 @@ class DataTrainingArguments:
     )
 
     block_size: Optional[int] = field(
-        default=512,
+        default=256,
         metadata={
             "help": "Optional input sequence length after tokenization."
             "The training dataset will be truncated in block of this size for training."
@@ -193,8 +193,8 @@ training_args.save_strategy = "epoch"
 training_args.evaluation_strategy = "epoch"
 #training_args.dataloader_num_workers = 56
 #training_args.load_best_model_at_end = True
-training_args.per_device_train_batch_size = 32
-training_args.per_device_eval_batch_size = 32
+training_args.per_device_train_batch_size = 16
+training_args.per_device_eval_batch_size = 16
 training_args.do_train = True
 training_args.do_eval = True
 training_args.overwrite_output_dir = True 
