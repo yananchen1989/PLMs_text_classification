@@ -61,10 +61,10 @@ class load_data():
 
     def get_pop_news(self):
         if self.samplecnt < 0:
-            df_train = pd.read_csv("../datasets_aug/pop_news/train.csv").sample(frac=1)
+            df_train = pd.read_csv("../datasets_aug/pop_news/train_file.csv").sample(frac=1)
         else:
-            df_train = pd.read_csv("../datasets_aug/pop_news/train.csv").sample(self.samplecnt)       
-        df_test = pd.read_csv("../datasets_aug/pop_news/test.csv")
+            df_train = pd.read_csv("../datasets_aug/pop_news/train_file.csv").sample(self.samplecnt)       
+        df_test = pd.read_csv("../datasets_aug/pop_news/test_file.csv")
         df_train = df_train[['Headline','Title','Topic']]
         df_test = df_test[['Headline','Title','Topic']]
         df_train['content'] = df_train['Headline'] + ' ' + df_train['Title']
