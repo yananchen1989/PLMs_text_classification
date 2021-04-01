@@ -31,7 +31,7 @@ from load_data import *
 from transblock import * 
 
 
-def run_benchmark(dataset, augmentor, logger):
+def run_benchmark(dataset, augmentor):
     accs = []
     for ite in range(5): 
 
@@ -107,12 +107,12 @@ print("model loaded")
 
 
 print("dataset begin ==> {}".format(args.ds))
-acc_mean = run_benchmark(args.ds, augmentor, logger)
+acc_mean = run_benchmark(args.ds, augmentor)
 print("summary aug:{} dataset:{}  acc=>{}".format(args.aug, args.ds, acc_mean))
 
 '''
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl &
-nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False &
+nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner_local.log &
 
 
 nohup python -u baseline_classifier.py --aug translate --ds ag --lang de > translate_ag_de.log &
