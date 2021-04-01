@@ -112,13 +112,14 @@ acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
 print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
 
 '''
-nohup python -u baseline_classifier.py --aug no --ds yahoo --samplecnt 32 > base_augno_dsyahoo_32.log & 
+nohup python -u baseline_classifier.py --aug no --ds yahoo > base_augno_dsyahoo_32.log & 
 
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl &
 nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner_local.log &
 
 
-nohup python -u baseline_classifier.py --aug translate --ds yahoo --lang de > translate_yahoo_de.log &
+nohup python -u baseline_classifier.py --aug translate --ds pop --lang zh > translate_pop_zh.log &
+
 '''
 
 # unit test

@@ -20,13 +20,10 @@ df.to_csv("cnn_dailymail_stories.csv", index=False)
 # https://drive.google.com/drive/folders/0Bz8a_Dbh9Qhbfll6bVpmNUtUcFdjYmF2SEpmZUZUcVNiMUw1TWN6RDV3a0JHT3kxLVhVR2M
 
 # prepare fine-tune data
-df_cnndm = pd.read_csv("./datasets/cnn_dailymail_stories.csv")
+from load_data import * 
 
 ds_bbc = load_data(dataset='bbc', samplecnt=-1)
-
-
 ds_ag = load_data(dataset='ag', samplecnt=-1)
-
 ds_yahoo = load_data(dataset='yahoo', samplecnt=-1)
 
 
@@ -54,27 +51,10 @@ df_test.to_csv("df_finetune_test.csv", index=False)
 
 
 
-# datasets from huggingface 
-import datasets
-import pandas as pd
 
 
-# agnews
-ag_news_train = datasets.load_dataset('ag_news', split="train")
-df_train = pd.DataFrame(zip(ag_news_train['text'], ag_news_train['label'] ), columns=['content','label'])
-
-ag_news_test = datasets.load_dataset('ag_news', split="test")
-df_test = pd.DataFrame(zip(ag_news_test['text'], ag_news_test['label'] ), columns=['content','label'])
-
-# yahoo news
-# ['id', 'topic', 'question_title', 'question_content', 'best_answer']
-yahoo_news_train = datasets.load_dataset('yahoo_answers_topics', split="train")
-yahoo_news_test = datasets.load_dataset('yahoo_answers_topics', split="test")
-
-#https://huggingface.co/datasets/newspop
 
 
-news_train = datasets.load_dataset('newspop')
 
 
 
