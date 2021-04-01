@@ -3,20 +3,6 @@ import numpy as np
 import pandas as pd 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-import datetime
-def beijing(sec, what):
-    beijing_time = datetime.datetime.now() + datetime.timedelta(hours=8)
-    return beijing_time.timetuple()
-logging.Formatter.converter = beijing
-
-logging.basicConfig(filename= 'aug_nli.log',
-    filemode='w',
-    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO,
-)
-logger = logging.getLogger()
-
 
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 #https://huggingface.co/joeddav/bart-large-mnli-yahoo-answers
@@ -122,7 +108,7 @@ df_nli = acquire_nli_for_aug()
 from load_data import * 
 from transblock import *  
 with tf.device('/GPU:0'):
-    dsn = 'ag'
+    dsn = 'pop'
     for i in range(5):
         ds = load_data(dataset=dsn, samplecnt=-1)
 

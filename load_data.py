@@ -14,6 +14,8 @@ class load_data():
             self.df_train, self.df_test = self.get_bbc_news()
         elif self.dataset == 'yahoo':
             self.df_train, self.df_test = self.get_yahoo_news()
+        elif self.dataset == 'pop':
+            self.df_train, self.df_test = self.get_pop_news()            
         else:
             raise KeyError("dataset illegal!")
 
