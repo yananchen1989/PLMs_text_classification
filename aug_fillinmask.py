@@ -19,6 +19,7 @@ class fillInmask():
         # load tagger
         self.tagger = SequenceTagger.load("flair/ner-english-fast")
         self.load_model()
+        print('fillin mask model loaded==>', self.model_name)
     def load_model(self):
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelWithLMHead.from_pretrained(self.model_name)

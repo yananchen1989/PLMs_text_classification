@@ -90,7 +90,7 @@ args = parser.parse_args()
 print("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
 
 if args.aug == 'fillin':
-    augmentor = fillInmask(ner_set=args.ner_set,model_name='/root/yanan/berts/transformers/examples/language-modeling/finetuned_bert')
+    augmentor = fillInmask(ner_set=args.ner_set, model_name='/root/yanan/berts/transformers/examples/language-modeling/finetuned_bert')
 
 elif args.aug == 'generate':
     augmentor = generation(model_name=args.generate_m)
