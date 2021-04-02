@@ -83,7 +83,7 @@ parser.add_argument("--ds", default="", type=str)
 parser.add_argument("--samplecnt", default=32, type=int)
 parser.add_argument("--ner_set", default=False, type=bool)
 parser.add_argument("--lang", default="zh", type=str)
-parser.add_argument("--generate_m", default="ctrl", type=str)
+parser.add_argument("--generate_m", default="gpt2", type=str)
 
 args = parser.parse_args()
 
@@ -116,7 +116,7 @@ print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds,
 nohup python -u baseline_classifier.py --aug no --ds yahoo --samplecnt -1 > base_augno_dsyahoo_full.log & 
 
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl &
-nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner_local.log &
+nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner.log &
 
 nohup python -u baseline_classifier.py --aug translate --ds ag --lang de > translate_ag_de.log &
 

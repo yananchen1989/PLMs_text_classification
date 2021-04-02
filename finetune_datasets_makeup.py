@@ -43,7 +43,7 @@ ds_yahoo.df_train['label'] = ds_yahoo.df_train['label'].map(lambda x: yahoo_labe
 ds_yahoo.df_test['label'] = ds_yahoo.df_test['label'].map(lambda x: yahoo_label[x])
 
 
-
+from transformers import GPT2Tokenizer
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 
 bos_token = tokenizer.bos_token
