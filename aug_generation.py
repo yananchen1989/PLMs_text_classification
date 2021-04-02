@@ -97,6 +97,10 @@ class generation():
         encoded_prompt = self.tokenizer.encode(prefix  + prompt_text, \
                         truncation=True, max_length=250,  \
                         add_special_tokens=False, return_tensors="pt")
+        if 'ctrl' in self.model_name:
+            encoded_prompt = self.tokenizer.encode(prefix  + prompt_text, \
+                        truncation=True, max_length=250, padding=True, \
+                        add_special_tokens=False, return_tensors="pt")
                     
         encoded_prompt = encoded_prompt.to(self.device)
 
