@@ -87,30 +87,30 @@ parser.add_argument("--generate_m", default="gpt2", type=str)
 
 args = parser.parse_args()
 
-with tf.device('/device:GPU:1'):
-    print("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
+#with tf.device('/device:GPU:1'):
+print("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
 
-    if args.aug == 'fillin':
-        # model_name='/root/yanan/berts/transformers/examples/language-modeling/finetuned_bert'
-        augmentor = fillInmask(ner_set=args.ner_set)
+if args.aug == 'fillin':
+    # model_name='/root/yanan/berts/transformers/examples/language-modeling/finetuned_bert'
+    augmentor = fillInmask(ner_set=args.ner_set)
 
-    elif args.aug == 'generate':
-        augmentor = generation(model_name=args.generate_m)
+elif args.aug == 'generate':
+    augmentor = generation(model_name=args.generate_m)
 
-    elif args.aug == 'translate':
-        augmentor = backTranslate(lang=args.lang)
+elif args.aug == 'translate':
+    augmentor = backTranslate(lang=args.lang)
 
-    elif args.aug == 'no':
-        augmentor = None
+elif args.aug == 'no':
+    augmentor = None
 
-    else:
-        raise KeyError("args.aug illegal!")
-    print("model loaded")
+else:
+    raise KeyError("args.aug illegal!")
+print("model loaded")
 
 
-    print("dataset begin ==> {}".format(args.ds))
-    acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
-    print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
+print("dataset begin ==> {}".format(args.ds))
+acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
+print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
 
 '''
 nohup python -u baseline_classifier.py --aug no --ds yahoo --samplecnt -1 > base_augno_dsyahoo_full.log & 
