@@ -39,6 +39,9 @@ nohup python -u baseline_classifier.py --aug generate --ds ag --generate_m gpt2 
 nohup python -u baseline_classifier.py --aug generate --ds pop --generate_m gpt2 > generate_pop_gpt2.log &
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m gpt2 > generate_yahoo_gpt2.log &
 
+nohup python -u baseline_classifier.py --aug generate --ds ag --generate_m ctrl > generate_ag_ctrl.log &
+nohup python -u baseline_classifier.py --aug generate --ds pop --generate_m ctrl > generate_pop_ctrl.log &
+nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl.log &
 
 
 nohup python -u baseline_classifier.py --aug no --ds yahoo --samplecnt -1 > augno_yahoo_full.log & 

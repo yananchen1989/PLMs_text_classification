@@ -107,10 +107,10 @@ else:
     raise KeyError("args.aug illegal!")
 print("model loaded")
 
-
-print("dataset begin ==> {}".format(args.ds))
-acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
-print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
+with tf.device('/device:GPU:1'):
+    print("dataset begin ==> {}".format(args.ds))
+    acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
+    print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
 
 '''
 nohup python -u baseline_classifier.py --aug no --ds yahoo --samplecnt -1 > base_augno_dsyahoo_full.log & 
