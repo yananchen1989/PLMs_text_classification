@@ -28,6 +28,7 @@ class generation():
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.MODEL_CLASSES = {
                     "gpt2": (GPT2LMHeadModel, GPT2Tokenizer),
+                    "finetuned_gpt2": (GPT2LMHeadModel, GPT2Tokenizer),
                     "ctrl": (CTRLLMHeadModel, CTRLTokenizer),
                     "openai-gpt": (OpenAIGPTLMHeadModel, OpenAIGPTTokenizer),
                     "xlnet-base-cased": (XLNetLMHeadModel, XLNetTokenizer),
@@ -40,7 +41,7 @@ class generation():
         self.num_return_sequences = num_return_sequences
         self.model_class, self.tokenizer_class = self.MODEL_CLASSES[self.model_name]
         self.tokenizer = self.tokenizer_class.from_pretrained(self.model_name)
-        if self.model_name == 'gpt2':
+        if 'gpt2' in self.model_name :
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
         self.model = self.model_class.from_pretrained(self.model_name)
