@@ -19,3 +19,6 @@ ps aux|grep run_clm.py|awk '{print $2}'|xargs kill -9
 
 scp  root@10.177.16.194:/root/yanan/berts/multi_head_attention.py ./
 scp -r 
+
+
+git add .;git commit -m "update";git push

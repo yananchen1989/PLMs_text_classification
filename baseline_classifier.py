@@ -91,7 +91,8 @@ args = parser.parse_args()
 print("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
 
 if args.aug == 'fillin':
-    augmentor = fillInmask(ner_set=args.ner_set, model_name='/root/yanan/berts/transformers/examples/language-modeling/finetuned_bert')
+    # model_name='/root/yanan/berts/transformers/examples/language-modeling/finetuned_bert'
+    augmentor = fillInmask(ner_set=args.ner_set)
 
 elif args.aug == 'generate':
     augmentor = generation(model_name=args.generate_m)
@@ -112,13 +113,12 @@ acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
 print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
 
 '''
-nohup python -u baseline_classifier.py --aug no --ds yahoo > base_augno_dsyahoo_32.log & 
+nohup python -u baseline_classifier.py --aug no --ds yahoo --samplecnt -1 > base_augno_dsyahoo_full.log & 
 
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl &
 nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner_local.log &
 
-
-nohup python -u baseline_classifier.py --aug translate --ds pop --lang zh > translate_pop_zh.log &
+nohup python -u baseline_classifier.py --aug translate --ds ag --lang de > translate_ag_de.log &
 
 '''
 
