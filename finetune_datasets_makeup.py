@@ -79,8 +79,10 @@ get_finetune_dataset(df_test, 'gpt2_test.txt')
 
 
 
+from transformers import GPT2Tokenizer, CTRLTokenizer, GPT2LMHeadModel
+tokenizer = CTRLTokenizer.from_pretrained('ctrl')
 
-
+tokenizer.pad_token = tokenizer.eos_token
 
 
 

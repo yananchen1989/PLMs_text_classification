@@ -37,7 +37,7 @@ nohup python -u baseline_classifier.py --aug fillin --ds yahoo --ner_set True > 
 
 nohup python -u baseline_classifier.py --aug generate --ds ag --generate_m gpt2 > generate_ag_gpt2.log &
 nohup python -u baseline_classifier.py --aug generate --ds pop --generate_m gpt2 > generate_pop_gpt2.log &
-nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m gpt2 > generate_yahoo1_gpt2.log &
+nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m gpt2 > generate_yahoo_gpt2.log &
 
 
 
