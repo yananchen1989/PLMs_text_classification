@@ -84,11 +84,13 @@ parser.add_argument("--samplecnt", default=32, type=int)
 parser.add_argument("--ner_set", default=False, type=bool)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 
 args = parser.parse_args()
-
+print('args==>', args)
 #with tf.device('/device:GPU:1'):
 print("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
 if args.aug == 'fillin':
     # model_name='/root/yanan/berts/transformers/examples/language-modeling/finetuned_bert'
