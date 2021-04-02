@@ -10,7 +10,7 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 import gc,argparse,datetime
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 gpus = tf.config.experimental.list_physical_devices('GPU')
