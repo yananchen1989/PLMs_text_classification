@@ -90,8 +90,10 @@ class generation():
             prefix = 'News '
         else:
             prefix = ''
-        encoded_prompt = self.tokenizer.encode(prefix  + prompt_text, add_special_tokens=False, return_tensors="pt")
-        
+        encoded_prompt = self.tokenizer.encode(prefix  + prompt_text, \
+                        truncation=True, max_length=self.length, padding=True, \
+                        add_special_tokens=False, return_tensors="pt")
+                    
         encoded_prompt = encoded_prompt.to(self.device)
 
         if encoded_prompt.size()[-1] == 0:
