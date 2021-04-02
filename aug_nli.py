@@ -78,35 +78,41 @@ for content in sentences:
 
 
 
-#### reload the nli classify results and inject into the original dataset
-import pandas as pd 
-def acquire_nli_for_aug():
-    df_nli = pd.read_csv("../datasets_aug/cnn_dm_nli.csv", sep='\t', header=None)
-    df_nli.columns = ['content','label']
+labels = ["Society & Culture",
+        "Science & Mathematics",
+        "Health",
+        "Education & Reference",
+        "Computers & Internet",
+        "Sports",
+        "Business & Finance",
+        "Entertainment & Music",
+        "Family & Relationships",
+        "Politics & Government",
+        "palestine",
+        "president obama",
+        "microsoft",
+        "Economy",
+        "world news",
+        "Business",
+        "science and technology"]
 
-    cates = []
-    with open('../datasets_aug/yahoo_news/classes.txt','r') as f:
-        for line in f:
-            cates.append(line.strip())
-
-    cate_ix = {cate:ix+1 for ix, cate in enumerate(cates)}
-
-    cate_map = {}
-    for cate in df_nli.label.unique():
-        for cate_ in cate_ix.keys():
-            if cate == 'Technology':
-                cate_map[cate] = 'Computers & Internet'
-            if cate in cate_:
-                cate_map[cate] = cate_ 
-                break
-
-    df_nli['label'] = df_nli['label'].map(lambda x: cate_map[x]).map(lambda x: cate_ix[x])
-    return df_nli
-df_nli = acquire_nli_for_aug()
+import csv,random
+model_name = 'gpt2'
+save_train_file = open('{}.csv'.format(model_name), 'w')
+writer = csv.writer(save_train_file, delimiter='\t')
 
 
+from transformers import pipeline
+model  = pipeline("text-generation", model=model_name, device=0) #  
 
-
+while 1:
+    label = random.sample(labels, 1)[0]
+    results = model(label, max_length=250, do_sample=True, top_p=0.9, top_k=0, num_return_sequences=5)
+    for content in results:
+        content = content.replace(label, '').replace('\t',' ')
+        if len(content.split(' ')) <= 30:
+            continue 
+        writer.writerow([label, content])
 
 
 

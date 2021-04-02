@@ -8,6 +8,9 @@ import tensorflow_hub as hub
 import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -22,8 +25,8 @@ if gpus:
 import datetime,argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--ds", "-ds", default="", type=str)
-parser.add_argument("--samplecnt", "-samplecnt", default=1000, type=int)
+parser.add_argument("--ds", "-ds", default="ag", type=str)
+parser.add_argument("--samplecnt", "-samplecnt", default=32, type=int)
 args = parser.parse_args()
 
 from load_data import * 
@@ -94,19 +97,19 @@ def get_model(num_classes):
     model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
     return model
 
-
-for i in range(5):
-    ds = load_data(dataset=args.ds, samplecnt=args.samplecnt)
-    ((train_x0, train_x1), train_y), ((test_x,test_x), test_y), num_classes = get_keras_data_mixup(ds)
-    model = get_model(num_classes)
-    history = model.fit(
-                (train_x0, train_x1), train_y, batch_size=32, epochs=12, validation_data=((test_x,test_x), test_y),\
-                verbose=1,
-                callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-            )
-    best_val_acc = max(history.history['val_acc'])
-    print("best_val_acc==>", best_val_acc)
-    print("iter:{} acc:{}".format(i, best_val_acc))
+for dsn in ['ag','yahoo','pop']:
+    for i in range(7):
+        ds = load_data(dataset=dsn, samplecnt=args.samplecnt)
+        ((train_x0, train_x1), train_y), ((test_x,test_x), test_y), num_classes = get_keras_data_mixup(ds)
+        model = get_model(num_classes)
+        history = model.fit(
+                    (train_x0, train_x1), train_y, batch_size=16, epochs=12, validation_data=((test_x,test_x), test_y),\
+                    verbose=1,
+                    callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+                )
+        best_val_acc = max(history.history['val_acc'])
+        print("best_val_acc==>", best_val_acc)
+        print("ds:{} iter:{} acc:{}".format(dsn, i, best_val_acc))
 
 
 

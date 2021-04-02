@@ -134,7 +134,7 @@ prompt_text = "Versace art portfolio up for sale The art collection of murdered 
 up to £9m ($17m) when it is auctioned in New York and \
 London later this year. <eod> </s> <eos>"
 
-augmentor.augment(prompt_text)
+augmentor.augment('science & technology')
 '''
 
 
