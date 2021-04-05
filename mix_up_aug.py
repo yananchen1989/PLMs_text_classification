@@ -108,7 +108,6 @@ for dsn in ['ag','yahoo','pop']:
                     callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
                 )
         best_val_acc = max(history.history['val_acc'])
-        print("best_val_acc==>", best_val_acc)
         print("ds:{} iter:{} acc:{}".format(dsn, i, best_val_acc))
 
 

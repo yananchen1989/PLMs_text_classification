@@ -10,7 +10,22 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 import gc,argparse,datetime
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--aug", default="", type=str)
+parser.add_argument("--ds", default="", type=str)
+parser.add_argument("--samplecnt", default=32, type=int)
+parser.add_argument("--ner_set", default=False, type=bool)
+parser.add_argument("--lang", default="zh", type=str)
+parser.add_argument("--generate_m", default="gpt2", type=str)
+parser.add_argument("--batch_size", default=8, type=int)
+parser.add_argument("--gpu", default="0", type=str)
+
+args = parser.parse_args()
+print('args==>', args)
+
+
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -58,7 +73,7 @@ def run_benchmark(dataset, augmentor, samplecnt):
 
         print("train begin==>")
         history = model.fit(
-            x_train, y_train, batch_size=8, epochs=12, validation_data=(x_test, y_test), verbose=2,
+            x_train, y_train, batch_size=args.batch_size, epochs=12, validation_data=(x_test, y_test), verbose=2,
             callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
         )
         best_val_acc = max(history.history['val_acc'])
@@ -77,16 +92,7 @@ def run_benchmark(dataset, augmentor, samplecnt):
 #     "translate": backTranslate(lang='zh')
 # }
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--aug", default="", type=str)
-parser.add_argument("--ds", default="", type=str)
-parser.add_argument("--samplecnt", default=32, type=int)
-parser.add_argument("--ner_set", default=False, type=bool)
-parser.add_argument("--lang", default="zh", type=str)
-parser.add_argument("--generate_m", default="gpt2", type=str)
 
-args = parser.parse_args()
-print('args==>', args)
 #with tf.device('/device:GPU:1'):
 print("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
 
