@@ -14,6 +14,17 @@
 
 # df.to_csv("cnn_dailymail_stories.csv", index=False)
 
+def get_sentences():
+    df = pd.read_csv("/root/yanan/berts/datasets_aug/cnn_dailymail_stories.csv").sample(frac=1)
+    sentences = []
+    for content in df['content'].tolist():
+        sentences.extend([s for s in content.split('\n') if len(s.strip().split(' ')) >= 50])
+    return sentences
+
+sentences = get_sentences()
+random.shuffle(sentences) # 703351
+
+
 
 
 

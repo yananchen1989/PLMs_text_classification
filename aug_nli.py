@@ -1,33 +1,13 @@
-import sys,os,logging,glob,pickle,torch,random,gc
-import numpy as np
-import pandas as pd 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+#from transformers import AutoModelForSequenceClassification, AutoTokenizer
 #https://huggingface.co/joeddav/bart-large-mnli-yahoo-answers
-#MODEL = "joeddav/bart-large-mnli-yahoo-answers"
-# 'facebook/bart-large-mnli'  'joeddav/xlm-roberta-large-xnli'
+# MODEL = "joeddav/bart-large-mnli-yahoo-answers"
+# #'facebook/bart-large-mnli'  'joeddav/xlm-roberta-large-xnli'
 # from transformers import BartForSequenceClassification, BartTokenizer
 # tokenizer = BartTokenizer.from_pretrained(MODEL)
 # nli_model = BartForSequenceClassification.from_pretrained(MODEL)
 # nli_model.to(device)
 
-def get_sentences():
-    df = pd.read_csv("/root/yanan/berts/datasets_aug/cnn_dailymail_stories.csv").sample(frac=1)
-    sentences = []
-    for content in df['content'].tolist():
-        sentences.extend([s for s in content.split('\n') if len(s.strip().split(' ')) >= 50])
-    return sentences
 
-sentences = get_sentences()
-random.shuffle(sentences) # 703351
-
-
-#batch_size = 32
-labels_candidate = ['Sports', 'Business', 'Science', 'Technology','Entertainment','Politics','Society',\
-             'Culture', 'Mathematics','Health','Education','Reference','Computers','Internet',\
-             'Finance','Music','Family','Relationships','Government']
 
 '''
 infos = []
@@ -57,25 +37,23 @@ while ix < len(sentences):
 
 '''
 
-from transformers import pipeline
-nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
 
 #nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 # 
 
 #content = "Johnson Helps D-Backs End Nine-Game Slide (AP) AP - Randy Johnson took a four-hitter into the ninth inning to help the Arizona Diamondbacks end a nine-game losing streak Sunday, beating Steve Trachsel and the New York Mets 2-0."
 # generate selected samples which belong to the defined categories
-import csv
-save_train_file = open('cnn_dm_nli.csv', 'w')
-writer = csv.writer(save_train_file, delimiter='\t')
-
+# import csv
+# save_train_file = open('cnn_dm_nli.csv', 'w')
+# writer = csv.writer(save_train_file, delimiter='\t')
+'''
 for content in sentences:
     result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
 
     if result['scores'][0] < 0.4:
         continue
     writer.writerow([content.strip().replace('\t',' '), result['labels'][0]])
-
+'''
 
 
 labels = ["Society & Culture",
@@ -95,11 +73,9 @@ labels = ["Society & Culture",
         "world news",
         "Business",
         "science and technology"]
-
-import csv,random
+'''
+import random
 model_name = 'gpt2'
-save_train_file = open('{}.csv'.format(model_name), 'w')
-writer = csv.writer(save_train_file, delimiter='\t')
 
 
 from transformers import pipeline
@@ -108,11 +84,109 @@ model  = pipeline("text-generation", model=model_name, device=0) #
 while 1:
     label = random.sample(labels, 1)[0]
     results = model(label, max_length=250, do_sample=True, top_p=0.9, top_k=0, num_return_sequences=5)
-    for content in results:
+    for row in results:
+        content = row['generated_text']
         content = content.replace(label, '').replace('\t',' ')
         if len(content.split(' ')) <= 30:
             continue 
-        writer.writerow([label, content])
+        print(label, '\t', content.replace('\n',' '))
+'''
+
+import os, argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--dsn", default="", type=str)
+parser.add_argument("--check", default=False, type=bool)
+parser.add_argument("--gpu", default="0", type=str)
+args = parser.parse_args()
+
+
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu 
+from load_data import * 
+from transblock import * 
+
+from transformers import pipeline
+nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=int(args.gpu)) #  
+
+
+
+def check_premise(content, labels_candidate):
+    result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
+    if result['scores'][0] >= 0.7:
+        return True 
+    else:
+        return False
+
+
+label_ix = {label:ix+1 for ix, label in enumerate(labels[:10])}
+
+infos = []
+with open('gpt_zsl.tsv','r') as f:
+    for line in f:
+        if '\t' not in line:
+            continue 
+
+        tokens = line.strip().split('\t') 
+        if len(tokens)!=2:
+            print(line)
+            continue
+        content = tokens[1].strip()
+
+        if args.dsn == 'yahoo':
+            if tokens[0].strip() not in label_ix.keys():
+                continue
+            if args.check:
+                if not check_premise(content, [tokens[0].strip()]) :
+                    continue
+            label = label_ix[tokens[0].strip()]
+            
+
+        if args.dsn == 'pop':
+            if tokens[0].strip() not in labels[10:14]:
+                continue
+            label = tokens[0].lower().replace('president ','').strip()
+
+
+        if args.dsn == 'ag':
+            if tokens[0].strip() == "world news":
+                label = 1
+            elif tokens[0].strip() == "Sports":
+                label = 2
+            elif tokens[0].strip() in ["Business","Business & Finance"]:
+                label = 3
+            elif tokens[0].strip() in ["Science & Mathematics", "science and technology"]:
+                label = 4
+            else:
+                continue 
+
+        infos.append((label, content))
+
+ds = load_data(dataset=args.dsn, samplecnt=100)
+# train
+df = pd.DataFrame(infos, columns=['label','content'])
+
+assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
+
+(x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
+model = get_model_albert(num_classes)
+
+print("train begin==>")
+history = model.fit(
+    x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
+    callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+)
+best_val_acc = max(history.history['val_acc'])
+print('dsn:', args.dsn)
+print("iter completed, tranin acc ==>{}".format(best_val_acc))
+print("training cnt==", df.shape[0])
+
+
+
+
+
+
+
+
+
 
 
 
