@@ -105,7 +105,7 @@ from load_data import *
 from transblock import * 
 
 from transformers import pipeline
-nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=int(args.gpu)) #  
+nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
 
 
 
@@ -175,7 +175,7 @@ history = model.fit(
     callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
 )
 best_val_acc = max(history.history['val_acc'])
-print('dsn:', args.dsn)
+print('dsn:', args.dsn, 'check:{}', args.check)
 print("iter completed, tranin acc ==>{}".format(best_val_acc))
 print("training cnt==", df.shape[0])
 
