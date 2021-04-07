@@ -164,7 +164,7 @@ ds = load_data(dataset=args.dsn, samplecnt=100)
 # train
 df = pd.DataFrame(infos, columns=['label','content'])
 
-#df.to_csv("yahoo_nli_filter.csv", index=False)
+#df.to_csv("ag_nli_filter.csv", index=False)
 
 #df = pd.read_csv("yahoo_nli_filter.csv")
 if args.dsn == 'ag':
