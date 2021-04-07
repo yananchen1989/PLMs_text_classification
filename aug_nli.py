@@ -95,12 +95,12 @@ while 1:
 import os, argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="", type=str)
-parser.add_argument("--check", default=False, type=bool)
-parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--check", default=True, type=bool)
+parser.add_argument("--gpu", default="1", type=str)
 args = parser.parse_args()
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu 
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 from load_data import * 
 from transblock import * 
 
@@ -116,8 +116,8 @@ def check_premise(content, labels_candidate):
     else:
         return False
 
-
-label_ix = {label:ix+1 for ix, label in enumerate(labels[:10])}
+if args.dsn=='yahoo':
+    label_ix = {label:ix+1 for ix, label in enumerate(labels[:10])}
 
 infos = []
 with open('gpt_zsl.tsv','r') as f:
@@ -134,12 +134,8 @@ with open('gpt_zsl.tsv','r') as f:
         if args.dsn == 'yahoo':
             if tokens[0].strip() not in label_ix.keys():
                 continue
-            if args.check:
-                if not check_premise(content, [tokens[0].strip()]) :
-                    continue
             label = label_ix[tokens[0].strip()]
             
-
         if args.dsn == 'pop':
             if tokens[0].strip() not in labels[10:14]:
                 continue
@@ -149,6 +145,7 @@ with open('gpt_zsl.tsv','r') as f:
         if args.dsn == 'ag':
             if tokens[0].strip() == "world news":
                 label = 1
+                continue # do not use this category
             elif tokens[0].strip() == "Sports":
                 label = 2
             elif tokens[0].strip() in ["Business","Business & Finance"]:
@@ -157,6 +154,9 @@ with open('gpt_zsl.tsv','r') as f:
                 label = 4
             else:
                 continue 
+        if args.check and args.dsn in ['ag', 'yahoo']:
+            if not check_premise(content, [tokens[0].strip()]) :
+                continue
 
         infos.append((label, content))
 
@@ -164,8 +164,14 @@ ds = load_data(dataset=args.dsn, samplecnt=100)
 # train
 df = pd.DataFrame(infos, columns=['label','content'])
 
-assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
+#df.to_csv("yahoo_nli_filter.csv", index=False)
 
+#df = pd.read_csv("yahoo_nli_filter.csv")
+if args.dsn == 'ag':
+    df = df.loc[df['label']!=1]
+    ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
+
+assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
 (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
 model = get_model_albert(num_classes)
 
@@ -178,6 +184,8 @@ best_val_acc = max(history.history['val_acc'])
 print('dsn:', args.dsn, 'check:{}', args.check)
 print("iter completed, tranin acc ==>{}".format(best_val_acc))
 print("training cnt==", df.shape[0])
+
+
 
 
 
