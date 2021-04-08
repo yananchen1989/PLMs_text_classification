@@ -23,7 +23,7 @@ import torch
 
 dfcodes = pd.read_csv("label_codes.tsv", sep='\t')
 
-model  = pipeline("text-generation", model=args.model, device=0)
+model  = pipeline("text-generation", model=args.model, device=args.gpu)
 
 while 1:
     row = dfcodes.sample(1)
@@ -45,7 +45,6 @@ while 1:
         if len(content.split(' ')) <= 30:
             continue 
         print(dsn, '\t', label, '\t',code, '\t', content)
-
 
 
 
