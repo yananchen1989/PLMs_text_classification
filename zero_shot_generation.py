@@ -12,6 +12,7 @@ from transformers import pipeline
 import os, argparse, random
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default="", type=str)
+parser.add_argument("--gpu", default=0, type=int)
 args = parser.parse_args()
 
 import torch
@@ -44,8 +45,6 @@ while 1:
         if len(content.split(' ')) <= 30:
             continue 
         print(dsn, '\t', label, '\t',code, '\t', content)
-
-
 
 
 
