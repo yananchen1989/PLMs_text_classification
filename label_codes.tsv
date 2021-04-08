@@ -1,16 +1,16 @@
 dsn	label	codes
-yahoo	1	Society & Culture,Christianity,Feminism,Atheism
-yahoo	1	Science & Mathematics,Science
-yahoo	1	Health,Fitness,Pregnancy
-yahoo	1	Education & Reference
-yahoo	1	Computers & Internet,Technologies,
-yahoo	1	Sports
-yahoo	1	Business & Finance,Finance
-yahoo	1	Entertainment & Music,Gaming,Movies,Funny,Joke
-yahoo	1	Family & Relationships,Relationship,Relationships
-yahoo	1	Politics & Government
-pop	palestine	palestine,palestine Politics,palestine News
-pop	obama	president obama,Event obama,Politics president obama
+yahoo	1	Society and Culture,Christianity,Feminism,Atheism
+yahoo	2	Science and Mathematics,Science
+yahoo	3	Health,Fitness,Pregnancy
+yahoo	4	Education and Reference
+yahoo	5	Computers and Internet,Technologies
+yahoo	6	Sports
+yahoo	7	Business and Finance,Finance
+yahoo	8	Entertainment and Music,Gaming,Movies,Funny,Joke,Music
+yahoo	9	Family and Relationships,Relationship,Relationships
+yahoo	10	Politics and Government,News Politics
+pop	palestine	palestine,Politics palestine,News palestine
+pop	obama	president obama,Event obama,Politics president obama,obama Government,obama administration
 pop	microsoft	microsoft,Technologies microsoft,Computing microsoft,News microsoft,Event microsoft
 pop	economy	economy,Finance economy,Business economy,Saving economy
 ag	2	Sports
