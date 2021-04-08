@@ -78,16 +78,16 @@ class generation():
         Technologies Teenage Event Learned Notion Wikipedia Books Extract Confessions Conspiracy Links 
         Narcissus Relationship Relationships Reviews News Translation multilingual'
         '''
-        return 'News'
+        #return 'News'
 
         if label in ('Sci/Tech', 'tech'):
-            return 'Technologies'
+            return 'News Science and Technologies'
         elif label in ('politics'):
-            return 'Politics'
+            return 'News Politics'
         elif label in ('Sports', 'sport'):
-            return 'Fitness'
+            return 'News Sports'
         else:
-            return 'News'
+            return 'News World'
 
     def augment(self, prompt_text):
         if self.model_name == 'ctrl':
