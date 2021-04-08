@@ -43,6 +43,7 @@ class generation():
         self.tokenizer = self.tokenizer_class.from_pretrained(self.model_name)
         if 'gpt2' in self.model_name :
             self.tokenizer.pad_token = self.tokenizer.eos_token
+            # no eos_token for ctrl tokenizer
 
         self.model = self.model_class.from_pretrained(self.model_name)
         self.model.to(self.device)
