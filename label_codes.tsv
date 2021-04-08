@@ -4,7 +4,7 @@ yahoo	2	Science and Mathematics,Science
 yahoo	3	Health,Fitness,Pregnancy,Tip Diet
 yahoo	4	Education and Reference
 yahoo	5	Computers and Internet,Technologies
-yahoo	6	Sports
+yahoo	6	Sports,athletics,cricket,football,rugby,tennis
 yahoo	7	Business and Finance,Finance
 yahoo	8	Entertainment and Music,Gaming,Movies,Funny,Joke,Music
 yahoo	9	Family and Relationships,Relationship,Relationships
@@ -13,6 +13,6 @@ pop	palestine	Politics palestine,News palestine
 pop	obama	president obama,Event obama,Politics president obama,obama Government,obama administration
 pop	microsoft	microsoft,Technologies microsoft,Computing microsoft,News microsoft,Event microsoft
 pop	economy	economy,Finance economy,Business economy,Saving economy
-ag	2	Sports
+ag	2	Sports,athletics,cricket,football,rugby,tennis
 ag	3	Business and Finance,Finance,business
 ag	4	Science and Mathematics,Science,Technologies,Computing
