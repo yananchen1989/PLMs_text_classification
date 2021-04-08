@@ -13,6 +13,6 @@ pop	palestine	palestine,palestine Politics,palestine News
 pop	obama president obama,Event obama,Politics president obama,
 pop microsoft	microsoft,Technologies microsoft,Computing microsoft,News microsoft,Event microsoft
 pop	economy	economy,Finance economy,Business economy,Saving economy
-ag 2 Sports
-ag 3 Business & Finance,Finance
-ag 4 Science & Mathematics,Science,Technologies,Computing
+ag	2	Sports
+ag	3	Business & Finance,Finance
+ag	4	Science & Mathematics,Science,Technologies,Computing

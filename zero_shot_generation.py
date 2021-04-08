@@ -25,6 +25,7 @@ dfcodes = pd.read_csv("label_codes.tsv", sep='\t')
 model  = pipeline("text-generation", model=args.model, device=0)
 
 while 1:
+    row = dfcodes.sample(1)
     label = random.sample(labels, 1)[0]
     if args.model == 'gpt2':
         results = model(label, max_length=250, do_sample=True, top_p=0.9, top_k=0, num_return_sequences=10)
