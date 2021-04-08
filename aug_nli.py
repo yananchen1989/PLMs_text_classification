@@ -56,41 +56,10 @@ for content in sentences:
 '''
 
 
-labels = ["Society & Culture",
-        "Science & Mathematics",
-        "Health",
-        "Education & Reference",
-        "Computers & Internet",
-        "Sports",
-        "Business & Finance",
-        "Entertainment & Music",
-        "Family & Relationships",
-        "Politics & Government",
-        "palestine",
-        "president obama",
-        "microsoft",
-        "Economy",
-        "world news",
-        "Business",
-        "science and technology"]
-'''
-import random
-model_name = 'gpt2'
 
 
-from transformers import pipeline
-model  = pipeline("text-generation", model=model_name, device=0) #  
 
-while 1:
-    label = random.sample(labels, 1)[0]
-    results = model(label, max_length=250, do_sample=True, top_p=0.9, top_k=0, num_return_sequences=5)
-    for row in results:
-        content = row['generated_text']
-        content = content.replace(label, '').replace('\t',' ')
-        if len(content.split(' ')) <= 30:
-            continue 
-        print(label, '\t', content.replace('\n',' '))
-'''
+
 
 import os, argparse
 parser = argparse.ArgumentParser()
@@ -116,74 +85,77 @@ def check_premise(content, labels_candidate):
     else:
         return False
 
-if args.dsn=='yahoo':
-    label_ix = {label:ix+1 for ix, label in enumerate(labels[:10])}
-
-infos = []
-with open('gpt_zsl.tsv','r') as f:
-    for line in f:
-        if '\t' not in line:
-            continue 
-
-        tokens = line.strip().split('\t') 
-        if len(tokens)!=2:
-            print(line)
-            continue
-        content = tokens[1].strip()
-
-        if args.dsn == 'yahoo':
-            if tokens[0].strip() not in label_ix.keys():
-                continue
-            label = label_ix[tokens[0].strip()]
-            
-        if args.dsn == 'pop':
-            if tokens[0].strip() not in labels[10:14]:
-                continue
-            label = tokens[0].lower().replace('president ','').strip()
 
 
-        if args.dsn == 'ag':
-            if tokens[0].strip() == "world news":
-                label = 1
-                continue # do not use this category
-            elif tokens[0].strip() == "Sports":
-                label = 2
-            elif tokens[0].strip() in ["Business","Business & Finance"]:
-                label = 3
-            elif tokens[0].strip() in ["Science & Mathematics", "science and technology"]:
-                label = 4
-            else:
+
+label_ix = {label:ix+1 for ix, label in enumerate(labels[:10])}
+
+for args.dsn in ['yahoo','ag']*10:
+    infos = []
+    with open('gpt_zsl.tsv','r') as f:
+        for line in f:
+            if '\t' not in line:
                 continue 
-        if args.check and args.dsn in ['ag', 'yahoo']:
-            if not check_premise(content, [tokens[0].strip()]) :
+
+            tokens = line.strip().split('\t') 
+            if len(tokens)!=2:
+                print(line)
                 continue
+            content = tokens[1].strip()
 
-        infos.append((label, content))
+            if args.dsn == 'yahoo':
+                if tokens[0].strip() not in label_ix.keys():
+                    continue
+                label = label_ix[tokens[0].strip()]
+                
+            if args.dsn == 'pop':
+                if tokens[0].strip() not in labels[10:14]:
+                    continue
+                label = tokens[0].lower().replace('president ','').strip()
 
-ds = load_data(dataset=args.dsn, samplecnt=100)
-# train
-df = pd.DataFrame(infos, columns=['label','content'])
 
-#df.to_csv("ag_nli_filter.csv", index=False)
+            if args.dsn == 'ag':
+                if tokens[0].strip() == "world news":
+                    label = 1
+                    continue # do not use this category
+                elif tokens[0].strip() == "Sports":
+                    label = 2
+                elif tokens[0].strip() in ["Business","Business & Finance"]:
+                    label = 3
+                elif tokens[0].strip() in ["Science & Mathematics", "science and technology"]:
+                    label = 4
+                else:
+                    continue 
+            if args.check and args.dsn in ['ag', 'yahoo']:
+                if not check_premise(content, [tokens[0].strip()]) :
+                    continue
 
-#df = pd.read_csv("yahoo_nli_filter.csv")
-if args.dsn == 'ag':
-    df = df.loc[df['label']!=1]
-    ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
+            infos.append((label, content))
 
-assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
-(x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
-model = get_model_albert(num_classes)
+    ds = load_data(dataset=args.dsn, samplecnt=100)
+    # train
+    df = pd.DataFrame(infos, columns=['label','content'])
 
-print("train begin==>")
-history = model.fit(
-    x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
-    callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-)
-best_val_acc = max(history.history['val_acc'])
-print('dsn:', args.dsn, 'check:{}', args.check)
-print("iter completed, tranin acc ==>{}".format(best_val_acc))
-print("training cnt==", df.shape[0])
+    #df.to_csv("ag_nli_filter.csv", index=False)
+
+    #df = pd.read_csv("yahoo_nli_filter.csv")
+    if args.dsn == 'ag':
+        df = df.loc[df['label']!=1]
+        ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
+
+    assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
+    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
+    model = get_model_albert(num_classes)
+
+    print("train begin==>")
+    history = model.fit(
+        x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
+        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+    )
+    best_val_acc = max(history.history['val_acc'])
+    print('dsn:', args.dsn, 'check:{}', args.check)
+    print("iter completed, tranin acc ==>{}".format(best_val_acc))
+    print("training cnt==", df.shape[0])
 
 
 

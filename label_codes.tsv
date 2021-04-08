@@ -1,0 +1,18 @@
+dsn	label	codes
+yahoo	1	Society & Culture,Christianity,Feminism,Atheism
+yahoo	1	Science & Mathematics,Science
+yahoo	1	Health,Fitness,Pregnancy
+yahoo	1	Education & Reference	
+yahoo	1	Computers & Internet,Technologies,
+yahoo	1	Sports	
+yahoo	1	Business & Finance,Finance
+yahoo	1	Entertainment & Music,Gaming,Movies,Funny,Joke
+yahoo	1	Family & Relationships,Relationship,Relationships
+yahoo	1	Politics & Government	
+pop	palestine	palestine,palestine Politics,palestine News
+pop	obama president obama,Event obama,Politics president obama,
+pop microsoft	microsoft,Technologies microsoft,Computing microsoft,News microsoft,Event microsoft
+pop	economy	economy,Finance economy,Business economy,Saving economy
+ag 2 Sports
+ag 3 Business & Finance,Finance
+ag 4 Science & Mathematics,Science,Technologies,Computing
