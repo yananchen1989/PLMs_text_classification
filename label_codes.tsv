@@ -1,7 +1,7 @@
 dsn	label	codes
 yahoo	1	Society and Culture,Christianity,Feminism,Atheism
 yahoo	2	Science and Mathematics,Science
-yahoo	3	Health,Fitness,Pregnancy
+yahoo	3	Health,Fitness,Pregnancy,Tip Diet
 yahoo	4	Education and Reference
 yahoo	5	Computers and Internet,Technologies
 yahoo	6	Sports
@@ -14,5 +14,5 @@ pop	obama	president obama,Event obama,Politics president obama,obama Government,
 pop	microsoft	microsoft,Technologies microsoft,Computing microsoft,News microsoft,Event microsoft
 pop	economy	economy,Finance economy,Business economy,Saving economy
 ag	2	Sports
-ag	3	Business & Finance,Finance
-ag	4	Science & Mathematics,Science,Technologies,Computing
+ag	3	Business and Finance,Finance,business
+ag	4	Science and Mathematics,Science,Technologies,Computing
