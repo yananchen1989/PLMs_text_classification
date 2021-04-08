@@ -26,21 +26,24 @@ model  = pipeline("text-generation", model=args.model, device=0)
 
 while 1:
     row = dfcodes.sample(1)
-    label = random.sample(labels, 1)[0]
-    if args.model == 'gpt2':
-        results = model(label, max_length=250, do_sample=True, top_p=0.9, top_k=0, num_return_sequences=10)
-    elif args.model == 'ctrl':
-        results = model(label, max_length=250, do_sample=True, top_p=0.9, top_k=0, \
-            repetition_penalty=1.2, num_return_sequences=10)
+    dsn = row['dsn'].tolist()[0]
+    label = row['label'].tolist()[0]
+    codes = row['codes'].tolist()[0].split(',')
+    code = random.sample(codes, 1)[0]
+    if args.model == 'ctrl':
+        repetition_penalty=1.2
     else:
-        raise KeyError("args.model illegal!")
+        repetition_penalty = 1
+
+    results = model(code, max_length=250, do_sample=True, top_p=0.9, top_k=0, \
+            repetition_penalty=repetition_penalty, num_return_sequences=32)
 
     for row in results:
         content = row['generated_text']
-        content = content.replace(label, '').replace('\t',' ').replace('\n',' ')
+        content = content.replace(code, '').replace('\t',' ').replace('\n',' ')
         if len(content.split(' ')) <= 30:
             continue 
-        print(label, '\t', content)
+        print(dsn, '\t', label, '\t',code, '\t', content)
 
 
 
