@@ -25,14 +25,14 @@ git add .;git commit -m "update";git push
 
 
 
-nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner.log &
-nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set True > fillin_ag_yesner.log &
+nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set 0 > fillin_ag_noner.log &
+nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set 1 > fillin_ag_yesner.log &
 
-nohup python -u baseline_classifier.py --aug fillin --ds pop --ner_set False > fillin_pop_noner.log &
-nohup python -u baseline_classifier.py --aug fillin --ds pop --ner_set True > fillin_pop_yesner.log &
+nohup python -u baseline_classifier.py --aug fillin --ds pop --ner_set 0 > fillin_pop_noner.log &
+nohup python -u baseline_classifier.py --aug fillin --ds pop --ner_set 1 > fillin_pop_yesner.log &
 
-nohup python -u baseline_classifier.py --aug fillin --ds yahoo --ner_set False > fillin_yahoo_noner.log &
-nohup python -u baseline_classifier.py --aug fillin --ds yahoo --ner_set True > fillin_yahoo_yesner.log &
+nohup python -u baseline_classifier.py --aug fillin --ds yahoo --ner_set 0 > fillin_yahoo_noner.log &
+nohup python -u baseline_classifier.py --aug fillin --ds yahoo --ner_set 1 > fillin_yahoo_yesner.log &
 
 
 nohup python -u baseline_classifier.py --aug generate --ds ag --generate_m gpt2 > generate_ag_gpt2.log &

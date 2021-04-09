@@ -104,7 +104,10 @@ for args.dsn in ['ag','yahoo','pop']:
             if args.check and args.dsn in ['ag', 'yahoo']:
                 if not check_premise(content, [code]) :
                     continue
-            infos.append((int(label), content))
+            if args.dsn != 'pop':
+                infos.append((int(label), content))
+            else:
+                infos.append((label, content))
 
     df = pd.DataFrame(infos, columns=['label','content'])
 
