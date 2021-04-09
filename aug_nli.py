@@ -74,6 +74,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 from load_data import * 
 from transblock import * 
 
+print("args==>", args)
 from transformers import pipeline
 nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
 
