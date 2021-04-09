@@ -66,7 +66,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="", type=str)
 parser.add_argument("--check", default=1, type=int)
 parser.add_argument("--gpu", default="0", type=str)
-parser.add_argument("--model", default="gpt2", type=str)
+parser.add_argument("--model", default="", type=str)
 args = parser.parse_args()
 
 print("args==>", args)
@@ -84,51 +84,51 @@ def check_premise(content, labels_candidate):
         return True 
     else:
         return False
+for args.model in ['gpt2','ctrl']:
+    for args.dsn in ['ag','yahoo','pop']:
+        infos = []
+        with open('zsl_{}_contents.tsv'.format(args.model),'r') as f:
+            for line in f:
+                if '\t' not in line:
+                    continue 
 
-for args.dsn in ['ag','yahoo','pop']:
-    infos = []
-    with open('zsl_{}_contents.tsv'.format(args.model),'r') as f:
-        for line in f:
-            if '\t' not in line:
-                continue 
-
-            tokens = line.strip().split('\t') 
-            if len(tokens)!=4:
-                continue
-            content = tokens[-1].strip()
-            dsn = tokens[0].strip()
-            label = tokens[1].strip()
-            code = tokens[2].strip()
-            if dsn != args.dsn:
-                continue
-            if args.check and args.dsn in ['ag', 'yahoo']:
-                if not check_premise(content, [code]) :
+                tokens = line.strip().split('\t') 
+                if len(tokens)!=4:
                     continue
-            if args.dsn != 'pop':
-                infos.append((int(label), content))
-            else:
-                infos.append((label, content))
+                content = tokens[-1].strip()
+                dsn = tokens[0].strip()
+                label = tokens[1].strip()
+                code = tokens[2].strip()
+                if dsn != args.dsn:
+                    continue
+                if args.check and args.dsn in ['ag', 'yahoo']:
+                    if not check_premise(content, [code]) :
+                        continue
+                if args.dsn != 'pop':
+                    infos.append((int(label), content))
+                else:
+                    infos.append((label, content))
 
-    df = pd.DataFrame(infos, columns=['label','content'])
+        df = pd.DataFrame(infos, columns=['label','content'])
 
-    ds = load_data(dataset=args.dsn, samplecnt=100)
+        ds = load_data(dataset=args.dsn, samplecnt=100)
 
-    if args.dsn == 'ag':
-        ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
+        if args.dsn == 'ag':
+            ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
 
-    assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
-    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
-    model = get_model_albert(num_classes)
+        assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
+        (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
+        model = get_model_albert(num_classes)
 
-    print("train begin==>")
-    history = model.fit(
-        x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-    best_val_acc = max(history.history['val_acc'])
-    print('dsn:', args.dsn, 'check:', args.check, 'model:', args.model)
-    print("iter completed, tranin acc ==>{}".format(best_val_acc))
-    print("training cnt==", df.shape[0])
+        print("train begin==>")
+        history = model.fit(
+            x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
+            callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+        )
+        best_val_acc = max(history.history['val_acc'])
+        print('dsn:', args.dsn, 'check:', args.check, 'model:', args.model)
+        print("iter completed, tranin acc ==>{}".format(best_val_acc))
+        print("training cnt==", df.shape[0])
 
 
 
