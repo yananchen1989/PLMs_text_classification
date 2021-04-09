@@ -65,7 +65,8 @@ import os, argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="", type=str)
 parser.add_argument("--check", default=True, type=bool)
-parser.add_argument("--gpu", default="1", type=str)
+parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--model", default="gpt2", type=str)
 args = parser.parse_args()
 
 
@@ -85,62 +86,32 @@ def check_premise(content, labels_candidate):
     else:
         return False
 
-
-
-
-label_ix = {label:ix+1 for ix, label in enumerate(labels[:10])}
-
-for args.dsn in ['yahoo','ag']*10:
+for args.dsn in ['ag','yahoo','pop']:
     infos = []
-    with open('gpt_zsl.tsv','r') as f:
+    with open('zsl_{}_contents.tsv'.format(model),'r') as f:
         for line in f:
             if '\t' not in line:
                 continue 
 
             tokens = line.strip().split('\t') 
-            if len(tokens)!=2:
-                print(line)
+            if len(tokens)!=4:
                 continue
-            content = tokens[1].strip()
-
-            if args.dsn == 'yahoo':
-                if tokens[0].strip() not in label_ix.keys():
-                    continue
-                label = label_ix[tokens[0].strip()]
-                
-            if args.dsn == 'pop':
-                if tokens[0].strip() not in labels[10:14]:
-                    continue
-                label = tokens[0].lower().replace('president ','').strip()
-
-
-            if args.dsn == 'ag':
-                if tokens[0].strip() == "world news":
-                    label = 1
-                    continue # do not use this category
-                elif tokens[0].strip() == "Sports":
-                    label = 2
-                elif tokens[0].strip() in ["Business","Business & Finance"]:
-                    label = 3
-                elif tokens[0].strip() in ["Science & Mathematics", "science and technology"]:
-                    label = 4
-                else:
-                    continue 
+            content = tokens[-1].strip()
+            dsn = tokens[0].strip()
+            label = tokens[1].strip()
+            code = tokens[2].strip()
+            if dsn != args.dsn:
+                continue
             if args.check and args.dsn in ['ag', 'yahoo']:
-                if not check_premise(content, [tokens[0].strip()]) :
+                if not check_premise(content, [code]) :
                     continue
+            infos.append((int(label), content))
 
-            infos.append((label, content))
-
-    ds = load_data(dataset=args.dsn, samplecnt=100)
-    # train
     df = pd.DataFrame(infos, columns=['label','content'])
 
-    #df.to_csv("ag_nli_filter.csv", index=False)
+    ds = load_data(dataset=args.dsn, samplecnt=100)
 
-    #df = pd.read_csv("yahoo_nli_filter.csv")
     if args.dsn == 'ag':
-        df = df.loc[df['label']!=1]
         ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
 
     assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
@@ -153,7 +124,7 @@ for args.dsn in ['yahoo','ag']*10:
         callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
     )
     best_val_acc = max(history.history['val_acc'])
-    print('dsn:', args.dsn, 'check:{}', args.check)
+    print('dsn:', args.dsn, 'check:', args.check, 'model:', args.model)
     print("iter completed, tranin acc ==>{}".format(best_val_acc))
     print("training cnt==", df.shape[0])
 
