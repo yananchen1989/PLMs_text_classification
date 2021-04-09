@@ -69,15 +69,13 @@ parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="gpt2", type=str)
 args = parser.parse_args()
 
-
+print("args==>", args)
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 from load_data import * 
 from transblock import * 
 
-print("args==>", args)
 from transformers import pipeline
 nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
-
 
 
 def check_premise(content, labels_candidate):
