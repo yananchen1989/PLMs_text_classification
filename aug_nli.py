@@ -88,7 +88,7 @@ def check_premise(content, labels_candidate):
 
 for args.dsn in ['ag','yahoo','pop']:
     infos = []
-    with open('zsl_{}_contents.tsv'.format(model),'r') as f:
+    with open('zsl_{}_contents.tsv'.format(args.model),'r') as f:
         for line in f:
             if '\t' not in line:
                 continue 
