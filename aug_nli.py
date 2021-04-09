@@ -64,7 +64,7 @@ for content in sentences:
 import os, argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="", type=str)
-parser.add_argument("--check", default=True, type=bool)
+parser.add_argument("--check", default=1, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="gpt2", type=str)
 args = parser.parse_args()
