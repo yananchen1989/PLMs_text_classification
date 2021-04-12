@@ -75,7 +75,7 @@ from load_data import *
 from transblock import * 
 
 from transformers import pipeline
-nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
+nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=int(args.gpu)) #  
 
 
 def check_premise(content, labels_candidate):
