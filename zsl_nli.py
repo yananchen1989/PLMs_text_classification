@@ -110,12 +110,13 @@ with open('zsl_{}_contents.tsv'.format(args.model),'r') as f:
         if len(infos) > 0 and len(infos) % 10000 == 0:
             df = pd.DataFrame(infos, columns=['label','content'])
             df.to_csv("df_nli_filter_{}_{}".format(args.model, args.dsn))
+            print(args.model, ' ', args.dsn, '==>', df.shape[0])
 
 
 
 
 
-
+'''
 ds = load_data(dataset=args.dsn, samplecnt=100)
 
 if args.dsn == 'ag':
@@ -135,7 +136,7 @@ print('dsn:', args.dsn, 'check:', args.check, 'model:', args.model)
 print("iter completed, tranin acc ==>{}".format(best_val_acc))
 print("training cnt==", df.shape[0])
 
-
+'''
 
 
 
