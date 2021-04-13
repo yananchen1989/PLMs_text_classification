@@ -25,7 +25,7 @@ if gpus:
 import datetime,argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--ds", "-ds", default="", type=str)
+parser.add_argument("--dsn", "-dsn", default="", type=str)
 parser.add_argument("--alpha", "-alpha", default=0.5, type=float)
 args = parser.parse_args()
 
