@@ -17,7 +17,7 @@ ps aux|grep run_clm.py|awk '{print $2}'|xargs kill -9
 
 
 
-scp  root@10.177.16.194:/root/yanan/berts/topic_classification_augmentation/zsl_ctrl_contents2.tsv ./
+scp  root@10.177.16.194:/root/yanan/berts/topic_classification_augmentation/df_nli_filter_ctrl_ag.csv ./
 scp -r gpt_zsl.tsv root@10.177.16.194:/root/yanan/berts/topic_classification_augmentation/
 
 
@@ -51,6 +51,7 @@ nohup python -u baseline_classifier.py --aug generate --ds pop --generate_m fine
 
 nohup python -u baseline_classifier.py --aug no --ds yahoo --samplecnt -1 > augno_yahoo_full.log & 
 
+nohup python zsl_generation.py --model ctrl > zsl_ctrl_contents0413.tsv &
 
 
 

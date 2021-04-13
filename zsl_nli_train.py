@@ -73,7 +73,7 @@ print("args==>", args)
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 from load_data import * 
 from transblock import * 
-'''
+
 from transformers import pipeline
 nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
 
@@ -111,7 +111,7 @@ with open('zsl_{}_contents.tsv'.format(args.model),'r') as f:
 df = pd.DataFrame(infos, columns=['label','content'])
 df.to_csv("df_nli_filter_{}_{}.csv".format(args.model, args.dsn), index=False)
 print(args.model, ' ', args.dsn, '==>', df.shape[0])
-'''
+
 
 #args.dsn = 'yahoo'
 #args.model = 'ctrl'
