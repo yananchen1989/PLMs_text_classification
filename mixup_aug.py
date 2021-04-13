@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch
+import sys,os,logging,glob,pickle
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
