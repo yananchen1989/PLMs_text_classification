@@ -107,11 +107,10 @@ with open('zsl_{}_contents.tsv'.format(args.model),'r') as f:
             infos.append((int(label), content))
         else:
             infos.append((label, content))
-
+            
 df = pd.DataFrame(infos, columns=['label','content'])
 # df.to_csv("df_nli_filter_{}_{}.csv".format(args.model, args.dsn), index=False)
 # print(args.model, ' ', args.dsn, '==>', df.shape[0])
-
 
 # args.dsn = 'yahoo'
 # args.model = 'ctrl'
@@ -124,6 +123,7 @@ ds = load_data(dataset=args.dsn, samplecnt=-1)
 
 if args.dsn == 'ag':
     ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
+    ds.df_train = ds.df_train.loc[ds.df_train['label']!=1]
 
 assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
 
