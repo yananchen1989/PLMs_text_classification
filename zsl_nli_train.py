@@ -109,36 +109,37 @@ with open('zsl_{}_contents.tsv'.format(args.model),'r') as f:
             infos.append((label, content))
 
 df = pd.DataFrame(infos, columns=['label','content'])
-df.to_csv("df_nli_filter_{}_{}.csv".format(args.model, args.dsn), index=False)
-print(args.model, ' ', args.dsn, '==>', df.shape[0])
+# df.to_csv("df_nli_filter_{}_{}.csv".format(args.model, args.dsn), index=False)
+# print(args.model, ' ', args.dsn, '==>', df.shape[0])
 
 
-#args.dsn = 'yahoo'
-#args.model = 'ctrl'
+# args.dsn = 'yahoo'
+# args.model = 'ctrl'
 
-for args.model in ['gpt2','ctrl']:
-    df = pd.read_csv("df_nli_filter_{}_{}.csv".format(args.model, args.dsn))
+#df = pd.read_csv("df_nli_filter_{}_{}.csv".format(args.model, args.dsn))
 
-    df = df.sample(146057)
+#df = df.sample(146057)
 
-    ds = load_data(dataset=args.dsn, samplecnt=100)
+ds = load_data(dataset=args.dsn, samplecnt=-1)
 
-    if args.dsn == 'ag':
-        ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
+if args.dsn == 'ag':
+    ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
 
-    assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
-    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
-    model = get_model_albert(num_classes)
+assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
 
-    print("train begin==>")
-    history = model.fit(
-        x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-    best_val_acc = max(history.history['val_acc'])
-    print('dsn:', args.dsn, 'check:', args.check, 'model:', args.model)
-    print("iter completed, tranin acc ==>{}".format(best_val_acc))
-    print("training cnt==", df.shape[0])
+df_all = pd.concat([df, ds.df_train])
+(x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df_all, ds.df_test)
+model = get_model_albert(num_classes)
+
+print("train begin==>")
+history = model.fit(
+    x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
+    callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+)
+best_val_acc = max(history.history['val_acc'])
+print('dsn:', args.dsn, 'check:', args.check, 'model:', args.model)
+print("iter completed, tranin acc ==>{}".format(best_val_acc))
+print("training cnt==", df_all.shape[0])
 
 
 
