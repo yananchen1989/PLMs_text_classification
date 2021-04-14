@@ -1,6 +1,3 @@
-#  gpt2 ctrl 
-
-cd /root/yanan/berts/transformers/examples/language-modeling/
 
 nohup python run_clm.py --model_name_or_path 'gpt2'  --output_dir 'finetuned_gpt2' \
          > fintune_gpt2.log &
@@ -15,13 +12,8 @@ ps aux|grep run_clm.py|awk '{print $2}'|xargs kill -9
 
 
 
-
-
-scp  root@10.177.16.194:/root/yanan/berts/topic_classification_augmentation/df_nli_filter_ctrl_ag.csv ./
-scp -r gpt_zsl.tsv root@10.177.16.194:/root/yanan/berts/topic_classification_augmentation/
-
-
-git add .;git commit -m "update";git push
+#scp  root@10.177.16.194:/root/yanan/berts/topic_classification_augmentation/df_nli_filter_ctrl_ag.csv ./
+#scp -r gpt_zsl.tsv root@10.177.16.194:/root/yanan/berts/topic_classification_augmentation/
 
 
 
@@ -43,18 +35,9 @@ nohup python -u baseline_classifier.py --aug generate --ds ag --generate_m ctrl 
 nohup python -u baseline_classifier.py --aug generate --ds pop --generate_m ctrl   > generate_pop_ctrl.log &
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl  > generate_yahoo_ctrl.log &
 
-
 nohup python -u baseline_classifier.py --aug generate --ds ag --generate_m finetuned_gpt2  > generate_ag_ftgpt2.log &
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m finetuned_gpt2   > generate_yahoo_ftgpt2.log &
 nohup python -u baseline_classifier.py --aug generate --ds pop --generate_m finetuned_gpt2   > generate_pop_ftgpt2.log &
-
-
-nohup python -u baseline_classifier.py --aug no --ds yahoo --samplecnt -1 > augno_yahoo_full.log & 
-
-nohup python zsl_generation.py --model ctrl > zsl_ctrl_contents0413.tsv &
-
-
-
 
 
 
