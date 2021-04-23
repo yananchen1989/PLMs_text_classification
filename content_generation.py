@@ -53,7 +53,7 @@ with open('zsl_{}_contents.tsv'.format('ag'),'r') as f:
         infos.append((label, content))
             
 
-df = pd.DataFrame(infos, columns=['label','content'])
+df_f = pd.DataFrame(infos, columns=['label','content'])
 
 
 
