@@ -39,30 +39,29 @@ from transblock import *
 
 from sklearn.model_selection import train_test_split
 while 1:
-    for dsn in ['ag','yahoo']:
-        ds = load_data(dataset=dsn, samplecnt=-1)
-        df_t = pd.concat([ds.df_test, ds.df_train])
-        df_t['label'] = 1
-        del df_t['title']
+    ds = load_data(dataset='ag', samplecnt=-1)
+    df_t = pd.concat([ds.df_test, ds.df_train])
+    df_t['label'] = 1
+    del df_t['title']
 
-        df_f = pd.read_csv("df_nli_filter_ctrl_{}.csv".format(dsn))
-        df_f['label'] = 0
+    df_f = pd.read_csv("zsl_gpt2_contents.tsv")
+    df_f['label'] = 0
 
-        if df_f.shape[0] > df_t.shape[0]:
-            df_f = df_f.sample(df_t.shape[0])
+    if df_f.shape[0] > df_t.shape[0]:
+        df_f = df_f.sample(df_t.shape[0])
 
-        if df_f.shape[0] < df_t.shape[0]:
-            df_t = df_t.sample(df_f.shape[0])
-        assert df_f.shape[0] == df_t.shape[0]
-        df = pd.concat([df_f, df_t])
-        
-        df_train, df_test = train_test_split(df, test_size=0.2)
-        (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df_train, df_test)
+    if df_f.shape[0] < df_t.shape[0]:
+        df_t = df_t.sample(df_f.shape[0])
+    assert df_f.shape[0] == df_t.shape[0]
+    df = pd.concat([df_f, df_t])
+    
+    df_train, df_test = train_test_split(df, test_size=0.2)
+    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df_train, df_test)
 
-        model = get_model_albert(num_classes)
-        model.fit(
-                    x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
-                    callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-                )
+    model = get_model_albert(num_classes)
+    model.fit(
+                x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
+                callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+            )
 
 
