@@ -16,6 +16,8 @@ for ix, row  in ds.df_train.iterrows():
     generated_texts_filter = [ sent['generated_text'].replace(row['content'], '').replace('\t',' ').replace('\n',' ')\
             for sent in  results ]
     generator_col.append('\t'.join(generated_texts_filter))
+    if len(generator_col) % 2000 == 0:
+        print(args.dataset, ' ==> ', len(generator_col), ' /', ds.df_train.shape[0])
  
 ds.df_train['content_g'] = generator_col
 
