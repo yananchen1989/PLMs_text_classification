@@ -34,52 +34,55 @@ from transblock import *
 
 #     ix += 64
 
-infos = []
-with open('zsl_{}_contents.tsv'.format('ag'),'r') as f:
-    for line in f:
-        if '\t' not in line:
-            continue 
 
-        tokens = line.strip().split('\t') 
-        if len(tokens)!=4:
-            continue
-        content = tokens[-1].strip()
-        dsn = tokens[0].strip()
-        label = tokens[1].strip()
-        code = tokens[2].strip()
-        if dsn != args.dsn:
-            continue
+def get_df_f(dsn):
+    infos = []
+    with open('zsl_{}_contents.tsv'.format('gpt2'),'r') as f:
+        for line in f:
+            if '\t' not in line:
+                continue 
 
-        infos.append((label, content))
-            
-
-df_f = pd.DataFrame(infos, columns=['label','content'])
-
+            tokens = line.strip().split('\t') 
+            if len(tokens)!=4:
+                continue
+            content = tokens[-1].strip()
+            dsn = tokens[0].strip()
+            label = tokens[1].strip()
+            code = tokens[2].strip()
+            if dsn != dsn:
+                continue
+            infos.append((label, content))
+                
+    df_f = pd.DataFrame(infos, columns=['label','content'])
+    return df_f
 
 
 from sklearn.model_selection import train_test_split
 while 1:
-    ds = load_data(dataset='ag', samplecnt=-1)
-    df_t = pd.concat([ds.df_test, ds.df_train])
-    df_t['label'] = 1
-    del df_t['title']
+    for dsn in ['ag','yahoo']:
+        print(dsn)
+        ds = load_data(dataset=dsn, samplecnt=-1)
+        df_t = pd.concat([ds.df_test, ds.df_train])
+        df_t['label'] = 1
+        del df_t['title']
 
+        df_f = get_df_f(dsn)
 
-    if df_f.shape[0] > df_t.shape[0]:
-        df_f = df_f.sample(df_t.shape[0])
+        if df_f.shape[0] > df_t.shape[0]:
+            df_f = df_f.sample(df_t.shape[0])
 
-    if df_f.shape[0] < df_t.shape[0]:
-        df_t = df_t.sample(df_f.shape[0])
-    assert df_f.shape[0] == df_t.shape[0]
-    df = pd.concat([df_f, df_t])
-    
-    df_train, df_test = train_test_split(df, test_size=0.2)
-    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df_train, df_test)
+        if df_f.shape[0] < df_t.shape[0]:
+            df_t = df_t.sample(df_f.shape[0])
+        assert df_f.shape[0] == df_t.shape[0]
+        df = pd.concat([df_f, df_t])
+        
+        df_train, df_test = train_test_split(df, test_size=0.2)
+        (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df_train, df_test)
 
-    model = get_model_albert(num_classes)
-    model.fit(
-                x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
-                callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-            )
+        model = get_model_albert(num_classes)
+        model.fit(
+                    x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
+                    callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+                )
 
 
