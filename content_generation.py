@@ -16,7 +16,7 @@ for ix, row  in ds.df_train.iterrows():
     generated_texts_filter = [ sent['generated_text'].replace(row['content'], '').replace('\t',' ').replace('\n',' ')\
             for sent in  results ]
     generator_col.append('\t'.join(generated_texts_filter))
-
+ 
 ds.df_train['content_g'] = generator_col
 
 ds.df_train.to_csv("{}_df_train.csv".format(args.dataset), index=False)
