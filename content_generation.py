@@ -5,10 +5,10 @@ from load_data import *
 from transblock import * 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset", default="ag", type=str)
+parser.add_argument("--dsn", default="ag", type=str)
 args = parser.parse_args()
 
-ds = load_data(dataset=args.dataset, samplecnt=-1)
+ds = load_data(dataset=args.dsn, samplecnt=-1)
 generator  = pipeline("text-generation", model='gpt2', device=0)
 
 
@@ -16,8 +16,8 @@ generator_col = []
 ix = 0
 while ix < ds.df_train.shape[0]:
     dfi = ds.df_train[ix:(ix+64)]
-    results = generator(dfi['content'].tolist(), max_length=200, do_sample=True, top_p=0.9, top_k=0, \
-                repetition_penalty=1, num_return_sequences=8) 
+    results = generator(ds.df_train['content'].tolist(), max_length=200, do_sample=True, top_p=0.9, top_k=0, \
+                repetition_penalty=1, num_return_sequences=64) 
 
     generated_texts_filters = []
     for ori, gens in zip(dfi['content'].tolist(), results):
@@ -27,10 +27,10 @@ while ix < ds.df_train.shape[0]:
 
     generator_col.extend(list(zip(dfi['label'].tolist(), generated_texts_filters)))
 
-    if len(generator_col) % 2000 == 0:
+    if len(generator_col) % 000 == 0:
         print(args.dataset, ' ==> ', len(generator_col), ' /', ds.df_train.shape[0])
         df = pd.DataFrame(generator_col, columns=['label', 'content'])
-        df.to_csv("{}_df_train.csv".format(args.dataset), index=False)
+        df.to_csv("{}_df_train.csv".format(args.dsn), index=False)
 
     ix += 64
 
@@ -41,17 +41,23 @@ while ix < ds.df_train.shape[0]:
 
 
 
+df_t = pd.concat([ds.df_test, ds.df_train])
+df_t['label'] = 1
+del df_t['title']
+
+df_f = df.sample(df_t.shape[0])
+df_f['label'] = 0
 
 
+df = pd.concat([df_f, df_t])
+from sklearn.model_selection import train_test_split
+df_train, df_test = train_test_split(df, test_size=0.2)
+(x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df_train, df_test)
 
-
-
-
-
-
-
-
-
-
+model = get_model_albert(num_classes)
+model.fit(
+            x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
+            callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+        )
 
 
