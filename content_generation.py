@@ -2,7 +2,7 @@ import pandas as pd
 from transformers import pipeline
 import os, argparse, random
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", default="", type=str)
+parser.add_argument("--dataset", default="", type=str)
 args = parser.parse_args()
 
 ds = load_data(dataset=args.dataset, samplecnt=-1)
