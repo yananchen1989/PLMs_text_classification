@@ -23,17 +23,18 @@ while ix < ds.df_train.shape[0]:
     for ori, gens in zip(dfi['content'].tolist(), results):
         generated_texts_filter = [ sent['generated_text'].replace(ori, '').replace('\t',' ').replace('\n',' ')\
                 for sent in  gens ]
-        generated_texts_filters.append('\t'.join(generated_texts_filter))
+        generated_texts_filters.append(('\t'.join(generated_texts_filter)))
 
     generator_col.extend(list(zip(dfi['label'].tolist(), generated_texts_filters)))
 
     if len(generator_col) % 2000 == 0:
         print(args.dataset, ' ==> ', len(generator_col), ' /', ds.df_train.shape[0])
+        df = pd.DataFrame(generator_col, columns=['label', 'content'])
+        df.to_csv("{}_df_train.csv".format(args.dataset), index=False)
+
     ix += 64
 
-ds.df_train['content_g'] = generator_col
 
-ds.df_train.to_csv("{}_df_train.csv".format(args.dataset), index=False)
 
 
 
