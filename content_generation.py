@@ -54,6 +54,7 @@ def get_df_f(dsn):
             infos.append((label, content))
                 
     df_f = pd.DataFrame(infos, columns=['label','content'])
+    df_f['label'] = 0
     return df_f
 
 
