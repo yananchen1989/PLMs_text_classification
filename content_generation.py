@@ -34,6 +34,26 @@ from transblock import *
 
 #     ix += 64
 
+infos = []
+with open('zsl_{}_contents.tsv'.format('ag'),'r') as f:
+    for line in f:
+        if '\t' not in line:
+            continue 
+
+        tokens = line.strip().split('\t') 
+        if len(tokens)!=4:
+            continue
+        content = tokens[-1].strip()
+        dsn = tokens[0].strip()
+        label = tokens[1].strip()
+        code = tokens[2].strip()
+        if dsn != args.dsn:
+            continue
+
+        infos.append((label, content))
+            
+
+df = pd.DataFrame(infos, columns=['label','content'])
 
 
 
@@ -44,8 +64,6 @@ while 1:
     df_t['label'] = 1
     del df_t['title']
 
-    df_f = pd.read_csv("zsl_gpt2_contents.tsv")
-    df_f['label'] = 0
 
     if df_f.shape[0] > df_t.shape[0]:
         df_f = df_f.sample(df_t.shape[0])
