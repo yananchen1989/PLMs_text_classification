@@ -65,7 +65,6 @@ while 1:
         ds = load_data(dataset=dsn, samplecnt=-1)
         df_t = pd.concat([ds.df_test, ds.df_train])
         df_t['label'] = 1
-        del df_t['title']
 
         df_f = get_df_f(dsn)
 
