@@ -12,13 +12,13 @@ from tensorflow import keras
 import gc,argparse,datetime
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--aug", default="", type=str)
+parser.add_argument("--aug", default="no", type=str)
 parser.add_argument("--ds", default="", type=str)
-parser.add_argument("--samplecnt", default=32, type=int)
+parser.add_argument("--samplecnt", default=-1, type=int)
 parser.add_argument("--ner_set", default=0, type=int)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
-parser.add_argument("--batch_size", default=8, type=int)
+parser.add_argument("--batch_size", default=64, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 
 args = parser.parse_args()
@@ -119,8 +119,7 @@ acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
 print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
 
 '''
-nohup python -u baseline_classifier.py --aug no --ds yahoo --samplecnt -1 > base_augno_yahoo_full.log & 
-nohup python -u baseline_classifier.py --aug no --ds ag --samplecnt -1 > base_augno_ag_full.log & 
+nohup python -u baseline_classifier.py --aug no --ds uci > base_augno_uci.log & 
 
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl &
 nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner.log &
