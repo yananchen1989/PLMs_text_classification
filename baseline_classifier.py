@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="no", type=str)
 parser.add_argument("--ds", default="", type=str)
 parser.add_argument("--samplecnt", default=-1, type=int)
+parser.add_argument("--ite", default=7, type=int)
 parser.add_argument("--ner_set", default=0, type=int)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
@@ -48,7 +49,7 @@ from transblock import *
 
 def run_benchmark(dataset, augmentor, samplecnt):
     accs = []
-    for ite in range(5): 
+    for ite in range(args.ite): 
 
         print("iter ==> {}".format(ite))
 
