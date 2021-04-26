@@ -73,7 +73,7 @@ def run_benchmark(dataset, augmentor, samplecnt):
 
         print("train begin==>")
         history = model.fit(
-            x_train, y_train, batch_size=args.batch_size, epochs=12, validation_data=(x_test, y_test), verbose=2,
+            x_train, y_train, batch_size=args.batch_size, epochs=12, validation_data=(x_test, y_test), verbose=1,
             callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
         )
         best_val_acc = max(history.history['val_acc'])
@@ -119,7 +119,7 @@ acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
 print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
 
 '''
-nohup python -u baseline_classifier.py --aug no --ds uci > base_augno_uci.log & 
+nohup python -u baseline_classifier.py --ds uci > base_augno_uci.log & 
 
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl &
 nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner.log &
