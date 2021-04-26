@@ -22,11 +22,17 @@ class load_data():
         if self.dataset == 'ag':
             self.df_train, self.df_test = self.get_ag_news()
         elif self.dataset == 'bbc':
-            self.df_train, self.df_test = self.get_bbc_news()
+            self.df_train, self.df_test, self.df = self.get_bbc_news()
+        elif self.dataset ==  'bbcsport':
+            self.df_train, self.df_test, self.df = self.get_bbcsports_news()
+        elif self.dataset == 'tweet':
+            self.df_train, self.df_test, self.df = self.get_tweet()
         elif self.dataset == 'yahoo':
             self.df_train, self.df_test = self.get_yahoo_news()
         elif self.dataset == 'pop':
-            self.df_train, self.df_test = self.get_pop_news()            
+            self.df_train, self.df_test = self.get_pop_news()    
+        elif self.dataset == 'uci':
+            self.df_train, self.df_test, self.df = self.get_uci_news()        
         else:
             raise KeyError("dataset illegal!")
 
@@ -42,6 +48,29 @@ class load_data():
         df_test['content'] = df_test[1] + ' ' + df_test[2] + ' ' + df_test[3]
         df_test['label'] = df_test[0]
         return df_train[['content','label']] , df_test[['content','label']] 
+
+    def get_tweet(self):
+        files = glob.glob("../datasets_aug/tweetraw/*.txt")
+        infos = []
+        for f in files:
+            label = f.split('/')[-1].replace('.txt','')
+            with open(f,'r') as ff:
+                for line in ff:
+                    infos.append((label, line.strip()))
+        df = pd.DataFrame(infos, columns=['label','content'])
+        df_train, df_test = train_test_split(df, test_size=0.2)
+        return df_train, df_test, df.sample(frac=1)   
+
+    def get_uci_news(self):
+        df = pd.read_csv("../datasets_aug/uci-news-aggregator.csv")  
+        df = df[['CATEGORY','TITLE']]
+        df.rename(
+                columns={"CATEGORY": "label", "TITLE":"content"},
+                inplace=True )
+        ld = {'e':'entertainment', 'b':'business', 't':"science technology", 'm':"health"}
+        df['label'] = df['label'].map(lambda x: ld[x])
+        df_train, df_test = train_test_split(df, test_size=0.2)
+        return df_train, df_test , df.sample(frac=1)
 
     # ag news
     def get_ag_news(self):
@@ -62,9 +91,22 @@ class load_data():
                 with open(ff, 'r', errors='ignore') as f :
                     content = f.read()
                     infos.append((content, cate))         
-        df_bbc = pd.DataFrame(infos, columns=['content', 'label'])
-        df_train, df_test = train_test_split(df_bbc, test_size=0.5)
-        return df_train, df_test
+        df = pd.DataFrame(infos, columns=['content', 'label'])
+        df_train, df_test = train_test_split(df, test_size=0.5)
+        return df_train, df_test, df.sample(frac=1)
+
+    # bbc sports
+    def get_bbcsports_news(self):
+        infos = []
+        for cate in ['athletics', 'cricket', 'football', 'rugby', 'tennis']:
+            files = glob.glob("../datasets_aug/bbcsport/{}/*.txt".format(cate))
+            for ff in files:
+                with open(ff, 'r', errors='ignore') as f :
+                    content = f.read()
+                    infos.append((content, cate))         
+        df = pd.DataFrame(infos, columns=['content', 'label'])
+        df_train, df_test = train_test_split(df, test_size=0.5)
+        return df_train, df_test, df.sample(frac=1)
 
     def get_pop_news(self):
         df_train = pd.read_csv("../datasets_aug/pop_news/train_file.csv")    
