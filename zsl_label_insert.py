@@ -49,7 +49,7 @@ def insert_label(sent, label, rep=0.1):
     return ' '.join(tokens)
 
 
-
+batch_size = 32
 for m in ['cmlm', 'dan','distil']:
     print('enc==>', m)
     enc = encoder(m)
@@ -58,12 +58,12 @@ for m in ['cmlm', 'dan','distil']:
         ds = load_data(dataset=dsn)
         labels = ds.df['label'].unique()
         print(dsn)
-        embeds = enc.infer(ds.df['content'].tolist(), batch_size = 1024) 
+        embeds = enc.infer(ds.df['content'].tolist(), batch_size = batch_size) 
 
         label_simis = {}
         for ll in labels:
             sents = [insert_label(sent, ll, rep=0.1) for sent in ds.df['content'].tolist()]
-            embeds_ll = enc.infer(sents, batch_size = 32) 
+            embeds_ll = enc.infer(sents, batch_size = batch_size) 
             simis = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_ll)).numpy()
             label_simis[ll] = simis
             #simis_ll.append(simis.reshape(-1,1))
