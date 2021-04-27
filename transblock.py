@@ -127,7 +127,7 @@ def get_model_ensemble(num_classes):
 
 def get_model_dan(num_classes):
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
-    encoder = hub.KerasLayer("./universal-sentence-encoder_4")
+    encoder = hub.KerasLayer("./universal-sentence-encoder_4", trainable=True)
     embed = encoder(text_input)
 
     if num_classes == 2:
