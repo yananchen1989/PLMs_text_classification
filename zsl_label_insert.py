@@ -13,7 +13,7 @@ class encoder():
         self.m = m
         print('loading m:', self.m)
         text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
-        if self.m == 'universal':
+        if self.m == 'dan':
             # https://tfhub.dev/google/universal-sentence-encoder/4
             #self.model = hub.load("./universal-sentence-encoder_4")
             encoder = hub.KerasLayer("./universal-sentence-encoder_4")
@@ -31,7 +31,7 @@ class encoder():
             raise KeyError("model illegal!")
 
     def infer(self, sents, batch_size=32):
-        if m in ['universal', 'cmlm']:
+        if m in ['dan', 'cmlm']:
             embeds = self.model.predict(sents, batch_size=batch_size, verbose=1)
         elif m == 'distil':
             embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=True)
@@ -50,7 +50,7 @@ def insert_label(sent, label, rep=0.1):
 
 
 
-for m in ['cmlm', 'universal','distil']:
+for m in ['cmlm', 'dan','distil']:
     print('enc==>', m)
     enc = encoder(m)
 
@@ -77,7 +77,10 @@ for m in ['cmlm', 'universal','distil']:
 
 
 
-
+model.fit(
+            x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
+            callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+        )
 
 
 
