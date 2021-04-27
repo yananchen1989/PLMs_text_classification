@@ -63,7 +63,7 @@ for m in ['cmlm', 'dan','distil']:
         label_simis = {}
         for ll in labels:
             sents = [insert_label(sent, ll, rep=0.1) for sent in ds.df['content'].tolist()]
-            embeds_ll = enc.infer(sents, batch_size = 1024) 
+            embeds_ll = enc.infer(sents, batch_size = 32) 
             simis = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_ll)).numpy()
             label_simis[ll] = simis
             #simis_ll.append(simis.reshape(-1,1))
