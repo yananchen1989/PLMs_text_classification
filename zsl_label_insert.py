@@ -5,7 +5,7 @@ import tensorflow_hub as hub
 import tensorflow_text as text
 import random 
 from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
+#from sentence_transformers import SentenceTransformer
 from torch.nn import functional as F
 
 class encoder():
@@ -19,8 +19,8 @@ class encoder():
             encoder = hub.KerasLayer("./universal-sentence-encoder_4")
             embed = encoder(text_input)
             self.model = tf.keras.Model(inputs=text_input, outputs=embed)
-        elif self.m == 'distil':
-            self.model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
+        #elif self.m == 'distil':
+        #    self.model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
         elif self.m == 'cmlm':    
             # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
             encoder = hub.KerasLayer("./universal-sentence-encoder-cmlm_en-base_1")
@@ -33,8 +33,8 @@ class encoder():
     def infer(self, sents, batch_size=32):
         if m in ['dan', 'cmlm']:
             embeds = self.model.predict(sents, batch_size=batch_size, verbose=1)
-        elif m == 'distil':
-            embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=True)
+        #elif m == 'distil':
+        #    embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=True)
         else:
             raise KeyError("model illegal!")
         return embeds
@@ -50,7 +50,7 @@ def insert_label(sent, label, rep=0.1):
 
 
 batch_size = 32
-for m in ['cmlm', 'dan','distil']:
+for m in ['cmlm', 'dan']:
     print('enc==>', m)
     enc = encoder(m)
 
