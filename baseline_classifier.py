@@ -21,6 +21,7 @@ parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
 parser.add_argument("--batch_size", default=64, type=int)
 parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--model", default="albert", type=str)
 
 args = parser.parse_args()
 print('args==>', args)
@@ -70,11 +71,18 @@ def run_benchmark(dataset, augmentor, samplecnt):
 
         (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
 
-        model = get_model_albert(num_classes)
+        if args.model == 'albert':
+            model = get_model_albert(num_classes)
+        elif args.model == 'dan':
+            model = get_model_dan(num_classes)
+        elif args.model == 'former':
+            model = get_model_transormer(num_classes)
+        else:
+            raise KeyError("input model illegal!")
 
         print("train begin==>")
         history = model.fit(
-            x_train, y_train, batch_size=args.batch_size, epochs=12, validation_data=(x_test, y_test), verbose=1,
+            x_train, y_train, batch_size=args.batch_size, epochs=60, validation_data=(x_test, y_test), verbose=1,
             callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
         )
         best_val_acc = max(history.history['val_acc'])
