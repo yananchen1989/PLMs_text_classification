@@ -125,6 +125,20 @@ def get_model_ensemble(num_classes):
         model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
     return model
 
+def get_model_dan(num_classes):
+    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
+    encoder = hub.KerasLayer("./universal-sentence-encoder_4")
+    embed = encoder(text_input)
+
+    if num_classes == 2:
+        out = layers.Dense(1, activation='sigmoid')(embed)
+        model = tf.keras.Model(inputs=text_input, outputs=out)
+        model.compile(Adam(lr=1e-5), "binary_crossentropy", metrics=["binary_accuracy"])
+    else:
+        out = layers.Dense(num_classes, activation="softmax")(embed)
+        model = tf.keras.Model(inputs=text_input, outputs=out)
+        model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
+    return model
 
 
 

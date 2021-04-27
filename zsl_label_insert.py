@@ -54,7 +54,7 @@ for m in ['cmlm', 'universal','distil']:
     print('enc==>', m)
     enc = encoder(m)
 
-    for dsn in ['yahoo','tweet','bbcsport','pop','uci']:
+    for dsn in ['tweet','pop', 'yahoo','bbcsport','uci']:
         ds = load_data(dataset=dsn)
         labels = ds.df['label'].unique()
         print(dsn)
