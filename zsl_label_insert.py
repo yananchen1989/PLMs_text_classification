@@ -6,7 +6,7 @@ import tensorflow_text as text
 import random 
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
-
+from torch.nn import functional as F
 
 class encoder():
     def __init__(self, m):
@@ -58,24 +58,21 @@ for m in ['cmlm', 'universal','distil']:
         ds = load_data(dataset=dsn)
         labels = ds.df['label'].unique()
         print(dsn)
-        correct_sum = 0
-        for l in labels:
-            dfl = ds.df.loc[ds.df['label']==l]
-            embeds = enc.infer(dfl['content'].tolist(), batch_size = 256) 
-            label_embeds = []
-            for ll in labels:
-                sentsi = [insert_label(sent, ll, rep=0.1) for sent in dfl['content'].tolist()]
-                embeds_ll = enc.infer(sentsi, batch_size = 256) 
-                simis_matrix = cosine_similarity(embeds, embeds_ll) # (1900, 1900) 
-                simis = [simis_matrix[i][i] for i in range(simis_matrix.shape[0])]
-                label_embeds.append(simis)
-            scores = np.array(label_embeds).T
-            preds = [labels[j] for j in scores.argmax(axis=1)]
-            correct = sum([1 if p==l else 0 for p in preds ])
-            print(l, '==>', correct/dfl.shape[0])
-            correct_sum += correct
+        embeds = enc.infer(ds.df['content'].tolist(), batch_size = 1024) 
 
-        print('overall acc==>', correct_sum / ds.df.shape[0])
+        label_simis = {}
+        for ll in labels:
+            sents = [insert_label(sent, ll, rep=0.1) for sent in ds.df['content'].tolist()]
+            embeds_ll = enc.infer(sents, batch_size = 1024) 
+            simis = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_ll)).numpy()
+            label_simis[ll] = simis
+            #simis_ll.append(simis.reshape(-1,1))
+        df_simis = pd.DataFrame(label_simis)
+
+        df_simis['pred'] = df_simis.idxmax(axis=1)
+        df_simis['label'] = ds.df['label']
+        acc = df_simis.loc[df_simis['pred']==df_simis['label']].shape[0] / df_simis.shape[0]
+        print('dsn:', dsn, '  acc==>', acc)
 
 
 
