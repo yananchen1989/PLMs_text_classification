@@ -5,79 +5,72 @@ import tensorflow_hub as hub
 import tensorflow_text as text
 import random 
 from sklearn.metrics.pairwise import cosine_similarity
-
-# https://tfhub.dev/google/universal-sentence-encoder/4
-model = hub.load("./universal-sentence-encoder_4")
-embeddings = model(ds.df_train['content'])
+from sentence_transformers import SentenceTransformer
 
 
-
-# https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1
-
-#english_sentences = tf.constant(["Puppies are nice.", "I enjoy taking long walks along the beach with my dog."])
 preprocessor = hub.KerasLayer("./bert_en_uncased_preprocess_3")
-encoder = hub.KerasLayer("./universal-sentence-encoder-cmlm_en-base_1")
 
-embeddings = encoder(preprocessor(ds.df['content'].tolist()))["default"].numpy()
-
-
-
-ds = load_data(dataset='yahoo', samplecnt=-1)
-
-ds.df_train['label'] = ds.df_train['label'].map(lambda x: yahoo_label_name[x])
-embeddings = model(ds.df_train['content'].tolist())
-
-# Convert NumPy array of embedding into data frame
-embedding_df = pd.DataFrame(embeddings)
-# Save dataframe as as TSV file without any index and header
-embedding_df.to_csv('output.tsv', sep='\t', index=None, header=None)
-
-# Save dataframe without any index
-df.to_csv('metadata.tsv', index=False, sep='\t')
+def load_model(m):
+    if m == 'universal':
+        # https://tfhub.dev/google/universal-sentence-encoder/4
+        model = hub.load("./universal-sentence-encoder_4")
+    elif m == 'distil':
+        model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
+    elif m == 'cmlm':
+        # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
+        model = hub.KerasLayer("./universal-sentence-encoder-cmlm_en-base_1")
+    else:
+        raise KeyError("model illegal!")
+    return model 
+#english_sentences = tf.constant(["Puppies are nice.", "I enjoy taking long walks along the beach with my dog."])
 
 
-ds.df['label'] = ds.df['label'].map(lambda x: 'technology' if x=='tech' else x)
+def encoding(model, sents, m):
+    if m == 'universal':
+        embeds = model(sents)
+    elif m == 'distil':
+        embeds = model.encode(sents, batch_size=512,  show_progress_bar=False)
+    elif m == 'cmlm':
+        embeds = model(preprocessor(sents))["default"].numpy()
+    else:
+        raise KeyError("model illegal!")
+    return embeds
 
-
-
-
-labels = ds.df['label'].unique()
-
-embeddings = model(ds.df['content'].tolist())
 
 def insert_label(sent, label, rep=0.1):
     tokens = sent.split(' ')
     for i in range(int(len(tokens)*rep )):
         ix = random.randint(0, len(tokens) - 1)
-        tokens.insert(ix, label)
+        #tokens.insert(ix, label)
+        tokens[ix] = label
     return ' '.join(tokens)
 
 
-infos = []
-for rep in [0.01, 0.05, 0.1, 0.2, 0.4, 0.5]:
-    acc = []
-    for ix, row in ds.df.iterrows():
-        content = row['content']
-        embed = model([content]).numpy()
-        #embed = encoder(preprocessor([content]))["default"].numpy()
 
-        pred = ''
-        score_init = -1
-        for label in labels:
-            content_i = insert_label(content, label)
-            #embed_i = encoder(preprocessor([content_i]))["default"].numpy()
-            embed_i = model([content_i]).numpy()
-            score = cosine_similarity(embed, embed_i)[0][0]
-            if score > score_init:
-                score_init = score 
-                pred = label 
-        if pred == row['label']:
-            acc.append(1)
-        else:
-            acc.append(0)
-    infos.append((rep, sum(acc) / len(acc) ) )
-    print('rep:', rep,  ' acc==>', sum(acc) / len(acc))
+m = 'distil'
+model = load_model(m)
 
+for dsn in ['yahoo','tweet','bbcsport','pop','uci']:
+    ds = load_data(dataset='yahoo', samplecnt=-1)
+    labels = ds.df_test['label'].unique()
+    correct_sum = 0
+    for l in labels:
+        dfl = ds.df_test.loc[ds.df_test['label']==l]
+        embeds = encoding(model, dfl['content'].tolist(), m) 
+        label_embeds = []
+        for ll in labels:
+            sentsi = [insert_label(sent, ll, rep=0.1) for sent in dfl['content'].tolist()]
+            embeds_ll = encoding(model, sentsi, m) 
+            simis_matrix = cosine_similarity(embeds, embeds_ll) # (1900, 1900) 
+            simis = [simis_matrix[i][i] for i in range(simis_matrix.shape[0])]
+            label_embeds.append(simis)
+        scores = np.array(label_embeds).T
+        preds = [labels[j] for j in scores.argmax(axis=1)]
+        correct = sum([1 if p==l else 0 for p in preds ])
+        print(l, correct/dfl.shape[0])
+        correct_sum += correct
+
+    print('overall acc==>', correct_sum / ds.df_test.shape[0])
 
 
 

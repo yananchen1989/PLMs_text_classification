@@ -16,11 +16,11 @@ def sample_stratify(df, samplecnt):
     return pd.concat(ll).sample(frac=1)
 
 class load_data():
-    def __init__(self, samplecnt = 100, dataset='ag'):
+    def __init__(self, samplecnt = -1, dataset='yahoo'):
         self.samplecnt = samplecnt
         self.dataset = dataset
         if self.dataset == 'ag':
-            self.df_train, self.df_test = self.get_ag_news()
+            self.df_train, self.df_test, self.df = self.get_ag_news()
         elif self.dataset == 'bbc':
             self.df_train, self.df_test, self.df = self.get_bbc_news()
         elif self.dataset ==  'bbcsport':
@@ -28,9 +28,9 @@ class load_data():
         elif self.dataset == 'tweet':
             self.df_train, self.df_test, self.df = self.get_tweet()
         elif self.dataset == 'yahoo':
-            self.df_train, self.df_test = self.get_yahoo_news()
+            self.df_train, self.df_test, self.df = self.get_yahoo_news()
         elif self.dataset == 'pop':
-            self.df_train, self.df_test = self.get_pop_news()    
+            self.df_train, self.df_test, self.df = self.get_pop_news()    
         elif self.dataset == 'uci':
             self.df_train, self.df_test, self.df = self.get_uci_news()        
         else:
@@ -55,7 +55,8 @@ class load_data():
         df_test['content'] = df_test[1] + ' ' + df_test[2] + ' ' + df_test[3]
         df_test['label'] = df_test[0]
         df_test['label'] = df_test['label'].map(lambda x: yahoo_label_name[x])
-        return df_train[['content','label']] , df_test[['content','label']] 
+        return df_train[['content','label']] , df_test[['content','label']],
+             pd.concat([df_train[['content','label']], df_test[['content','label']]]).sample(frac=1)
 
     def get_tweet(self):
         files = glob.glob("../datasets_aug/tweetraw/*.txt")
@@ -90,7 +91,7 @@ class load_data():
         df_train['label'] = df_train['label'].map(lambda x: agnews_label[x])
         df_test['label'] = df_test['label'].map(lambda x: agnews_label[x])
         df_train = sample_stratify(df_train, self.samplecnt)
-        return df_train, df_test
+        return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1)
 
     # bbc 
     def get_bbc_news(self):
@@ -126,7 +127,8 @@ class load_data():
         df_train = df_train[['Headline','Title','Topic']]
         df_test = df_test[['Headline','Title','Topic']]
         df_train['content'] = df_train['Headline'] + ' ' + df_train['Title']
-        df_test['content'] = df_test['Headline'] + ' ' + df_test['Title']       
+        df_test['content'] = df_test['Headline'] + ' ' + df_test['Title']    
+        del df_train['Headline'], df_train['Title'],  df_test['Headline'],df_test['Title']   
         df_train.rename(
                 columns={"Topic": "label"},
                 inplace=True )
@@ -134,7 +136,7 @@ class load_data():
                 columns={"Topic": "label"},
                 inplace=True )  
         df_train = sample_stratify(df_train, self.samplecnt)      
-        return df_train, df_test
+        return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1)
 
 def get_keras_data(df_train, df_test):
     num_classes = df_test['label'].unique().shape[0]
