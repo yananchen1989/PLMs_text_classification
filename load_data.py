@@ -37,16 +37,24 @@ class load_data():
             raise KeyError("dataset illegal!")
 
     def get_yahoo_news(self):
+        labels = []
+        with open('../datasets_aug/yahoo_news/classes.txt','r') as f:
+            for line in f:
+                labels.append(line.strip())
+        yahoo_label_name = {ix+1:l for ix, l in enumerate(labels)}
+
         df_train = pd.read_csv("../datasets_aug/yahoo_news/train.csv", header=None)            
         df_train = df_train.fillna(' ')
         df_train['content'] = df_train[1] + ' ' + df_train[2] + ' ' + df_train[3]
         df_train['label'] = df_train[0]
+        df_train['label'] = df_train['label'].map(lambda x: yahoo_label_name[x])
         df_train = sample_stratify(df_train, self.samplecnt)
 
         df_test = pd.read_csv("../datasets_aug/yahoo_news/test.csv", header=None)
         df_test = df_test.fillna(' ')
         df_test['content'] = df_test[1] + ' ' + df_test[2] + ' ' + df_test[3]
         df_test['label'] = df_test[0]
+        df_test['label'] = df_test['label'].map(lambda x: yahoo_label_name[x])
         return df_train[['content','label']] , df_test[['content','label']] 
 
     def get_tweet(self):
@@ -78,7 +86,9 @@ class load_data():
         df_test = pd.read_csv("../datasets_aug/ag_news/test.csv")
         df_train['content'] = df_train['title'] + ' ' + df_train['content']
         df_test['content'] = df_test['title'] + ' ' + df_test['content']
-        agnews_label = {1:"World", 2:"Sports", 3:"Business", 4:"Sci/Tech"}
+        agnews_label = {1:"World", 2:"Sports", 3:"Business", 4:"Science and technology"}
+        df_train['label'] = df_train['label'].map(lambda x: agnews_label[x])
+        df_test['label'] = df_test['label'].map(lambda x: agnews_label[x])
         df_train = sample_stratify(df_train, self.samplecnt)
         return df_train, df_test
 
@@ -92,6 +102,8 @@ class load_data():
                     content = f.read()
                     infos.append((content, cate))         
         df = pd.DataFrame(infos, columns=['content', 'label'])
+        df['label'] = df['label'].map(lambda x: 'technology' if x=='tech' else x)
+
         df_train, df_test = train_test_split(df, test_size=0.5)
         return df_train, df_test, df.sample(frac=1)
 
@@ -146,7 +158,9 @@ def get_keras_data(df_train, df_test):
 
     return (x_train,y_train),  (x_test, y_test), num_classes
 
-        
+ 
+
+   
 stopwords = ['i',
  'me',
  'my',
