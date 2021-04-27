@@ -29,7 +29,7 @@ def encoding(model, sents, m):
     if m == 'universal':
         embeds = model(sents)
     elif m == 'distil':
-        embeds = model.encode(sents, batch_size=512,  show_progress_bar=False)
+        embeds = model.encode(sents, batch_size=32,  show_progress_bar=False)
     elif m == 'cmlm':
         embeds = model(preprocessor(sents))["default"].numpy()
     else:
@@ -54,6 +54,9 @@ for dsn in ['yahoo','tweet','bbcsport','pop','uci']:
     ds = load_data(dataset=dsn)
     labels = ds.df['label'].unique()
     print(dsn, ' ==>', labels)
+    if ds.df.shape[0] > 50000:
+        ds.df = ds.df.sample(50000)
+
     correct_sum = 0
     for l in labels:
         dfl = ds.df.loc[ds.df['label']==l]
