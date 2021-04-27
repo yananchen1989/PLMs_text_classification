@@ -50,31 +50,32 @@ def insert_label(sent, label, rep=0.1):
 
 
 
-m = 'cmlm'
-enc = encoder(m)
+for m in ['cmlm', 'universal','distil']:
+    print('enc==>', m)
+    enc = encoder(m)
 
-for dsn in ['yahoo','tweet','bbcsport','pop','uci']:
-    ds = load_data(dataset=dsn)
-    labels = ds.df['label'].unique()
-    print(dsn)
-    correct_sum = 0
-    for l in labels:
-        dfl = ds.df.loc[ds.df['label']==l]
-        embeds = enc.infer(dfl['content'].tolist(), batch_size = 256) 
-        label_embeds = []
-        for ll in labels:
-            sentsi = [insert_label(sent, ll, rep=0.1) for sent in dfl['content'].tolist()]
-            embeds_ll = enc.infer(sentsi, batch_size = 256) 
-            simis_matrix = cosine_similarity(embeds, embeds_ll) # (1900, 1900) 
-            simis = [simis_matrix[i][i] for i in range(simis_matrix.shape[0])]
-            label_embeds.append(simis)
-        scores = np.array(label_embeds).T
-        preds = [labels[j] for j in scores.argmax(axis=1)]
-        correct = sum([1 if p==l else 0 for p in preds ])
-        print(l, '==>', correct/dfl.shape[0])
-        correct_sum += correct
+    for dsn in ['yahoo','tweet','bbcsport','pop','uci']:
+        ds = load_data(dataset=dsn)
+        labels = ds.df['label'].unique()
+        print(dsn)
+        correct_sum = 0
+        for l in labels:
+            dfl = ds.df.loc[ds.df['label']==l]
+            embeds = enc.infer(dfl['content'].tolist(), batch_size = 256) 
+            label_embeds = []
+            for ll in labels:
+                sentsi = [insert_label(sent, ll, rep=0.1) for sent in dfl['content'].tolist()]
+                embeds_ll = enc.infer(sentsi, batch_size = 256) 
+                simis_matrix = cosine_similarity(embeds, embeds_ll) # (1900, 1900) 
+                simis = [simis_matrix[i][i] for i in range(simis_matrix.shape[0])]
+                label_embeds.append(simis)
+            scores = np.array(label_embeds).T
+            preds = [labels[j] for j in scores.argmax(axis=1)]
+            correct = sum([1 if p==l else 0 for p in preds ])
+            print(l, '==>', correct/dfl.shape[0])
+            correct_sum += correct
 
-    print('overall acc==>', correct_sum / ds.df.shape[0])
+        print('overall acc==>', correct_sum / ds.df.shape[0])
 
 
 
