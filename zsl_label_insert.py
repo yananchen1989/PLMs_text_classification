@@ -51,11 +51,12 @@ m = 'distil'
 model = load_model(m)
 
 for dsn in ['yahoo','tweet','bbcsport','pop','uci']:
-    ds = load_data(dataset='yahoo', samplecnt=-1)
-    labels = ds.df_test['label'].unique()
+    ds = load_data(dataset=dsn)
+    labels = ds.df['label'].unique()
+    print(dsn, ' ==>', labels)
     correct_sum = 0
     for l in labels:
-        dfl = ds.df_test.loc[ds.df_test['label']==l]
+        dfl = ds.df.loc[ds.df['label']==l]
         embeds = encoding(model, dfl['content'].tolist(), m) 
         label_embeds = []
         for ll in labels:
@@ -67,10 +68,10 @@ for dsn in ['yahoo','tweet','bbcsport','pop','uci']:
         scores = np.array(label_embeds).T
         preds = [labels[j] for j in scores.argmax(axis=1)]
         correct = sum([1 if p==l else 0 for p in preds ])
-        print(l, correct/dfl.shape[0])
+        print(l, '==>', correct/dfl.shape[0])
         correct_sum += correct
 
-    print('overall acc==>', correct_sum / ds.df_test.shape[0])
+    print('overall acc==>', correct_sum / ds.df.shape[0])
 
 
 

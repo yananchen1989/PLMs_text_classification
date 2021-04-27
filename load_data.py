@@ -55,7 +55,7 @@ class load_data():
         df_test['content'] = df_test[1] + ' ' + df_test[2] + ' ' + df_test[3]
         df_test['label'] = df_test[0]
         df_test['label'] = df_test['label'].map(lambda x: yahoo_label_name[x])
-        return df_train[['content','label']] , df_test[['content','label']],
+        return df_train[['content','label']] , df_test[['content','label']], \
              pd.concat([df_train[['content','label']], df_test[['content','label']]]).sample(frac=1)
 
     def get_tweet(self):
