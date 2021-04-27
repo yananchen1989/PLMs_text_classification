@@ -8,33 +8,36 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 
 
-preprocessor = hub.KerasLayer("./bert_en_uncased_preprocess_3")
+class encoder():
+    def __init__(self, m):
+        self.m = m
+        print('loading m:', self.m)
+        text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
+        if self.m == 'universal':
+            # https://tfhub.dev/google/universal-sentence-encoder/4
+            #self.model = hub.load("./universal-sentence-encoder_4")
+            encoder = hub.KerasLayer("./universal-sentence-encoder_4")
+            embed = encoder(text_input)
+            self.model = tf.keras.Model(inputs=text_input, outputs=embed)
+        elif self.m == 'distil':
+            self.model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
+        elif self.m == 'cmlm':    
+            # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
+            encoder = hub.KerasLayer("./universal-sentence-encoder-cmlm_en-base_1")
+            preprocessor = hub.KerasLayer("./bert_en_uncased_preprocess_3")
+            embed = encoder(preprocessor(text_input))["default"]
+            self.model = tf.keras.Model(inputs=text_input, outputs=embed)
+        else:
+            raise KeyError("model illegal!")
 
-def load_model(m):
-    if m == 'universal':
-        # https://tfhub.dev/google/universal-sentence-encoder/4
-        model = hub.load("./universal-sentence-encoder_4")
-    elif m == 'distil':
-        model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
-    elif m == 'cmlm':
-        # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
-        model = hub.KerasLayer("./universal-sentence-encoder-cmlm_en-base_1")
-    else:
-        raise KeyError("model illegal!")
-    return model 
-#english_sentences = tf.constant(["Puppies are nice.", "I enjoy taking long walks along the beach with my dog."])
-
-
-def encoding(model, sents, m):
-    if m == 'universal':
-        embeds = model(sents)
-    elif m == 'distil':
-        embeds = model.encode(sents, batch_size=32,  show_progress_bar=False)
-    elif m == 'cmlm':
-        embeds = model(preprocessor(sents))["default"].numpy()
-    else:
-        raise KeyError("model illegal!")
-    return embeds
+    def infer(self, sents, batch_size=32):
+        if m in ['universal', 'cmlm']:
+            embeds = self.model.predict(sents, batch_size=batch_size, verbose=1)
+        elif m == 'distil':
+            embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=True)
+        else:
+            raise KeyError("model illegal!")
+        return embeds
 
 
 def insert_label(sent, label, rep=0.1):
@@ -47,24 +50,27 @@ def insert_label(sent, label, rep=0.1):
 
 
 
-m = 'distil'
-model = load_model(m)
+m = 'cmlm'
+enc = encoder(m)
+
+enc.infer(sents[:1000], batch_size=64)
+
 
 for dsn in ['yahoo','tweet','bbcsport','pop','uci']:
     ds = load_data(dataset=dsn)
     labels = ds.df['label'].unique()
-    print(dsn, ' ==>', labels)
+    print(dsn)
     if ds.df.shape[0] > 50000:
         ds.df = ds.df.sample(50000)
 
     correct_sum = 0
     for l in labels:
         dfl = ds.df.loc[ds.df['label']==l]
-        embeds = encoding(model, dfl['content'].tolist(), m) 
+        embeds = encoder.encode(dfl['content'].tolist()) 
         label_embeds = []
         for ll in labels:
             sentsi = [insert_label(sent, ll, rep=0.1) for sent in dfl['content'].tolist()]
-            embeds_ll = encoding(model, sentsi, m) 
+            embeds_ll = encoder.encode(sentsi) 
             simis_matrix = cosine_similarity(embeds, embeds_ll) # (1900, 1900) 
             simis = [simis_matrix[i][i] for i in range(simis_matrix.shape[0])]
             label_embeds.append(simis)
