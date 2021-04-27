@@ -77,11 +77,6 @@ for m in ['cmlm', 'dan','distil']:
 
 
 
-model.fit(
-            x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
-            callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-        )
-
 
 
 
