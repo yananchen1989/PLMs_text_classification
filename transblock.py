@@ -101,20 +101,16 @@ def get_model_albert(num_classes):
         model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
     return model
 
-def get_model_ensemble(num_classes):
-    # https://tfhub.dev/tensorflow/albert_en_base/2
-    encoder_bert = hub.KerasLayer('albert_en_base_2', trainable=True)
-    encoder_electra = hub.KerasLayer('electra_base_2', trainable=True)
+def get_model_electra(num_classes):
+
+    encoder = hub.KerasLayer('electra_base_2', trainable=True)
     
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 
     encoder_inputs = preprocessor_layer(text_input)
 
-    pooled_output_bert = encoder_bert(encoder_inputs)["pooled_output"] 
-    pooled_output_electra = encoder_electra(encoder_inputs)["pooled_output"] 
+    pooled_output = encoder(encoder_inputs)["pooled_output"] 
 
-    pooled_output_concat = keras.layers.concatenate([pooled_output_bert, pooled_output_electra])
-    pooled_output = layers.Dense(512, activation="relu")(pooled_output_concat)
     if num_classes == 2:
         out = layers.Dense(1, activation='sigmoid')(pooled_output)
         model = tf.keras.Model(inputs=text_input, outputs=out)

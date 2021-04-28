@@ -18,7 +18,6 @@ class encoder():
             #self.model = hub.load("./universal-sentence-encoder_4")
             encoder = hub.KerasLayer("./universal-sentence-encoder_4")
             embed = encoder(text_input)
-            self.model = tf.keras.Model(inputs=text_input, outputs=embed)
         #elif self.m == 'distil':
         #    self.model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
         elif self.m == 'cmlm':    
@@ -26,9 +25,9 @@ class encoder():
             encoder = hub.KerasLayer("./universal-sentence-encoder-cmlm_en-base_1")
             preprocessor = hub.KerasLayer("./bert_en_uncased_preprocess_3")
             embed = encoder(preprocessor(text_input))["default"]
-            self.model = tf.keras.Model(inputs=text_input, outputs=embed)
         else:
             raise KeyError("model illegal!")
+        self.model = tf.keras.Model(inputs=text_input, outputs=embed)
 
     def infer(self, sents, batch_size=32):
         if m in ['dan', 'cmlm']:
