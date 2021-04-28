@@ -129,7 +129,7 @@ assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
 
 df_all = pd.concat([df, ds.df_train])
 (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df_all, ds.df_test)
-model = get_model_albert(num_classes)
+model = get_model_bert(num_classes)
 
 print("train begin==>")
 history = model.fit(
