@@ -12,7 +12,7 @@ ag_news | World,Sports,Business,Sci/Tech
 yahoo_news | Society & Culture,Science & Mathematics,Health,...
 pop_news | economy,microsoft,obama,palestine
 tweet | technology,health,sports,politics,business,entertainment
-uci | entertainment,business,science technology,health
+UCI NEWS AGGREGATOR  | entertainment,business,science technology,health
 bbc | business,entertainment,politics,sport,tech
 bbc_sport | athletics,cricket,football,rugby,tennis
 
@@ -36,7 +36,9 @@ generation augment method, we use GPT2 and CTRL to generate samples with 1:1
 ## finetune LMs
 Follow the examples from huggingface: https://github.com/huggingface/transformers/tree/master/examples/language-modeling
 > finetune.sh
+> 
 > run_clm.py
+> 
 > run_mlm.py
 
 
@@ -47,6 +49,8 @@ We just use label names / control codes as prompts to generate samples, as many 
 
 After generating enough samples, we use NLI model dowanloaded from https://huggingface.co/joeddav/bart-large-mnli-yahoo-answers 
 to check the quality and the agreement between prompts and the generated samples.
+> zsl_nli_train.py
+
 You can refer to this blog for more info: https://joeddav.github.io/blog/2020/05/29/ZSL.html 
 (This check can extremely boost the accuracy performance in next training step)
 
