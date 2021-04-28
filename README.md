@@ -13,10 +13,12 @@ yahoo_news | Society & Culture,Science & Mathematics,Health,...
 pop_news | economy,microsoft,obama,palestine
 tweet | technology,health,sports,politics,business,entertainment
 uci | entertainment,business,science technology,health
+bbc | business,entertainment,politics,sport,tech
+bbc_sport | athletics,cricket,football,rugby,tennis
 
 ## main entrance
-Several text classifiers are used, including transformer, albert, electra, DAN encoder.
-
+Several text classifiers are used, including transformer, albert, electra, DAN encoder, downloaded from tensorflow hub.
+These models act as the encoder, and all parameters are updated during training.
 > baseline_classifier.py
 
 
@@ -31,11 +33,12 @@ backtranslation augment method, intermediate languages: > zh de fr ru
 generation augment method, we use GPT2 and CTRL to generate samples with 1:1
 > aug_generation.py
 
+## finetune LMs
+Follow the examples from huggingface: https://github.com/huggingface/transformers/tree/master/examples/language-modeling
+> finetune.sh
+> run_clm.py
+> run_mlm.py
 
-codes for fine-tune models follow the examples from huggingface: https://github.com/huggingface/transformers/tree/master/examples/language-modeling
 
-baseline classifier: baseline_classifier.py
-it load the albert model from tensorflow hub https://tfhub.dev/tensorflow/albert_en_base/2 
-and acts as the encoder for the news text, 
-the pooling layer is used for downstream classification.
-All parameters are updated during training.
+
+
