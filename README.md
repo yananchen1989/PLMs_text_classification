@@ -1,6 +1,11 @@
 # topic_classification_augmentation
 
 
+First Header | Second Header
+------------ | -------------
+Content from cell 1 | Content from cell 2
+Content in the first column | Content in the second column
+
 ## datasets for topic classification :
 
 dataset | url  |  labels 
