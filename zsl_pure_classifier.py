@@ -11,7 +11,7 @@ MODEL = "joeddav/bart-large-mnli-yahoo-answers"
 from transformers import BartForSequenceClassification, BartTokenizer
 tokenizer = BartTokenizer.from_pretrained(MODEL)
 nli_model = BartForSequenceClassification.from_pretrained(MODEL)
-
+import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 nli_model.to(device)
 
@@ -45,7 +45,6 @@ while ix < len(sentences):
 
 
 ds = load_data(dataset='ag')
-
 labels_candidate = list(ds.df['label'].unique())
 
 while True:
