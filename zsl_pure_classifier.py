@@ -45,7 +45,7 @@ while ix < len(sentences):
 '''
 
 #sample_cnt = 10000
-for model in ["roberta-large-mnli", "facebook/bart-large-mnli "]:
+for model in ["roberta-large-mnli", "facebook/bart-large-mnli"]:
     nlp = pipeline("zero-shot-classification", model=model, device=0) #  
     print(model, ' loaded')
     # for ite in range(1):
