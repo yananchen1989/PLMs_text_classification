@@ -45,27 +45,24 @@ while ix < len(sentences):
     gc.collect()
 '''
 
+sample_cnt = 10000
 
-
-for dsn in ['ag','pop','uci','bbc','bbcsport','tweet','yahoo']:
-    ds = load_data(dataset=dsn)
-    labels_candidate = list(ds.df['label'].unique())
-    print(dsn, ' ==>', labels_candidate)
-
-    preds = []
-    for content in ds.df['content'].tolist():
-        result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
-        pred = result['labels']
-        preds.append(pred[0])
-
-    correct = []
-    for ii in zip(ds.df['label'].tolist(), preds):
-        if ii[0] == ii[1]:
-            correct.append(1)
-        else:
-            correct.append(0)
-
-    print(dsn, ' acc==>',  sum(correct) / len(correct))
+for ite in range(100):
+    print('ite:', ite) 
+    for dsn in ['ag','pop','uci','bbc','bbcsport','tweet','yahoo']:
+        ds = load_data(dataset=dsn)
+        labels_candidate = list(ds.df['label'].unique())
+        print(dsn, ' ==>', labels_candidate)
+        dfi = ds.df.sample(min(ds.df.shape[0], sample_cnt))
+        correct = 0
+        for ix, row in dfi.iterrows():
+            label = row['label']
+            content = row['content']
+            result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
+            pred = result['labels']
+            if pred[0] == label:
+                correct += 1
+        print(dsn, ' acc==>',  correct / dfi.shape[0])
 
 
 
