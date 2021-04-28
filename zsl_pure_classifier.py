@@ -53,17 +53,17 @@ for ite in range(100):
         ds = load_data(dataset=dsn)
         labels_candidate = list(ds.df['label'].unique())
         print(dsn, ' ==>', labels_candidate)
-        dfi = ds.df.sample(min(ds.df.shape[0], sample_cnt))
+        #dfi = ds.df.sample(min(ds.df.shape[0], sample_cnt))
         correct = 0
-        for ix, row in dfi.iterrows():
+        for ix, row in ds.df.iterrows():
             label = row['label']
             content = row['content']
-            content_ = ' '.join(content.split(' ')[:50])
-            result = nlp(content_, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
+            #content_ = ' '.join(content.split(' ')[:50])
+            result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
             pred = result['labels']
             if pred[0] == label:
                 correct += 1
-        print(dsn, ' acc==>',  correct / dfi.shape[0])
+        print(dsn, ' acc==>',  correct / ds.df.shape[0])
 
 
 

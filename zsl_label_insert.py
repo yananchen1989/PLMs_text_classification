@@ -56,7 +56,7 @@ for m in ['cmlm', 'dan']:
     for dsn in ['ag','pop', 'yahoo','bbcsport','uci']:
         ds = load_data(dataset=dsn)
         labels = ds.df['label'].unique()
-        print(dsn)
+        print(dsn, labels)
         embeds = enc.infer(ds.df['content'].tolist(), batch_size = batch_size) 
 
         label_simis = {}
