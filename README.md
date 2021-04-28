@@ -12,7 +12,7 @@ ag_news | World,Sports,Business,Sci/Tech
 yahoo_news | Society & Culture,Science & Mathematics,Health,...
 pop_news | economy,microsoft,obama,palestine
 tweet | technology,health,sports,politics,business,entertainment
-uci | entertainment,business,science technology,health
+UCI NEWS AGGREGATOR  | entertainment,business,science technology,health
 bbc | business,entertainment,politics,sport,tech
 bbc_sport | athletics,cricket,football,rugby,tennis
 
