@@ -1,9 +1,9 @@
 from load_data import * 
 from transblock import * 
 from transformers import pipeline
-nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
+#nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
 
-#nlp = pipeline("zero-shot-classification", model="roberta-large-mnli", device=0) #  
+nlp = pipeline("zero-shot-classification", model="roberta-large-mnli", device=0) #  
 
 #facebook/bart-large-mnli 
 
