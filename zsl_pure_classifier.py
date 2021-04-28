@@ -58,6 +58,7 @@ for ite in range(100):
         for ix, row in dfi.iterrows():
             label = row['label']
             content = row['content']
+            print(content)
             result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
             pred = result['labels']
             if pred[0] == label:
