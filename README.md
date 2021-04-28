@@ -36,7 +36,9 @@ generation augment method, we use GPT2 and CTRL to generate samples with 1:1
 ## finetune LMs
 Follow the examples from huggingface: https://github.com/huggingface/transformers/tree/master/examples/language-modeling
 > finetune.sh
+> 
 > run_clm.py
+> 
 > run_mlm.py
 
 
