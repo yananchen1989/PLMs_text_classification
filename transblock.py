@@ -44,7 +44,6 @@ class TokenAndPositionEmbedding(layers.Layer):
         return x + positions
 
 preprocessor_file = "./albert_en_preprocess_3"
-model_file = "./albert_en_base_2"
 preprocessor_layer = hub.KerasLayer(preprocessor_file)
 
 
@@ -79,7 +78,7 @@ def get_model_transormer(num_classes):
 
 def get_model_albert(num_classes):
     # https://tfhub.dev/tensorflow/albert_en_base/2
-    encoder = hub.KerasLayer(model_file, trainable=True)
+    encoder = hub.KerasLayer("./albert_en_base_2", trainable=True)
     # https://tfhub.dev/tensorflow/albert_en_preprocess/3
     
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
@@ -103,7 +102,7 @@ def get_model_albert(num_classes):
 
 def get_model_electra(num_classes):
 
-    encoder = hub.KerasLayer('electra_base_2', trainable=True)
+    encoder = hub.KerasLayer('./electra_base_2', trainable=True)
     
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 
