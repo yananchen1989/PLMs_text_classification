@@ -44,6 +44,7 @@ Follow the examples from huggingface: https://github.com/huggingface/transformer
 In this scenerio, we do not use any original training set at all while we keep the test set the same as usual.
 We just use label names / control codes as prompts to generate samples, as many as we want.
 > zsl_generation.py
+
 After generating enough samples, we use NLI model dowanloaded from https://huggingface.co/joeddav/bart-large-mnli-yahoo-answers 
 to check the quality and the agreement between prompts and the generated samples.
 You can refer to this blog for more info: https://joeddav.github.io/blog/2020/05/29/ZSL.html 
