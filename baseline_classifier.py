@@ -71,10 +71,8 @@ def run_benchmark(dataset, augmentor, samplecnt):
 
         (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
 
-        if args.model == 'albert':
-            model = get_model_albert(num_classes)
-        elif args.model == 'dan':
-            model = get_model_dan(num_classes)
+        if args.model in ['albert','electra', 'dan']:
+            model = get_model_bert(num_classes, args.model)
         elif args.model == 'former':
             model = get_model_transormer(num_classes)
         else:

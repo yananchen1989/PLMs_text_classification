@@ -43,7 +43,7 @@ class TokenAndPositionEmbedding(layers.Layer):
         x = self.token_emb(x)
         return x + positions
 
-preprocessor_file = "./albert_en_preprocess_3"
+preprocessor_file = "./albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
 preprocessor_layer = hub.KerasLayer(preprocessor_file)
 
 
@@ -76,54 +76,21 @@ def get_model_transormer(num_classes):
     #model.compile("adam", "binary_crossentropy", metrics=["accuracy"])
     return model
 
-def get_model_albert(num_classes):
-    # https://tfhub.dev/tensorflow/albert_en_base/2
-    encoder = hub.KerasLayer("./albert_en_base_2", trainable=True)
-    # https://tfhub.dev/tensorflow/albert_en_preprocess/3
-    
+def get_model_bert(num_classes, m='albert'):
+
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
+    m_file = {'albert':"./albert_en_base_2", 'electra':'./electra_base_2', 'dan':"./universal-sentence-encoder_4"}
 
-    encoder_inputs = preprocessor_layer(text_input)
+    encoder = hub.KerasLayer(m_file[m], trainable=True)
 
-    outputs = encoder(encoder_inputs)
-    pooled_output = outputs["pooled_output"]   # (None, 768)
-    sequence_output = outputs["sequence_output"] # (None, 128, 768)
-    #pooled_output_ = tf.keras.layers.Dense(256, activation="relu")(pooled_output)
-
-    if num_classes == 2:
-        out = layers.Dense(1, activation='sigmoid')(pooled_output)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=1e-5), "binary_crossentropy", metrics=["binary_accuracy"])
+    if m in ['albert', 'electra']:
+        encoder_inputs = preprocessor_layer(text_input)
+        outputs = encoder(encoder_inputs)
+        embed = outputs["pooled_output"]  
+    elif m in ['dan']:
+        embed = encoder(text_input)
     else:
-        out = layers.Dense(num_classes, activation="softmax")(pooled_output)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
-    return model
-
-def get_model_electra(num_classes):
-
-    encoder = hub.KerasLayer('./electra_base_2', trainable=True)
-    
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
-
-    encoder_inputs = preprocessor_layer(text_input)
-
-    pooled_output = encoder(encoder_inputs)["pooled_output"] 
-
-    if num_classes == 2:
-        out = layers.Dense(1, activation='sigmoid')(pooled_output)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=1e-5), "binary_crossentropy", metrics=["binary_accuracy"])
-    else:
-        out = layers.Dense(num_classes, activation="softmax")(pooled_output)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
-    return model
-
-def get_model_dan(num_classes):
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
-    encoder = hub.KerasLayer("./universal-sentence-encoder_4", trainable=True)
-    embed = encoder(text_input)
+        raise KeyError("model illegal!")
 
     if num_classes == 2:
         out = layers.Dense(1, activation='sigmoid')(embed)
