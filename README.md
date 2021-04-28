@@ -47,6 +47,8 @@ We just use label names / control codes as prompts to generate samples, as many 
 
 After generating enough samples, we use NLI model dowanloaded from https://huggingface.co/joeddav/bart-large-mnli-yahoo-answers 
 to check the quality and the agreement between prompts and the generated samples.
+> zsl_nli_train.py
+
 You can refer to this blog for more info: https://joeddav.github.io/blog/2020/05/29/ZSL.html 
 (This check can extremely boost the accuracy performance in next training step)
 
