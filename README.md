@@ -1,10 +1,11 @@
 # topic_classification_augmentation
 
 
-First Header | Second Header
+dataset | url
 ------------ | -------------
-Content from cell 1 | Content from cell 2
-Content in the first column | Content in the second column
+ag_news | https://huggingface.co/datasets/ag_news
+yahoo_news | https://huggingface.co/datasets/yahoo_answers_topics
+
 
 ## datasets for topic classification :
 
