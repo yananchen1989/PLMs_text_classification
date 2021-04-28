@@ -59,6 +59,7 @@ for ite in range(100):
             label = row['label']
             content = row['content']
             print(content)
+            print(len(content.split(' ')))
             result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
             pred = result['labels']
             if pred[0] == label:
