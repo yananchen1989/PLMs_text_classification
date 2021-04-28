@@ -3,6 +3,10 @@ from transblock import *
 from transformers import pipeline
 nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
 
+#nlp = pipeline("zero-shot-classification", model="roberta-large-mnli", device=0) #  
+
+#facebook/bart-large-mnli 
+
 '''
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 #https://huggingface.co/joeddav/bart-large-mnli-yahoo-answers
@@ -43,18 +47,25 @@ while ix < len(sentences):
 
 
 
+for dsn in ['ag','pop','uci','bbc','bbcsport','tweet','yahoo']:
+    ds = load_data(dataset=dsn)
+    labels_candidate = list(ds.df['label'].unique())
+    print(dsn, ' ==>', labels_candidate)
 
-ds = load_data(dataset='ag')
-labels_candidate = list(ds.df['label'].unique())
+    preds = []
+    for content in ds.df['content'].tolist():
+        result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
+        pred = result['labels']
+        preds.append(pred[0])
 
-while True:
-    content = ds.df.sample(16)['content'].tolist()
-    result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
-    print(result)
-    #pred = result['labels']
+    correct = []
+    for ii in zip(ds.df['label'].tolist(), preds):
+        if ii[0] == ii[1]:
+            correct.append(1)
+        else:
+            correct.append(0)
 
-
-
+    print(dsn, ' acc==>',  sum(correct) / len(correct))
 
 
 
