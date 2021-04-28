@@ -3,7 +3,6 @@ from transblock import *
 from transformers import pipeline
 #nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
 
-nlp = pipeline("zero-shot-classification", model="roberta-large-mnli", device=0) #  
 
 #facebook/bart-large-mnli 
 
@@ -45,25 +44,27 @@ while ix < len(sentences):
     gc.collect()
 '''
 
-sample_cnt = 10000
-
-for ite in range(100):
-    print('ite:', ite) 
-    for dsn in ['ag','pop','uci','bbc','bbcsport','tweet','yahoo']:
-        ds = load_data(dataset=dsn)
-        labels_candidate = list(ds.df['label'].unique())
-        print(dsn, ' ==>', labels_candidate)
-        #dfi = ds.df.sample(min(ds.df.shape[0], sample_cnt))
-        correct = 0
-        for ix, row in ds.df.iterrows():
-            label = row['label']
-            content = row['content']
-            #content_ = ' '.join(content.split(' ')[:50])
-            result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
-            pred = result['labels']
-            if pred[0] == label:
-                correct += 1
-        print(dsn, ' acc==>',  correct / ds.df.shape[0])
+#sample_cnt = 10000
+for model in ["roberta-large-mnli", "facebook/bart-large-mnli "]:
+    nlp = pipeline("zero-shot-classification", model=model, device=0) #  
+    print(model, ' loaded')
+    for ite in range(3):
+        print('ite:', ite) 
+        for dsn in ['ag','pop','uci','bbc','bbcsport','tweet','yahoo']:
+            ds = load_data(dataset=dsn)
+            labels_candidate = list(ds.df['label'].unique())
+            print(dsn, ' ==>', labels_candidate)
+            #dfi = ds.df.sample(min(ds.df.shape[0], sample_cnt))
+            correct = 0
+            for ix, row in ds.df.iterrows():
+                label = row['label']
+                content = row['content']
+                #content_ = ' '.join(content.split(' ')[:50])
+                result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
+                pred = result['labels']
+                if pred[0] == label:
+                    correct += 1
+            print(dsn, ' acc==>',  correct / ds.df.shape[0])
 
 
 
