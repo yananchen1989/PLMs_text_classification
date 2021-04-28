@@ -53,7 +53,7 @@ for m in ['cmlm', 'dan']:
     print('enc==>', m)
     enc = encoder(m)
 
-    for dsn in ['tweet','pop', 'yahoo','bbcsport','uci']:
+    for dsn in ['ag','pop', 'yahoo','bbcsport','uci']:
         ds = load_data(dataset=dsn)
         labels = ds.df['label'].unique()
         print(dsn)
