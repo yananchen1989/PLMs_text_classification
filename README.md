@@ -1,36 +1,18 @@
 # topic_classification_augmentation
 
 
-datasets come from huggingface :
-
-ag_news: https://huggingface.co/datasets/ag_news
-
-World
-Sports
-Business
-Sci/Tech
 
 
 
-yahoo_news: https://huggingface.co/datasets/yahoo_answers_topics
+## datasets for topic classification :
 
-Society & Culture
-Science & Mathematics
-Health
-Education & Reference
-Computers & Internet
-Sports
-Business & Finance
-Entertainment & Music
-Family & Relationships
-Politics & Government
 
-pop_news: https://huggingface.co/datasets/newspop
+dataset | labels 
+------------ | -------------
+ag_news | World,Sports,Business,Sci/Tech
+yahoo_news | Society & Culture,Science & Mathematics,Health,Education & Reference...
+pop_news | economy,microsoft,obama,palestine
 
-economy
-microsoft
-obama
-palestine
 
 codes for fine-tune models follow the examples from huggingface: https://github.com/huggingface/transformers/tree/master/examples/language-modeling
 
