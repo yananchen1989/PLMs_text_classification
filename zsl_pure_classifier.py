@@ -58,9 +58,8 @@ for ite in range(100):
         for ix, row in dfi.iterrows():
             label = row['label']
             content = row['content']
-            print(content)
-            print(len(content.split(' ')))
-            result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
+            content_ = ' '.join(content.split(' ')[:50])
+            result = nlp(content_, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
             pred = result['labels']
             if pred[0] == label:
                 correct += 1
