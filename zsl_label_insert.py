@@ -58,29 +58,31 @@ while True:
         time.sleep(60)
 
 batch_size = 32
-for m in ['cmlm', 'dan']:
-    print('enc==>', m)
-    enc = encoder(m)
+for rep in [0.05, 0.1, 0.2, 0.25, 0.3, 0.5, 0.6, 0.7]:
+    print("rep==>", rep)
+    for m in ['cmlm', 'dan']:
+        print('enc==>', m)
+        enc = encoder(m)
 
-    for dsn in ['ag','pop', 'yahoo','bbcsport','uci']:
-        ds = load_data(dataset=dsn)
-        labels = ds.df['label'].unique()
-        print(dsn, labels)
-        embeds = enc.infer(ds.df['content'].tolist(), batch_size = batch_size) 
+        for dsn in ['ag','pop', 'yahoo','bbcsport','uci']:
+            ds = load_data(dataset=dsn)
+            labels = ds.df['label'].unique()
+            print(dsn, labels)
+            embeds = enc.infer(ds.df['content'].tolist(), batch_size = batch_size) 
 
-        label_simis = {}
-        for ll in labels:
-            sents = [insert_label(sent, ll, rep=0.1) for sent in ds.df['content'].tolist()]
-            embeds_ll = enc.infer(sents, batch_size = batch_size) 
-            simis = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_ll)).numpy()
-            label_simis[ll] = simis
-            #simis_ll.append(simis.reshape(-1,1))
-        df_simis = pd.DataFrame(label_simis)
+            label_simis = {}
+            for ll in labels:
+                sents = [insert_label(sent, ll, rep=0.1) for sent in ds.df['content'].tolist()]
+                embeds_ll = enc.infer(sents, batch_size = batch_size) 
+                simis = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_ll)).numpy()
+                label_simis[ll] = simis
+                #simis_ll.append(simis.reshape(-1,1))
+            df_simis = pd.DataFrame(label_simis)
 
-        df_simis['pred'] = df_simis.idxmax(axis=1)
-        df_simis['label'] = ds.df['label']
-        acc = df_simis.loc[df_simis['pred']==df_simis['label']].shape[0] / df_simis.shape[0]
-        print('dsn:', dsn, '  acc==>', acc)
+            df_simis['pred'] = df_simis.idxmax(axis=1)
+            df_simis['label'] = ds.df['label']
+            acc = df_simis.loc[df_simis['pred']==df_simis['label']].shape[0] / df_simis.shape[0]
+            print('dsn:', dsn, '  acc==>', acc)
 
 
 
