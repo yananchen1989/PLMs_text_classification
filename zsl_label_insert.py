@@ -72,7 +72,7 @@ for rep in [0.05, 0.1, 0.2, 0.25, 0.3, 0.5, 0.6, 0.7]:
 
             label_simis = {}
             for ll in labels:
-                sents = [insert_label(sent, ll, rep=0.1) for sent in ds.df['content'].tolist()]
+                sents = [insert_label(sent, ll, rep=rep) for sent in ds.df['content'].tolist()]
                 embeds_ll = enc.infer(sents, batch_size = batch_size) 
                 simis = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_ll)).numpy()
                 label_simis[ll] = simis
