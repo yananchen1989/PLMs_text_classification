@@ -55,7 +55,7 @@ while True:
         print('memoryUtil:', memoryUtil)
         break
     else:
-        time.sleep(60)
+        time.sleep(60*5)
 
 batch_size = 32
 for rep in [0.05, 0.1, 0.2, 0.25, 0.3, 0.5, 0.6, 0.7]:
