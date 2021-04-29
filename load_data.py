@@ -32,7 +32,9 @@ class load_data():
         elif self.dataset == 'pop':
             self.df_train, self.df_test, self.df = self.get_pop_news()    
         elif self.dataset == 'uci':
-            self.df_train, self.df_test, self.df = self.get_uci_news()        
+            self.df_train, self.df_test, self.df = self.get_uci_news()   
+        elif self.dataset == 'dbpedia':
+            self.df_train, self.df_test, self.df = self.get_dbpedia_news() 
         else:
             raise KeyError("dataset illegal!")
 
