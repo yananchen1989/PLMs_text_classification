@@ -41,73 +41,37 @@ while ix < len(sentences):
     gc.collect()
 
 '''
+def get_acc(dfi, labels_candidate):
+    correct = 0
+    for ix, row in dfi.iterrows():
+        label = row['label']
+        content = row['content']
+        #content_ = ' '.join(content.split(' ')[:50])
+        result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
+        pred = result['labels']
+        if pred[0] == label:
+            correct += 1
+    return correct / dfi.shape[0]
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", default="", type=str)
+args = parser.parse_args()
 
-model = "facebook/bart-large-mnli"
-nlp = pipeline("zero-shot-classification", model=model, device=0) # 
-print(model, ' loaded')
-for dsn in ['ag','pop','uci','bbc','bbcsport','tweet']:
+#for model in ["facebook/bart-large-mnli", "roberta-large-mnli", "joeddav/bart-large-mnli-yahoo-answers"]:
+nlp = pipeline("zero-shot-classification", model=args.model, device=0) # 
+print(args.model, ' loaded')
+for dsn in ['ag','pop','uci','bbc','bbcsport','tweet','yahoo']:
     ds = load_data(dataset=dsn)
     labels_candidate = list(ds.df['label'].unique())
     print(dsn, ' ==>', labels_candidate)
-    #dfi = ds.df.sample(min(ds.df.shape[0], sample_cnt))
-    correct = 0
-    for ix, row in ds.df.iterrows():
-        label = row['label']
-        content = row['content']
-        content_ = ' '.join(content.split(' ')[:50])
-        result = nlp(content_, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
-        pred = result['labels']
-        if pred[0] == label:
-            correct += 1
-    print(dsn, ' acc==>',  correct / ds.df.shape[0])
+    if dsn in ['ag','yahoo']:
+        acc = get_acc(ds.df_test, labels_candidate)
+    else:
+        acc = get_acc(ds.df, labels_candidate)
+    print(dsn, ' acc==>',  acc)
 
 
 
-
-
-for dsn in ['yahoo']:
-    ds = load_data(dataset=dsn)
-    labels_candidate = list(ds.df_test['label'].unique())
-    print(dsn, ' ==>', labels_candidate)
-    correct = 0
-    for ix, row in ds.df_test.iterrows():
-        label = row['label']
-        content = row['content']
-        #content_ = ' '.join(content.split(' ')[:50])
-        result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
-        pred = result['labels']
-        if pred[0] == label:
-            correct += 1
-    if ix % 1000:
-        print('step acc==>', correct / ix)
-    print(dsn, ' acc==>',  correct / ds.df_test.shape[0])
-
-
-
-
-
-
-model = "roberta-large-mnli"
-nlp = pipeline("zero-shot-classification", model=model, device=0) # 
-print(model, ' loaded')
-for dsn in ['yahoo']:
-    ds = load_data(dataset=dsn)
-    labels_candidate = list(ds.df_test['label'].unique())
-    print(dsn, ' ==>', labels_candidate)
-    #dfi = ds.df.sample(min(ds.df.shape[0], sample_cnt))
-    correct = 0
-    for ix, row in ds.df_test.iterrows():
-        label = row['label']
-        content = row['content']
-        #content_ = ' '.join(content.split(' ')[:50])
-        result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
-        pred = result['labels']
-        if pred[0] == label:
-            correct += 1
-    if ix % 1000:
-        print('step acc==>', correct / ix)
-    print(dsn, ' acc==>',  correct / ds.df_test.shape[0])
 
 
 
