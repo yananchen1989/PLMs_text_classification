@@ -48,9 +48,8 @@ def insert_label(sent, label, rep=0.1):
     return ' '.join(tokens)
 
 import GPUtil,time
-Gpus = GPUtil.getGPUs()
 while True:
-    memoryUtil = min([gpu.memoryUtil for gpu in Gpus])
+    memoryUtil = min([gpu.memoryUtil for gpu in GPUtil.getGPUs()])
     if memoryUtil < 0.1:
         print('memoryUtil:', memoryUtil)
         break
