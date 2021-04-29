@@ -3,9 +3,6 @@ from transblock import *
 from transformers import pipeline
 #nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  
 
-
-#facebook/bart-large-mnli 
-
 '''
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 #https://huggingface.co/joeddav/bart-large-mnli-yahoo-answers
@@ -42,8 +39,8 @@ while ix < len(sentences):
     logger.info('ix==>{}'.format(ix))
 
     gc.collect()
-'''
 
+'''
 
 
 model = "facebook/bart-large-mnli"
@@ -58,12 +55,16 @@ for dsn in ['ag','pop','uci','bbc','bbcsport','tweet']:
     for ix, row in ds.df.iterrows():
         label = row['label']
         content = row['content']
-        #content_ = ' '.join(content.split(' ')[:50])
-        result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
+        content_ = ' '.join(content.split(' ')[:50])
+        result = nlp(content_, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
         pred = result['labels']
         if pred[0] == label:
             correct += 1
     print(dsn, ' acc==>',  correct / ds.df.shape[0])
+
+
+
+
 
 for dsn in ['yahoo']:
     ds = load_data(dataset=dsn)
@@ -78,6 +79,8 @@ for dsn in ['yahoo']:
         pred = result['labels']
         if pred[0] == label:
             correct += 1
+    if ix % 1000:
+        print('step acc==>', correct / ix)
     print(dsn, ' acc==>',  correct / ds.df_test.shape[0])
 
 
@@ -102,6 +105,8 @@ for dsn in ['yahoo']:
         pred = result['labels']
         if pred[0] == label:
             correct += 1
+    if ix % 1000:
+        print('step acc==>', correct / ix)
     print(dsn, ' acc==>',  correct / ds.df_test.shape[0])
 
 
