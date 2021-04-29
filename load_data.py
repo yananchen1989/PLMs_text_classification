@@ -82,6 +82,37 @@ class load_data():
         return df_train, df_test , df.sample(frac=1)
 
     # ag news
+    def get_dbpedia_news(self):
+        df_train = pd.read_csv("../datasets_aug/dbpedia_csv/train.csv", header=None)
+        df_test = pd.read_csv("../datasets_aug/dbpedia_csv/test.csv", header=None)
+        df_train.columns=['label','title','content']
+        df_test.columns=['label','title','content']
+
+        df_train['content'] = df_train['title'] + ' ' + df_train['content']
+        df_test['content'] = df_test['title'] + ' ' + df_test['content']
+        del df_train['title'], df_test['title']
+
+        ixl = {1:"Company",
+                2:"Educational Institution",
+                3:"Artist",
+                4:"Athlete",
+                5:"Office Holder",
+                6:"Mean Of Transportation",
+                7:"Building",
+                8:"Natural Place",
+                9:"Village",
+                10:"Animal",
+                11:"Plant",
+                12:"Album",
+                13:"Film",
+                14:"Written Work"}
+
+        df_train['label'] = df_train['label'].map(lambda x: ixl[x])
+        df_test['label'] = df_test['label'].map(lambda x: ixl[x])
+        df_train = sample_stratify(df_train, self.samplecnt)
+        return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1)
+
+    # ag news
     def get_ag_news(self):
         df_train = pd.read_csv("../datasets_aug/ag_news/train.csv")
         df_test = pd.read_csv("../datasets_aug/ag_news/test.csv")

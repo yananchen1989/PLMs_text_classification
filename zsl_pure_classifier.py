@@ -65,7 +65,7 @@ for dsn in ['ag','pop','uci','bbc','bbcsport','tweet','yahoo']:
     ds = load_data(dataset=dsn)
     labels_candidate = list(ds.df['label'].unique())
     print(dsn, ' ==>', labels_candidate)
-    if dsn in ['ag','yahoo']:
+    if dsn in ['ag','yahoo','pop']:
         acc = get_acc(ds.df_test, labels_candidate)
     else:
         acc = get_acc(ds.df, labels_candidate)
