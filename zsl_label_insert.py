@@ -64,7 +64,7 @@ for rep in [0.05, 0.1, 0.2, 0.25, 0.3, 0.5, 0.6, 0.7]:
         print('enc==>', m)
         enc = encoder(m)
 
-        for dsn in ['ag','pop', 'yahoo','bbcsport','uci']:
+        for dsn in ['ag','pop', 'yahoo','uci','dbpedia']:
             ds = load_data(dataset=dsn)
             labels = ds.df['label'].unique()
             print(dsn, labels)
