@@ -61,11 +61,11 @@ args = parser.parse_args()
 #for model in ["facebook/bart-large-mnli", "roberta-large-mnli", "joeddav/bart-large-mnli-yahoo-answers"]:
 nlp = pipeline("zero-shot-classification", model=args.model, device=0) # 
 print(args.model, ' loaded')
-for dsn in ['ag','pop','uci','bbc','bbcsport','tweet','yahoo']:
+for dsn in ['dbpedia']:
     ds = load_data(dataset=dsn)
     labels_candidate = list(ds.df['label'].unique())
     print(dsn, ' ==>', labels_candidate)
-    if dsn in ['ag','yahoo','pop']:
+    if dsn in ['ag','yahoo','pop','dbpedia']:
         acc = get_acc(ds.df_test, labels_candidate)
     else:
         acc = get_acc(ds.df, labels_candidate)
