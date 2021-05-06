@@ -56,20 +56,23 @@ def get_acc(dfi, labels_candidate):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default="", type=str)
+parser.add_argument("--dsn", default="", type=str)
 args = parser.parse_args()
 
-for args.model in ["facebook/bart-large-mnli", "roberta-large-mnli", "joeddav/bart-large-mnli-yahoo-answers"]:
-    nlp = pipeline("zero-shot-classification", model=args.model, device=0) # 
-    print(args.model, ' loaded')
-    for dsn in ['dbpedia']:
-        ds = load_data(dataset=dsn)
-        labels_candidate = list(ds.df['label'].unique())
-        print(dsn, ' ==>', labels_candidate)
-        if dsn in ['ag','yahoo','pop','dbpedia']:
-            acc = get_acc(ds.df_test, labels_candidate)
-        else:
-            acc = get_acc(ds.df, labels_candidate)
-        print(dsn, ' acc==>',  acc)
+#for args.model in ["facebook/bart-large-mnli", "roberta-large-mnli", "joeddav/bart-large-mnli-yahoo-answers"]:
+nlp = pipeline("zero-shot-classification", model=args.model, device=0) # 
+print(args.model, ' loaded')
+
+ds = load_data(dataset=args.dsn)
+labels_candidate = list(ds.df['label'].unique())
+print(args.dsn, ' ==>', labels_candidate)
+if args.dsn == 'ag':
+    ds.df_test = ds.df_test.loc[ds.df_test['label']!='World']
+if dsn in ['ag','yahoo','pop','dbpedia']:
+    acc = get_acc(ds.df_test, labels_candidate)
+else:
+    acc = get_acc(ds.df, labels_candidate)
+print(dsn, ' acc==>',  acc)
 
 
 

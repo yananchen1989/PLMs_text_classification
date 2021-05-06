@@ -47,17 +47,17 @@ def insert_label(sent, label, rep=0.1):
         tokens[ix] = label
     return ' '.join(tokens)
 
-# import GPUtil,time
-# while True:
-#     memoryUtil = min([gpu.memoryUtil for gpu in GPUtil.getGPUs()])
-#     if memoryUtil < 0.1:
-#         print('memoryUtil:', memoryUtil)
-#         break
-#     else:
-#         time.sleep(60*5)
+import GPUtil,time
+while True:
+    memoryUtil = min([gpu.memoryUtil for gpu in GPUtil.getGPUs()])
+    if memoryUtil < 0.1:
+        print('memoryUtil:', memoryUtil)
+        break
+    else:
+        time.sleep(60*5)
 
 batch_size = 32
-for rep in [0.05, 0.1, 0.2, 0.25, 0.3, 0.5, 0.6, 0.7]:
+for rep in [0.1, 0.2, 0.5, 0.6, 0.7]:
     print("rep==>", rep)
     for m in ['cmlm', 'dan']:
         print('enc==>', m)
