@@ -67,8 +67,8 @@ print(args.model, ' loaded')
 ds = load_data(dataset=args.dsn)
 labels_candidate = list(ds.df['label'].unique())
 print(args.dsn, ' ==>', labels_candidate)
-if args.dsn == 'ag':
-    ds.df_test = ds.df_test.loc[ds.df_test['label']!='World']
+# if args.dsn == 'ag':
+#     ds.df_test = ds.df_test.loc[ds.df_test['label']!='World']
 if args.dsn in ['ag','yahoo','pop','dbpedia']:
     acc = get_acc(ds.df_test, labels_candidate)
 else:
