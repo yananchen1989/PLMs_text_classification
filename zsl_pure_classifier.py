@@ -68,11 +68,11 @@ labels_candidate = list(ds.df['label'].unique())
 print(args.dsn, ' ==>', labels_candidate)
 if args.dsn == 'ag':
     ds.df_test = ds.df_test.loc[ds.df_test['label']!='World']
-if dsn in ['ag','yahoo','pop','dbpedia']:
+if args.dsn in ['ag','yahoo','pop','dbpedia']:
     acc = get_acc(ds.df_test, labels_candidate)
 else:
     acc = get_acc(ds.df, labels_candidate)
-print(dsn, ' acc==>',  acc)
+print(args.dsn, ' acc==>',  acc)
 
 
 
