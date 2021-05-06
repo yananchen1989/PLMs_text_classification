@@ -126,7 +126,9 @@ acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
 print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
 
 '''
-nohup python -u baseline_classifier.py --ds dbpedia > base_augno_dbpedia.log & 
+nohup python -u baseline_classifier.py --ds dbpedia --aug no --samplecnt 32 --batch_size 8  > base_augno_dbpedia.log & 
+nohup python -u baseline_classifier.py --ds dbpedia --aug translate --samplecnt 32 --batch_size 8 --lang de > base_augno_dbpedia.log & 
+
 
 nohup python -u baseline_classifier.py --aug generate --ds yahoo --generate_m ctrl > generate_yahoo_ctrl &
 nohup python -u baseline_classifier.py --aug fillin --ds ag --ner_set False > fillin_ag_noner.log &

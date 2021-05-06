@@ -17,3 +17,8 @@ yahoo_news_test = datasets.load_dataset('yahoo_answers_topics', split="test")
 
 #https://huggingface.co/datasets/newspop
 news_train = datasets.load_dataset('newspop')
+
+import datasets
+cc_news = datasets.load_dataset('cc_news', split="train")
+
+df = pd.DataFrame(cc_news_train)

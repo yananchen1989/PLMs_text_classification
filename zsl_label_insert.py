@@ -30,7 +30,7 @@ class encoder():
         self.model = tf.keras.Model(inputs=text_input, outputs=embed)
 
     def infer(self, sents, batch_size=32):
-        if m in ['dan', 'cmlm']:
+        if self.m in ['dan', 'cmlm']:
             embeds = self.model.predict(sents, batch_size=batch_size, verbose=1)
         #elif m == 'distil':
         #    embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=True)
@@ -56,32 +56,30 @@ def insert_label(sent, label, rep=0.1):
 #     else:
 #         time.sleep(60*5)
 
-batch_size = 64
-for rep in [0.1, 0.2, 0.5, 0.6, 0.7]:
-    print("rep==>", rep)
-    for m in ['cmlm', 'dan']:
-        print('enc==>', m)
-        enc = encoder(m)
 
-        for dsn in ['ag','pop', 'yahoo','uci','dbpedia','bbc']:
-            ds = load_data(dataset=dsn)
-            labels = ds.df_test['label'].unique()
-            print(dsn, labels)
-            embeds = enc.infer(ds.df_test['content'].tolist(), batch_size = batch_size) 
 
-            label_simis = {}
-            for ll in labels:
-                sents = [insert_label(sent, ll, rep=rep) for sent in ds.df_test['content'].tolist()]
-                embeds_ll = enc.infer(sents, batch_size = batch_size) 
-                simis = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_ll)).numpy()
-                label_simis[ll] = simis
-                #simis_ll.append(simis.reshape(-1,1))
-            df_simis = pd.DataFrame(label_simis)
+m = 'cmlm'
+enc = encoder(m)
 
-            df_simis['pred'] = df_simis.idxmax(axis=1)
-            df_simis['label'] = ds.df_test['label']
-            acc = df_simis.loc[df_simis['pred']==df_simis['label']].shape[0] / df_simis.shape[0]
-            print('dsn:', dsn, '  acc==>', acc)
+for dsn in ['pop', 'yahoo','uci','dbpedia','bbc']:
+    ds = load_data(dataset=dsn)
+    labels = ds.df_test['label'].unique()
+    print(dsn, labels)
+    embeds = enc.infer(ds.df_test['content'].tolist(), batch_size = 1024) 
+
+    embeds_label = enc.infer(list(labels), batch_size = 16) 
+
+    label_simis = {}
+    for ix, label in enumerate(list(labels)):
+        simi = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_label[ix].reshape(1,-1))).numpy()
+        label_simis[label] = simi 
+
+    df_simis = pd.DataFrame(label_simis)
+
+    df_simis['pred'] = df_simis.idxmax(axis=1)
+    df_simis['label'] = ds.df_test['label']
+    acc = df_simis.loc[df_simis['pred']==df_simis['label']].shape[0] / df_simis.shape[0]
+    print('enc:', m,  'dsn:', dsn, '  acc==>', acc)
 
 
 
