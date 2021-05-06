@@ -70,6 +70,7 @@ class load_data():
                     infos.append((label, line.strip()))
         df = pd.DataFrame(infos, columns=['label','content'])
         df_train, df_test = train_test_split(df, test_size=0.2)
+        df_train = sample_stratify(df_train, self.samplecnt)
         return df_train, df_test, df.sample(frac=1)   
 
     def get_uci_news(self):
@@ -81,6 +82,7 @@ class load_data():
         ld = {'e':'entertainment', 'b':'business', 't':"science technology", 'm':"health"}
         df['label'] = df['label'].map(lambda x: ld[x])
         df_train, df_test = train_test_split(df, test_size=0.2)
+        df_train = sample_stratify(df_train, self.samplecnt)
         return df_train, df_test , df.sample(frac=1)
 
     # ag news
@@ -139,6 +141,7 @@ class load_data():
         df['label'] = df['label'].map(lambda x: 'technology' if x=='tech' else x)
 
         df_train, df_test = train_test_split(df, test_size=0.5)
+        df_train = sample_stratify(df_train, self.samplecnt)
         return df_train, df_test, df.sample(frac=1)
 
     # bbc sports
@@ -152,6 +155,7 @@ class load_data():
                     infos.append((content, cate))         
         df = pd.DataFrame(infos, columns=['content', 'label'])
         df_train, df_test = train_test_split(df, test_size=0.5)
+        df_train = sample_stratify(df_train, self.samplecnt)
         return df_train, df_test, df.sample(frac=1)
 
     def get_pop_news(self):
