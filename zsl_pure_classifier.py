@@ -59,8 +59,9 @@ parser.add_argument("--model", default="", type=str)
 parser.add_argument("--dsn", default="", type=str)
 args = parser.parse_args()
 
-#for args.model in ["facebook/bart-large-mnli", "roberta-large-mnli", "joeddav/bart-large-mnli-yahoo-answers"]:
-nlp = pipeline("zero-shot-classification", model=args.model, device=0) # 
+
+model_name = {'bart':"facebook/bart-large-mnli", 'roberta':"roberta-large-mnli", 'bart-yahoo':"joeddav/bart-large-mnli-yahoo-answers"}
+nlp = pipeline("zero-shot-classification", model=model_name[args.model], device=0) # 
 print(args.model, ' loaded')
 
 ds = load_data(dataset=args.dsn)
