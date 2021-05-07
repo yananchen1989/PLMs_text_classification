@@ -79,10 +79,14 @@ def run_benchmark(dataset, augmentor, samplecnt):
             raise KeyError("input model illegal!")
 
         print("train begin==>")
+
         history = model.fit(
-            x_train, y_train, batch_size=args.batch_size, epochs=60, validation_data=(x_test, y_test), verbose=1,
+            x_train, y_train, batch_size=args.batch_size, epochs=60, \
+            #validation_batch_size=512,
+            validation_data=(x_test, y_test), verbose=1,
             callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
         )
+
         best_val_acc = max(history.history['val_acc'])
         print("iter completed, tranin acc ==>{}".format(best_val_acc))
         accs.append(best_val_acc)
