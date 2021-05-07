@@ -67,7 +67,7 @@ class TransformerBlock(layers.Layer):
         if tf.__version__.startswith('2.4'):        
             self.att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
         else:
-            self.att = MultiHeadSelfAttention(num_heads=num_heads, key_dim=embed_dim)
+            self.att = MultiHeadSelfAttention(num_heads=num_heads, embed_dim=embed_dim)
         self.ffn = keras.Sequential(
             [layers.Dense(ff_dim, activation="relu"), layers.Dense(embed_dim),]
         )
