@@ -1,4 +1,4 @@
-dsn=ucii
+dsn=dbpedia
 samplecnt=32
 batch_size=8
 # baseline 

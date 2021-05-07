@@ -3,6 +3,8 @@ import numpy as np
 import tensorflow as tf
 import pandas as pd 
 from sklearn.model_selection import train_test_split
+from sklearn.datasets import fetch_20newsgroups
+
 
 
 
@@ -35,6 +37,10 @@ class load_data():
             self.df_train, self.df_test, self.df = self.get_uci_news()   
         elif self.dataset == 'dbpedia':
             self.df_train, self.df_test, self.df = self.get_dbpedia_news() 
+        elif self.dataset == '20news':
+            self.df_train, self.df_test, self.df = self.get_20_news() 
+        elif self.dataset == 'nyt':
+            self.df_train, self.df_test, self.df = self.get_nyt_news()
         else:
             raise KeyError("dataset illegal!")
 
@@ -174,6 +180,46 @@ class load_data():
                 inplace=True )  
         df_train = sample_stratify(df_train, self.samplecnt)      
         return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1)
+    def get_20_news(self):
+        # data_train = fetch_20newsgroups(subset='train',shuffle=True,remove=('headers', 'footers', 'quotes'))
+        # df_train = pd.DataFrame(zip(data_train['data'], list(data_train['target'])), columns=['content','label'])
+        # ixl = {ix:n for ix, n in enumerate(data_train['target_names'])}
+        # df_train['label'] = df_train['label'].map(lambda x: ixl[x])
+        # df_train.to_csv('20news_train.csv', index=False)
+
+        # data_test = fetch_20newsgroups(subset='test',shuffle=True,remove=('headers', 'footers', 'quotes'))
+        # df_test = pd.DataFrame(zip(data_test['data'], list(data_test['target'])), columns=['content','label'])
+        # ixl = {ix:n for ix, n in enumerate(data_test['target_names'])}
+        # df_test['label'] = df_test['label'].map(lambda x: ixl[x])
+        # df_test.to_csv('20news_test.csv', index=False)
+        df_train = pd.read_csv("../datasets_aug/20newsgroups/20news_train.csv")    
+        df_test = pd.read_csv("../datasets_aug/20newsgroups/20news_test.csv")  
+        df_train = sample_stratify(df_train, self.samplecnt)  
+        return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1) 
+    
+    def get_nyt_news(self):      
+        infos = []
+        with open('../datasets_aug/NYT-Topics/dataset.txt','r') as f:
+            for line in f:
+                infos.append(line.strip())
+
+        labels = []
+        with open('../datasets_aug/NYT-Topics/labels.txt','r') as f:
+            for line in f:
+                labels.append(int(line.strip()))
+
+        df = pd.DataFrame(zip(infos, labels), columns=['content','label'])
+
+        names = []
+        with open('../datasets_aug/NYT-Topics/classes.txt','r') as f:
+            for line in f:
+                names.append(line.strip())
+        ixl = {ix:l for ix, l in enumerate(names)}
+        df['label'] = df['label'].map(lambda x: ixl[x])
+        df_train, df_test = train_test_split(df, test_size=0.2)
+        df_train = sample_stratify(df_train, self.samplecnt)
+        return df_train, df_test, df.sample(frac=1)        
+
 
 def get_keras_data(df_train, df_test):
     num_classes = df_test['label'].unique().shape[0]
