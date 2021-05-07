@@ -64,7 +64,7 @@ class MultiHeadSelfAttention(layers.Layer):
 class TransformerBlock(layers.Layer):
     def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
         super(TransformerBlock, self).__init__()  
-        if tf.__version__.startswith('2.4'):        
+        if tf.__version__.startswith('2.4') or tf.__version__.startswith('2.5'):        
             self.att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
         else:
             self.att = MultiHeadSelfAttention(num_heads=num_heads, embed_dim=embed_dim)
@@ -77,7 +77,10 @@ class TransformerBlock(layers.Layer):
         self.dropout2 = layers.Dropout(rate)
 
     def call(self, inputs, training):
-        attn_output = self.att(inputs, inputs)
+        if tf.__version__.startswith('2.4') or tf.__version__.startswith('2.5'): 
+            attn_output = self.att(inputs, inputs)
+        else:
+            attn_output = self.att(inputs)
         attn_output = self.dropout1(attn_output, training=training)
         out1 = self.layernorm1(inputs + attn_output)
         ffn_output = self.ffn(out1)
