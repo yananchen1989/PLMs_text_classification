@@ -17,7 +17,10 @@ class fillInmask():
         self.ner_set = ner_set
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # load tagger
-        self.tagger = SequenceTagger.load("flair/ner-english-fast")
+        if torch.__version__.startswith('1.8'):
+            self.tagger = SequenceTagger.load("flair/ner-english-large")
+        else:
+            self.tagger = SequenceTagger.load("flair/ner-english-fast")
         self.load_model()
         print('fillin mask model loaded==>', self.model_name)
     def load_model(self):
