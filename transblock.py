@@ -122,9 +122,7 @@ def get_model_transormer(num_classes):
     transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
     x = transformer_block(x)
     x = layers.GlobalAveragePooling1D()(x)
-    x = layers.Dropout(0.1)(x)
-    x = layers.Dense(20, activation="relu")(x)
-    x = layers.Dropout(0.1)(x)
+    x = layers.Dense(32, activation="relu")(x)
     outputs = layers.Dense(num_classes, activation="softmax")(x)
 
     #outputs = layers.Dense(1, activation="sigmoid")(x)
