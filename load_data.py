@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch
+import sys,os,logging,glob,pickle,torch,joblib
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
@@ -181,19 +181,18 @@ class load_data():
         df_train = sample_stratify(df_train, self.samplecnt)      
         return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1)
     def get_20_news(self):
-        # data_train = fetch_20newsgroups(subset='train',shuffle=True,remove=('headers', 'footers', 'quotes'))
-        # df_train = pd.DataFrame(zip(data_train['data'], list(data_train['target'])), columns=['content','label'])
-        # ixl = {ix:n for ix, n in enumerate(data_train['target_names'])}
-        # df_train['label'] = df_train['label'].map(lambda x: ixl[x])
-        # df_train.to_csv('20news_train.csv', index=False)
+        #data_train = fetch_20newsgroups(subset='train',shuffle=True,remove=('headers', 'footers', 'quotes'))
+        data_train = joblib.load('../datasets_aug/20newsgroups/20news_data_train')
+        df_train = pd.DataFrame(zip(data_train['data'], list(data_train['target'])), columns=['content','label'])
+        ixl = {ix:n for ix, n in enumerate(data_train['target_names'])}
+        df_train['label'] = df_train['label'].map(lambda x: ixl[x])
 
-        # data_test = fetch_20newsgroups(subset='test',shuffle=True,remove=('headers', 'footers', 'quotes'))
-        # df_test = pd.DataFrame(zip(data_test['data'], list(data_test['target'])), columns=['content','label'])
-        # ixl = {ix:n for ix, n in enumerate(data_test['target_names'])}
-        # df_test['label'] = df_test['label'].map(lambda x: ixl[x])
-        # df_test.to_csv('20news_test.csv', index=False)
-        df_train = pd.read_csv("../datasets_aug/20newsgroups/20news_train.csv")    
-        df_test = pd.read_csv("../datasets_aug/20newsgroups/20news_test.csv")  
+        #data_test = fetch_20newsgroups(subset='test',shuffle=True,remove=('headers', 'footers', 'quotes'))
+        data_test = joblib.load('../datasets_aug/20newsgroups/20news_data_test')
+        df_test = pd.DataFrame(zip(data_test['data'], list(data_test['target'])), columns=['content','label'])
+        ixl = {ix:n for ix, n in enumerate(data_test['target_names'])}
+        df_test['label'] = df_test['label'].map(lambda x: ixl[x])
+
         df_train = sample_stratify(df_train, self.samplecnt)  
         return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1) 
     
