@@ -203,13 +203,15 @@ class load_data():
             'talk.politics.misc':'politics', 
             'sci.crypt':'science encryption'
             }
-        #data_train = fetch_20newsgroups(subset='train',shuffle=True,remove=('headers', 'footers', 'quotes'))
+        #data_train = fetch_20newsgroups(subset='train',shuffle=True)
+        #joblib.dump(data_train, '20news_data_train')
         data_train = joblib.load('../datasets_aug/20newsgroups/20news_data_train')
         df_train = pd.DataFrame(zip(data_train['data'], list(data_train['target'])), columns=['content','label'])
         ixl = {ix:n for ix, n in enumerate(data_train['target_names'])}
         df_train['label'] = df_train['label'].map(lambda x: label_name_map[ixl[x]])
 
-        #data_test = fetch_20newsgroups(subset='test',shuffle=True,remove=('headers', 'footers', 'quotes'))
+        #data_test = fetch_20newsgroups(subset='test',shuffle=True)
+        #joblib.dump(data_test, '20news_data_test')
         data_test = joblib.load('../datasets_aug/20newsgroups/20news_data_test')
         df_test = pd.DataFrame(zip(data_test['data'], list(data_test['target'])), columns=['content','label'])
         ixl = {ix:n for ix, n in enumerate(data_test['target_names'])}
