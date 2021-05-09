@@ -21,16 +21,22 @@ import torch
 #model = CTRLLMHeadModel.from_pretrained('ctrl')
 #control_codes = tokenizer_ctrl.control_codes.keys()
 
-dfcodes = pd.read_csv("label_codes.tsv", sep='\t')
+#dfcodes = pd.read_csv("label_codes.tsv", sep='\t')
+from load_data import * 
+labels_set = set()
+for dsn in ['ag','yahoo','dbpedia','nyt','pop','20news','uci']:
+    ds = load_data(dataset=dsn, samplecnt=-1)
+    labels_set.update(list(ds.df.label.unique()))
+    print(labels_set)
 
+codes = list(labels_set)
 model  = pipeline("text-generation", model=args.model, device=args.gpu)
 
 while 1:
-    row = dfcodes.sample(1)
-    dsn = row['dsn'].tolist()[0]
-    label = row['label'].tolist()[0]
-    codes = row['codes'].tolist()[0].split(',')
     code = random.sample(codes, 1)[0]
+    if code == 'World':
+        code = random.sample(['Politics','War','Military','Terrorism','Election','Finance',\
+                   'Crime','Murder','Religion','jurisdiction', 'Democracy'], 1)[0]
     if args.model == 'ctrl':
         repetition_penalty=1.2
     else:
@@ -44,7 +50,28 @@ while 1:
         content = content.replace(code, '').replace('\t',' ').replace('\n',' ')
         if len(content.split(' ')) <= 30:
             continue 
-        print(dsn, '\t', label, '\t',code, '\t', content)
+        print(code, '\t', content)
+
+# while 1:
+#     row = dfcodes.sample(1)
+#     dsn = row['dsn'].tolist()[0]
+#     label = row['label'].tolist()[0]
+#     codes = row['codes'].tolist()[0].split(',')
+#     code = random.sample(codes, 1)[0]
+#     if args.model == 'ctrl':
+#         repetition_penalty=1.2
+#     else:
+#         repetition_penalty = 1
+
+#     results = model(code, max_length=250, do_sample=True, top_p=0.9, top_k=0, \
+#             repetition_penalty=repetition_penalty, num_return_sequences=32)
+
+#     for row in results:
+#         content = row['generated_text']
+#         content = content.replace(code, '').replace('\t',' ').replace('\n',' ')
+#         if len(content.split(' ')) <= 30:
+#             continue 
+#         print(dsn, '\t', label, '\t',code, '\t', content)
 
 
 

@@ -1,18 +1,27 @@
 dsn	label	codes
-yahoo	1	Society and Culture,Christianity,Feminism,Atheism
-yahoo	2	Science and Mathematics,Science
-yahoo	3	Health,Fitness,Pregnancy,Tip Diet
-yahoo	4	Education and Reference
-yahoo	5	Computers and Internet,Technologies
-yahoo	6	Sports,athletics,cricket,football,rugby,tennis
-yahoo	7	Business and Finance,Finance
-yahoo	8	Entertainment and Music,Gaming,Movies,Funny,Joke,Music
-yahoo	9	Family and Relationships,Relationship,Relationships
-yahoo	10	Politics and Government,News Politics
+yahoo	'Society & Culture': 'Society and Culture', 'Christianity', 'Feminism', 'Atheism'
+yahoo	'Science & Mathematics	Science and Mathematics,Science
+yahoo	'Health	Health,Fitness,Pregnancy,Tip Diet
+yahoo	'Education & Reference	Education and Reference
+yahoo	'Computers & Internet	Computers and Internet,Technologies
+yahoo	'Sports	Sports,athletics,cricket,football,rugby,tennis
+yahoo	'Business & Finance	Business and Finance,Finance
+yahoo	'Entertainment & Music	Entertainment and Music,Gaming,Movies,Funny,Joke,Music
+yahoo	'Family & Relationships	Family and Relationships,Relationship,Relationships
+yahoo	'Politics & Government	Politics and Government,News Politics
 pop	palestine	Politics palestine,News palestine
 pop	obama	president obama,Event obama,Politics president obama,obama Government,obama administration
 pop	microsoft	microsoft,Technologies microsoft,Computing microsoft,News microsoft,Event microsoft
 pop	economy	economy,Finance economy,Business economy,Saving economy
-ag	2	Sports,athletics,cricket,football,rugby,tennis
-ag	3	Business and Finance,Finance,business
-ag	4	Science and Mathematics,Science,Technologies,Computing
+ag	World	Politics,War,Military,Terrorism,Election,Finance,Crime,Murder,Religion,jurisdiction,Democracy
+ag	Sports	Sports,athletics,cricket,football,rugby,tennis
+ag	Business	Business and Finance,Finance,business
+ag	Science and technology	Science and Mathematics,Science,Technologies,Computing
+nyt
+
+NYT-Topic	business, politics, sports, health, education,estate,arts,science,technology
+
+
+generation_codes = {
+	
+}
