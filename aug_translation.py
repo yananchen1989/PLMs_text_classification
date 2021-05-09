@@ -7,9 +7,9 @@ import pandas as pd
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 class backTranslate():
-    def __init__(self, lang='de'):
+    def __init__(self, lang='de',device='cuda'):
         self.lang = lang
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(device)
         if self.lang not in ['ru','de','zh','fr']:
             raise KeyError("language not supported!")
         self.load_model()
@@ -38,13 +38,13 @@ class backTranslate():
     #     return target_contents
 
     def translate_map_forward(self, content):
-        input_ids = self.tokenizer_forward.encode(content, return_tensors="pt").to(self.device) 
+        input_ids = self.tokenizer_forward.encode(content, truncation=True, max_length=512,return_tensors="pt").to(self.device) 
         outputs = self.model_forward.generate(input_ids)
         decoded = self.tokenizer_forward.decode(outputs[0], skip_special_tokens=True)
         return decoded
 
     def translate_map_backward(self, content):
-        input_ids = self.tokenizer_backward.encode(content, return_tensors="pt").to(self.device) 
+        input_ids = self.tokenizer_backward.encode(content, truncation=True, max_length=512,return_tensors="pt").to(self.device) 
         outputs = self.model_backward.generate(input_ids)
         decoded = self.tokenizer_backward.decode(outputs[0], skip_special_tokens=True)
         return decoded
