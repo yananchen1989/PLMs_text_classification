@@ -181,17 +181,39 @@ class load_data():
         df_train = sample_stratify(df_train, self.samplecnt)      
         return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1)
     def get_20_news(self):
+        label_name_map = {
+            'rec.autos':'autos automobile', 
+            'comp.sys.mac.hardware':'computer system mac hardware', 
+            'comp.graphics':'computer graphics', 
+            'sci.space': 'science space',
+            'talk.politics.guns':'politics guns', 
+            'sci.med':'science medicine illness disease', 
+            'comp.sys.ibm.pc.hardware': 'computer system ibm pc hardware',
+            'comp.os.ms-windows.misc':'computer os microsoft windows', 
+            'rec.motorcycles': 'motorcycles', 
+            'talk.religion.misc':'religion',
+            'misc.forsale':'forsale for sale', 
+            'alt.atheism':'atheism', 
+            'sci.electronics':'science electronics', 
+            'comp.windows.x':'computer windows x',
+            'rec.sport.hockey':'sport hockey', 
+            'rec.sport.baseball':'sport baseball', 
+            'soc.religion.christian':'religion christian',
+            'talk.politics.mideast':'politics middle east', 
+            'talk.politics.misc':'politics', 
+            'sci.crypt':'science encryption'
+            }
         #data_train = fetch_20newsgroups(subset='train',shuffle=True,remove=('headers', 'footers', 'quotes'))
         data_train = joblib.load('../datasets_aug/20newsgroups/20news_data_train')
         df_train = pd.DataFrame(zip(data_train['data'], list(data_train['target'])), columns=['content','label'])
         ixl = {ix:n for ix, n in enumerate(data_train['target_names'])}
-        df_train['label'] = df_train['label'].map(lambda x: ixl[x])
+        df_train['label'] = df_train['label'].map(lambda x: label_name_map[ixl[x]])
 
         #data_test = fetch_20newsgroups(subset='test',shuffle=True,remove=('headers', 'footers', 'quotes'))
         data_test = joblib.load('../datasets_aug/20newsgroups/20news_data_test')
         df_test = pd.DataFrame(zip(data_test['data'], list(data_test['target'])), columns=['content','label'])
         ixl = {ix:n for ix, n in enumerate(data_test['target_names'])}
-        df_test['label'] = df_test['label'].map(lambda x: ixl[x])
+        df_test['label'] = df_test['label'].map(lambda x: label_name_map[ixl[x]])
 
         df_train = sample_stratify(df_train, self.samplecnt)  
         return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1) 
@@ -242,7 +264,7 @@ def get_keras_data(df_train, df_test):
 
     return (x_train,y_train),  (x_test, y_test), num_classes
 
- 
+
 
    
 stopwords = ['i',
