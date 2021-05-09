@@ -57,12 +57,12 @@ def get_acc(dfi, labels_candidate):
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default="", type=str)
 parser.add_argument("--dsn", default="", type=str)
-parser.add_argument("--device", default=0, type=int)
+parser.add_argument("--gpu", default=0, type=int)
 args = parser.parse_args()
 
 
 model_name = {'bart':"facebook/bart-large-mnli", 'roberta':"roberta-large-mnli", 'bart-yahoo':"joeddav/bart-large-mnli-yahoo-answers"}
-nlp = pipeline("zero-shot-classification", model=model_name[args.model], device=args.device) # 
+nlp = pipeline("zero-shot-classification", model=model_name[args.model], device=args.gpu) # 
 print(args.model, ' loaded')
 
 ds = load_data(dataset=args.dsn)
