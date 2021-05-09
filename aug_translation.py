@@ -38,13 +38,13 @@ class backTranslate():
     #     return target_contents
 
     def translate_map_forward(self, content):
-        input_ids = self.tokenizer_forward.encode(content, truncation=True, max_length=512,return_tensors="pt").to(self.device) 
+        input_ids = self.tokenizer_forward.encode(content, truncation=True, max_length=512, return_tensors="pt").to(self.device) 
         outputs = self.model_forward.generate(input_ids)
         decoded = self.tokenizer_forward.decode(outputs[0], skip_special_tokens=True)
         return decoded
 
     def translate_map_backward(self, content):
-        input_ids = self.tokenizer_backward.encode(content, truncation=True, max_length=512,return_tensors="pt").to(self.device) 
+        input_ids = self.tokenizer_backward.encode(content, truncation=True, max_length=512, return_tensors="pt").to(self.device) 
         outputs = self.model_backward.generate(input_ids)
         decoded = self.tokenizer_backward.decode(outputs[0], skip_special_tokens=True)
         return decoded

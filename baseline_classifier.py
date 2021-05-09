@@ -22,6 +22,7 @@ parser.add_argument("--generate_m", default="", type=str)
 parser.add_argument("--batch_size", default=64, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="former", type=str)
+parser.add_argument("--device", default="cuda", type=str)
 
 args = parser.parse_args()
 print('args==>', args)
@@ -29,7 +30,7 @@ print('args==>', args)
 
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
   try:
@@ -95,27 +96,17 @@ def run_benchmark(dataset, augmentor, samplecnt):
     return round(sum(accs) / len(accs), 4)
 
 
-
-
-# AUGMENTATION_FUNCTIONS = {
-#     "fillin": fillInmask(ner_set=False),
-#     "generate": generation(model_name='ctrl'),
-#     "translate": backTranslate(lang='zh')
-# }
-
-
-#with tf.device('/device:GPU:1'):
 print("aug_method started ==> {} on dataset==>{}".format(args.aug, args.ds))
 
 if args.aug == 'fillin':
     # model_name='/root/yanan/berts/transformers/examples/language-modeling/finetuned_bert'
-    augmentor = fillInmask(ner_set=args.ner_set)
+    augmentor = fillInmask(ner_set=args.ner_set, args.device)
 
 elif args.aug == 'generate':
-    augmentor = generation(model_name=args.generate_m)
+    augmentor = generation(model_name=args.generate_m,  args.device)
 
 elif args.aug == 'translate':
-    augmentor = backTranslate(lang=args.lang)
+    augmentor = backTranslate(lang=args.lang, args.device)
 
 elif args.aug == 'no':
     augmentor = None
