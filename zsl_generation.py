@@ -20,7 +20,16 @@ import torch
 #tokenizer_ctrl = CTRLTokenizer.from_pretrained('ctrl')
 #model = CTRLLMHeadModel.from_pretrained('ctrl')
 #control_codes = tokenizer_ctrl.control_codes.keys()
+import GPUtil,time
+Gpus = GPUtil.getGPUs()
+while True:
+    memoryUtil = min([gpu.memoryUtil for gpu in Gpus])
+    if memoryUtil < 0.3:
+        break
+    else:
+        time.sleep(60)
 
+        
 #dfcodes = pd.read_csv("label_codes.tsv", sep='\t')
 from load_data import * 
 labels_set = set()
