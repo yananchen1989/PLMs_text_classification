@@ -57,7 +57,7 @@ def get_acc(dfi, labels_candidate):
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default="", type=str)
 parser.add_argument("--dsn", default="", type=str)
-parser.add_argument("--device", default="", type=str)
+parser.add_argument("--device", default=0, type=int)
 args = parser.parse_args()
 
 
