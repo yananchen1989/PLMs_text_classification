@@ -85,18 +85,18 @@ df = pd.DataFrame(infos, columns=['label','content'])
 ds = load_data(dataset=args.dsn, samplecnt=-1)
 
 if args.dsn == 'ag':
-    ds.df_test = ds.df_test.loc[ds.df_test['label']!=1]
-    ds.df_train = ds.df_train.loc[ds.df_train['label']!=1]
+    ds.df_test = ds.df_test.loc[ds.df_test['label']!='World']
+    ds.df_train = ds.df_train.loc[ds.df_train['label']!='World']
 
 assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
 
 df_all = pd.concat([df, ds.df_train])
 (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df_all, ds.df_test)
-model = get_model_bert(num_classes)
+model = get_model_transormer(num_classes)
 
 print("train begin==>")
 history = model.fit(
-    x_train, y_train, batch_size=64, epochs=12, validation_data=(x_test, y_test), verbose=1,
+    x_train, y_train, batch_size=64, epochs=100, validation_data=(x_test, y_test), verbose=1, validation_batch_size=64,
     callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
 )
 best_val_acc = max(history.history['val_acc'])
