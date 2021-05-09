@@ -47,9 +47,11 @@ def get_acc(dfi, labels_candidate):
     for ix, row in dfi.iterrows():
         label = row['label']
         content = row['content']
+        print('content====>', content)
         #content_ = ' '.join(content.split(' ')[:50])
         result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
         pred = result['labels']
+        print('pred====>', pred[0])
         if pred[0] == label:
             correct += 1
     return correct / dfi.shape[0]
