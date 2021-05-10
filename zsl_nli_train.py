@@ -6,17 +6,7 @@
 
 #content = "Johnson Helps D-Backs End Nine-Game Slide (AP) AP - Randy Johnson took a four-hitter into the ninth inning to help the Arizona Diamondbacks end a nine-game losing streak Sunday, beating Steve Trachsel and the New York Mets 2-0."
 # generate selected samples which belong to the defined categories
-# import csv
-# save_train_file = open('cnn_dm_nli.csv', 'w')
-# writer = csv.writer(save_train_file, delimiter='\t')
-'''
-for content in sentences:
-    result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
 
-    if result['scores'][0] < 0.4:
-        continue
-    writer.writerow([content.strip().replace('\t',' '), result['labels'][0]])
-'''
 
 
 import os, argparse

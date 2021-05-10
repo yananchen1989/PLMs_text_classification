@@ -9,11 +9,13 @@
 '''
 import pandas as pd 
 from transformers import pipeline
-import os, argparse, random,gc
+import os, argparse, random,gc,csv
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default="", type=str)
 parser.add_argument("--gpu", default=0, type=int)
 args = parser.parse_args()
+
+
 
 import torch
 #from transformers import CTRLTokenizer, CTRLLMHeadModel
@@ -62,6 +64,10 @@ while 1:
         if len(content.split(' ')) <= 30:
             continue 
         premise_score = check_premise_score(content, [code])
-        print(label, '\t', content, '\t', premise_score)
+        #print(label, '\t', content, '\t', premise_score)
+        with open('pseudos_{}.tsv'.format(args.model), 'a') as f:
+            writer = csv.writer(f, delimiter='\t')
+            writer.writerow([label, content, premise_score])
+
 
 
