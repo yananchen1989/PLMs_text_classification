@@ -58,28 +58,28 @@ def insert_label(sent, label, rep=0.1):
 
 
 
-m = 'cmlm'
+m = 'dan'
 enc = encoder(m)
 
-for dsn in ['pop', 'yahoo','uci','dbpedia','bbc']:
-    ds = load_data(dataset=dsn)
-    labels = ds.df_test['label'].unique()
-    print(dsn, labels)
-    embeds = enc.infer(ds.df_test['content'].tolist(), batch_size = 1024) 
+dsn = '20news'
+ds = load_data(dataset=dsn)
+labels = ds.df_test['label'].unique()
+print(dsn, labels)
+embeds = enc.infer(ds.df_test['content'].tolist(), batch_size = 512) 
 
-    embeds_label = enc.infer(list(labels), batch_size = 16) 
+embeds_label = enc.infer(list(labels), batch_size=16) 
 
-    label_simis = {}
-    for ix, label in enumerate(list(labels)):
-        simi = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_label[ix].reshape(1,-1))).numpy()
-        label_simis[label] = simi 
+label_simis = {}
+for ix, label in enumerate(list(labels)):
+    simi = F.cosine_similarity(torch.tensor(embeds), torch.tensor(embeds_label[ix].reshape(1,-1))).numpy()
+    label_simis[label] = simi 
 
-    df_simis = pd.DataFrame(label_simis)
+df_simis = pd.DataFrame(label_simis)
 
-    df_simis['pred'] = df_simis.idxmax(axis=1)
-    df_simis['label'] = ds.df_test['label']
-    acc = df_simis.loc[df_simis['pred']==df_simis['label']].shape[0] / df_simis.shape[0]
-    print('enc:', m,  'dsn:', dsn, '  acc==>', acc)
+df_simis['pred'] = df_simis.idxmax(axis=1)
+df_simis['label'] = ds.df_test['label']
+acc = df_simis.loc[df_simis['pred']==df_simis['label']].shape[0] / df_simis.shape[0]
+print('enc:', m,  'dsn:', dsn, '  acc==>', acc)
 
 
 
