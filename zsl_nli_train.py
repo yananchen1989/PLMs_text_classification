@@ -56,12 +56,6 @@ for f in files:
             content = tokens[-1].strip()
             label = tokens[0].strip()
 
-            if args.check:
-                if not check_premise(content, [label]) :
-                    print('reject')
-                    continue
-                else:
-                    print(label)
             infos.append((label, content))
             if len(infos) % 1000 == 0:
                 df = pd.DataFrame(infos, columns=['label','content'])

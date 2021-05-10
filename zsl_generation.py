@@ -22,13 +22,12 @@ import torch
 #control_codes = tokenizer_ctrl.control_codes.keys()
 
 
-#dfcodes = pd.read_csv("label_codes.tsv", sep='\t')
 from load_data import * 
 labels_set = set()
 for dsn in ['ag','yahoo','dbpedia','nyt','pop','20news','uci']:
     ds = load_data(dataset=dsn, samplecnt=-1)
     labels_set.update(list(ds.df.label.unique()))
-    print(labels_set)
+print(labels_set)
 
 del ds 
 gc.collect()
