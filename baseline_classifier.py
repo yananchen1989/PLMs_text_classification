@@ -23,6 +23,7 @@ parser.add_argument("--batch_size", default=64, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="former", type=str)
 parser.add_argument("--device", default="cuda", type=str)
+parser.add_argument("--generate_use_label", default=0, type=int)
 
 args = parser.parse_args()
 print('args==>', args)
@@ -60,7 +61,10 @@ def run_benchmark(dataset, augmentor, samplecnt):
         if augmentor is not None:
             # augmentation
             print("augmentating...")
-            ds.df_train['content_aug'] = ds.df_train['content'].map(lambda x: augmentor.augment(x))
+            if args.generate_use_label and args.aug == 'generate':
+                ds.df_train['content_aug'] = (ds.df_train['label'] +' '+ ds.df_train['content'] ).map(lambda x: augmentor.augment(x))
+            else:
+                ds.df_train['content_aug'] = ds.df_train['content'].map(lambda x: augmentor.augment(x))
             print("augmentated...")
             
             ds.df_train_aug = pd.DataFrame(zip(ds.df_train['content_aug'].tolist()+ds.df_train['content'].tolist(), \
