@@ -33,7 +33,7 @@ labels = ds.df.label.unique()
 
 #files = glob.glob("./generation_samples_{}*.tsv".format(args.model))
 infos = []
-with open('generation_samples_gpt2.tsv','r') as f:
+with open('pseudos_{}.tsv'.format(args.model),'r') as f:
     for line in f:
         if '\t' not in line:
             continue 
