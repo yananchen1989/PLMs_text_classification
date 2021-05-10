@@ -9,7 +9,7 @@
 '''
 import pandas as pd 
 from transformers import pipeline
-import os, argparse, random
+import os, argparse, random,gc
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default="", type=str)
 parser.add_argument("--gpu", default=0, type=int)
@@ -20,16 +20,8 @@ import torch
 #tokenizer_ctrl = CTRLTokenizer.from_pretrained('ctrl')
 #model = CTRLLMHeadModel.from_pretrained('ctrl')
 #control_codes = tokenizer_ctrl.control_codes.keys()
-import GPUtil,time
-Gpus = GPUtil.getGPUs()
-while True:
-    memoryUtil = min([gpu.memoryUtil for gpu in Gpus])
-    if memoryUtil < 0.3:
-        break
-    else:
-        time.sleep(60)
 
-        
+
 #dfcodes = pd.read_csv("label_codes.tsv", sep='\t')
 from load_data import * 
 labels_set = set()
@@ -38,49 +30,39 @@ for dsn in ['ag','yahoo','dbpedia','nyt','pop','20news','uci']:
     labels_set.update(list(ds.df.label.unique()))
     print(labels_set)
 
-codes = list(labels_set)
+del ds 
+gc.collect()
+
+labels = list(labels_set)
 model  = pipeline("text-generation", model=args.model, device=args.gpu)
 
+
+nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  1.8.1+cu102
+def check_premise_score(content, labels_candidate):
+    result = nlp(content, labels_candidate, multi_label=False, hypothesis_template="This text is about {}.")
+    return result['scores'][0]
+
+
 while 1:
-    code = random.sample(codes, 1)[0]
-    if code == 'World':
+    label = random.sample(labels, 1)[0]
+    if label == 'World':
         code = random.sample(['Politics','War','Military','Terrorism','Election','Finance',\
                    'Crime','Murder','Religion','jurisdiction', 'Democracy'], 1)[0]
+    else:
+        code = label
     if args.model == 'ctrl':
         repetition_penalty=1.2
     else:
         repetition_penalty = 1
 
     results = model(code, max_length=250, do_sample=True, top_p=0.9, top_k=0, \
-            repetition_penalty=repetition_penalty, num_return_sequences=32)
+            repetition_penalty=repetition_penalty, num_return_sequences=64)
 
     for row in results:
-        content = row['generated_text']
-        content = content.replace(code, '').replace('\t',' ').replace('\n',' ')
+        content = row['generated_text'].replace(code, '').replace('\t',' ').replace('\n',' ')
         if len(content.split(' ')) <= 30:
             continue 
-        print(code, '\t', content)
-
-# while 1:
-#     row = dfcodes.sample(1)
-#     dsn = row['dsn'].tolist()[0]
-#     label = row['label'].tolist()[0]
-#     codes = row['codes'].tolist()[0].split(',')
-#     code = random.sample(codes, 1)[0]
-#     if args.model == 'ctrl':
-#         repetition_penalty=1.2
-#     else:
-#         repetition_penalty = 1
-
-#     results = model(code, max_length=250, do_sample=True, top_p=0.9, top_k=0, \
-#             repetition_penalty=repetition_penalty, num_return_sequences=32)
-
-#     for row in results:
-#         content = row['generated_text']
-#         content = content.replace(code, '').replace('\t',' ').replace('\n',' ')
-#         if len(content.split(' ')) <= 30:
-#             continue 
-#         print(dsn, '\t', label, '\t',code, '\t', content)
-
+        premise_score = check_premise_score(content, [code])
+        print(label, '\t', content, '\t', premise_score)
 
 
