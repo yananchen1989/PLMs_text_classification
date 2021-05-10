@@ -25,6 +25,7 @@ parser.add_argument("--dsn", default="", type=str)
 parser.add_argument("--check", default=1, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="", type=str)
+parser.add_argument("--thres", default=0.7, type=float)
 args = parser.parse_args()
 
 print("args==>", args)
@@ -40,26 +41,29 @@ args.model = 'gpt2'
 ds = load_data(dataset=args.dsn, samplecnt=-1)
 labels = ds.df.label.unique()
 
-files = glob.glob("./generation_samples_{}*.tsv".format(args.model))
+#files = glob.glob("./generation_samples_{}*.tsv".format(args.model))
 infos = []
-for f in files:
-    with open(f,'r') as f:
-        for line in f:
-            if '\t' not in line:
-                continue 
+with open('generation_samples_gpt2.tsv','r') as f:
+    for line in f:
+        if '\t' not in line:
+            continue 
 
-            tokens = line.strip().split('\t') 
-            
-            if len(tokens)!=2 or tokens[0].strip() not in labels:
-                continue
-            
-            content = tokens[-1].strip()
-            label = tokens[0].strip()
+        tokens = line.strip().split('\t') 
+        
+        if len(tokens)!=3 or tokens[0].strip() not in labels:
+            continue
+        
+        content = tokens[1].strip()
+        label = tokens[0].strip()
+        score = float(tokens[2].strip())
+        if score < args.thres:
+            continue 
 
-            infos.append((label, content))
-            if len(infos) % 1000 == 0:
-                df = pd.DataFrame(infos, columns=['label','content'])
-                print(df.label.value_counts())
+        infos.append((label, content))
+
+df = pd.DataFrame(infos, columns=['label','content'])
+print(df.label.value_counts())
+print("df==>", df.shape[0])
 
 assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
 
