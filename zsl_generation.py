@@ -11,7 +11,7 @@ import pandas as pd
 from transformers import pipeline
 import os, argparse, random,gc,csv
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", default="", type=str)
+parser.add_argument("--model", default="gpt2", type=str)
 parser.add_argument("--gpu", default=0, type=int)
 args = parser.parse_args()
 
