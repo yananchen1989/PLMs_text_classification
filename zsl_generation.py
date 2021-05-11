@@ -13,6 +13,7 @@ import os, argparse, random,gc,csv
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default="gpt2", type=str)
 parser.add_argument("--gpu", default=0, type=int)
+parser.add_argument("--rp", default=1.1, type=int)
 args = parser.parse_args()
 
 
@@ -51,13 +52,9 @@ while 1:
                    'Crime','Murder','Religion','jurisdiction', 'Democracy'], 1)[0]
     else:
         code = label
-    if args.model == 'ctrl':
-        repetition_penalty=1.2
-    else:
-        repetition_penalty = 1
 
     results = model(code, max_length=250, do_sample=True, top_p=0.9, top_k=0, \
-            repetition_penalty=repetition_penalty, num_return_sequences=64)
+            repetition_penalty=args.rp, num_return_sequences=64)
 
     for row in results:
         content = row['generated_text'].replace(code, '').replace('\t',' ').replace('\n',' ')
@@ -69,5 +66,7 @@ while 1:
             writer = csv.writer(f, delimiter='\t')
             writer.writerow([label, content, premise_score])
 
-
+'''
+nohup python -u zsl_generation.py --model ctrl --rp 1.2 &
+'''
 

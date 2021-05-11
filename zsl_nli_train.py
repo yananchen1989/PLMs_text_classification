@@ -11,7 +11,7 @@
 
 import os, argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="", type=str)
+parser.add_argument("--dsn", default="yahoo", type=str)
 parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="gpt2", type=str)
 parser.add_argument("--thres", default=0.7, type=float)
@@ -24,50 +24,48 @@ from transblock import *
 print(torch.__version__)
 
 
+for args.dsn in ['ag','yahoo','dbpedia','nyt','pop','20news','uci']:
+    ds = load_data(dataset=args.dsn, samplecnt=-1)
+    labels = ds.df.label.unique()
 
-args.dsn = 'yahoo'
-args.model = 'gpt2'
-ds = load_data(dataset=args.dsn, samplecnt=-1)
-labels = ds.df.label.unique()
+    args.thres = 0
+    infos = []
+    with open('pseudos_{}.tsv'.format(args.model),'r') as f:
+        for line in f:
+            if '\t' not in line:
+                continue 
 
-#files = glob.glob("./generation_samples_{}*.tsv".format(args.model))
-infos = []
-with open('pseudos_{}.tsv'.format(args.model),'r') as f:
-    for line in f:
-        if '\t' not in line:
-            continue 
+            tokens = line.strip().split('\t') 
+            
+            if len(tokens)!=3 or tokens[0].strip() not in labels:
+                continue
+            
+            content = tokens[1].strip()
+            label = tokens[0].strip()
+            score = float(tokens[2].strip())
+            if score < args.thres:
+                continue 
 
-        tokens = line.strip().split('\t') 
-        
-        if len(tokens)!=3 or tokens[0].strip() not in labels:
-            continue
-        
-        content = tokens[1].strip()
-        label = tokens[0].strip()
-        score = float(tokens[2].strip())
-        if score < args.thres:
-            continue 
+            infos.append((label, content, score))
 
-        infos.append((label, content))
 
-df = pd.DataFrame(infos, columns=['label','content'])
-print(df.label.value_counts())
-print("df==>", df.shape[0])
+    df = pd.DataFrame(infos, columns=['label','content', 'score'])
+    
 
-assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
+    assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
 
-(x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
-model = get_model_transormer(num_classes)
+    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
+    model = get_model_transormer(num_classes)
 
-print("train begin==>")
-history = model.fit(
-    x_train, y_train, batch_size=64, epochs=100, validation_data=(x_test, y_test), verbose=1, validation_batch_size=64,
-    callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-)
-best_val_acc = max(history.history['val_acc'])
-print('dsn:', args.dsn, 'model:', args.model)
-print("iter completed, tranin acc ==>{}".format(best_val_acc))
-print("training cnt==", df.shape[0])
+    print("train begin==>")
+    history = model.fit(
+        x_train, y_train, batch_size=64, epochs=100, validation_data=(x_test, y_test), verbose=1, validation_batch_size=64,
+        sample_weight = df.score.values,
+        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+    )
+    best_val_acc = max(history.history['val_acc'])
+    print(df.label.value_counts())
+    print('dsn:', args.dsn, 'model:', args.model, 'thres:', args.thres, ' acc:', best_val_acc, "training cnt==", df.shape[0] )
 
 
 
@@ -76,7 +74,9 @@ print("training cnt==", df.shape[0])
 
 
 
-
+#0.7: 0.4520
+#0.5: 0.44871
+# weights: 0.4635
 
 
 
