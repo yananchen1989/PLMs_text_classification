@@ -12,9 +12,8 @@
 import os, argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="", type=str)
-parser.add_argument("--check", default=1, type=int)
 parser.add_argument("--gpu", default="0", type=str)
-parser.add_argument("--model", default="", type=str)
+parser.add_argument("--model", default="gpt2", type=str)
 parser.add_argument("--thres", default=0.7, type=float)
 args = parser.parse_args()
 
@@ -66,9 +65,9 @@ history = model.fit(
     callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
 )
 best_val_acc = max(history.history['val_acc'])
-print('dsn:', args.dsn, 'check:', args.check, 'model:', args.model)
+print('dsn:', args.dsn, 'model:', args.model)
 print("iter completed, tranin acc ==>{}".format(best_val_acc))
-print("training cnt==", df_all.shape[0])
+print("training cnt==", df.shape[0])
 
 
 
