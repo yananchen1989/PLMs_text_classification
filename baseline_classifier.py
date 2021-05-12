@@ -104,7 +104,7 @@ if args.aug == 'fillin':
     augmentor = fillInmask(ner_set=args.ner_set, device=args.device)
 
 elif args.aug == 'generate':
-    augmentor = generation(model_name=args.generate_m,  device=args.device)
+    augmentor = generation(model_name=args.generate_m,  device=args.device, num_return_sequences=args.beams)
 
 elif args.aug == 'translate':
     augmentor = backTranslate(lang=args.lang, device=args.device)

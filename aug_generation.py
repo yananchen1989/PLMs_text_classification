@@ -133,9 +133,6 @@ class generation():
 augmentor = generation('gpt2')
 
 prompt_text = "Microsoft has said it will replace more than 14 million power cables for its Xbox consoles due to safety concerns."
-prompt_text = "Versace art portfolio up for sale The art collection of murdered fashion designer Gianni Versace could fetch \
-up to £9m ($17m) when it is auctioned in New York and \
-London later this year. <eod> </s> <eos>"
 
 augmentor.augment('science & technology')
 '''

@@ -21,4 +21,6 @@ news_train = datasets.load_dataset('newspop')
 import datasets
 cc_news = datasets.load_dataset('cc_news', split="train")
 
-df = pd.DataFrame(cc_news_train)
+df = pd.DataFrame(zip(cc_news['title'], cc_news['text'] ))
+df.columns = ['title','content']
+df.to_csv('cc_news.csv')

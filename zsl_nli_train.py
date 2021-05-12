@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="yahoo", type=str)
 parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="gpt2", type=str)
-parser.add_argument("--thres", default=0.7, type=float)
+#parser.add_argument("--thres", default=0.7, type=float)
 args = parser.parse_args()
 
 print("args==>", args)
@@ -28,7 +28,7 @@ for args.dsn in ['ag','yahoo','dbpedia','nyt','pop','20news','uci']:
     ds = load_data(dataset=args.dsn, samplecnt=-1)
     labels = ds.df.label.unique()
 
-    args.thres = 0
+    #args.thres = 0
     infos = []
     with open('pseudos_{}.tsv'.format(args.model),'r') as f:
         for line in f:
@@ -43,15 +43,14 @@ for args.dsn in ['ag','yahoo','dbpedia','nyt','pop','20news','uci']:
             content = tokens[1].strip()
             label = tokens[0].strip()
             score = float(tokens[2].strip())
-            if score < args.thres:
-                continue 
+            # if score < args.thres:
+            #     continue 
 
             infos.append((label, content, score))
 
 
     df = pd.DataFrame(infos, columns=['label','content', 'score'])
     
-
     assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
 
     (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
@@ -65,7 +64,7 @@ for args.dsn in ['ag','yahoo','dbpedia','nyt','pop','20news','uci']:
     )
     best_val_acc = max(history.history['val_acc'])
     print(df.label.value_counts())
-    print('dsn:', args.dsn, 'model:', args.model, 'thres:', args.thres, ' acc:', best_val_acc, "training cnt==", df.shape[0] )
+    print('dsn:', args.dsn, 'model:', args.model, ' acc:', best_val_acc )
 
 
 
