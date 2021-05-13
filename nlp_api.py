@@ -2,7 +2,7 @@
 from load_data import *
 from transformers import pipeline
 import random,torch
-ds = load_data(dataset='yahoo', samplecnt=-1)
+ds = load_data(dataset='ag', samplecnt=-1)
 contents = ds.df.sample(10000)['content'].tolist()
 content = contents[1]
 print(content)
@@ -30,38 +30,18 @@ ds.df_train.sample(10000)['content'].map(lambda x: augmentor.augment(x))
 augmentor = fillInmask(ner_set= 0 )
 
 
-sentences = []
-for text in ds.df_train.sample(10000)['content'].tolist(): 
-    ners_to_masked = augmentor.get_random_span(text)
-    if not ners_to_masked:
-        print(text)
-        continue
-    text_masked = text.replace(ners_to_masked[0], augmentor.nlp.tokenizer.mask_token, 1)
-    sentences.append(text_masked)
-
-
-results = nlp(sentences)
 
 
 
 
 
+from transformers import AutoModelWithLMHead, AutoTokenizer
 
-ners_to_masked = augmentor.get_ners(text)
-for ner in ners_to_masked:
-    if len(ner)<=2 or ner.lower() in stopwords:
-        continue
-    #text_masked = text.replace(ner, self.tokenizer.mask_token)
-    text_masked = text.replace(ner, augmentor.nlp.tokenizer.mask_token, 1)
+model = AutoModelWithLMHead.from_pretrained("Helsinki-NLP/opus-mt-en-zh")
+tokenizer = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh")
+nlp = pipeline("translation_en_to_zh", model=model, tokenizer=tokenizer, device=0)
 
-    pred_tokens = augmentor.nlp(text_masked)
-
-    text = text_masked.replace( augmentor.nlp.tokenizer.mask_token, pred_tokens[0]['token_str'])
-
-
-
-nlp = pipeline("translation" , model = "facebook/wmt19-de-en")
-nlp(ds.df_train.sample(256)['content'].tolist())
+nlp(ds.df_train.sample(12)['content'].tolist(), max_length=100)
 
 
 

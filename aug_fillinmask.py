@@ -8,7 +8,7 @@ from flair.data import Sentence
 from flair.models import SequenceTagger
 # from nltk.corpus import stopwords
 # stopwords = stopwords.words('english')
-#from load_data import *
+from load_data import *
 # distilroberta-base
 class fillInmask():
     def __init__(self, model_name='distilbert-base-uncased', mask_ratio=0.35, ner_set=0,device='cuda'):
