@@ -2,7 +2,7 @@ import sys,os,logging,glob,pickle,random
 import numpy as np
 import torch
 import pandas as pd 
-
+from transformers import pipeline
 #from transformers import AutoTokenizer, AutoModelWithLMHead
 from flair.data import Sentence
 from flair.models import SequenceTagger
@@ -24,7 +24,7 @@ class fillInmask():
             self.tagger = SequenceTagger.load("flair/ner-english-fast")
         #self.load_model()
         #print('fillin mask model loaded==>', self.model_name)
-        self.nlp = pipeline("fill-mask" , model = 'distilbert-base-cased', device=0)
+        self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
     #def load_model(self):
         #self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         #self.model = AutoModelWithLMHead.from_pretrained(self.model_name)
