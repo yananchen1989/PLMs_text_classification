@@ -8,11 +8,6 @@ content = contents[1]
 print(content)
 
 
-nlp  = pipeline("text-generation", model='gpt2', device=0, return_full_text=False)
-results = nlp(ds.df_train['content'].tolist(), max_length=250, do_sample=True, top_p=0.9, top_k=0, \
-           repetition_penalty=1, num_return_sequences=16)
-
-
 
 
 nlp = pipeline("fill-mask" , model = 'distilbert-base-cased', device=0)
@@ -34,16 +29,21 @@ augmentor = fillInmask(ner_set= 0 )
 
 
 
+from transformers import pipeline
 
 from transformers import AutoModelWithLMHead, AutoTokenizer
+lang = 'zh'
+model = AutoModelWithLMHead.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(lang))
+tokenizer = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(lang))
+nlp = pipeline("translation_en_to_fr", model=model, tokenizer=tokenizer, device=0)
 
-model = AutoModelWithLMHead.from_pretrained("Helsinki-NLP/opus-mt-en-zh")
-tokenizer = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh")
-nlp = pipeline("translation_en_to_zh", model=model, tokenizer=tokenizer, device=0)
-
-nlp(ds.df_train.sample(12)['content'].tolist(), max_length=100)
+results = nlp(contents[:10], max_length=300, do_sample=True)
+print(results[-1]['translation_text'])
 
 
+{'translation_text': "Les patriotes trompent Bills Troy Brown a dû faire beaucoup d'ajustements en jouant des deux côtés du football. quot;Vous voulez toujours marquer quand vous obtenez le ballon -- offense ou défense"},
+ {'translation_text': "Boozer fait Jazz Debut dans Win Over Knicks (AP) AP - Carlos Boozer a eu huit points et neuf rebonds dans son premier match de présaison pour Utah, et l'agent gratuit Keith McLeod a terminé avec 11 points et six passes dans la victoire du Jazz 113-89 sur les Knicks de New York mardi soir."},
+ {'translation_text': "Garcia prend la tête d'une course aux Masters d'Europe CRANS-SUR-SIERRE, Suisse (Reuters) - Miguel Angel Jimenez a offert une réprimande de bonne qualité à son jeune compatriote Sergio Garcia vendredi pour avoir tenté de le persuader de se reposer avant la Ryder Cup."}
 
 
 
