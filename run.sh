@@ -1,4 +1,4 @@
-dsn=yahoo
+dsn=ag
 samplecnt=32
 batch_size=8
 # baseline 

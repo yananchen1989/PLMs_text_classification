@@ -64,6 +64,8 @@ for ite in range(args.ite):
     print("augmentating...")
 
     if args.aug == 'generate':
+        if args.generate_m == 'ctrl':
+            args.rp = 1.2
         nlp  = pipeline("text-generation", model=args.generate_m, device=0, return_full_text=False)
         results = nlp(ds.df_train['content'].tolist(), max_length=250, do_sample=True, top_p=0.9, top_k=0, \
                     repetition_penalty=args.rp, num_return_sequences=args.beams)
