@@ -116,7 +116,7 @@ for ite in range(args.ite):
     )
 
     best_val_acc = max(history.history['val_acc'])
-    print("iter completed, tranin acc ==>{}".format(best_val_acc))
+    print("iter completed, tranin acc ==> {}".format(best_val_acc))
     accs.append(best_val_acc)
 
 acc_mean = round(sum(accs) / len(accs), 4)

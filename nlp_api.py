@@ -2,7 +2,7 @@
 from load_data import *
 from transformers import pipeline
 import random,torch
-ds = load_data(dataset='ag', samplecnt=-1)
+ds = load_data(dataset='yahoo', samplecnt=-1)
 contents = ds.df.sample(10000)['content'].tolist()
 content = contents[1]
 print(content)
@@ -10,7 +10,7 @@ print(content)
 
 nlp  = pipeline("text-generation", model='gpt2', device=0, return_full_text=False)
 results = nlp(ds.df_train['content'].tolist(), max_length=250, do_sample=True, top_p=0.9, top_k=0, \
-           repetition_penalty=1, num_return_sequences=64)
+           repetition_penalty=1, num_return_sequences=16)
 
 
 
@@ -60,7 +60,7 @@ for ner in ners_to_masked:
 
 
 
-nlp = pipeline("translation" , model = "Helsinki-NLP/opus-mt-en-fr")
+nlp = pipeline("translation" , model = "facebook/wmt19-de-en")
 nlp(ds.df_train.sample(256)['content'].tolist())
 
 
