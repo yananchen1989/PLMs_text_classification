@@ -23,8 +23,8 @@ class fillInmask():
         else:
             self.tagger = SequenceTagger.load("flair/ner-english-fast")
         #self.load_model()
-        print('fillin mask model loaded==>', self.model_name)
-        self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
+        #print('fillin mask model loaded==>', self.model_name)
+        self.nlp = pipeline("fill-mask" , model = 'distilbert-base-cased', device=0)
     #def load_model(self):
         #self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         #self.model = AutoModelWithLMHead.from_pretrained(self.model_name)
@@ -54,14 +54,14 @@ class fillInmask():
             ners_to_masked = self.get_random_span(text)
             #print(ners_to_masked)
         for ner in ners_to_masked:
-            if len(ner)<=2 or ner.lower() in stopwords:
+            if len(ner)<=2 or ner.lower() in stopwords or ner not in text:
                 continue
             #text_masked = text.replace(ner, self.tokenizer.mask_token)
-            text_masked = text.replace(ner, nlp.tokenizer.mask_token, 1)
+            text_masked = text.replace(ner, self.nlp.tokenizer.mask_token, 1)
 
-            pred_tokens = nlp(text_masked)
+            text = self.nlp(text_masked)[0]['sequence']
 
-            text = text_masked.replace( nlp.tokenizer.mask_token, pred_tokens[0]['token_str'])
+            #text = text_masked.replace( self.nlp.tokenizer.mask_token, pred_tokens[0]['token_str'])
 
             # input_encode = self.tokenizer.encode(text_masked, return_tensors="pt", truncation=True).to(self.device) 
             # mask_token_index = torch.where(input_encode == self.tokenizer.mask_token_id)[1]
