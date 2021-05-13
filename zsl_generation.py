@@ -36,7 +36,7 @@ del ds
 gc.collect()
 
 labels = list(labels_set)
-model  = pipeline("text-generation", model=args.model, device=args.gpu)
+model  = pipeline("text-generation", model=args.model, device=args.gpu, return_full_text=False)
 
 
 nlp = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  1.8.1+cu102
@@ -57,7 +57,7 @@ while 1:
             repetition_penalty=args.rp, num_return_sequences=64)
 
     for row in results:
-        content = row['generated_text'].replace(code, '').replace('\t',' ').replace('\n',' ')
+        content = row['generated_text'].replace('\t',' ').replace('\n',' ')
         if len(content.split(' ')) <= 30:
             continue 
         premise_score = check_premise_score(content, [code])

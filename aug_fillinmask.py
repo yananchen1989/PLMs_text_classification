@@ -3,20 +3,20 @@ import numpy as np
 import torch
 import pandas as pd 
 
-from transformers import AutoTokenizer, AutoModelWithLMHead
+#from transformers import AutoTokenizer, AutoModelWithLMHead
 from flair.data import Sentence
 from flair.models import SequenceTagger
 # from nltk.corpus import stopwords
 # stopwords = stopwords.words('english')
-from load_data import *
+#from load_data import *
 # distilroberta-base
 class fillInmask():
     def __init__(self, model_name='distilbert-base-uncased', mask_ratio=0.35, ner_set=0,device='cuda'):
-        self.model_name = model_name
+        #self.model_name = model_name
         self.mask_ratio = mask_ratio
         self.ner_set = ner_set
         #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device(device)
+        #self.device = torch.device(device)
         # load tagger
         if torch.__version__.startswith('1.8'):
             self.tagger = SequenceTagger.load("flair/ner-english-large")
@@ -24,10 +24,12 @@ class fillInmask():
             self.tagger = SequenceTagger.load("flair/ner-english-fast")
         self.load_model()
         print('fillin mask model loaded==>', self.model_name)
-    def load_model(self):
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        self.model = AutoModelWithLMHead.from_pretrained(self.model_name)
-        self.model.to(self.device)
+        self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
+    #def load_model(self):
+        #self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        #self.model = AutoModelWithLMHead.from_pretrained(self.model_name)
+        #self.model.to(self.device)
+
 
     def get_ners(self, text):
         # make example sentence
@@ -35,9 +37,9 @@ class fillInmask():
         # predict NER tags
         self.tagger.predict(sentence)
         ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
-        ratio = 1
-        ners_to_masked = random.sample(ners, int(len(ners) * ratio ))
-        return ners_to_masked
+        #ratio = 1
+        #ners_to_masked = random.sample(ners, int(len(ners) * ratio ))
+        return ners
 
     def get_random_span(self, text):
         tokens = list(set(text.split(' ')))
@@ -54,64 +56,59 @@ class fillInmask():
         for ner in ners_to_masked:
             if len(ner)<=2 or ner.lower() in stopwords:
                 continue
-            text_masked = text.replace(ner, self.tokenizer.mask_token)
+            #text_masked = text.replace(ner, self.tokenizer.mask_token)
+            text_masked = text.replace(ner, nlp.tokenizer.mask_token, 1)
 
-            input_encode = self.tokenizer.encode(text_masked, return_tensors="pt", truncation=True).to(self.device) 
-            mask_token_index = torch.where(input_encode == self.tokenizer.mask_token_id)[1]
-            if mask_token_index.shape[0] == 0:
-                continue
-            token_logits = self.model(input_encode).logits
-            mask_token_logits = token_logits[0, mask_token_index, :]
+            pred_tokens = nlp(text_masked)
 
-            top_5_tokens = torch.topk(mask_token_logits, 5, dim=1).indices[0].tolist()
+            text = text_masked.replace( nlp.tokenizer.mask_token, pred_tokens[0]['token_str'])
 
-            ner_replace[ner] = self.tokenizer.decode(top_5_tokens[0])
+            # input_encode = self.tokenizer.encode(text_masked, return_tensors="pt", truncation=True).to(self.device) 
+            # mask_token_index = torch.where(input_encode == self.tokenizer.mask_token_id)[1]
+            # if mask_token_index.shape[0] == 0:
+            #     continue
+            # token_logits = self.model(input_encode).logits
+            # mask_token_logits = token_logits[0, mask_token_index, :]
+
+            # top_5_tokens = torch.topk(mask_token_logits, 5, dim=1).indices[0].tolist()
+
+            # ner_replace[ner] = self.tokenizer.decode(top_5_tokens[0])
             #print('{} to be replaced by filled in ==>{}'.format(ner, ner_replace[ner]) )
 
-        for ner, alter in ner_replace.items():
-            text = text.replace(ner, alter)
+        # for ner, alter in ner_replace.items():
+        #     text = text.replace(ner, alter)
         return text
 
 
 # unit test
-'''
-augmentor = fillInmask(ner_set=False)
-ds = load_data(dataset='bbc', samplecnt=1000)
-content_fillin = ds.df_train['content'].map(lambda x: augmentor.augment(x)).tolist()
-    
-for content in ds.df_train['content'].tolist():
-    content_ = augmentor.augment(content)
-
-
-
-ners_to_masked = augmentor.get_random_span(content)
-    #print(ners_to_masked)
-for ner in ners_to_masked:
-    if len(ner)<=2 or ner.lower() in stopwords:
-        continue
-    text_masked = content.replace(ner, augmentor.tokenizer.mask_token)
-
-    input_encode = augmentor.tokenizer.encode(text_masked, return_tensors="pt", truncation=True).to(augmentor.device) 
-    mask_token_index = torch.where(input_encode == augmentor.tokenizer.mask_token_id)[1]
-    if mask_token_index.shape[0] == 0:
-        continue
-    token_logits = augmentor.model(input_encode).logits
-    mask_token_logits = token_logits[0, mask_token_index, :]
-
-    top_5_tokens = torch.topk(mask_token_logits, 5, dim=1).indices[0].tolist()
-'''
 
 
 
 '''
-content = """
-"As the 2004 Summer Olympics officially get underway Friday with an international broadcast of the opening ceremonies, health experts expect the Athens games to inspire couch potatoes to become more active. But, experts caution, amateurs, particularly sedentary ones, should not jump into a new sports activity without sufficient preparation."
-"""
 nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased')
-content_mask = content.replace('sports', nlp.tokenizer.mask_token)
+content_mask = content.replace('White House', nlp.tokenizer.mask_token, 1)
+nlp(content_mask)
 
-nlp(text_masked)
-
+[{'sequence': 'bush campaign trail stops at george washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
+  'score': 0.21938802301883698,
+  'token': 2577,
+  'token_str': 'george'},
+ {'sequence': 'bush campaign trail stops at mount washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
+  'score': 0.2040329873561859,
+  'token': 4057,
+  'token_str': 'mount'},
+ {'sequence': 'bush campaign trail stops at downtown washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
+  'score': 0.1190764307975769,
+  'token': 5116,
+  'token_str': 'downtown'},
+ {'sequence': 'bush campaign trail stops at fort washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
+  'score': 0.05357954278588295,
+  'token': 3481,
+  'token_str': 'fort'},
+ {'sequence': 'bush campaign trail stops at capitol washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
+  'score': 0.04831065610051155,
+  'token': 9424,
+  'token_str': 'capitol'}]
 '''
 
 
