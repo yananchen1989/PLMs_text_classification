@@ -13,7 +13,7 @@ import os, argparse, random,gc,csv
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", default="gpt2", type=str)
 parser.add_argument("--gpu", default=0, type=int)
-parser.add_argument("--rp", default=1.1, type=float)
+parser.add_argument("--rp", default=1, type=float)
 args = parser.parse_args()
 
 

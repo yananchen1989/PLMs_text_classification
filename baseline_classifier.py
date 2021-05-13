@@ -119,7 +119,7 @@ print("model loaded")
 
 print("dataset begin ==> {}".format(args.ds))
 acc_mean = run_benchmark(args.ds, augmentor, args.samplecnt)
-print("summary aug:{} dataset:{} samplecnt:{} acc=>{}".format(args.aug, args.ds, args.samplecnt, acc_mean))
+print("summary aug:{} dataset:{} samplecnt:{} acc=> {}".format(args.aug, args.ds, args.samplecnt, acc_mean))
 
 
 

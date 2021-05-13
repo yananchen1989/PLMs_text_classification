@@ -25,46 +25,56 @@ print(torch.__version__)
 
 
 for args.dsn in ['ag','yahoo','dbpedia','nyt','pop','20news','uci']:
-    ds = load_data(dataset=args.dsn, samplecnt=-1)
-    labels = ds.df.label.unique()
 
-    #args.thres = 0
-    infos = []
-    with open('pseudos_{}.tsv'.format(args.model),'r') as f:
-        for line in f:
-            if '\t' not in line:
-                continue 
+args.dsn = '20news'
+ds = load_data(dataset=args.dsn, samplecnt=-1)
+labels = ds.df.label.unique()
 
-            tokens = line.strip().split('\t') 
-            
-            if len(tokens)!=3 or tokens[0].strip() not in labels:
-                continue
-            
-            content = tokens[1].strip()
-            label = tokens[0].strip()
-            score = float(tokens[2].strip())
-            # if score < args.thres:
-            #     continue 
+#args.thres = 0
+infos = []
+with open('pseudos_{}.tsv'.format(args.model),'r') as f:
+    for line in f:
+        if '\t' not in line:
+            continue 
 
-            infos.append((label, content, score))
+        tokens = line.strip().split('\t') 
+        
+        if len(tokens)!=3 or tokens[0].strip() not in labels:
+            continue
+        
+        content = tokens[1].strip()
+        label = tokens[0].strip()
+        score = float(tokens[2].strip())
+        # if score < 0.7:
+        #     continue 
 
+        infos.append((label, content, score))
 
-    df = pd.DataFrame(infos, columns=['label','content', 'score'])
-    
-    assert set(list(ds.df_test.label.unique())) == set(list(df['label'].unique()))
+df_synthe = pd.DataFrame(infos, columns=['label','content', 'score'])
 
-    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df, ds.df_test)
-    model = get_model_transormer(num_classes)
+ds.df_train['score'] = 1
 
-    print("train begin==>")
-    history = model.fit(
-        x_train, y_train, batch_size=64, epochs=100, validation_data=(x_test, y_test), verbose=1, validation_batch_size=64,
-        sample_weight = df.score.values,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-    best_val_acc = max(history.history['val_acc'])
-    print(df.label.value_counts())
-    print('dsn:', args.dsn, 'model:', args.model, ' acc:', best_val_acc )
+assert set(list(ds.df_test.label.unique())) == set(list(df_synthe['label'].unique()))
+#print(df_synthe.label.value_counts())
+
+#df_fuse = pd.concat([df_synthe, ds.df_train])
+
+sample_over = df_synthe.label.value_counts().mean()  / ds.df_train.label.value_counts().mean()
+print('dsn==>', args.dsn)
+print("sample_over==>", sample_over)
+print('df_synthe per class==>', df_synthe.label.value_counts().mean())
+
+(x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(df_synthe, ds.df_test)
+model = get_model_transormer(num_classes)
+
+history = model.fit(
+    x_train, y_train, batch_size=64, epochs=100, validation_data=(x_test, y_test), verbose=1, validation_batch_size=64,
+    sample_weight = df_synthe['score'].values, #use_multiprocessing=True, workers=8,
+    callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+)
+best_val_acc = max(history.history['val_acc'])
+print(df.label.value_counts())
+print('dsn:', args.dsn, 'model:', args.model, ' acc:', best_val_acc )
 
 
 
