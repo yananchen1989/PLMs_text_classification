@@ -22,7 +22,7 @@ class fillInmask():
             self.tagger = SequenceTagger.load("flair/ner-english-large")
         else:
             self.tagger = SequenceTagger.load("flair/ner-english-fast")
-        self.load_model()
+        #self.load_model()
         print('fillin mask model loaded==>', self.model_name)
         self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
     #def load_model(self):
