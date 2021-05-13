@@ -77,15 +77,15 @@ for ite in range(args.ite):
         ds.df_train_aug = pd.concat([ds.df_train, df_synthesize])
         assert ds.df_train_aug.shape[0] == ds.df_train.shape[0] * (args.beams + 1)
 
-    elif args.aug == 'fillin':
-        augmentor = fillInmask(ner_set=args.ner_set, device=args.device)
-     
-    elif args.aug == 'translate':
-        # augmentation
-        augmentor = backTranslate(lang=args.lang, device=args.device)
-        ds.df_train['content_aug'] = ds.df_train['content'].map(lambda x: augmentor.augment(x))
-        print("augmentated...")
+    elif args.aug in ['fillin','translate']:
+
+        if args.aug == 'fillin':
+            augmentor = fillInmask(ner_set=args.ner_set)
         
+        if args.aug == 'translate':
+            augmentor = backTranslate(lang=args.lang, device=args.device)
+
+        ds.df_train['content_aug'] = ds.df_train['content'].map(lambda x: augmentor.augment(x))        
         ds.df_train_aug = pd.DataFrame(zip(ds.df_train['content_aug'].tolist()+ds.df_train['content'].tolist(), \
                                                  ds.df_train['label'].tolist()*2),
                                       columns=['content','label']).sample(frac=1)
