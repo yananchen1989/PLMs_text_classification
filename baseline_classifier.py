@@ -109,8 +109,10 @@ for ite in range(args.ite):
 
                 elif args.check == 'nli':
                     for sentence in results[ii]:
+                        if not sentence['generated_text']:
+                            continue
                         result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
-                        if result_nli['scores'][0] > args.thres and result_nli['labels'][0] == train_labels[ii]:                    
+                        if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == train_labels[ii]:                    
                             infos.append((sentence['generated_text'], train_labels[ii] ))
 
                 else:
