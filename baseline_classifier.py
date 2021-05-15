@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch
+import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
@@ -9,7 +9,6 @@ import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
-import gc,argparse,datetime
 from transformers import pipeline
 
 parser = argparse.ArgumentParser()
@@ -21,9 +20,9 @@ parser.add_argument("--ner_set", default=0, type=int)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
 parser.add_argument("--batch_size", default=64, type=int)
-parser.add_argument("--gpu", default="0", type=str)
+#parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="former", type=str)
-parser.add_argument("--device", default="cuda", type=str)
+#parser.add_argument("--device", default="cuda", type=str)
 parser.add_argument("--beams", default=1, type=int)
 parser.add_argument("--rp", default=1.0, type=int)
 
@@ -85,7 +84,7 @@ for ite in range(args.ite):
             augmentor = fillInmask(ner_set=args.ner_set)
         
         if args.aug == 'translate':
-            augmentor = backTranslate(lang=args.lang, device=args.device)
+            augmentor = backTranslate(lang=args.lang)
 
         ds.df_train['content_aug'] = ds.df_train['content'].map(lambda x: augmentor.augment(x))        
         ds.df_train_aug = pd.DataFrame(zip(ds.df_train['content_aug'].tolist()+ds.df_train['content'].tolist(), \
@@ -120,10 +119,7 @@ for ite in range(args.ite):
     accs.append(best_val_acc)
 
 acc_mean = round(sum(accs) / len(accs), 4)
-print("summary aug:{} dsn:{} samplecnt:{} acc=> {}".format(args.aug, args.dsn, args.samplecnt, acc_mean))
-
-
-
+record_log('log', ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] + ['acc=> {}'.format(acc_mean)])
 
 
 
