@@ -171,9 +171,9 @@ for ite in range(args.ite):
 
 acc_mean = round(sum(accs) / len(accs), 4)
 
-if args.aug in ['no', 'fillin','translate']:
-    remain_ratio = -1
+if args.aug != 'generate':
     aug_ratio = -1
+
 record_log('log', ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
                  +['aug_ratio:{}'.format(aug_ratio)] \
                  + ['acc=> {}'.format(acc_mean)])
