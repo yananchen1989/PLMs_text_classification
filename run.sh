@@ -13,7 +13,6 @@ batch_size=8
 for ner in 0 1
 do
 python -u baseline_classifier.py --ds ${dsn} --aug fillin --ner_set ${ner} --samplecnt ${samplecnt}  --batch_size ${batch_size} 
-python -u baseline_classifier.py --ds ${dsn} --aug fillin  --ner_set ${ner} --samplecnt ${samplecnt}  --batch_size ${batch_size}  
 done
 
 
