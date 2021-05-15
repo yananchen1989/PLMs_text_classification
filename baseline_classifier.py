@@ -29,7 +29,7 @@ parser.add_argument("--check", default='enc', type=str)
 parser.add_argument("--enc_m", default='dan', type=str)
 parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--thres", default=0.65, type=float)
-parser.add_argument("--times", default=2, type=float)
+parser.add_argument("--times", default=2, type=int)
 
 args = parser.parse_args()
 print('args==>', args)
