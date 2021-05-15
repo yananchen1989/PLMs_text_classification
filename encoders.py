@@ -33,9 +33,9 @@ class encoder():
 
     def infer(self, sents, batch_size=32):
         if self.m in ['dan', 'cmlm']:
-            embeds = self.model.predict(sents, batch_size=batch_size, verbose=1)
+            embeds = self.model.predict(sents, batch_size=batch_size, verbose=0)
         elif self.m == 'distil':
-            embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=True)
+            embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=False)
         else:
             raise KeyError("model illegal!")
         return embeds

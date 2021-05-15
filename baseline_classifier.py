@@ -29,7 +29,7 @@ parser.add_argument("--check", default='enc', type=str)
 parser.add_argument("--enc_m", default='dan', type=str)
 parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--thres", default=0.65, type=float)
-
+parser.add_argument("--times", default=2, type=float)
 
 args = parser.parse_args()
 print('args==>', args)
@@ -74,50 +74,59 @@ for ite in range(args.ite):
 
     ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 
+    assert ds.df_train['label'].value_counts().min() == args.samplecnt
+
     print("augmentating...")
 
     if args.aug == 'generate':
         if args.generate_m == 'ctrl':
             args.rp = 1.2
         nlp  = pipeline("text-generation", model=args.generate_m, device=0, return_full_text=False)
-        results = nlp(ds.df_train['content'].tolist(), max_length=250, do_sample=True, top_p=0.9, top_k=0, \
-                    repetition_penalty=args.rp, num_return_sequences=args.beams)
-        assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
-        train_labels = ds.df_train['label'].tolist()
-        labels_candidates = list(ds.df.label.unique())
-        ori_sentences = ds.df_train['content'].tolist()
-        infos = []
 
-        for ii in range(ds.df_train.shape[0]):
-            if args.check == 'enc':
-                ori_sentence = ori_sentences[ii]
-                ori_embed = enc.infer([ori_sentence])
-                syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
-                syn_embeds = enc.infer(syn_sentences)
-                simis = cosine_similarity(ori_embed, syn_embeds)
-                df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
-                df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
-                df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
+        syn_df_ll = []
+        while True:
+            results = nlp(ds.df_train['content'].tolist(), max_length=250, do_sample=True, top_p=0.9, top_k=0, \
+                        repetition_penalty=args.rp, num_return_sequences=args.beams)
+            assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
+            train_labels = ds.df_train['label'].tolist()
+            labels_candidates = list(ds.df.label.unique())
+            ori_sentences = ds.df_train['content'].tolist()
+            infos = []
 
-                for sentence in df_simi_filer['content'].tolist():
-                    infos.append((sentence, train_labels[ii] ))
+            for ii in range(ds.df_train.shape[0]):
+                if args.check == 'enc':
+                    ori_sentence = ori_sentences[ii]
+                    ori_embed = enc.infer([ori_sentence])
+                    syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
+                    syn_embeds = enc.infer(syn_sentences)
+                    simis = cosine_similarity(ori_embed, syn_embeds)
+                    df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
+                    df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
+                    df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
 
-            elif args.check == 'nli':
-                for sentence in results[ii]:
-                    result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
-                    if result_nli['scores'][0] > args.thres and result_nli['labels'][0] == train_labels[ii]:                    
+                    for sentence in df_simi_filer['content'].tolist():
+                        infos.append((sentence, train_labels[ii] ))
+
+                elif args.check == 'nli':
+                    for sentence in results[ii]:
+                        result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
+                        if result_nli['scores'][0] > args.thres and result_nli['labels'][0] == train_labels[ii]:                    
+                            infos.append((sentence['generated_text'], train_labels[ii] ))
+
+                else:
+                    for sentence in results[ii]:
                         infos.append((sentence['generated_text'], train_labels[ii] ))
 
-            else:
-                for sentence in results[ii]:
-                    infos.append((sentence['generated_text'], train_labels[ii] ))
-
-        df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
-        remain_ratio = df_synthesize.shape[0] / (ds.df_train.shape[0] * args.beams)
-        aug_ratio = df_synthesize.shape[0] / ds.df_train.shape[0]
+            df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
+            syn_df_ll.append(df_synthesize)
+            df_synthesize_all = pd.concat(syn_df_ll)
+            if df_synthesize_all.['label'].value_counts().min() >= args.samplecnt * args.times:
+                break 
         print('check==>',args.check)
-        print(df_synthesize['label'].value_counts())
-        ds.df_train_aug = pd.concat([ds.df_train, df_synthesize])
+        print(df_synthesize_all['label'].value_counts())   
+        df_synthesize_all_balanced = sample_stratify(df_synthesize_all, args.samplecnt * args.times )     
+        ds.df_train_aug = pd.concat([ds.df_train, df_synthesize_all_balanced])
+        aug_ratio = df_synthesize_all_balanced.shape[0] / ds.df_train.shape[0]
         #assert ds.df_train_aug.shape[0] == ds.df_train.shape[0] * (args.beams + 1)
 
     elif args.aug in ['fillin','translate']:
@@ -161,8 +170,12 @@ for ite in range(args.ite):
     accs.append(best_val_acc)
 
 acc_mean = round(sum(accs) / len(accs), 4)
+
+if args.aug in ['no', 'fillin','translate']:
+    remain_ratio = -1
+    aug_ratio = -1
 record_log('log', ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
-                 +['remain_ratio:{}'.format(remain_ratio), 'aug_ratio:{}'.format(aug_ratio)] \
+                 +['aug_ratio:{}'.format(aug_ratio)] \
                  + ['acc=> {}'.format(acc_mean)])
 
 
