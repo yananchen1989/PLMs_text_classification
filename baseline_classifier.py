@@ -28,7 +28,7 @@ parser.add_argument("--rp", default=1.0, type=float)
 parser.add_argument("--check", default='enc', type=str)
 parser.add_argument("--enc_m", default='dan', type=str)
 parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
-parser.add_argument("--check_thres", default=0.65, type=float)
+parser.add_argument("--thres", default=0.65, type=float)
 
 
 args = parser.parse_args()
@@ -96,7 +96,7 @@ for ite in range(args.ite):
                 simis = cosine_similarity(ori_embed, syn_embeds)
                 df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
                 df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
-                df_simi_filer = df_simi.loc[df_simi['simi']>= args.check_thres]
+                df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
 
                 for sentence in df_simi_filer['content'].tolist():
                     infos.append((sentence, train_labels[ii] ))
@@ -104,7 +104,7 @@ for ite in range(args.ite):
             elif args.check == 'nli':
                 for sentence in results[ii]:
                     result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
-                    if result_nli['scores'][0] > args.check_thres and result_nli['labels'][0] == train_labels[ii]:                    
+                    if result_nli['scores'][0] > args.thres and result_nli['labels'][0] == train_labels[ii]:                    
                         infos.append((sentence['generated_text'], train_labels[ii] ))
 
             else:
