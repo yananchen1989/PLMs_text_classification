@@ -31,7 +31,7 @@ args = parser.parse_args()
 print('args==>', args)
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 gpus = tf.config.experimental.list_physical_devices('GPU')
