@@ -120,7 +120,7 @@ for ite in range(args.ite):
             df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
             syn_df_ll.append(df_synthesize)
             df_synthesize_all = pd.concat(syn_df_ll)
-            if df_synthesize_all.['label'].value_counts().min() >= args.samplecnt * args.times:
+            if df_synthesize_all['label'].value_counts().min() >= args.samplecnt * args.times:
                 break 
         print('check==>',args.check)
         print(df_synthesize_all['label'].value_counts())   
