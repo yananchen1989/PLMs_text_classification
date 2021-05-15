@@ -54,6 +54,7 @@ from aug_fillinmask import *
 from aug_translation import *
 from load_data import * 
 from transblock import * 
+from encoders import *
 
 if args.check == 'enc':
     enc = encoder(args.enc_m)
