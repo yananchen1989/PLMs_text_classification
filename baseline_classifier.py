@@ -24,7 +24,9 @@ parser.add_argument("--batch_size", default=64, type=int)
 parser.add_argument("--model", default="former", type=str)
 #parser.add_argument("--device", default="cuda", type=str)
 parser.add_argument("--beams", default=1, type=int)
-parser.add_argument("--rp", default=1.0, type=int)
+parser.add_argument("--rp", default=1.0, type=float)
+parser.add_argument("--check", default=1.0, type=float)
+parser.add_argument("--check_thres", default=0.65, type=float)
 
 
 args = parser.parse_args()

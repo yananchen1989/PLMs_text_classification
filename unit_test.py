@@ -2,7 +2,8 @@
 from load_data import *
 from transformers import pipeline
 import random,torch
-ds = load_data(dataset='nyt', samplecnt=-1)
+print(torch.__version__)
+ds = load_data(dataset='dbpedia', samplecnt=-1)
 
 
 nlp = pipeline("fill-mask" , model = 'distilbert-base-cased', device=0)
@@ -41,6 +42,33 @@ nlp = pipeline("ner", model="dslim/bert-base-NER")
 content = random.sample(contents,1)[0]
 print(content)
 nlp(content)
+
+
+
+
+content = ds.df_train['content'].tolist()[12]
+
+nlp  = pipeline("text-generation", model='gpt2', device=0, return_full_text=False)
+results = nlp([content], max_length=250, do_sample=True, top_p=0.9, top_k=0, \
+                    repetition_penalty=1, num_return_sequences=128)
+
+contents_syn = [ii['generated_text'] for ii in results]
+
+from encoders import *
+
+enc = encoder('dan')
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

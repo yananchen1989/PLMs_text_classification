@@ -5,7 +5,7 @@ import tensorflow_hub as hub
 import tensorflow_text as text
 import random,gc,csv
 from sklearn.metrics.pairwise import cosine_similarity
-#from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer
 from torch.nn import functional as F
 
 class encoder():
@@ -18,8 +18,9 @@ class encoder():
             #self.model = hub.load("./universal-sentence-encoder_4")
             encoder = hub.KerasLayer("./universal-sentence-encoder_4")
             embed = encoder(text_input)
-        #elif self.m == 'distil':
-        #    self.model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
+        elif self.m == 'distil':
+            self.model = SentenceTransformer('paraphrase-distilroberta-base-v1')
+            #self.model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
         elif self.m == 'cmlm':    
             # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
             encoder = hub.KerasLayer("./universal-sentence-encoder-cmlm_en-base_1")
@@ -27,13 +28,14 @@ class encoder():
             embed = encoder(preprocessor(text_input))["default"]
         else:
             raise KeyError("model illegal!")
-        self.model = tf.keras.Model(inputs=text_input, outputs=embed)
+        if self.m in ['dan','cmlm']:
+            self.model = tf.keras.Model(inputs=text_input, outputs=embed)
 
     def infer(self, sents, batch_size=32):
         if self.m in ['dan', 'cmlm']:
             embeds = self.model.predict(sents, batch_size=batch_size, verbose=1)
-        #elif m == 'distil':
-        #    embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=True)
+        elif self.m == 'distil':
+            embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=True)
         else:
             raise KeyError("model illegal!")
         return embeds
