@@ -124,11 +124,13 @@ class load_data():
 
     # ag news
     def get_ag_news(self):
+        world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
+                   'Crime','Murder','Religion','jurisdiction', 'Democracy'])
         df_train = pd.read_csv("../datasets_aug/ag_news/train.csv")
         df_test = pd.read_csv("../datasets_aug/ag_news/test.csv")
         df_train['content'] = df_train['title'] + ' ' + df_train['content']
         df_test['content'] = df_test['title'] + ' ' + df_test['content']
-        agnews_label = {1:"World", 2:"Sports", 3:"Business", 4:"Science and technology"}
+        agnews_label = {1:world_replace, 2:"Sports", 3:"Business", 4:"Science and technology"}
         df_train['label'] = df_train['label'].map(lambda x: agnews_label[x])
         df_test['label'] = df_test['label'].map(lambda x: agnews_label[x])
         df_train = sample_stratify(df_train, self.samplecnt)

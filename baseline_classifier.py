@@ -25,7 +25,9 @@ parser.add_argument("--model", default="former", type=str)
 #parser.add_argument("--device", default="cuda", type=str)
 parser.add_argument("--beams", default=1, type=int)
 parser.add_argument("--rp", default=1.0, type=float)
-parser.add_argument("--check", default=1.0, type=float)
+parser.add_argument("--check", default='enc', type=str)
+parser.add_argument("--enc_m", default='dan', type=str)
+parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--check_thres", default=0.65, type=float)
 
 
@@ -53,6 +55,15 @@ from aug_translation import *
 from load_data import * 
 from transblock import * 
 
+if args.check == 'enc':
+    enc = encoder(args.enc_m)
+else:
+    enc = None
+
+if args.check == 'nli':
+    nlp_nli = pipeline("zero-shot-classification", model=args.nli_m, device=0) #  1.8.1+cu102
+else:
+    nlp_nli = None
 
 
 accs = []
@@ -72,13 +83,41 @@ for ite in range(args.ite):
                     repetition_penalty=args.rp, num_return_sequences=args.beams)
         assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
         train_labels = ds.df_train['label'].tolist()
+        labels_candidates = list(ds.df.label.unique())
+        ori_sentences = ds.df_train['content'].tolist()
         infos = []
+
         for ii in range(ds.df_train.shape[0]):
-            for sentence in results[ii]:
-                infos.append((sentence['generated_text'], train_labels[ii] ))
+            if args.check == 'enc':
+                ori_sentence = ori_sentences[ii]
+                ori_embed = enc.infer([ori_sentence])
+                syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
+                syn_embeds = enc.infer(syn_sentences)
+                simis = cosine_similarity(ori_embed, syn_embeds)
+                df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
+                df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
+                df_simi_filer = df_simi.loc[df_simi['simi']>= args.check_thres]
+
+                for sentence in df_simi_filer['content'].tolist():
+                    infos.append((sentence, train_labels[ii] ))
+
+            elif args.check == 'nli':
+                for sentence in results[ii]:
+                    result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
+                    if result_nli['scores'][0] > args.check_thres and result_nli['labels'][0] == train_labels[ii]:                    
+                        infos.append((sentence['generated_text'], train_labels[ii] ))
+
+            else:
+                for sentence in results[ii]:
+                    infos.append((sentence['generated_text'], train_labels[ii] ))
+
         df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
+        remain_ratio = df_synthesize.shape[0] / (ds.df_train.shape[0] * args.beams)
+        aug_ratio = df_synthesize.shape[0] / ds.df_train.shape[0]
+        print('check==>',args.check)
+        print(df_synthesize['label'].value_counts())
         ds.df_train_aug = pd.concat([ds.df_train, df_synthesize])
-        assert ds.df_train_aug.shape[0] == ds.df_train.shape[0] * (args.beams + 1)
+        #assert ds.df_train_aug.shape[0] == ds.df_train.shape[0] * (args.beams + 1)
 
     elif args.aug in ['fillin','translate']:
 
@@ -121,7 +160,9 @@ for ite in range(args.ite):
     accs.append(best_val_acc)
 
 acc_mean = round(sum(accs) / len(accs), 4)
-record_log('log', ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] + ['acc=> {}'.format(acc_mean)])
+record_log('log', ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
+                 +['remain_ratio:{}'.format(remain_ratio), 'aug_ratio:{}'.format(aug_ratio)] \
+                 + ['acc=> {}'.format(acc_mean)])
 
 
 

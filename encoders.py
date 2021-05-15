@@ -19,7 +19,7 @@ class encoder():
             encoder = hub.KerasLayer("./universal-sentence-encoder_4")
             embed = encoder(text_input)
         elif self.m == 'distil':
-            self.model = SentenceTransformer('paraphrase-distilroberta-base-v1')
+            self.model = SentenceTransformer('paraphrase-distilroberta-base-v1', device='cuda')
             #self.model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
         elif self.m == 'cmlm':    
             # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
