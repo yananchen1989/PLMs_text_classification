@@ -454,4 +454,4 @@ def record_log(file, record):
     cur = datetime.datetime.strftime(datetime.datetime.now() + datetime.timedelta(hours=8), '%Y-%m-%d %H:%M:%S')
     with open(file, 'a') as f:
         writer = csv.writer(f, delimiter=' ')
-        writer.writerow(record)
+        writer.writerow([cur] + record)
