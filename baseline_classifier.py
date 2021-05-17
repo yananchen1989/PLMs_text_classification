@@ -130,11 +130,14 @@ for ite in range(args.ite):
             df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
             syn_df_ll.append(df_synthesize)
             df_synthesize_all = pd.concat(syn_df_ll)
-            if df_synthesize_all['label'].value_counts().min() >= args.samplecnt * args.times:
+            if args.samplecnt > 0 and df_synthesize_all['label'].value_counts().min() >= args.samplecnt * args.times:
                 break 
         print('check==>',args.check)
         print(df_synthesize_all['label'].value_counts())   
-        df_synthesize_all_balanced = sample_stratify(df_synthesize_all, args.samplecnt * args.times )     
+        if args.samplecnt > 0:
+            df_synthesize_all_balanced = sample_stratify(df_synthesize_all, args.samplecnt * args.times )   
+        else:
+            df_synthesize_all_balanced = sample_stratify(df_synthesize_all, ds.df_train['label'].value_counts().min() * args.times )   
         ds.df_train_aug = pd.concat([ds.df_train, df_synthesize_all_balanced])
         aug_ratio = df_synthesize_all_balanced.shape[0] / ds.df_train.shape[0]
         #assert ds.df_train_aug.shape[0] == ds.df_train.shape[0] * (args.beams + 1)
