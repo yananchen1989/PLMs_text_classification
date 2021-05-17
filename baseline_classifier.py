@@ -84,7 +84,8 @@ for ite in range(args.ite):
     ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
     max_len = get_tokens_len(ds)
 
-    assert ds.df_train['label'].value_counts().min() == args.samplecnt
+    if args.samplecnt > 0:
+        assert ds.df_train['label'].value_counts().min() == args.samplecnt
 
     print("augmentating...")
 
