@@ -7,10 +7,10 @@ import pandas as pd
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 class backTranslate():
-    def __init__(self, lang='de',device='cuda'):
+    def __init__(self, lang='de'):
         self.lang = lang
-        self.device = torch.device(device)
-        if self.lang not in ['ru','de','zh','fr']:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if self.lang not in ['de','zh','fr']:
             raise KeyError("language not supported!")
         self.load_model()
 

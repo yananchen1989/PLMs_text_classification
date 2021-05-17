@@ -15,7 +15,7 @@ class fillInmask():
         #self.model_name = model_name
         self.mask_ratio = mask_ratio
         self.ner_set = ner_set
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         #self.device = torch.device(device)
         # load tagger
         if torch.__version__.startswith('1.8'):
@@ -24,7 +24,10 @@ class fillInmask():
             self.tagger = SequenceTagger.load("flair/ner-english-fast")
         #self.load_model()
         #print('fillin mask model loaded==>', self.model_name)
-        self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
+        if torch.cuda.is_available():
+            self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
+        else:
+            self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased')
     #def load_model(self):
         #self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         #self.model = AutoModelWithLMHead.from_pretrained(self.model_name)

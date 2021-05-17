@@ -23,10 +23,10 @@ from transformers import (
 
 
 class generation():
-    def __init__(self, model_name='gpt2',num_return_sequences=1,device='cuda'):
+    def __init__(self, model_name='gpt2',num_return_sequences=1):
         self.model_name = model_name
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device(device)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device(device)
         self.MODEL_CLASSES = {
                     "gpt2": (GPT2LMHeadModel, GPT2Tokenizer),
                     "finetuned_gpt2": (GPT2LMHeadModel, GPT2Tokenizer),
