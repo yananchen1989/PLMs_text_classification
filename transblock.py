@@ -124,14 +124,14 @@ def get_model_transormer(num_classes):
     x = layers.GlobalAveragePooling1D()(x)
     x = layers.Dense(32, activation="relu")(x)
 
-    if num_classes == 2:
-        outputs = layers.Dense(1, activation="sigmoid")(x)
-        model = keras.Model(inputs=text_input, outputs=outputs)
-        model.compile("adam", "binary_crossentropy", metrics=["binary_accuracy"])
-    else:
-        outputs = layers.Dense(num_classes, activation="softmax")(x)
-        model = keras.Model(inputs=text_input, outputs=outputs)
-        model.compile("adam", "categorical_crossentropy", metrics=["acc"])
+    # if num_classes == 2:
+    #     outputs = layers.Dense(1, activation="sigmoid")(x)
+    #     model = keras.Model(inputs=text_input, outputs=outputs)
+    #     model.compile("adam", "binary_crossentropy", metrics=["binary_accuracy"])
+    # else:
+    outputs = layers.Dense(num_classes, activation="softmax")(x)
+    model = keras.Model(inputs=text_input, outputs=outputs)
+    model.compile("adam", "categorical_crossentropy", metrics=["acc"])
 
     return model
 
@@ -151,14 +151,14 @@ def get_model_bert(num_classes, m='albert'):
     else:
         raise KeyError("model illegal!")
 
-    if num_classes == 2:
-        out = layers.Dense(1, activation='sigmoid')(embed)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=1e-5), "binary_crossentropy", metrics=["binary_accuracy"])
-    else:
-        out = layers.Dense(num_classes, activation="softmax")(embed)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
+    # if num_classes == 2:
+    #     out = layers.Dense(1, activation='sigmoid')(embed)
+    #     model = tf.keras.Model(inputs=text_input, outputs=out)
+    #     model.compile(Adam(lr=1e-5), "binary_crossentropy", metrics=["binary_accuracy"])
+    # else:
+    out = layers.Dense(num_classes, activation="softmax")(embed)
+    model = tf.keras.Model(inputs=text_input, outputs=out)
+    model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
     return model
 
 

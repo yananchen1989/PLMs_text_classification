@@ -285,20 +285,20 @@ def get_keras_data(df_train, df_test):
     x_train = df_train['content'].values.reshape(-1,1)
     x_test = df_test['content'].values.reshape(-1,1)
 
-    if num_classes > 2:
-        labels = df_test['label'].unique().tolist()
-        label_idx = {l:ix for ix, l in enumerate(labels)}
+    #if num_classes > 2:
+    labels = df_test['label'].unique().tolist()
+    label_idx = {l:ix for ix, l in enumerate(labels)}
 
 
-        y_train = tf.keras.utils.to_categorical(\
-                          df_train['label'].map(lambda x: label_idx.get(x)).values, \
-                          num_classes = num_classes, dtype='int' )
-        y_test = tf.keras.utils.to_categorical(\
-                         df_test['label'].map(lambda x: label_idx.get(x)).values, \
-                         num_classes = num_classes, dtype='int' )       
-    else:
-        y_train = df_train['label'].values
-        y_test = df_test['label'].values    
+    y_train = tf.keras.utils.to_categorical(\
+                      df_train['label'].map(lambda x: label_idx.get(x)).values, \
+                      num_classes = num_classes, dtype='int' )
+    y_test = tf.keras.utils.to_categorical(\
+                     df_test['label'].map(lambda x: label_idx.get(x)).values, \
+                     num_classes = num_classes, dtype='int' )       
+    # else:
+    #     y_train = df_train['label'].values
+    #     y_test = df_test['label'].values    
 
     return (x_train,y_train),  (x_test, y_test), num_classes
 
