@@ -70,7 +70,10 @@ else:
 if args.aug == 'generate':
     if args.generate_m == 'ctrl':
         args.rp = 1.2
-    nlp  = pipeline("text-generation", model=args.generate_m, device=0, return_full_text=False)
+    if torch.cuda.is_available():
+        nlp  = pipeline("text-generation", model=args.generate_m, device=0, return_full_text=False)
+    else:
+        nlp  = pipeline("text-generation", model=args.generate_m,           return_full_text=False)
 
 
 accs = []
@@ -167,7 +170,7 @@ for ite in range(args.ite):
         batch_size = 64
     else:
         batch_size = 8
-        
+
     history = model.fit(
         x_train, y_train, batch_size=batch_size, epochs=50, \
         validation_batch_size=64,
