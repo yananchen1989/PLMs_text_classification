@@ -123,13 +123,16 @@ def get_model_transormer(num_classes):
     x = transformer_block(x)
     x = layers.GlobalAveragePooling1D()(x)
     x = layers.Dense(32, activation="relu")(x)
-    outputs = layers.Dense(num_classes, activation="softmax")(x)
 
-    #outputs = layers.Dense(1, activation="sigmoid")(x)
-    model = keras.Model(inputs=text_input, outputs=outputs)
+    if num_classes == 2:
+        outputs = layers.Dense(1, activation="sigmoid")(x)
+        model = keras.Model(inputs=text_input, outputs=outputs)
+        model.compile("adam", "binary_crossentropy", metrics=["binary_accuracy"])
+    else:
+        outputs = layers.Dense(num_classes, activation="softmax")(x)
+        model = keras.Model(inputs=text_input, outputs=outputs)
+        model.compile("adam", "categorical_crossentropy", metrics=["acc"])
 
-    model.compile("adam", "categorical_crossentropy", metrics=["acc"])
-    #model.compile("adam", "binary_crossentropy", metrics=["accuracy"])
     return model
 
 def get_model_bert(num_classes, m='albert'):
