@@ -3,7 +3,7 @@ from load_data import *
 from transformers import pipeline
 import random,torch
 print(torch.__version__)
-ds = load_data(dataset='dbpedia', samplecnt=-1)
+ds = load_data(dataset='ag', samplecnt=-1)
 
 
 nlp = pipeline("fill-mask" , model = 'distilbert-base-cased', device=0)
@@ -46,10 +46,10 @@ nlp(content)
 
 
 
-content = ds.df_train['content'].tolist()[12]
+contents = ds.df_train['content'].tolist()[:50]
 
 nlp  = pipeline("text-generation", model='gpt2', device=0, return_full_text=False)
-results = nlp([content], max_length=250, do_sample=True, top_p=0.9, top_k=0, \
+results = nlp(ds.df_train['content'].tolist()[:50], max_length=250, do_sample=True, top_p=0.9, top_k=0, \
                     repetition_penalty=1, num_return_sequences=128)
 
 contents_syn = [ii['generated_text'] for ii in results]
@@ -59,28 +59,32 @@ from encoders import *
 enc = encoder('dan')
 
 
+content_embed = enc.infer([content])
+
+content_syn_embed = enc.infer(contents_syn)
+
+simis = cosine_similarity(content_embed, content_syn_embed)
+
+
+df_simi = pd.DataFrame(zip(contents_syn, simis[0]), columns=['content','simi'])
+
+
+df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
+
+df_simi.loc[df_simi['simi']<=0.1]['content'].tolist()
+
+
+model.encode(ds.df['content'].tolist()[:100], batch_size=32,  show_progress_bar=True)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+for dsn in ['ag','yahoo','dbpedia','nyt','pop','20news','uci']:
+    ds = load_data(dataset=dsn, samplecnt=-1)
+    lens = []
+    for content in ds.df['content'].tolist():
+        tokens = tokenizer.tokenize(content)
+        lens.append(len(tokens))
+    print(dsn, np.array(lens).mean())
 
 
 

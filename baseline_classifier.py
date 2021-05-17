@@ -67,6 +67,8 @@ else:
     nlp_nli = None
 
 
+max_len = get_tokens_len(ds)
+
 accs = []
 for ite in range(args.ite): 
 
@@ -85,7 +87,7 @@ for ite in range(args.ite):
 
         syn_df_ll = []
         while True:
-            results = nlp(ds.df_train['content'].tolist(), max_length=250, do_sample=True, top_p=0.9, top_k=0, \
+            results = nlp(ds.df_train['content'].tolist(), max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
                         repetition_penalty=args.rp, num_return_sequences=args.beams)
             assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
             train_labels = ds.df_train['label'].tolist()

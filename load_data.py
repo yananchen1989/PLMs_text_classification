@@ -41,6 +41,10 @@ class load_data():
             self.df_train, self.df_test, self.df = self.get_20_news() 
         elif self.dataset == 'nyt':
             self.df_train, self.df_test, self.df = self.get_nyt_news()
+        elif self.dataset == 'snips':
+            self.df_train, self.df_test, self.df = self.get_snips()
+        elif self.dataset == 'stsa':
+            self.df_train, self.df_test, self.df = self.get_stsa()
         else:
             raise KeyError("dataset illegal!")
 
@@ -56,15 +60,18 @@ class load_data():
         df_train['content'] = df_train[1] + ' ' + df_train[2] + ' ' + df_train[3]
         df_train['label'] = df_train[0]
         df_train['label'] = df_train['label'].map(lambda x: yahoo_label_name[x])
-        df_train = sample_stratify(df_train, self.samplecnt)
+        
 
         df_test = pd.read_csv("../datasets_aug/yahoo_news/test.csv", header=None)
         df_test = df_test.fillna(' ')
         df_test['content'] = df_test[1] + ' ' + df_test[2] + ' ' + df_test[3]
         df_test['label'] = df_test[0]
         df_test['label'] = df_test['label'].map(lambda x: yahoo_label_name[x])
-        return df_train[['content','label']] , df_test[['content','label']], \
-             pd.concat([df_train[['content','label']], df_test[['content','label']]]).sample(frac=1)
+
+        df = pd.concat([df_train[['content','label']], df_test[['content','label']]]).sample(frac=1)
+        df_train = sample_stratify(df_train, self.samplecnt)
+        return df_train[['content','label']] , df_test[['content','label']], df 
+             
 
     def get_tweet(self):
         files = glob.glob("../datasets_aug/tweetraw/*.txt")
@@ -119,8 +126,9 @@ class load_data():
 
         df_train['label'] = df_train['label'].map(lambda x: ixl[x])
         df_test['label'] = df_test['label'].map(lambda x: ixl[x])
+        df = pd.concat([df_train, df_test]).sample(frac=1)
         df_train = sample_stratify(df_train, self.samplecnt)
-        return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1)
+        return df_train, df_test, df
 
     # ag news
     def get_ag_news(self):
@@ -133,8 +141,9 @@ class load_data():
         agnews_label = {1:world_replace, 2:"Sports", 3:"Business", 4:"Science and technology"}
         df_train['label'] = df_train['label'].map(lambda x: agnews_label[x])
         df_test['label'] = df_test['label'].map(lambda x: agnews_label[x])
+        df = pd.concat([df_train, df_test]).sample(frac=1)
         df_train = sample_stratify(df_train, self.samplecnt)
-        return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1)
+        return df_train, df_test, df
 
     # bbc 
     def get_bbc_news(self):
@@ -180,8 +189,10 @@ class load_data():
         df_test.rename(
                 columns={"Topic": "label"},
                 inplace=True )  
+        df = pd.concat([df_train, df_test]).sample(frac=1)
         df_train = sample_stratify(df_train, self.samplecnt)      
-        return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1)
+        return df_train, df_test, df
+
     def get_20_news(self):
         label_name_map = {
             'rec.autos':'autos automobile', 
@@ -218,9 +229,9 @@ class load_data():
         df_test = pd.DataFrame(zip(data_test['data'], list(data_test['target'])), columns=['content','label'])
         ixl = {ix:n for ix, n in enumerate(data_test['target_names'])}
         df_test['label'] = df_test['label'].map(lambda x: label_name_map[ixl[x]])
-
+        df = pd.concat([df_train, df_test]).sample(frac=1)
         df_train = sample_stratify(df_train, self.samplecnt)  
-        return df_train, df_test, pd.concat([df_train, df_test]).sample(frac=1) 
+        return df_train, df_test, df 
     
     def get_nyt_news(self):      
         infos = []
@@ -243,7 +254,30 @@ class load_data():
         df['label'] = df['label'].map(lambda x: ixl[x])
         df_train, df_test = train_test_split(df, test_size=0.2)
         df_train = sample_stratify(df_train, self.samplecnt)
-        return df_train, df_test, df.sample(frac=1)        
+        return df_train, df_test, df.sample(frac=1)  
+
+    def get_stsa(self):
+        df_train = pd.read_csv("../datasets_aug/stsa/train.tsv", sep='\t', header=None)
+        df_test = pd.read_csv("../datasets_aug/stsa/test.tsv", sep='\t', header=None)
+        df_dev = pd.read_csv("../datasets_aug/stsa/dev.tsv", sep='\t', header=None)
+        df_train.columns = ['label', 'content']
+        df_test.columns = ['label', 'content']
+        df_dev.columns = ['label', 'content']
+        df_test = pd.concat([df_dev, df_test])
+        df = pd.concat([df_train, df_test]).sample(frac=1) 
+        df_train = sample_stratify(df_train, self.samplecnt)
+        return df_train, df_test, df
+
+    def get_snips(self):
+        df_train = pd.read_csv("../datasets_aug/snips/train.tsv", sep='\t', header=None)
+        df_test = pd.read_csv("../datasets_aug/snips/devtest.tsv", sep='\t', header=None)
+        df_train.columns = ['label', 'content']
+        df_test.columns = ['label', 'content']
+        df = pd.concat([df_train, df_test]).sample(frac=1) 
+        df_train = sample_stratify(df_train, self.samplecnt)
+        return df_train, df_test, df        
+
+
 
 
 def get_keras_data(df_train, df_test):
@@ -457,3 +491,18 @@ def record_log(file, record):
     with open(file, 'a') as f:
         writer = csv.writer(f, delimiter=' ')
         writer.writerow([cur] + record)
+
+from transformers import AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+
+def get_tokens_len(ds):
+    lens = []
+    for content in ds.df_test['content'].tolist():
+        tokens = tokenizer.tokenize(content)
+        lens.append(len(tokens))
+    return int(np.array(lens).max())
+
+
+
+
+
