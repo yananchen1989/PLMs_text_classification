@@ -67,14 +67,13 @@ else:
     nlp_nli = None
 
 
-max_len = get_tokens_len(ds)
-
 accs = []
 for ite in range(args.ite): 
 
     print("iter ==> {}".format(ite))
 
     ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+    max_len = get_tokens_len(ds)
 
     assert ds.df_train['label'].value_counts().min() == args.samplecnt
 
