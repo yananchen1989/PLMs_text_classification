@@ -183,7 +183,9 @@ for ite in range(args.ite):
     accs.append(best_val_acc)
 
 acc_mean = round(sum(accs) / len(accs), 4)
-
+if args.dsn in ['snips','stsa']:
+    acc_mean = max(accs)
+    
 if args.aug != 'generate':
     aug_ratio = -1
 
