@@ -22,7 +22,7 @@ parser.add_argument("--generate_m", default="gpt2", type=str)
 #parser.add_argument("--batch_size", default=64, type=int)
 #parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="former", type=str)
-#parser.add_argument("--device", default="cuda", type=str)
+#parser.add_argument("--mm", default="mean", type=str)
 parser.add_argument("--beams", default=1, type=int)
 parser.add_argument("--rp", default=1.0, type=float)
 parser.add_argument("--check", default='enc', type=str)
@@ -182,10 +182,15 @@ for ite in range(args.ite):
     print("iter completed, tranin acc ==> {}".format(best_val_acc))
     accs.append(best_val_acc)
 
-acc_mean = round(sum(accs) / len(accs), 4)
-if args.dsn in ['snips','stsa']:
-    acc_mean = max(accs)
-    
+
+if args.mm == 'max':
+    acc_mean = round(np.array(accs).max(), 4)
+elif args.mm == 'mean':
+    acc_mean = round(np.array(accs).mean(), 4)
+else:
+    acc_mean = -1 
+
+
 if args.aug != 'generate':
     aug_ratio = -1
 
