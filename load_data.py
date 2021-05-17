@@ -500,7 +500,7 @@ def get_tokens_len(ds):
     for content in ds.df_test['content'].tolist():
         tokens = tokenizer.tokenize(content)
         lens.append(len(tokens))
-    return int(np.array(lens).max())
+    return int(np.quantile(np.array(lens), 0.75, axis=0))
 
 
 

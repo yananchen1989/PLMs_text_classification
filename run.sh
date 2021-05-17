@@ -2,11 +2,15 @@ dsn=ag
 samplecnt=32
 batch_size=8
 
+# baseline 
+python -u baseline_classifier.py --dsn ${dsn} --aug no --samplecnt ${samplecnt} --batch_size ${batch_size} 
+
+
 # back-translation
-#for lang in de fr zh 
-#do
-#python -u baseline_classifier.py --ds ${dsn} --aug translate --samplecnt ${samplecnt}  --batch_size ${batch_size} --lang ${lang} 
-#done
+for lang in de fr zh 
+do
+python -u baseline_classifier.py --ds ${dsn} --aug translate --samplecnt ${samplecnt}  --batch_size ${batch_size} --lang ${lang} 
+done
 
 
 # fillin masks
@@ -23,5 +27,3 @@ do
 python -u baseline_classifier.py --dsn ${dsn} --aug generate --generate_m gpt2 --beams ${beam} --samplecnt ${samplecnt}  --batch_size ${batch_size}   
 done
 
-# baseline 
-python -u baseline_classifier.py --dsn ${dsn} --aug no --samplecnt ${samplecnt} --batch_size ${batch_size} 
