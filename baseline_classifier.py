@@ -56,15 +56,21 @@ from load_data import *
 from transblock import * 
 from encoders import *
 
-if args.check == 'enc':
+
+if args.aug == 'generate' and args.check == 'enc':
     enc = encoder(args.enc_m)
 else:
     enc = None
 
-if args.check == 'nli':
+if args.aug == 'generate' and args.check == 'nli':
     nlp_nli = pipeline("zero-shot-classification", model=args.nli_m, device=0) #  1.8.1+cu102
 else:
-    nlp_nli = None
+    nlp_nli = None    
+
+if args.aug == 'generate':
+    if args.generate_m == 'ctrl':
+        args.rp = 1.2
+    nlp  = pipeline("text-generation", model=args.generate_m, device=0, return_full_text=False)
 
 
 accs = []
@@ -80,9 +86,6 @@ for ite in range(args.ite):
     print("augmentating...")
 
     if args.aug == 'generate':
-        if args.generate_m == 'ctrl':
-            args.rp = 1.2
-        nlp  = pipeline("text-generation", model=args.generate_m, device=0, return_full_text=False)
 
         syn_df_ll = []
         while True:
