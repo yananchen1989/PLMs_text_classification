@@ -132,6 +132,8 @@ for ite in range(args.ite):
             df_synthesize_all = pd.concat(syn_df_ll)
             if args.samplecnt > 0 and df_synthesize_all['label'].value_counts().min() >= args.samplecnt * args.times:
                 break 
+            if args.samplecnt == -1 and df_synthesize_all['label'].value_counts().min() >= ds.df_train['label'].value_counts().min() * args.times:
+                break 
         print('check==>',args.check)
         print(df_synthesize_all['label'].value_counts())   
         if args.samplecnt > 0:
