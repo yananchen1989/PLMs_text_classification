@@ -19,7 +19,7 @@ parser.add_argument("--ite", default=5, type=int)
 parser.add_argument("--ner_set", default=0, type=int)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
-parser.add_argument("--batch_size", default=64, type=int)
+#parser.add_argument("--batch_size", default=64, type=int)
 #parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="former", type=str)
 #parser.add_argument("--device", default="cuda", type=str)
@@ -163,9 +163,13 @@ for ite in range(args.ite):
         raise KeyError("input model illegal!")
 
     print("train begin==>")
-
+    if args.samplecnt == -1:
+        batch_size = 64
+    else:
+        batch_size = 8
+        
     history = model.fit(
-        x_train, y_train, batch_size=args.batch_size, epochs=50, \
+        x_train, y_train, batch_size=batch_size, epochs=50, \
         validation_batch_size=64,
         validation_data=(x_test, y_test), verbose=1,
         callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
