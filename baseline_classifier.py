@@ -29,10 +29,10 @@ parser.add_argument("--beams", default=1, type=int)
 parser.add_argument("--rp", default=1.0, type=float)
 parser.add_argument("--check", default='enc', type=str)
 parser.add_argument("--enc_m", default='dan', type=str)
-parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
+#parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--thres", default=0.65, type=float)
 parser.add_argument("--times", default=2, type=int)
-parser.add_argument("--cap3rd", default=0.8, type=float)
+parser.add_argument("--cap3rd", default=0.99, type=float)
 
 parser.add_argument("--eda_times", required=False, type=int, default=4, help="number of augmented sentences per original sentence")
 parser.add_argument("--eda_sr", required=False, type=float, default=0.1, help="percent of words in each sentence to be replaced by synonyms")
@@ -73,7 +73,7 @@ else:
     enc = None
 
 if args.aug == 'generate' and args.check == 'nli':
-    nlp_nli = pipeline("zero-shot-classification", model=args.nli_m, device=0) #  1.8.1+cu102
+    nlp_nli = pipeline("zero-shot-classification", model="joeddav/bart-large-mnli-yahoo-answers", device=0) #  1.8.1+cu102
 else:
     nlp_nli = None    
 
@@ -179,7 +179,7 @@ for ite in range(args.ite):
         df_synthesize = pd.DataFrame(infos, columns=['content','label'])
         ds.df_train_aug = pd.concat([ds.df_train, df_synthesize])
         assert ds.df_train_aug.shape[0] == (args.eda_times + 1) * ds.df_train.shape[0]
-        
+
     else:
         print("do not augmentation...")
         ds.df_train_aug = ds.df_train
