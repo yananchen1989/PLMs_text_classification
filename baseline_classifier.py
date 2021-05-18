@@ -30,7 +30,7 @@ parser.add_argument("--enc_m", default='dan', type=str)
 parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--thres", default=0.65, type=float)
 parser.add_argument("--times", default=2, type=int)
-parser.add_argument("--cap3rd", default=0, type=int)
+parser.add_argument("--cap3rd", default=0.8, type=int)
 
 
 args = parser.parse_args()
@@ -84,10 +84,10 @@ for ite in range(args.ite):
     print("iter ==> {}".format(ite))
 
     ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
-    if args.cap3rd:
-        max_len = get_tokens_len(ds)
-    else:
+    if args.cap3rd < 0:
         max_len = 250
+    else:
+        max_len = get_tokens_len(ds, args.cap3rd)
 
     if args.samplecnt > 0:
         assert ds.df_train['label'].value_counts().min() == args.samplecnt

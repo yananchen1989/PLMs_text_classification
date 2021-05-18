@@ -495,12 +495,12 @@ def record_log(file, record):
 from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-def get_tokens_len(ds):
+def get_tokens_len(ds, cap3rd):
     lens = []
     for content in ds.df_test['content'].tolist():
         tokens = tokenizer.tokenize(content)
         lens.append(len(tokens))
-    return int(np.quantile(np.array(lens), 0.75, axis=0))
+    return int(np.quantile(np.array(lens), cap3rd, axis=0))
 
 
 
