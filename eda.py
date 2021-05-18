@@ -174,7 +174,7 @@ def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, num_aug=9)
 	
 	sentence = get_only_chars(sentence)
 	words = sentence.split(' ')
-	words = [word for word in words if word is not '']
+	words = [word for word in words if word != '']
 	num_words = len(words)
 	
 	augmented_sentences = []
@@ -218,6 +218,6 @@ def eda(sentence, alpha_sr=0.1, alpha_ri=0.1, alpha_rs=0.1, p_rd=0.1, num_aug=9)
 		augmented_sentences = [s for s in augmented_sentences if random.uniform(0, 1) < keep_prob]
 
 	#append the original sentence
-	augmented_sentences.append(sentence)
+	#augmented_sentences.append(sentence)
 
 	return augmented_sentences

@@ -10,6 +10,8 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
+from eda import *
+import nltk; nltk.download('wordnet')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="no", type=str)
@@ -31,6 +33,12 @@ parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", 
 parser.add_argument("--thres", default=0.65, type=float)
 parser.add_argument("--times", default=2, type=int)
 parser.add_argument("--cap3rd", default=0.8, type=float)
+
+parser.add_argument("--eda_times", required=False, type=int, default=4, help="number of augmented sentences per original sentence")
+parser.add_argument("--eda_sr", required=False, type=float, default=0.1, help="percent of words in each sentence to be replaced by synonyms")
+parser.add_argument("--eda_ri", required=False, type=float, default=0.1, help="percent of words in each sentence to be inserted")
+parser.add_argument("--eda_rs", required=False, type=float, default=0.1, help="percent of words in each sentence to be swapped")
+parser.add_argument("--eda_rd", required=False, type=float, default=0.1, help="percent of words in each sentence to be deleted")
 
 
 args = parser.parse_args()
@@ -84,8 +92,8 @@ for ite in range(args.ite):
     print("iter ==> {}".format(ite))
 
     ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
-    if args.cap3rd < 0:
-        max_len = 250
+    if args.cap3rd > 1:
+        max_len = int(args.cap3rd)
     else:
         max_len = get_tokens_len(ds, args.cap3rd)
 
