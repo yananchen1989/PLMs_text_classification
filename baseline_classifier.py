@@ -166,7 +166,20 @@ for ite in range(args.ite):
         ds.df_train_aug = pd.DataFrame(zip(ds.df_train['content_aug'].tolist()+ds.df_train['content'].tolist(), \
                                                  ds.df_train['label'].tolist()*2),
                                       columns=['content','label']).sample(frac=1)
-
+    elif args.aug =='eda':
+        aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=args.eda_sr, alpha_ri=args.eda_ri, \
+                                   alpha_rs=args.eda_rs, p_rd=args.eda_rd, num_aug=args.eda_times)).tolist()
+        ori_labels = ds.df_train['label'].tolist()
+        assert len(aug_sentences) == ds.df_train.shape[0] and len(aug_sentences[1]) == args.eda_times \
+                and len(aug_sentences) == len(ori_labels)
+        infos = []
+        for ii in range(len(aug_sentences)):
+            for sent in aug_sentences[ii]:
+                infos.append((sent, ori_labels[ii]))
+        df_synthesize = pd.DataFrame(infos, columns=['content','label'])
+        ds.df_train_aug = pd.concat([ds.df_train, df_synthesize])
+        assert ds.df_train_aug.shape[0] == (args.eda_times + 1) * ds.df_train.shape[0]
+        
     else:
         print("do not augmentation...")
         ds.df_train_aug = ds.df_train
