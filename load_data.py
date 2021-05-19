@@ -492,8 +492,8 @@ def record_log(file, record):
         writer = csv.writer(f, delimiter=' ')
         writer.writerow([cur] + record)
 
-from transformers import AutoTokenizer
-tokenizer = AutoTokenizer.from_pretrained("gpt2")
+from transformers import GPT2Tokenizer
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
 def get_tokens_len(ds, cap3rd):
     lens = []
