@@ -31,7 +31,7 @@ parser.add_argument("--check", default='enc', type=str)
 parser.add_argument("--enc_m", default='dan', type=str)
 #parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--thres", default=0.65, type=float)
-parser.add_argument("--times", default=2, type=int)
+#parser.add_argument("--times", default=2, type=int)
 parser.add_argument("--cap3rd", default=0.99, type=float)
 
 parser.add_argument("--eda_times", required=False, type=int, default=1, help="number of augmented sentences per original sentence")
