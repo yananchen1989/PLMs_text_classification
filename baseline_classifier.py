@@ -113,7 +113,7 @@ def do_train_test(ds):
     )
 
     best_val_acc = max(history.history['val_acc'])
-    return best_val_acc
+    return round(best_val_acc, 4)
 
 def synthesize(ds):
     if args.aug == 'generate':
@@ -207,6 +207,7 @@ for ite in range(args.ite):
 
     print("augmentating...")
     best_acc = 0
+    best_aug_ratio = -1
     syn_df_ll = []
     while True:
     
@@ -225,30 +226,25 @@ for ite in range(args.ite):
                           'cur_acc:{}'.format(cur_acc)])
         if cur_acc > best_acc:
             best_acc = cur_acc
+            best_aug_ratio = aug_ratio
         else:
             accs.append(best_acc)
             break 
 
-        
-
-
+    
 if args.mm == 'max':
     acc_mean = round(np.array(accs).max(), 4)
     acc_noaug_mean = round(np.array(accs_noaug).max(), 4)
     
-elif args.mm == 'mean':
+if args.mm == 'mean':
     acc_mean = round(np.array(accs).mean(), 4)
     acc_noaug_mean = round(np.array(accs_noaug).mean(), 4)
-else:
-    acc_mean = -1 
 
-
-if args.aug != 'generate':
-    aug_ratio = -1
+gain = round((acc_mean-acc_noaug_mean) / acc_noaug_mean, 4)
 
 record_log('log', ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
-                 +['aug_ratio:{}'.format(aug_ratio)] \
-                 + ['acc=> {}'.format(acc_mean)] + ['noaug acc=> {}'.format(acc_noaug_mean)]
+                 + ['acc=> {}'.format(acc_mean)] + ['noaug acc=> {}'.format(acc_noaug_mean)] \
+                 + ['gain=> {}'.format(gain)]
            )
 
 
