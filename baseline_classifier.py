@@ -179,10 +179,10 @@ for ite in range(args.ite):
             aug_ratio = pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0]
             cur_acc = do_train_test(ds)
             record_log('log', \
-             ['boost_generate==> dsn:{}'.format(args.dsn),\
-                  'check:{}'.format(args.check), \
-                  'aug_ratio:{}'.format(aug_ratio), \
-                  'cur_acc:{}'.format(cur_acc)])
+                         ['boost_generate==> dsn:{}'.format(args.dsn),\
+                              'check:{}'.format(args.check), \
+                              'aug_ratio:{}'.format(aug_ratio), \
+                              'cur_acc:{}'.format(cur_acc)])
             if cur_acc > best_acc:
                 best_acc = cur_acc
             else:
