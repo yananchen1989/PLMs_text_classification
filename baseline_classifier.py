@@ -134,7 +134,10 @@ for ite in range(args.ite):
     ds.df_train_aug = ds.df_train
     best_val_acc_noaug = do_train_test(ds)
     accs_noaug.append(best_val_acc_noaug)
-
+    record_log('log', \
+                 ['boost_generate==> dsn:{}'.format(args.dsn),\
+                      'iter:{}'.format(ite), \
+                      'noaug_acc:{}'.format(best_val_acc_noaug)])
     print("augmentating...")
 
     if args.aug == 'generate':
@@ -182,7 +185,7 @@ for ite in range(args.ite):
 
             ds.df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
 
-            aug_ratio = pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0]
+            aug_ratio = round(pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0], 2)
             cur_acc = do_train_test(ds)
             record_log('log', \
                          ['boost_generate==> dsn:{}'.format(args.dsn),\
