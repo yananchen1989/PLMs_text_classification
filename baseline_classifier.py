@@ -181,6 +181,7 @@ for ite in range(args.ite):
             record_log('log', \
                          ['boost_generate==> dsn:{}'.format(args.dsn),\
                               'check:{}'.format(args.check), \
+                              'iter:{}'.format(ite), \
                               'aug_ratio:{}'.format(aug_ratio), \
                               'cur_acc:{}'.format(cur_acc)])
             if cur_acc > best_acc:
