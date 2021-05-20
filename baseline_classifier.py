@@ -131,6 +131,7 @@ for ite in range(args.ite):
         assert ds.df_train['label'].value_counts().min() == args.samplecnt
 
     print("before augmentating")
+    ds.df_train_aug = ds.df_train
     best_val_acc_noaug = do_train_test(ds)
     accs_noaug.append(best_val_acc_noaug)
 
