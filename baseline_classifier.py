@@ -170,18 +170,13 @@ for ite in range(args.ite):
                         infos.append((sentence['generated_text'], train_labels[ii] ))
 
             df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
-            syn_df_ll.append(df_synthesize)
-            df_synthesize_all = pd.concat(syn_df_ll)
+            df_synthesize_balance = sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min() )   
+            
+            syn_df_ll.append(df_synthesize_balance)
 
-            # if df_synthesize_all['label'].value_counts().min() >= ds.df_train['label'].value_counts().min() * args.times:
-            #     break 
+            ds.df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
 
-            print(df_synthesize_all['label'].value_counts())   
-
-            df_synthesize_all_balanced = sample_stratify(df_synthesize_all, df_synthesize_all['label'].value_counts().min() )   
-            ds.df_train_aug = pd.concat([ds.df_train, df_synthesize_all_balanced])
-
-            aug_ratio = df_synthesize_all_balanced.shape[0] / ds.df_train.shape[0]
+            aug_ratio = pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0]
             cur_acc = do_train_test(ds)
             record_log('log', \
              ['boost_generate==> dsn:{}'.format(args.dsn),\
