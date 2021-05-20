@@ -206,9 +206,10 @@ for ite in range(args.ite):
                       'noaug_acc:{}'.format(best_val_acc_noaug)])
 
     print("augmentating...")
-    best_acc = 0
-    best_aug_ratio = -1
+
     syn_df_ll = []
+    accs_iters = []
+    aug_ratio_iters = []
     while True:
     
         df_synthesize = synthesize(ds)
@@ -224,12 +225,12 @@ for ite in range(args.ite):
                           'check:{}'.format(args.check), \
                           'aug_ratio:{}'.format(aug_ratio), \
                           'cur_acc:{}'.format(cur_acc)])
-        if cur_acc > best_acc:
-            best_acc = cur_acc
-            best_aug_ratio = aug_ratio
-        else:
-            accs.append(best_acc)
-            break 
+        accs_iters.append(cur_acc)
+        aug_ratio_iters.append(aug_ratio)
+        if len(accs_iters) >= 5 and accs_iters[-1] < accs_iters[-2] and accs_iters[-2] < accs_iters[-3]:
+            accs.append(max(accs_iters))
+            break
+
 
     
 if args.mm == 'max':
