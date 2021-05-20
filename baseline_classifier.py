@@ -256,7 +256,7 @@ if args.aug != 'generate':
 record_log('log', ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
                  +['aug_ratio:{}'.format(aug_ratio)] \
                  + ['acc=> {}'.format(acc_mean)] + ['noaug acc=> {}'.format(acc_noaug_mean)]
-            )
+           )
 
 
 
