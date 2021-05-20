@@ -198,7 +198,7 @@ for ite in range(args.ite):
     ds.df_train_aug = ds.df_train
     best_val_acc_noaug = do_train_test(ds)
     accs_noaug.append(best_val_acc_noaug)
-    record_log('log_{}'.format(args.dsn), \
+    record_log('log_{}_{}'.format(args.dsn, args.aug), \
                  ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
                       'iter:{}'.format(ite), \
                       'noaug_acc:{}'.format(best_val_acc_noaug)])
@@ -217,7 +217,7 @@ for ite in range(args.ite):
 
         aug_ratio = round(pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0], 2)
         cur_acc = do_train_test(ds)
-        record_log('log_{}'.format(args.dsn), \
+        record_log('log_{}_{}'.format(args.dsn, args.aug), \
                      ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
                           'iter:{}'.format(ite), \
                           'check:{}'.format(args.check), \
@@ -241,7 +241,8 @@ if args.mm == 'mean':
 
 gain = round((acc_mean-acc_noaug_mean) / acc_noaug_mean, 4)
 
-record_log('log_{}'.format(args.dsn), ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
+record_log('log_{}_{}'.format(args.dsn, args.aug), \
+                 ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
                  + ['acc=> {}'.format(acc_mean)] + ['noaug acc=> {}'.format(acc_noaug_mean)] \
                  + ['gain=> {}'.format(gain)]
            )
