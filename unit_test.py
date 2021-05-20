@@ -1,9 +1,9 @@
-
+import time,os
 from load_data import *
 from transformers import pipeline
 import random,torch
 print(torch.__version__)
-ds = load_data(dataset='ag', samplecnt=32)
+ds = load_data(dataset='stsa', samplecnt=32)
 
 
 nlp = pipeline("fill-mask" , model = 'distilbert-base-cased', device=0)
@@ -46,32 +46,19 @@ nlp(content)
 
 
 
-contents = ds.df_train['content'].tolist()[:50]
 
 nlp  = pipeline("text-generation", model='gpt2', device=0, return_full_text=False)
-results = nlp(['safe conduct , however ambitious and well-intentioned , fails to hit the entertainment bull s - eye .'], max_length=100, do_sample=True, top_p=0.9, top_k=0, \
-                    repetition_penalty=1, num_return_sequences=16)
-
-for ii in results:
-    print('==>', ii['generated_text'])
-
-
-
-
-
-
-import nltk; nltk.download('wordnet')
-from eda import *
+for i in range(3):
+    for maxl in [200, 100, 52]:
+        t1 = time.time()
+        results = nlp(ds.df_train['content'].tolist(), max_length=maxl, do_sample=True, top_p=0.9, top_k=0, \
+                        repetition_penalty=1, num_return_sequences=64)
+        t2 = time.time()
+        print(t2-t1)
 
 
 
-parser = argparse.ArgumentParser()
 
-
-#generate more data with standard augmentation
-sentence = "safe conduct , however ambitious and well-intentioned , fails to hit the entertainment bull s - eye ."
-aug_sentences = eda(sentence, alpha_sr=args.eda_sr, alpha_ri=args.eda_ri, \
-                    alpha_rs=args.eda_rs, p_rd=args.eda_rd, num_aug=args.eda_times)
 
 
 
