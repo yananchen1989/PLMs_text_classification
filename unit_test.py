@@ -3,8 +3,19 @@ from load_data import *
 from transformers import pipeline
 import random,torch
 print(torch.__version__)
-ds = load_data(dataset='stsa', samplecnt=32)
 
+import numpy as np
+for dsn in ['stsa','ag','yahoo','uci']:
+    for args.samplecnt in [32, 64, 128, 256, 512]:
+        accs = []
+        for ite in range(5):
+            ds = load_data(dataset=dsn, samplecnt=args.samplecnt)
+
+            ds.df_train_aug = ds.df_train
+            best_val_acc_noaug = do_train_test(ds)
+            accs.append(best_val_acc_noaug)
+        print('summary==> dsn:{}'.format(dsn), 'samplecnt:{}'.format(args.samplecnt),\
+           'std:{}'.format(round(np.array(accs).std(), 4) ), 'accs==> {}'.format(' '.join([str(i) for i in accs]) ) )
 
 nlp = pipeline("fill-mask" , model = 'distilbert-base-cased', device=0)
 
@@ -56,29 +67,6 @@ for i in range(3):
         t2 = time.time()
         print(t2-t1)
 
-
-
-
-model = ["facebook/bart-large-mnli", 'joeddav/xlm-roberta-large-xnli', "joeddav/bart-large-mnli-yahoo-answers"]
-nlp_nli = pipeline("zero-shot-classification", model=model[0], device=0) 
-
-accs = []
-times = []
-labels_candidates = list(ds.df.label.unique())
-for ix, row in ds.df_test.iterrows():
-    sent = row['content']
-    label = row['label']
-    t1 = time.time()
-    result_nli = nlp_nli(sent, labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
-    t2 = time.time()
-    times.append(t2-t1)   
-    pred = result_nli['labels'][0]
-    if pred == label:
-        accs.append(1)
-    else:
-        accs.append(0)
-
-print('time:', np.array(times).mean(), 'acc:', sum(accs) / len(accs))
 
 
 

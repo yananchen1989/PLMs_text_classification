@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
 from eda import *
-import nltk; nltk.download('wordnet')
+import nltk #nltk.download('wordnet')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="no", type=str)
@@ -35,10 +35,10 @@ parser.add_argument("--thres", default=0.65, type=float)
 parser.add_argument("--cap3rd", default=0.99, type=float)
 
 parser.add_argument("--eda_times", required=False, type=int, default=1, help="number of augmented sentences per original sentence")
-parser.add_argument("--eda_sr", required=False, type=float, default=0.1, help="percent of words in each sentence to be replaced by synonyms")
-parser.add_argument("--eda_ri", required=False, type=float, default=0.1, help="percent of words in each sentence to be inserted")
-parser.add_argument("--eda_rs", required=False, type=float, default=0.1, help="percent of words in each sentence to be swapped")
-parser.add_argument("--eda_rd", required=False, type=float, default=0.1, help="percent of words in each sentence to be deleted")
+parser.add_argument("--eda_sr", required=False, type=float, default=0.2, help="percent of words in each sentence to be replaced by synonyms")
+parser.add_argument("--eda_ri", required=False, type=float, default=0.2, help="percent of words in each sentence to be inserted")
+parser.add_argument("--eda_rs", required=False, type=float, default=0.2, help="percent of words in each sentence to be swapped")
+parser.add_argument("--eda_rd", required=False, type=float, default=0.2, help="percent of words in each sentence to be deleted")
 
 
 args = parser.parse_args()
@@ -198,7 +198,7 @@ for ite in range(args.ite):
     ds.df_train_aug = ds.df_train
     best_val_acc_noaug = do_train_test(ds)
     accs_noaug.append(best_val_acc_noaug)
-    record_log('log', \
+    record_log('log_{}'.format(args.dsn), \
                  ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
                       'iter:{}'.format(ite), \
                       'noaug_acc:{}'.format(best_val_acc_noaug)])
@@ -217,7 +217,7 @@ for ite in range(args.ite):
 
         aug_ratio = round(pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0], 2)
         cur_acc = do_train_test(ds)
-        record_log('log', \
+        record_log('log_{}'.format(args.dsn), \
                      ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
                           'iter:{}'.format(ite), \
                           'check:{}'.format(args.check), \
@@ -241,7 +241,7 @@ if args.mm == 'mean':
 
 gain = round((acc_mean-acc_noaug_mean) / acc_noaug_mean, 4)
 
-record_log('log', ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
+record_log('log_{}'.format(args.dsn), ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
                  + ['acc=> {}'.format(acc_mean)] + ['noaug acc=> {}'.format(acc_noaug_mean)] \
                  + ['gain=> {}'.format(gain)]
            )
