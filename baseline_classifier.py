@@ -116,6 +116,7 @@ def do_train_test(ds):
     return best_val_acc
 
 accs = []
+accs_noaug = []
 for ite in range(args.ite): 
 
     print("iter ==> {}".format(ite))
@@ -128,6 +129,11 @@ for ite in range(args.ite):
 
     if args.samplecnt > 0:
         assert ds.df_train['label'].value_counts().min() == args.samplecnt
+
+    print("before augmentating")
+    best_val_acc_noaug = do_train_test(ds)
+    accs_noaug.append(best_val_acc_noaug)
+
 
     print("augmentating...")
 
@@ -235,8 +241,11 @@ for ite in range(args.ite):
 
 if args.mm == 'max':
     acc_mean = round(np.array(accs).max(), 4)
+    acc_noaug_mean = round(np.array(accs_noaug).max(), 4)
+    
 elif args.mm == 'mean':
     acc_mean = round(np.array(accs).mean(), 4)
+    acc_noaug_mean = round(np.array(accs_noaug).mean(), 4)
 else:
     acc_mean = -1 
 
@@ -246,7 +255,9 @@ if args.aug != 'generate':
 
 record_log('log', ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
                  +['aug_ratio:{}'.format(aug_ratio)] \
-                 + ['acc=> {}'.format(acc_mean)])
+                 + ['acc=> {}'.format(acc_mean)] + ['noaug acc=> {}'.format(acc_noaug_mean)]
+            )
+
 
 
 
