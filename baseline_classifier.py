@@ -34,7 +34,7 @@ parser.add_argument("--thres", default=0.65, type=float)
 parser.add_argument("--times", default=2, type=int)
 parser.add_argument("--cap3rd", default=0.99, type=float)
 
-parser.add_argument("--eda_times", required=False, type=int, default=4, help="number of augmented sentences per original sentence")
+parser.add_argument("--eda_times", required=False, type=int, default=1, help="number of augmented sentences per original sentence")
 parser.add_argument("--eda_sr", required=False, type=float, default=0.1, help="percent of words in each sentence to be replaced by synonyms")
 parser.add_argument("--eda_ri", required=False, type=float, default=0.1, help="percent of words in each sentence to be inserted")
 parser.add_argument("--eda_rs", required=False, type=float, default=0.1, help="percent of words in each sentence to be swapped")
@@ -162,6 +162,7 @@ def synthesize(ds):
         for ii in range(len(aug_sentences)):
             for sent in aug_sentences[ii]:
                 infos.append((sent, ori_labels[ii]))
+
     elif args.aug == 'fillin':
         augmentor = fillInmask(ner_set=args.ner_set)
         sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x))
@@ -203,7 +204,7 @@ for ite in range(args.ite):
                  ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
                       'iter:{}'.format(ite), \
                       'noaug_acc:{}'.format(best_val_acc_noaug)])
-    
+
     print("augmentating...")
     best_acc = 0
     syn_df_ll = []
