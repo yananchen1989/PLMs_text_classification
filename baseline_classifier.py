@@ -115,6 +115,71 @@ def do_train_test(ds):
     best_val_acc = max(history.history['val_acc'])
     return best_val_acc
 
+def synthesize(ds):
+    if args.aug == 'generate':
+        results = nlp(ds.df_train['content'].tolist(), max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
+                    repetition_penalty=args.rp, num_return_sequences=args.beams)
+        assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
+        train_labels = ds.df_train['label'].tolist()
+        labels_candidates = list(ds.df.label.unique())
+        ori_sentences = ds.df_train['content'].tolist()
+        infos = []
+
+        for ii in range(ds.df_train.shape[0]):
+            if args.check == 'enc':
+                ori_sentence = ori_sentences[ii]
+                ori_embed = enc.infer([ori_sentence])
+                syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
+                syn_embeds = enc.infer(syn_sentences)
+                simis = cosine_similarity(ori_embed, syn_embeds)
+                df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
+                df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
+                df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
+
+                for sentence in df_simi_filer['content'].tolist():
+                    infos.append((sentence, train_labels[ii] ))
+
+            elif args.check == 'nli':
+                for sentence in results[ii]:
+                    if not sentence['generated_text']:
+                        continue
+                    result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
+                    if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == train_labels[ii]:                    
+                        infos.append((sentence['generated_text'], train_labels[ii] ))
+
+            else:
+                for sentence in results[ii]:
+                    infos.append((sentence['generated_text'], train_labels[ii] ))
+
+        
+    elif args.aug == 'eda':
+        aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=args.eda_sr, alpha_ri=args.eda_ri, \
+                                   alpha_rs=args.eda_rs, p_rd=args.eda_rd, num_aug=args.eda_times)).tolist()
+        ori_labels = ds.df_train['label'].tolist()
+        assert len(aug_sentences) == ds.df_train.shape[0] and len(aug_sentences[1]) == args.eda_times \
+                and len(aug_sentences) == len(ori_labels)
+        infos = []
+        for ii in range(len(aug_sentences)):
+            for sent in aug_sentences[ii]:
+                infos.append((sent, ori_labels[ii]))
+    elif args.aug == 'fillin':
+        augmentor = fillInmask(ner_set=args.ner_set)
+        sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x))
+        infos = zip(sentences, ds.df_train['label'].tolist())
+
+    elif args.aug == 'translate':
+        augmentor = backTranslate(lang=args.lang)
+        sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x))
+        infos = zip(sentences, ds.df_train['label'].tolist())
+
+    else:
+        raise KeyError("args.aug model illegal!")        
+
+    df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
+    return sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min() )
+
+
+
 accs = []
 accs_noaug = []
 for ite in range(args.ite): 
@@ -135,111 +200,35 @@ for ite in range(args.ite):
     best_val_acc_noaug = do_train_test(ds)
     accs_noaug.append(best_val_acc_noaug)
     record_log('log', \
-                 ['boost_generate==> dsn:{}'.format(args.dsn),\
+                 ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
                       'iter:{}'.format(ite), \
                       'noaug_acc:{}'.format(best_val_acc_noaug)])
+    
     print("augmentating...")
+    best_acc = 0
+    syn_df_ll = []
+    while True:
+    
+        df_synthesize = synthesize(ds)
+        syn_df_ll.append(df_synthesize)
 
-    if args.aug == 'generate':
-        best_acc = 0
-        syn_df_ll = []
-        while True:
-            results = nlp(ds.df_train['content'].tolist(), max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
-                        repetition_penalty=args.rp, num_return_sequences=args.beams)
-            assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
-            train_labels = ds.df_train['label'].tolist()
-            labels_candidates = list(ds.df.label.unique())
-            ori_sentences = ds.df_train['content'].tolist()
-            infos = []
+        ds.df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
 
-            for ii in range(ds.df_train.shape[0]):
-                if args.check == 'enc':
-                    ori_sentence = ori_sentences[ii]
-                    ori_embed = enc.infer([ori_sentence])
-                    syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
-                    syn_embeds = enc.infer(syn_sentences)
-                    simis = cosine_similarity(ori_embed, syn_embeds)
-                    df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
-                    df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
-                    df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
+        aug_ratio = round(pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0], 2)
+        cur_acc = do_train_test(ds)
+        record_log('log', \
+                     ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
+                          'iter:{}'.format(ite), \
+                          'check:{}'.format(args.check), \
+                          'aug_ratio:{}'.format(aug_ratio), \
+                          'cur_acc:{}'.format(cur_acc)])
+        if cur_acc > best_acc:
+            best_acc = cur_acc
+        else:
+            accs.append(best_acc)
+            break 
 
-                    for sentence in df_simi_filer['content'].tolist():
-                        infos.append((sentence, train_labels[ii] ))
-
-                elif args.check == 'nli':
-                    for sentence in results[ii]:
-                        if not sentence['generated_text']:
-                            continue
-                        result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
-                        if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == train_labels[ii]:                    
-                            infos.append((sentence['generated_text'], train_labels[ii] ))
-
-                else:
-                    for sentence in results[ii]:
-                        infos.append((sentence['generated_text'], train_labels[ii] ))
-
-            df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
-            df_synthesize_balance = sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min() )   
-            
-            syn_df_ll.append(df_synthesize_balance)
-
-            ds.df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
-
-            aug_ratio = round(pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0], 2)
-            cur_acc = do_train_test(ds)
-            record_log('log', \
-                         ['boost_generate==> dsn:{}'.format(args.dsn),\
-                              'check:{}'.format(args.check), \
-                              'iter:{}'.format(ite), \
-                              'aug_ratio:{}'.format(aug_ratio), \
-                              'cur_acc:{}'.format(cur_acc)])
-            if cur_acc > best_acc:
-                best_acc = cur_acc
-            else:
-                accs.append(best_acc)
-                break 
-
-            
-    elif args.aug in ['fillin','translate']:
-
-        if args.aug == 'fillin':
-            augmentor = fillInmask(ner_set=args.ner_set)
         
-        if args.aug == 'translate':
-            augmentor = backTranslate(lang=args.lang)
-
-        ds.df_train['content_aug'] = ds.df_train['content'].map(lambda x: augmentor.augment(x))        
-        ds.df_train_aug = pd.DataFrame(zip(ds.df_train['content_aug'].tolist()+ds.df_train['content'].tolist(), \
-                                                 ds.df_train['label'].tolist()*2),
-                                      columns=['content','label']).sample(frac=1)
-        best_val_acc = do_train_test(ds)
-        print("iter completed, tranin acc ==> {}".format(best_val_acc))
-        accs.append(best_val_acc)
-
-    elif args.aug =='eda':
-        aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=args.eda_sr, alpha_ri=args.eda_ri, \
-                                   alpha_rs=args.eda_rs, p_rd=args.eda_rd, num_aug=args.eda_times)).tolist()
-        ori_labels = ds.df_train['label'].tolist()
-        assert len(aug_sentences) == ds.df_train.shape[0] and len(aug_sentences[1]) == args.eda_times \
-                and len(aug_sentences) == len(ori_labels)
-        infos = []
-        for ii in range(len(aug_sentences)):
-            for sent in aug_sentences[ii]:
-                infos.append((sent, ori_labels[ii]))
-        df_synthesize = pd.DataFrame(infos, columns=['content','label'])
-        ds.df_train_aug = pd.concat([ds.df_train, df_synthesize])
-        assert ds.df_train_aug.shape[0] == (args.eda_times + 1) * ds.df_train.shape[0]
-        best_val_acc = do_train_test(ds)
-        print("iter completed, tranin acc ==> {}".format(best_val_acc))
-        accs.append(best_val_acc)
-
-    else:
-        print("do not augmentation...")
-        ds.df_train_aug = ds.df_train
-        best_val_acc = do_train_test(ds)
-        print("iter completed, tranin acc ==> {}".format(best_val_acc))
-        accs.append(best_val_acc)
-
 
 
 if args.mm == 'max':

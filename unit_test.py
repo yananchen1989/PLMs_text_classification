@@ -59,7 +59,26 @@ for i in range(3):
 
 
 
+model = ["facebook/bart-large-mnli", 'joeddav/xlm-roberta-large-xnli', "joeddav/bart-large-mnli-yahoo-answers"]
+nlp_nli = pipeline("zero-shot-classification", model=model[0], device=0) 
 
+accs = []
+times = []
+labels_candidates = list(ds.df.label.unique())
+for ix, row in ds.df_test.iterrows():
+    sent = row['content']
+    label = row['label']
+    t1 = time.time()
+    result_nli = nlp_nli(sent, labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
+    t2 = time.time()
+    times.append(t2-t1)   
+    pred = result_nli['labels'][0]
+    if pred == label:
+        accs.append(1)
+    else:
+        accs.append(0)
+
+print('time:', np.array(times).mean(), 'acc:', sum(accs) / len(accs))
 
 
 
