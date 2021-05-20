@@ -134,7 +134,6 @@ for ite in range(args.ite):
     best_val_acc_noaug = do_train_test(ds)
     accs_noaug.append(best_val_acc_noaug)
 
-
     print("augmentating...")
 
     if args.aug == 'generate':
