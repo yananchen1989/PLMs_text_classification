@@ -88,6 +88,33 @@ if args.aug == 'generate':
         nlp  = pipeline("text-generation", model=args.generate_m,           return_full_text=False)
 
 
+def do_train_test(ds):
+    print(" begin to train ")
+    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
+
+    if args.model in ['albert','electra', 'dan']:
+        model = get_model_bert(num_classes, args.model)
+    elif args.model == 'former':
+        model = get_model_transormer(num_classes)
+    else:
+        raise KeyError("input model illegal!")
+
+    print("train begin==>")
+    if args.samplecnt == -1:
+        batch_size = 64
+    else:
+        batch_size = 8
+
+    history = model.fit(
+        x_train, y_train, batch_size=batch_size, epochs=50, \
+        validation_batch_size=64,
+        validation_data=(x_test, y_test), verbose=1,
+        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+    )
+
+    best_val_acc = max(history.history['val_acc'])
+    return best_val_acc
+
 accs = []
 for ite in range(args.ite): 
 
@@ -105,7 +132,7 @@ for ite in range(args.ite):
     print("augmentating...")
 
     if args.aug == 'generate':
-
+        best_acc = 0
         syn_df_ll = []
         while True:
             results = nlp(ds.df_train['content'].tolist(), max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
@@ -146,16 +173,28 @@ for ite in range(args.ite):
             syn_df_ll.append(df_synthesize)
             df_synthesize_all = pd.concat(syn_df_ll)
 
-            if df_synthesize_all['label'].value_counts().min() >= ds.df_train['label'].value_counts().min() * args.times:
+            # if df_synthesize_all['label'].value_counts().min() >= ds.df_train['label'].value_counts().min() * args.times:
+            #     break 
+
+            print(df_synthesize_all['label'].value_counts())   
+
+            df_synthesize_all_balanced = sample_stratify(df_synthesize_all, df_synthesize_all['label'].value_counts().min() )   
+            ds.df_train_aug = pd.concat([ds.df_train, df_synthesize_all_balanced])
+
+            aug_ratio = df_synthesize_all_balanced.shape[0] / ds.df_train.shape[0]
+            cur_acc = do_train_test(ds)
+            record_log('log', \
+             ['boost_generate==> dsn:{}'.format(args.dsn),\
+                  'check:{}'.format(args.check), \
+                  'aug_ratio:{}'.format(aug_ratio), \
+                  'cur_acc:{}'.format(cur_acc)])
+            if cur_acc > best_acc:
+                best_acc = cur_acc
+            else:
+                accs.append(best_acc)
                 break 
-        print('check==>',args.check)
-        print(df_synthesize_all['label'].value_counts())   
 
-        df_synthesize_all_balanced = sample_stratify(df_synthesize_all, ds.df_train['label'].value_counts().min() * args.times )   
-        ds.df_train_aug = pd.concat([ds.df_train, df_synthesize_all_balanced])
-        aug_ratio = df_synthesize_all_balanced.shape[0] / ds.df_train.shape[0]
-        #assert ds.df_train_aug.shape[0] == ds.df_train.shape[0] * (args.beams + 1)
-
+            
     elif args.aug in ['fillin','translate']:
 
         if args.aug == 'fillin':
@@ -168,6 +207,10 @@ for ite in range(args.ite):
         ds.df_train_aug = pd.DataFrame(zip(ds.df_train['content_aug'].tolist()+ds.df_train['content'].tolist(), \
                                                  ds.df_train['label'].tolist()*2),
                                       columns=['content','label']).sample(frac=1)
+        best_val_acc = do_train_test(ds)
+        print("iter completed, tranin acc ==> {}".format(best_val_acc))
+        accs.append(best_val_acc)
+
     elif args.aug =='eda':
         aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=args.eda_sr, alpha_ri=args.eda_ri, \
                                    alpha_rs=args.eda_rs, p_rd=args.eda_rd, num_aug=args.eda_times)).tolist()
@@ -181,37 +224,17 @@ for ite in range(args.ite):
         df_synthesize = pd.DataFrame(infos, columns=['content','label'])
         ds.df_train_aug = pd.concat([ds.df_train, df_synthesize])
         assert ds.df_train_aug.shape[0] == (args.eda_times + 1) * ds.df_train.shape[0]
+        best_val_acc = do_train_test(ds)
+        print("iter completed, tranin acc ==> {}".format(best_val_acc))
+        accs.append(best_val_acc)
 
     else:
         print("do not augmentation...")
         ds.df_train_aug = ds.df_train
+        best_val_acc = do_train_test(ds)
+        print("iter completed, tranin acc ==> {}".format(best_val_acc))
+        accs.append(best_val_acc)
 
-    print(" begin to train ")
-    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
-
-    if args.model in ['albert','electra', 'dan']:
-        model = get_model_bert(num_classes, args.model)
-    elif args.model == 'former':
-        model = get_model_transormer(num_classes)
-    else:
-        raise KeyError("input model illegal!")
-
-    print("train begin==>")
-    if args.samplecnt == -1:
-        batch_size = 64
-    else:
-        batch_size = 8
-
-    history = model.fit(
-        x_train, y_train, batch_size=batch_size, epochs=50, \
-        validation_batch_size=64,
-        validation_data=(x_test, y_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-
-    best_val_acc = max(history.history['val_acc'])
-    print("iter completed, tranin acc ==> {}".format(best_val_acc))
-    accs.append(best_val_acc)
 
 
 if args.mm == 'max':
