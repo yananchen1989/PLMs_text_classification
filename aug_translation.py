@@ -2,7 +2,7 @@ import torch
 import sys,os,logging,argparse,gc
 import numpy as np
 import pandas as pd 
-
+from transformers import pipeline
 #from transformers import FSMTForConditionalGeneration, FSMTTokenizer
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -21,37 +21,37 @@ class backTranslate():
         #     self.tokenizer_backward = FSMTTokenizer.from_pretrained("facebook/wmt19-{}-en".format(self.lang))
         #     self.model_backward = FSMTForConditionalGeneration.from_pretrained("facebook/wmt19-{}-en".format(self.lang))
         # #elif self.lang in ['zh','fr']:
-        self.tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(self.lang))
-        self.model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(self.lang))
-        self.tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(self.lang))
-        self.model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(self.lang))
-        
-        self.model_forward.to(self.device)
-        self.model_backward.to(self.device)
+        self.tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(self.lang), cache_dir="./cache")
+        self.model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(self.lang), cache_dir="./cache")
+        self.tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(self.lang), cache_dir="./cache")
+        self.model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(self.lang), cache_dir="./cache")
+        if torch.cuda.is_available():
+            nlp_backward = pipeline("translation", model=self.model_backward, tokenizer=self.tokenizer_backward, device=0)
+            nlp_forward = pipeline("translation", model=self.model_forward, tokenizer=self.tokenizer_forward, device=0)
+        else:
+            nlp_backward = pipeline("translation", model=self.model_backward, tokenizer=self.tokenizer_backward)
+            nlp_forward = pipeline("translation", model=self.model_forward, tokenizer=self.tokenizer_forward)            
 
-    # def translate_batch(self, contents, tokenizer, model):
-    #     # Tokenize the text
-    #     batch = tokenizer.prepare_seq2seq_batch(src_texts=contents, return_tensors="pt").to(device) 
-    #     # Perform the translation and decode the output
-    #     translation = model.generate(**batch)
-    #     target_contents = tokenizer.batch_decode(translation, skip_special_tokens=True)
-    #     return target_contents
-
-    def translate_map_forward(self, content):
-        input_ids = self.tokenizer_forward.encode(content, truncation=True, max_length=512, return_tensors="pt").to(self.device) 
-        outputs = self.model_forward.generate(input_ids)
-        decoded = self.tokenizer_forward.decode(outputs[0], skip_special_tokens=True)
-        return decoded
-
-    def translate_map_backward(self, content):
-        input_ids = self.tokenizer_backward.encode(content, truncation=True, max_length=512, return_tensors="pt").to(self.device) 
-        outputs = self.model_backward.generate(input_ids)
-        decoded = self.tokenizer_backward.decode(outputs[0], skip_special_tokens=True)
-        return decoded
     def augment(self, content):
-        content_ = self.translate_map_forward(content)
-        content__ = self.translate_map_backward(content_)
+        content_ =  nlp_forward(content, do_sample=True, temperature=0.9, num_return_sequences=1)[0]['translation_text']
+        content__ = nlp_backward(content_, do_sample=True, temperature=0.9, num_return_sequences=1)[0]['translation_text']
         return content__
+
+    # def translate_map_forward(self, content):
+    #     input_ids = self.tokenizer_forward.encode(content, truncation=True, max_length=512, return_tensors="pt").to(self.device) 
+    #     outputs = self.model_forward.generate(input_ids, do_sample=True)
+    #     decoded = self.tokenizer_forward.decode(outputs[0], skip_special_tokens=True)
+    #     return decoded
+
+    # def translate_map_backward(self, content):
+    #     input_ids = self.tokenizer_backward.encode(content, truncation=True, max_length=512, return_tensors="pt").to(self.device) 
+    #     outputs = self.model_backward.generate(input_ids)
+    #     decoded = self.tokenizer_backward.decode(outputs[0], skip_special_tokens=True)
+    #     return decoded
+    # def augment(self, content):
+    #     content_ = self.translate_map_forward(content)
+    #     content__ = self.translate_map_backward(content_)
+    #     return content__
 
 
 

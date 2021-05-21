@@ -61,10 +61,15 @@ if gpus:
 
 from aug_fillinmask import *
 #from aug_generation import * 
-from aug_translation import *
+#from aug_translation import *
 from load_data import * 
 from transblock import * 
 from encoders import *
+
+if torch.cuda.is_available():
+    device = 0
+else:
+    device = -1
 
 
 if args.aug == 'generate' and args.check == 'enc':
@@ -73,19 +78,23 @@ else:
     enc = None
 
 if args.aug == 'generate' and args.check == 'nli':
-    nlp_nli = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli', device=0) #  1.8.1+cu102
+    nlp_nli = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli', device=device) #  1.8.1+cu102
 else:
     nlp_nli = None    
 # "facebook/bart-large-mnli"  'joeddav/xlm-roberta-large-xnli'  "joeddav/bart-large-mnli-yahoo-answers"
 
-
 if args.aug == 'generate':
     if args.generate_m == 'ctrl':
         args.rp = 1.2
-    if torch.cuda.is_available():
-        nlp  = pipeline("text-generation", model=args.generate_m, device=0, return_full_text=False)
-    else:
-        nlp  = pipeline("text-generation", model=args.generate_m,           return_full_text=False)
+    nlp  = pipeline("text-generation", model=args.generate_m, device=device, return_full_text=False)
+
+if args.aug == 'translate':
+    tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache")
+    model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache")
+    tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache")
+    model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache")
+    nlp_backward = pipeline("translation", model=model_backward, tokenizer=self.tokenizer_backward, device=device)
+    nlp_forward = pipeline("translation", model=model_forward, tokenizer=self.tokenizer_forward, device=device)
 
 
 def do_train_test(ds):
@@ -163,13 +172,13 @@ def synthesize(ds):
 
     elif args.aug == 'fillin':
         augmentor = fillInmask(ner_set=args.ner_set)
-        sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x))
+        sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x)).tolist()
         infos = zip(sentences, ds.df_train['label'].tolist())
 
     elif args.aug == 'translate':
-        augmentor = backTranslate(lang=args.lang)
-        sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x))
-        infos = zip(sentences, ds.df_train['label'].tolist())
+        content_ =  nlp_forward(ds.df_train['content'].tolist(), do_sample=True, temperature=0.9, num_return_sequences=1)
+        content__ =  nlp_backward([ii['translation_text'] for ii in content_], do_sample=True, temperature=0.9, num_return_sequences=1)
+        infos = zip([ii['translation_text'] for ii in content__], ds.df_train['label'].tolist())
 
     else:
         raise KeyError("args.aug model illegal!")        
