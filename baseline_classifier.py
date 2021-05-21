@@ -12,6 +12,7 @@ from tensorflow import keras
 from transformers import pipeline
 from eda import *
 import nltk #nltk.download('wordnet')
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="no", type=str)
@@ -90,8 +91,8 @@ if args.aug == 'translate':
     model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache")
     tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache")
     model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache")
-    nlp_backward = pipeline("translation", model=model_backward, tokenizer=self.tokenizer_backward, device=device)
-    nlp_forward = pipeline("translation", model=model_forward, tokenizer=self.tokenizer_forward, device=device)
+    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=device)
+    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=device)
 
 
 def do_train_test(ds):
