@@ -122,7 +122,7 @@ def synthesize(ds):
         labels_candidates = list(ds.df.label.unique())
         ori_sentences = ds.df_train['content'].tolist()
         infos = []
-
+        print('filtering...')
         for ii in range(ds.df_train.shape[0]):
             if args.check == 'enc':
                 ori_sentence = ori_sentences[ii]
