@@ -74,13 +74,10 @@ else:
 
 if args.aug == 'generate' and args.check == 'enc':
     enc = encoder(args.enc_m)
-else:
-    enc = None
 
 if args.aug == 'generate' and args.check == 'nli':
     nlp_nli = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli', device=device) #  1.8.1+cu102
-else:
-    nlp_nli = None    
+
 # "facebook/bart-large-mnli"  'joeddav/xlm-roberta-large-xnli'  "joeddav/bart-large-mnli-yahoo-answers"
 
 if args.aug == 'generate':
