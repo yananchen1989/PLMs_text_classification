@@ -174,8 +174,10 @@ def synthesize(ds, max_len):
         infos = zip(sentences, ds.df_train['label'].tolist())
 
     elif args.aug == 'translate':
-        content_ =  nlp_forward(ds.df_train['content'].tolist(), do_sample=True, temperature=0.9, max_length=max_len, num_return_sequences=1)
-        content__ =  nlp_backward([ii['translation_text'] for ii in content_], do_sample=True, max_length=max_len, temperature=0.9, num_return_sequences=1)
+        content_ =  nlp_forward(ds.df_train['content'].tolist(), truncation=True, \
+                   do_sample=True, temperature=0.9, max_length=max_len, num_return_sequences=1)
+        content__ =  nlp_backward([ii['translation_text'] for ii in content_], truncation=True, \
+                    do_sample=True, max_length=max_len, temperature=0.9, num_return_sequences=1)
         infos = zip([ii['translation_text'] for ii in content__], ds.df_train['label'].tolist())
 
     else:
