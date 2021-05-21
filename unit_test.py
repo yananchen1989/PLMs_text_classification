@@ -72,24 +72,6 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 
 
-tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(lang), cache_dir="./cache")
-model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(lang), cache_dir="./cache")
-tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(lang), cache_dir="./cache")
-model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(lang), cache_dir="./cache")
-if torch.cuda.is_available():
-    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=0)
-    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=0)
-
-
-
-
-
-content_ =  nlp_forward(ds.df.sample(64)['content'].tolist(), do_sample=True, temperature=0.9, num_return_sequences=1)
-
-
-
-
-
 # https://github.com/GT-SALT/MixText/blob/master/data/yahoo_answers_csv/back_translate.ipynb
 import torch
 while 1:

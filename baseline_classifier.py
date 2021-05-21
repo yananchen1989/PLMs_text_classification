@@ -120,7 +120,7 @@ def do_train_test(ds):
     best_val_acc = max(history.history['val_acc'])
     return round(best_val_acc, 4)
 
-def synthesize(ds):
+def synthesize(ds, max_len):
     if args.aug == 'generate':
         results = nlp(ds.df_train['content'].tolist(), max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
                     repetition_penalty=args.rp, num_return_sequences=args.beams)
@@ -174,8 +174,8 @@ def synthesize(ds):
         infos = zip(sentences, ds.df_train['label'].tolist())
 
     elif args.aug == 'translate':
-        content_ =  nlp_forward(ds.df_train['content'].tolist(), do_sample=True, temperature=0.9, num_return_sequences=1)
-        content__ =  nlp_backward([ii['translation_text'] for ii in content_], do_sample=True, temperature=0.9, num_return_sequences=1)
+        content_ =  nlp_forward(ds.df_train['content'].tolist(), do_sample=True, temperature=0.9, max_length=max_len, num_return_sequences=1)
+        content__ =  nlp_backward([ii['translation_text'] for ii in content_], do_sample=True, max_length=max_len, temperature=0.9, num_return_sequences=1)
         infos = zip([ii['translation_text'] for ii in content__], ds.df_train['label'].tolist())
 
     else:
@@ -217,7 +217,7 @@ for ite in range(args.ite):
     aug_ratio_iters = []
     while True:
     
-        df_synthesize = synthesize(ds)
+        df_synthesize = synthesize(ds, max_len)
         syn_df_ll.append(df_synthesize)
 
         ds.df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
