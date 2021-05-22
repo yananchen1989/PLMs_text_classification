@@ -234,7 +234,8 @@ for ite in range(args.ite):
                           'cur_acc:{}'.format(cur_acc)])
         accs_iters.append(cur_acc)
         aug_ratio_iters.append(aug_ratio)
-        if len(accs_iters) >= 5 and accs_iters[-1] < accs_iters[-2] and accs_iters[-2] < accs_iters[-3]:
+        if (len(accs_iters) >= 5 and accs_iters[-1] < accs_iters[-2] and accs_iters[-2] < accs_iters[-3]) \
+            or aug_ratio>=100 :
             accs.append(max(accs_iters))
             break
 
