@@ -113,7 +113,7 @@ def do_train_test(ds):
     history = model.fit(
         x_train, y_train, batch_size=batch_size, epochs=50, \
         validation_batch_size=64,
-        validation_data=(x_test, y_test), verbose=0,
+        validation_data=(x_test, y_test), verbose=1,
         callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
     )
 
