@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import pandas as pd 
 from transformers import pipeline
-#from transformers import AutoTokenizer, AutoModelWithLMHead
+from transformers import AutoTokenizer, AutoModelWithLMHead
 from flair.data import Sentence
 from flair.models import SequenceTagger
 # from nltk.corpus import stopwords
