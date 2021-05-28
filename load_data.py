@@ -105,8 +105,6 @@ class load_data():
         df_train.columns=['label','title','content']
         df_test.columns=['label','title','content']
 
-        df_train['content'] = df_train['title'] + ' ' + df_train['content']
-        df_test['content'] = df_test['title'] + ' ' + df_test['content']
         del df_train['title'], df_test['title']
 
         ixl = {1:"Company",
