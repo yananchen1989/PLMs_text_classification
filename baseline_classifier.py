@@ -133,7 +133,7 @@ def synthesize(ds, max_len):
             results_trunk = nlp(contents_trunk, max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
                     repetition_penalty=args.rp, num_return_sequences=args.beams)
             results.extend(results_trunk)
-            print('generate trunk==>', i, i+args.trunk_size)
+            print('generate trunk==>', i, i+args.trunk_size, 'of', ds.df_train.shape[0])
 
         assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
         infos = []
@@ -195,7 +195,7 @@ def synthesize(ds, max_len):
                         do_sample=True, max_length=max_len, temperature=0.9, num_return_sequences=1)
             infos_trunk = list(zip([ii['translation_text'] for ii in content__], labels_trunk ))
             infos.extend(infos_trunk)
-            print('translate trunk==>', i, i+args.trunk_size)
+            print('translate trunk==>', i, i+args.trunk_size, 'of', ds.df_train.shape[0])
         assert len(infos) == ds.df_train.shape[0]
     else:
         raise KeyError("args.aug model illegal!")        
