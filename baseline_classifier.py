@@ -34,6 +34,7 @@ parser.add_argument("--enc_m", default='dan', type=str)
 parser.add_argument("--thres", default=0.65, type=float)
 #parser.add_argument("--times", default=2, type=int)
 parser.add_argument("--cap3rd", default=0.99, type=float)
+parser.add_argument("--trunk_size", default=32, type=int)
 
 parser.add_argument("--eda_times", required=False, type=int, default=1, help="number of augmented sentences per original sentence")
 parser.add_argument("--eda_sr", required=False, type=float, default=0.2, help="percent of words in each sentence to be replaced by synonyms")
@@ -122,17 +123,24 @@ def do_train_test(ds):
 
 def synthesize(ds, max_len):
     if args.aug == 'generate':
-        results = nlp(ds.df_train['content'].map(lambda x: x[:cap]).tolist(), max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
-                    repetition_penalty=args.rp, num_return_sequences=args.beams)
-        assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
-        train_labels = ds.df_train['label'].tolist()
+        contents = ds.df_train['content'].tolist()
+        labels = ds.df_train['label'].tolist()
         labels_candidates = list(ds.df.label.unique())
-        ori_sentences = ds.df_train['content'].tolist()
+        results = []
+        for i in range(0, ds.df_train.shape[0], args.trunk_size):
+            contents_trunk = contents[i:i+args.trunk_size]
+            labels_trunk = labels[i:i+args.trunk_size] 
+            results_trunk = nlp(contents_trunk, max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
+                    repetition_penalty=args.rp, num_return_sequences=args.beams)
+            assert len(results_trunk) == args.trunk_size and len(results_trunk[0]) == args.beams
+            results.extend(results_trunk)
+
+        assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
         infos = []
         print('filtering...')
         for ii in range(ds.df_train.shape[0]):
             if args.check == 'enc':
-                ori_sentence = ori_sentences[ii]
+                ori_sentence = contents[ii]
                 ori_embed = enc.infer([ori_sentence])
                 syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
                 syn_embeds = enc.infer(syn_sentences)
@@ -142,19 +150,19 @@ def synthesize(ds, max_len):
                 df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
 
                 for sentence in df_simi_filer['content'].tolist():
-                    infos.append((sentence, train_labels[ii] ))
+                    infos.append((sentence, labels[ii] ))
 
             elif args.check == 'nli':
                 for sentence in results[ii]:
                     if not sentence['generated_text']:
                         continue
                     result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
-                    if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == train_labels[ii]:                    
-                        infos.append((sentence['generated_text'], train_labels[ii] ))
+                    if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == labels[ii]:                    
+                        infos.append((sentence['generated_text'], labels[ii] ))
 
             else:
                 for sentence in results[ii]:
-                    infos.append((sentence['generated_text'], train_labels[ii] ))
+                    infos.append((sentence['generated_text'], labels[ii] ))
 
         
     elif args.aug == 'eda':
@@ -170,16 +178,25 @@ def synthesize(ds, max_len):
 
     elif args.aug == 'fillin':
         augmentor = fillInmask(ner_set=args.ner_set)
-        sentences = ds.df_train['content'].map(lambda x: x[:cap]).map(lambda x: augmentor.augment(x)).tolist()
+        sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x)).tolist()
         infos = zip(sentences, ds.df_train['label'].tolist())
 
     elif args.aug == 'translate':
-        content_ =  nlp_forward(ds.df_train['content'].map(lambda x: x[:cap]).tolist(), truncation=True, \
-                   do_sample=True, temperature=0.9, max_length=max_len, num_return_sequences=1)
-        content__ =  nlp_backward([ii['translation_text'][:cap] for ii in content_], truncation=True, \
-                    do_sample=True, max_length=max_len, temperature=0.9, num_return_sequences=1)
-        infos = zip([ii['translation_text'] for ii in content__], ds.df_train['label'].tolist())
+        contents = ds.df_train['content'].tolist()
+        labels = ds.df_train['label'].tolist()
+        infos = []
+        for i in range(0, ds.df_train.shape[0], args.trunk_size):
+            contents_trunk = contents[i:i+args.trunk_size]
+            labels_trunk = labels[i:i+args.trunk_size]
 
+            content_ =  nlp_forward(contents_trunk, truncation=True, \
+                       do_sample=True, temperature=0.9, max_length=max_len, num_return_sequences=1)
+            content__ =  nlp_backward([ii['translation_text'] for ii in content_], truncation=True, \
+                        do_sample=True, max_length=max_len, temperature=0.9, num_return_sequences=1)
+            infos_trunk = list(zip([ii['translation_text'] for ii in content__], labels_trunk ))
+            infos.extend(infos_trunk)
+            print('translate trunk==>', i, i+args.trunk_size)
+        assert len(infos) == ds.df_train.shape[0]
     else:
         raise KeyError("args.aug model illegal!")        
 
