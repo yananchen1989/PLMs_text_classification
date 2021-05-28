@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse
+import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
@@ -35,6 +35,8 @@ parser.add_argument("--thres", default=0.65, type=float)
 #parser.add_argument("--times", default=2, type=int)
 parser.add_argument("--cap3rd", default=0.99, type=float)
 parser.add_argument("--trunk_size", default=32, type=int)
+parser.add_argument("--dpp", default=0, type=int)
+parser.add_argument("--dpp_retain", default=0.7, type=int)
 
 parser.add_argument("--eda_times", required=False, type=int, default=1, help="number of augmented sentences per original sentence")
 parser.add_argument("--eda_sr", required=False, type=float, default=0.2, help="percent of words in each sentence to be replaced by synonyms")
@@ -67,6 +69,7 @@ from aug_fillinmask import *
 from load_data import * 
 from transblock import * 
 from encoders import *
+from dpp_model import * 
 
 if torch.cuda.is_available():
     device = 0
@@ -121,6 +124,13 @@ def do_train_test(ds):
     best_val_acc = max(history.history['val_acc'])
     return round(best_val_acc, 4)
 
+def dpp_rerank(df_simi_filer, enc, dpp_retain):
+    embeds = enc.infer(df_simi_filer['content'].tolist())
+    sorted_ixs = extract_ix_dpp(embeds, df_simi_filer['simi'].values)
+    df_simi_filer_dpp = df_simi_filer.reset_index().iloc[sorted_ixs]
+    dpp_sents = df_simi_filer_dpp['content'].tolist()[:math.ceil(df_simi_filer_dpp.shape[0] * dpp_retain)]
+    return dpp_sents
+
 def synthesize(ds, max_len):
     if args.aug == 'generate':
         contents = ds.df_train['content'].tolist()
@@ -139,30 +149,41 @@ def synthesize(ds, max_len):
         infos = []
         print('filtering...')
         for ii in range(ds.df_train.shape[0]):
-            if args.check == 'enc':
-                ori_sentence = contents[ii]
-                ori_embed = enc.infer([ori_sentence])
-                syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
-                syn_embeds = enc.infer(syn_sentences)
-                simis = cosine_similarity(ori_embed, syn_embeds)
-                df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
-                df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
-                df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
+            if args.check in ['enc','nli']:
+                if args.check == 'enc':
+                    ori_sentence = contents[ii]
+                    ori_embed = enc.infer([ori_sentence])
+                    syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
+                    syn_embeds = enc.infer(syn_sentences)
+                    simis = cosine_similarity(ori_embed, syn_embeds)
+                    df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
+                    df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
+                    df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
+                    if df_simi_filer.shape[0] == 0:
+                        continue 
 
-                for sentence in df_simi_filer['content'].tolist():
+                if args.check == 'nli':
+                    infos_trunk = []
+                    for sentence in results[ii]:
+                        if not sentence['generated_text']:
+                            continue
+                        result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
+                        if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == labels[ii]:                    
+                            infos_trunk.append((sentence['generated_text'], result_nli['scores'][0] ))
+                    df_simi_filer = pd.DataFrame(infos_trunk, columns=['content','simi'])
+
+                if args.dpp:
+                    dpp_sents = dpp_rerank(df_simi_filer, enc, args.dpp_retain)
+                else:
+                    dpp_sents = df_simi_filer['content'].tolist()
+
+                for sentence in dpp_sents:
                     infos.append((sentence, labels[ii] ))
-
-            elif args.check == 'nli':
-                for sentence in results[ii]:
-                    if not sentence['generated_text']:
-                        continue
-                    result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
-                    if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == labels[ii]:                    
-                        infos.append((sentence['generated_text'], labels[ii] ))
 
             else:
                 for sentence in results[ii]:
                     infos.append((sentence['generated_text'], labels[ii] ))
+
 
         
     elif args.aug == 'eda':
@@ -201,6 +222,7 @@ def synthesize(ds, max_len):
         raise KeyError("args.aug model illegal!")        
 
     df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
+
     return sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min() )
 
 

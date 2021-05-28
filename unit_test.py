@@ -4,51 +4,75 @@ from transformers import pipeline
 import random,torch
 print(torch.__version__)
 from transblock import * 
+from dpp_model import * 
 
-def do_train_test(ds):
+from transformers import GPT2Tokenizer
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
+
+for ite in range(10):
+    ds = load_data(dataset='ag', samplecnt=-1)
+    ds.df_train_aug = ds.df_train
     (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
 
-    model = get_model_transormer(num_classes)
+    #model = get_model_transormer(num_classes)
+    model = get_model_bert(num_classes, 'albert')
 
-    batch_size = 8
+    batch_size = 64
 
     history = model.fit(
-        x_train, y_train, batch_size=batch_size, epochs=50, \
+        x_train, y_train, batch_size=32, epochs=50, \
         validation_batch_size=64,
-        validation_data=(x_test, y_test), verbose=1,
+        validation_data=(x_test, y_test), verbose=0,
         callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
     )
-
     best_val_acc = max(history.history['val_acc'])
-    return round(best_val_acc, 4)
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="", type=str)
-args = parser.parse_args()
-print('args==>', args)
-
-for samplecnt in [32, 64, 128, 256, 512, 1024, 2048]:
-    accs = []
-    for ite in range(5):
-        ds = load_data(dataset=args.dsn, samplecnt=samplecnt)
-        ds.df_train_aug = ds.df_train
-        best_val_acc_noaug = do_train_test(ds)
-        accs.append(best_val_acc_noaug)
-    print('summary==> dsn==> {}'.format(args.dsn), 'samplecnt==> {}'.format(samplecnt),\
-       'std==> {}'.format(round(np.array(accs).std(), 4) ), 'accs==> {}'.format(' '.join([str(i) for i in accs]) ) )
-
-
+    print(best_val_acc)
 
 
 ds = load_data(dataset='ag', samplecnt=-1)
+
+
 nlp  = pipeline("text-generation", model='gpt2', device=-1, return_full_text=False)
 
-content = ds.df_test.sample(1)['content'].tolist()[0]
-print(content)
-results = nlp([content], max_length=120, do_sample=True, top_p=0.9, top_k=0, \
-                    repetition_penalty=1, num_return_sequences=32)
+max_len = get_tokens_len(ds, 0.99)
+results_trunk = nlp([content], max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
+                    repetition_penalty=1, num_return_sequences=256)
 
+
+enc = encoder('dan')
+
+ori_sentence = ds.df_test.sample(1)['content'].tolist()[0]
+
+ori_embed = enc.infer([ori_sentence])
+syn_sentences = [sent['generated_text'] for sent in results_trunk]
+syn_embeds = enc.infer(syn_sentences)
+simis = cosine_similarity(ori_embed, syn_embeds)
+df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
+df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
+df_simi_filer = df_simi.loc[df_simi['simi']>= 0.6]
+
+
+embeds = enc.infer(df_simi_filer['content'].tolist())
+
+sorted_ixs = extract_ix_dpp(embeds, df_simi_filer['simi'].values)
+df_simi_filer_dpp = df_simi_filer.reset_index().iloc[sorted_ixs]
+
+
+
+
+
+
+
+
+
+
+
+
+
+tokenizer.tokenize(content)
+
+content = ds.df_test['content'].tolist()[10]
 
 
 nlp = pipeline("fill-mask" , model = 'distilbert-base-cased', device=0)
