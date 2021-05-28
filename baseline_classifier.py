@@ -122,7 +122,7 @@ def do_train_test(ds):
 
 def synthesize(ds, max_len):
     if args.aug == 'generate':
-        results = nlp(ds.df_train['content'].tolist(), max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
+        results = nlp(ds.df_train['content'].map(lambda x: x[:cap]).tolist(), max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
                     repetition_penalty=args.rp, num_return_sequences=args.beams)
         assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
         train_labels = ds.df_train['label'].tolist()
@@ -170,13 +170,13 @@ def synthesize(ds, max_len):
 
     elif args.aug == 'fillin':
         augmentor = fillInmask(ner_set=args.ner_set)
-        sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x)).tolist()
+        sentences = ds.df_train['content'].map(lambda x: x[:cap]).map(lambda x: augmentor.augment(x)).tolist()
         infos = zip(sentences, ds.df_train['label'].tolist())
 
     elif args.aug == 'translate':
-        content_ =  nlp_forward(ds.df_train['content'].tolist(), truncation=True, \
+        content_ =  nlp_forward(ds.df_train['content'].map(lambda x: x[:cap]).tolist(), truncation=True, \
                    do_sample=True, temperature=0.9, max_length=max_len, num_return_sequences=1)
-        content__ =  nlp_backward([ii['translation_text'] for ii in content_], truncation=True, \
+        content__ =  nlp_backward([ii['translation_text'][:cap] for ii in content_], truncation=True, \
                     do_sample=True, max_length=max_len, temperature=0.9, num_return_sequences=1)
         infos = zip([ii['translation_text'] for ii in content__], ds.df_train['label'].tolist())
 
