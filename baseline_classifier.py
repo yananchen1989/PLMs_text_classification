@@ -133,6 +133,7 @@ def synthesize(ds, max_len):
             results_trunk = nlp(contents_trunk, max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
                     repetition_penalty=args.rp, num_return_sequences=args.beams)
             results.extend(results_trunk)
+            print('generate trunk==>', i, i+args.trunk_size)
 
         assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
         infos = []
