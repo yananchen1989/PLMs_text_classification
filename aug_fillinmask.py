@@ -18,10 +18,11 @@ class fillInmask():
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         #self.device = torch.device(device)
         # load tagger
-        if torch.__version__.startswith('1.8'):
-            self.tagger = SequenceTagger.load("flair/ner-english-large")
-        else:
-            self.tagger = SequenceTagger.load("flair/ner-english-fast")
+        # if torch.__version__.startswith('1.8'):
+        #     self.tagger = SequenceTagger.load("flair/ner-english-large")
+        # else:
+        #     self.tagger = SequenceTagger.load("flair/ner-english-fast")
+        self.tagger = SequenceTagger.load("ner-large")
         tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
         model = AutoModelWithLMHead.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
 

@@ -131,7 +131,7 @@ class load_data():
     # ag news
     def get_ag_news(self):
         world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
-                   'Crime','Murder','Religion','jurisdiction', 'Democracy'])
+                   'Crime','Murder','Religion','Jurisdiction', 'Democracy'])
         df_train = pd.read_csv("../datasets_aug/ag_news/train.csv")
         df_test = pd.read_csv("../datasets_aug/ag_news/test.csv")
         df_train['content'] = df_train['title'] + ' ' + df_train['content']
