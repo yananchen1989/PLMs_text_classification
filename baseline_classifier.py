@@ -84,6 +84,7 @@ if args.aug == 'generate' and args.check == 'nli':
     nlp_nli = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli', device=device) #  1.8.1+cu102
 
 # "facebook/bart-large-mnli"  'joeddav/xlm-roberta-large-xnli'  "joeddav/bart-large-mnli-yahoo-answers"
+# https://huggingface.co/facebook/bart-large-mnli
 
 if args.aug == 'generate':
     if args.generate_m == 'ctrl':

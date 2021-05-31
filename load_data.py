@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_20newsgroups
 
 
-cap = 1000
+cap = 600
 
 def sample_stratify(df, samplecnt):
     if samplecnt < 0:
@@ -58,6 +58,7 @@ class load_data():
         df_train = pd.read_csv("../datasets_aug/yahoo_news/train.csv", header=None)            
         df_train = df_train.fillna(' ')
         df_train['content'] = df_train[1] + ' ' + df_train[2] + ' ' + df_train[3]
+        df_train['content'] = df_train['content'].map(lambda x: x.replace('\n',' ')).map(lambda x: x[:cap]) 
         df_train['label'] = df_train[0]
         df_train['label'] = df_train['label'].map(lambda x: yahoo_label_name[x])
         
@@ -65,6 +66,7 @@ class load_data():
         df_test = pd.read_csv("../datasets_aug/yahoo_news/test.csv", header=None)
         df_test = df_test.fillna(' ')
         df_test['content'] = df_test[1] + ' ' + df_test[2] + ' ' + df_test[3]
+        df_test['content'] = df_test['content'].map(lambda x: x.replace('\n',' ')).map(lambda x: x[:cap]) 
         df_test['label'] = df_test[0]
         df_test['label'] = df_test['label'].map(lambda x: yahoo_label_name[x])
 
