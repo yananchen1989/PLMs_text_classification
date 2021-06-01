@@ -77,7 +77,7 @@ else:
     device = -1
 
 
-if args.aug == 'generate' and args.check == 'enc':
+if args.aug == 'generate':
     enc = encoder(args.enc_m)
 
 if args.aug == 'generate' and args.check == 'nli':
