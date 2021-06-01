@@ -80,7 +80,7 @@ else:
 if args.aug == 'generate':
     enc = encoder(args.enc_m)
 
-if args.aug == 'generate' and args.check == 'nli':
+if args.aug == 'generate' and args.check in ['nli','double']:
     nlp_nli = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli', device=device) #  1.8.1+cu102
 
 # "facebook/bart-large-mnli"  'joeddav/xlm-roberta-large-xnli'  "joeddav/bart-large-mnli-yahoo-answers"
@@ -150,8 +150,8 @@ def synthesize(ds, max_len):
         infos = []
         print('filtering...')
         for ii in range(ds.df_train.shape[0]):
-            if args.check in ['enc','nli']:
-                if args.check == 'enc':
+            if args.check != 'no':
+                if args.check in ['enc','double']:
                     ori_sentence = contents[ii]
                     ori_embed = enc.infer([ori_sentence])
                     syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
@@ -162,8 +162,9 @@ def synthesize(ds, max_len):
                     df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
                     if df_simi_filer.shape[0] == 0:
                         continue 
+                    df_simi_filer_enc = df_simi_filer
 
-                if args.check == 'nli':
+                if args.check in ['nli','double']:
                     infos_trunk = []
                     for sentence in results[ii]:
                         if not sentence['generated_text']:
@@ -172,6 +173,17 @@ def synthesize(ds, max_len):
                         if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == labels[ii]:                    
                             infos_trunk.append((sentence['generated_text'], result_nli['scores'][0] ))
                     df_simi_filer = pd.DataFrame(infos_trunk, columns=['content','simi'])
+                    df_simi_filer_nli = df_simi_filer
+
+                if args.check == 'double':
+                    # use enc and nli to filter
+                    df_simi_filer = pd.merge(df_simi_filer_enc, df_simi_filer_nli, on='content', how='inner')
+                    if df_simi_filer.shape[0] == 0:
+                        continue 
+                    beta = 0.5
+                    df_simi_filer['simi'] = df_simi_filer['simi_x']*beta + df_simi_filer['simi_y']*(1-beta)
+                    print('double check==>', 'enc:', df_simi_filer_enc.shape[0], 'nli:', df_simi_filer_nli.shape[0],\
+                           'join:', df_simi_filer.shape[0])
 
                 if args.dpp:
                     dpp_sents = dpp_rerank(df_simi_filer, enc, args.dpp_retain)
@@ -181,9 +193,12 @@ def synthesize(ds, max_len):
                 for sentence in dpp_sents:
                     infos.append((sentence, labels[ii] ))
 
-            else:
+            elif args.check == 'no':
                 for sentence in results[ii]:
                     infos.append((sentence['generated_text'], labels[ii] ))
+
+            else:
+                raise KeyError("args.check illegal!")  
 
 
         
