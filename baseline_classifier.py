@@ -182,7 +182,7 @@ def synthesize(ds, max_len):
                         continue 
                     beta = 0.5
                     df_simi_filer['simi'] = df_simi_filer['simi_x']*beta + df_simi_filer['simi_y']*(1-beta)
-                    print('double check==>', 'enc:', df_simi_filer_enc.shape[0], 'nli:', df_simi_filer_nli.shape[0],\
+                    print('dsn:{} double check==>'.format(args.dsn), 'enc:', df_simi_filer_enc.shape[0], 'nli:', df_simi_filer_nli.shape[0],\
                            'join:', df_simi_filer.shape[0])
 
                 if args.dpp:
