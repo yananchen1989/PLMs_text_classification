@@ -26,7 +26,7 @@ parser.add_argument("--generate_m", default="gpt2", type=str)
 #parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="former", type=str)
 parser.add_argument("--mm", default="mean", type=str)
-parser.add_argument("--beams", default=1, type=int)
+parser.add_argument("--beams", default=256, type=int)
 parser.add_argument("--rp", default=1.0, type=float)
 parser.add_argument("--check", default='enc', type=str)
 parser.add_argument("--enc_m", default='dan', type=str)
@@ -161,6 +161,7 @@ def synthesize(ds, max_len):
                     df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
                     df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
                     if df_simi_filer.shape[0] == 0:
+                        print(args.dsn, 'enc ==> noleft')
                         continue 
                     df_simi_filer_enc = df_simi_filer
 
@@ -173,6 +174,9 @@ def synthesize(ds, max_len):
                         if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == labels[ii]:                    
                             infos_trunk.append((sentence['generated_text'], result_nli['scores'][0] ))
                     df_simi_filer = pd.DataFrame(infos_trunk, columns=['content','simi'])
+                    if df_simi_filer.shape[0] == 0:
+                        print(args.dsn, 'nli ==> noleft')
+                        continue                     
                     df_simi_filer_nli = df_simi_filer
 
                 if args.check == 'double':
@@ -182,7 +186,8 @@ def synthesize(ds, max_len):
                         continue 
                     beta = 0.5
                     df_simi_filer['simi'] = df_simi_filer['simi_x']*beta + df_simi_filer['simi_y']*(1-beta)
-                    print('dsn:{} double check==>'.format(args.dsn), 'enc:', df_simi_filer_enc.shape[0], 'nli:', df_simi_filer_nli.shape[0],\
+                    print('dsn:{} double check==>'.format(args.dsn), \
+                            'enc:', df_simi_filer_enc.shape[0], 'nli:', df_simi_filer_nli.shape[0],\
                            'join:', df_simi_filer.shape[0])
 
                 if args.dpp:

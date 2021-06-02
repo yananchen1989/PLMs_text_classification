@@ -35,3 +35,33 @@ def extract_ix_dpp(embeds, scores):
     kernel_matrix = scores.reshape((embeds.shape[0], 1)) * similarities * scores.reshape((1, embeds.shape[0]))
     result = dpp(kernel_matrix, embeds.shape[0]+1)
     return  result
+
+trials = 10000
+probs = [0.1, 0.3, 0.6, 0.87]
+ 
+def temperature_sample(softmax, temperature):
+    EPSILON = 10e-16 # to avoid taking the log of zero
+    #print(preds)
+    softmax = (np.array(softmax) + EPSILON).astype('float64')
+    preds = np.log(softmax) / temperature
+    #print(preds)
+    exp_preds = np.exp(preds)
+    #print(exp_preds)
+    preds = exp_preds / np.sum(exp_preds)
+    #print(preds)
+    probas = np.random.multinomial(1, preds, 1)
+    assert probas[0].shape[0] == len(softmax)
+    return probas[0]#.argmax()
+
+temperatures = [(t or 1) / 100 for t in range(0, 101, 10)]
+
+# for t in temperatures:
+#     mean = np.asarray([temperature_sample(probs, t) for _ in range(trials)]).mean(axis=0)
+#     print(t, mean)
+
+
+
+
+
+
+

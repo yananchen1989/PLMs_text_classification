@@ -11,19 +11,18 @@ tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
 
 for ite in range(10):
-    ds = load_data(dataset='ag', samplecnt=-1)
+    ds = load_data(dataset='yahoo', samplecnt=-1)
     ds.df_train_aug = ds.df_train
     (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
 
     #model = get_model_transormer(num_classes)
-    model = get_model_bert(num_classes, 'albert')
+    model = get_model_bert(num_classes, 'dan')
 
-    batch_size = 64
 
     history = model.fit(
         x_train, y_train, batch_size=32, epochs=50, \
         validation_batch_size=64,
-        validation_data=(x_test, y_test), verbose=0,
+        validation_data=(x_test, y_test), verbose=1,
         callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
     )
     best_val_acc = max(history.history['val_acc'])
@@ -63,11 +62,18 @@ df_simi_filer_dpp = df_simi_filer.reset_index().iloc[sorted_ixs]
 
 
 
+infos = [('aaa',1), ('bbb',2), ('ccc',3)]
+df_simi_filer = pd.DataFrame(infos, columns=['content','simi'])
+df_simi_filer_enc = df_simi_filer
 
 
+infos = [('aaa',1), ('zzz',2), ('ddd',3)]
+df_simi_filer = pd.DataFrame(infos, columns=['content','simi'])
+df_simi_filer_nli = df_simi_filer
 
+df_simi_filer_enc.join(df_simi_filer_nli)
 
-
+df_simi_filer = pd.merge(df_simi_filer_enc, df_simi_filer_nli, on='content', how='inner')
 
 
 tokenizer.tokenize(content)
@@ -100,7 +106,7 @@ print(results[0]['translation_text'])
 
 
 
-
+nlp = pipeline("ner", model="flair/ner-english-fast")
 nlp = pipeline("ner", model="dslim/bert-base-NER")
 content = random.sample(contents,1)[0]
 print(content)
@@ -108,7 +114,7 @@ nlp(content)
 
 
 
-
+content = "Edelman Partners. New York NY\n\nJ.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc\n\nFrequent speaker, former U.S. Ambassador"
 
 content = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
 
@@ -135,4 +141,41 @@ en2de.cuda()
 de2en.cuda()
 
 ru2en.translate(en2ru.translate(content,  sampling = True, temperature = 0.9),  sampling = True, temperature = 0.9)
+
+
+
+
+
+
+trials = 1000
+probs = [0.1, 0.3, 0.6, 0.87]
+ 
+def sample(softmax, temperature):
+    EPSILON = 10e-16 # to avoid taking the log of zero
+    #print(preds)
+    softmax = (np.array(softmax) + EPSILON).astype('float64')
+    preds = np.log(softmax) / temperature
+    #print(preds)
+    exp_preds = np.exp(preds)
+    #print(exp_preds)
+    preds = exp_preds / np.sum(exp_preds)
+    #print(preds)
+    probas = np.random.multinomial(1, preds, 1)
+    assert probas[0].shape[0] == len(softmax)
+    return probas[0].argmax()
+ 
+temperatures = [(t or 1) / 100 for t in range(0, 101, 10)]
+
+for t in temperatures:
+    mean = np.asarray([sample(probs, t) for _ in range(trials)]).mean(axis=0)
+    print(t, mean)
+
+
+
+
+
+
+
+
+
 
