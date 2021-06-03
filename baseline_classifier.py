@@ -27,7 +27,7 @@ parser.add_argument("--generate_m", default="gpt2", type=str)
 parser.add_argument("--model", default="former", type=str)
 parser.add_argument("--verbose", default=1, type=int)
 parser.add_argument("--mm", default="mean", type=str)
-parser.add_argument("--beams", default=256, type=int)
+parser.add_argument("--beams", default=100, type=int)
 parser.add_argument("--rp", default=1.0, type=float)
 parser.add_argument("--check", default='enc', type=str)
 parser.add_argument("--enc_m", default='dan', type=str)
@@ -161,8 +161,8 @@ def synthesize(ds, max_len):
                     df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
                     df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
                     df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
+                    print(args.dsn, 'enc ==> left', df_simi_filer.shape[0], 'of', len(results[ii]))  
                     if df_simi_filer.shape[0] == 0:
-                        print(args.dsn, 'enc ==> noleft')
                         continue 
                     df_simi_filer_enc = df_simi_filer
 
@@ -175,9 +175,9 @@ def synthesize(ds, max_len):
                         if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == labels[ii]:                    
                             infos_trunk.append((sentence['generated_text'], result_nli['scores'][0] ))
                     df_simi_filer = pd.DataFrame(infos_trunk, columns=['content','simi'])
+                    print(args.dsn, 'nli ==> left', df_simi_filer.shape[0], 'of', len(results[ii]))  
                     if df_simi_filer.shape[0] == 0:
-                        print(args.dsn, 'nli ==> noleft')
-                        continue                     
+                        continue                    
                     df_simi_filer_nli = df_simi_filer
 
                 if args.check == 'double':
