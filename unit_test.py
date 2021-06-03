@@ -1,35 +1,94 @@
-import time,os,argparse
-from load_data import *
-from transformers import pipeline
-import random,torch
-print(torch.__version__)
-from transblock import * 
-from dpp_model import * 
-
-from transformers import GPT2Tokenizer
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+args.aug = 'generate'
+args.beams = 128
+args.thres = 0.6
 
 
-for ite in range(10):
-    ds = load_data(dataset='yahoo', samplecnt=-1)
-    ds.df_train_aug = ds.df_train
-    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
-
-    #model = get_model_transormer(num_classes)
-    model = get_model_bert(num_classes, 'dan')
 
 
-    history = model.fit(
-        x_train, y_train, batch_size=32, epochs=50, \
-        validation_batch_size=64,
-        validation_data=(x_test, y_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-    best_val_acc = max(history.history['val_acc'])
-    print(best_val_acc)
+
+for ite in range(5):
+    for dsn in ['ag','stsa','dbpedia', 'pop','uci','yahoo']:
+        ds = load_data(dataset=dsn, samplecnt=100)
+        (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train, ds.df_test)
+        model = get_model_transormer(num_classes)
+        model.save_weights('weights.h5')
+        for batch_size in [8, 32, 64]:
+
+            model.load_weights('weights.h5')
+
+            history = model.fit(
+                x_train, y_train, batch_size=batch_size, epochs=50, \
+                validation_batch_size=64,
+                validation_data=(x_test, y_test), verbose=0,
+                callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+            )
+            best_val_acc = max(history.history['val_acc'])
+            print(dsn, batch_size, best_val_acc)
 
 
-ds = load_data(dataset='ag', samplecnt=-1)
+
+
+
+
+for dsn in ['ag','stsa','dbpedia','pop','uci','yahoo']:
+
+    ds = load_data(dataset=dsn, samplecnt=64)
+    max_len = get_tokens_len(ds, args.cap3rd)
+
+    contents = ds.df_train['content'].tolist()
+    labels = ds.df_train['label'].tolist()
+    labels_candidates = list(ds.df.label.unique())
+
+    results = []
+    for i in range(0, ds.df_train.shape[0], args.trunk_size):
+        contents_trunk = contents[i:i+args.trunk_size]
+        labels_trunk = labels[i:i+args.trunk_size] 
+        results_trunk = nlp(contents_trunk, max_length=max_len, do_sample=True, top_p=0.9, top_k=0, \
+                repetition_penalty=args.rp, num_return_sequences=args.beams)
+        results.extend(results_trunk)
+        print('generate trunk==>', i, i+args.trunk_size, 'of', ds.df_train.shape[0])
+    assert len(results) == ds.df_train.shape[0] and len(results[0]) == args.beams
+    retain = []
+    for ii in range(ds.df_train.shape[0]):
+        if args.check in ['enc','double']:
+            ori_sentence = contents[ii]
+            ori_embed = enc.infer([ori_sentence])
+            syn_sentences = [sentence['generated_text'] for sentence in results[ii]]
+            syn_embeds = enc.infer(syn_sentences)
+            simis = cosine_similarity(ori_embed, syn_embeds)
+            df_simi = pd.DataFrame(zip(syn_sentences, simis[0]), columns=['content','simi'])
+            df_simi.sort_values(by=['simi'], ascending=False, inplace=True)
+            df_simi_filer = df_simi.loc[df_simi['simi']>= args.thres]
+            df_simi_filer_enc = df_simi_filer
+            #print(df_simi.shape[0], '==>', df_simi_filer.shape[0])
+            retain.append((df_simi.shape[0], df_simi_filer.shape[0]))
+
+        if args.check in ['nli','double']:
+            infos_trunk = []
+            for sentence in results[ii]:
+                if not sentence['generated_text']:
+                    continue
+                result_nli = nlp_nli(sentence['generated_text'], labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
+                if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == labels[ii]:                    
+                    infos_trunk.append((sentence['generated_text'], result_nli['scores'][0] ))
+            df_simi_filer = pd.DataFrame(infos_trunk, columns=['content','simi'])
+            if df_simi_filer.shape[0] == 0:
+                print(args.dsn, 'nli ==> noleft')
+                continue                     
+            df_simi_filer_nli = df_simi_filer
+
+    assert len(retain) == ds.df_train.shape[0]
+    df_retain = pd.DataFrame(retain, columns=['ori','fil'])
+
+    print(dsn,  df_retain['fil'].sum() / df_retain['ori'].sum(), df_retain['fil'].sum() / ds.df_train.shape[0])
+
+
+
+
+
+
+
+
 
 
 nlp  = pipeline("text-generation", model='gpt2', device=-1, return_full_text=False)
@@ -147,28 +206,7 @@ ru2en.translate(en2ru.translate(content,  sampling = True, temperature = 0.9),  
 
 
 
-trials = 1000
-probs = [0.1, 0.3, 0.6, 0.87]
- 
-def sample(softmax, temperature):
-    EPSILON = 10e-16 # to avoid taking the log of zero
-    #print(preds)
-    softmax = (np.array(softmax) + EPSILON).astype('float64')
-    preds = np.log(softmax) / temperature
-    #print(preds)
-    exp_preds = np.exp(preds)
-    #print(exp_preds)
-    preds = exp_preds / np.sum(exp_preds)
-    #print(preds)
-    probas = np.random.multinomial(1, preds, 1)
-    assert probas[0].shape[0] == len(softmax)
-    return probas[0].argmax()
- 
-temperatures = [(t or 1) / 100 for t in range(0, 101, 10)]
 
-for t in temperatures:
-    mean = np.asarray([sample(probs, t) for _ in range(trials)]).mean(axis=0)
-    print(t, mean)
 
 
 
