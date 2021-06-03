@@ -191,7 +191,11 @@ def synthesize(ds, max_len):
                            'join:', df_simi_filer.shape[0])
 
                 if args.dpp:
-                    dpp_sents = dpp_rerank(df_simi_filer, enc, args.dpp_retain)
+                    try:
+                        dpp_sents = dpp_rerank(df_simi_filer, enc, args.dpp_retain)
+                    except:
+                        print('dpp_rerank error==>', df_simi_filer)
+                        continue 
                 else:
                     dpp_sents = df_simi_filer['content'].tolist()
 
