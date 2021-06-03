@@ -25,6 +25,7 @@ parser.add_argument("--generate_m", default="gpt2", type=str)
 #parser.add_argument("--batch_size", default=64, type=int)
 #parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="former", type=str)
+parser.add_argument("--verbose", default=1, type=int)
 parser.add_argument("--mm", default="mean", type=str)
 parser.add_argument("--beams", default=256, type=int)
 parser.add_argument("--rp", default=1.0, type=float)
@@ -118,7 +119,7 @@ def do_train_test(ds):
     history = model.fit(
         x_train, y_train, batch_size=batch_size, epochs=50, \
         validation_batch_size=64,
-        validation_data=(x_test, y_test), verbose=1,
+        validation_data=(x_test, y_test), verbose=args.verbose,
         callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
     )
 
