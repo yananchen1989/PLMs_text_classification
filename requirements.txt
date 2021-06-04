@@ -1,0 +1,10 @@
+pandas>=1.1.5
+tensorflow>=2.5.0
+tensorflow_text>=2.5.0
+absl-py>=0.1.6
+torch>=1.8.1+cu102
+transformers>=4.6.0
+flair>=0.8
+gensim>=3.8.3
+nltk>=3.5
+sklearn>=0.24.1

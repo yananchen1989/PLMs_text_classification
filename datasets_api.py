@@ -1,7 +1,7 @@
 # datasets from huggingface 
 import datasets
 import pandas as pd
-
+import torchtext
 
 # agnews
 ag_news_train = datasets.load_dataset('ag_news', split="train")
@@ -24,3 +24,19 @@ cc_news = datasets.load_dataset('cc_news', split="train")
 df = pd.DataFrame(zip(cc_news['title'], cc_news['text'] ))
 df.columns = ['title','content']
 df.to_csv('cc_news.csv')
+
+
+
+# torchtext
+ds_train, ds_test =  torchtext.datasets.AG_NEWS(root='./torch_ds', split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.YelpReviewPolarity(root='./torch_ds', split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.YelpReviewFull(root='./torch_ds', split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.AmazonReviewPolarity(root='./torch_ds', split=('train', 'test'))
+
+df_train = pd.DataFrame(ds_train, columns=['content','label'])
+df_test = pd.DataFrame(ds_test, columns=['content','label'])
+
+next(ds_train)
+
+# AG_NEWS YahooAnswers  DBpedia YelpReviewPolarity YelpReviewFull  AmazonReviewPolarity AmazonReviewFull 
+# IMDB
