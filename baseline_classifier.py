@@ -12,7 +12,7 @@ from tensorflow import keras
 from transformers import pipeline
 from eda import *
 import nltk 
-nltk.download('wordnet')
+#nltk.download('wordnet')
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 parser = argparse.ArgumentParser()
