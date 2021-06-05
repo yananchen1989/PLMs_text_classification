@@ -133,7 +133,7 @@ def dpp_rerank(df_simi_filer, enc, dpp_retain):
     dpp_sents = df_simi_filer_dpp['content'].tolist()[:math.ceil(df_simi_filer_dpp.shape[0] * dpp_retain)]
     return dpp_sents
 
-def synthesize(ds, max_len):
+def synthesize(ds, max_len, seed):
     if args.aug == 'generate':
         contents = ds.df_train['content'].tolist()
         labels = ds.df_train['label'].tolist()
@@ -249,7 +249,7 @@ def synthesize(ds, max_len):
 
     df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
 
-    return sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min() )
+    return sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min(), seed )
 
 
 
@@ -284,7 +284,7 @@ for ite in range(args.ite):
     aug_ratio_iters = []
     while True:
     
-        df_synthesize = synthesize(ds, max_len)
+        df_synthesize = synthesize(ds, max_len, ite)
         syn_df_ll.append(df_synthesize)
 
         ds.df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
