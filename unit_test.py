@@ -4,26 +4,40 @@ args.thres = 0.6
 
 
 
-
-
-for ite in range(5):
-    for dsn in ['ag','stsa','dbpedia', 'pop','uci','yahoo']:
-        ds = load_data(dataset=dsn, samplecnt=100)
+for dsn in ['uci','yahoo']:
+    for ite  in range(7):  
+        ds = load_data(dataset=dsn, samplecnt=-1)
         (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train, ds.df_test)
         model = get_model_transormer(num_classes)
-        model.save_weights('weights.h5')
-        for batch_size in [8, 32, 64]:
 
-            model.load_weights('weights.h5')
+        history = model.fit(
+                            x_train, y_train, batch_size=64, epochs=100, \
+                            validation_batch_size=64,
+                            validation_data=(x_test, y_test), verbose=1,
+                            callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+                        )
+        best_val_acc = max(history.history['val_acc'])
+        print(dsn, ite, best_val_acc) 
 
-            history = model.fit(
-                x_train, y_train, batch_size=batch_size, epochs=50, \
-                validation_batch_size=64,
-                validation_data=(x_test, y_test), verbose=0,
-                callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-            )
-            best_val_acc = max(history.history['val_acc'])
-            print(dsn, batch_size, best_val_acc)
+for samplecnt in [1000, -1]:
+    for ite in range(3):
+        for dsn in ['ag','stsa','dbpedia', 'pop','uci','yahoo']:
+            ds = load_data(dataset=dsn, samplecnt=1000)
+            (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train, ds.df_test)
+            #model = get_model_transormer(num_classes)
+            #model.save_weights('weights.h5')
+            for batch_size in [64, 32, 8]:
+                model = get_model_transormer(num_classes)
+                #model.load_weights('weights.h5')
+
+                history = model.fit(
+                    x_train, y_train, batch_size=batch_size, epochs=50, \
+                    validation_batch_size=64,
+                    validation_data=(x_test, y_test), verbose=0,
+                    callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+                )
+                best_val_acc = max(history.history['val_acc'])
+                print(dsn, samplecnt, batch_size, best_val_acc)
 
 
 

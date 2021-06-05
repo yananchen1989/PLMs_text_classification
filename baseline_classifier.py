@@ -49,7 +49,7 @@ parser.add_argument("--eda_rd", required=False, type=float, default=0.2, help="p
 args = parser.parse_args()
 print('args==>', args)
 
-
+tf.random.set_seed(1234)
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -259,7 +259,7 @@ for ite in range(args.ite):
 
     print("iter ==> {}".format(ite))
 
-    ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+    ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, seed=ite)
     if args.cap3rd > 1:
         max_len = int(args.cap3rd)
     else:

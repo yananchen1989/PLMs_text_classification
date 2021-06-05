@@ -8,19 +8,20 @@ from sklearn.datasets import fetch_20newsgroups
 
 cap = 600
 
-def sample_stratify(df, samplecnt):
+def sample_stratify(df, samplecnt, seed):
     if samplecnt < 0:
         return df 
     ll = []
     for cate in df['label'].unique():
-        dfs = df.loc[df['label']==cate].sample(samplecnt)
+        dfs = df.loc[df['label']==cate].sample(samplecnt, random_state=seed)
         ll.append(dfs)
     return pd.concat(ll).sample(frac=1)
 
 class load_data():
-    def __init__(self, samplecnt = -1, dataset='yahoo'):
+    def __init__(self, samplecnt = -1, dataset='yahoo', seed=1234):
         self.samplecnt = samplecnt
         self.dataset = dataset
+        self.seed = seed 
         if self.dataset == 'ag':
             self.df_train, self.df_test, self.df = self.get_ag_news()
         elif self.dataset == 'bbc':
@@ -71,7 +72,7 @@ class load_data():
         df_test['label'] = df_test['label'].map(lambda x: yahoo_label_name[x])
 
         df = pd.concat([df_train[['content','label']], df_test[['content','label']]]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train[['content','label']] , df_test[['content','label']], df 
              
 
@@ -85,7 +86,7 @@ class load_data():
                     infos.append((label, line.strip()))
         df = pd.DataFrame(infos, columns=['label','content'])
         df_train, df_test = train_test_split(df, test_size=0.2)
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df.sample(frac=1)   
 
     def get_uci_news(self):
@@ -97,7 +98,7 @@ class load_data():
         ld = {'e':'entertainment', 'b':'business', 't':"science technology", 'm':"health"}
         df['label'] = df['label'].map(lambda x: ld[x])
         df_train, df_test = train_test_split(df, test_size=0.2)
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test , df.sample(frac=1)
 
     # ag news
@@ -127,7 +128,7 @@ class load_data():
         df_train['label'] = df_train['label'].map(lambda x: ixl[x])
         df_test['label'] = df_test['label'].map(lambda x: ixl[x])
         df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df
 
     # ag news
@@ -142,7 +143,7 @@ class load_data():
         df_train['label'] = df_train['label'].map(lambda x: agnews_label[x])
         df_test['label'] = df_test['label'].map(lambda x: agnews_label[x])
         df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df
 
     # bbc 
@@ -158,7 +159,7 @@ class load_data():
         df['label'] = df['label'].map(lambda x: 'technology' if x=='tech' else x)
 
         df_train, df_test = train_test_split(df, test_size=0.5)
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df.sample(frac=1)
 
     # bbc sports
@@ -172,7 +173,7 @@ class load_data():
                     infos.append((content, cate))         
         df = pd.DataFrame(infos, columns=['content', 'label'])
         df_train, df_test = train_test_split(df, test_size=0.5)
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df.sample(frac=1)
 
     def get_pop_news(self):
@@ -190,7 +191,7 @@ class load_data():
                 columns={"Topic": "label"},
                 inplace=True )  
         df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt)      
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)      
         return df_train, df_test, df
 
     def get_20_news(self):
@@ -230,7 +231,7 @@ class load_data():
         ixl = {ix:n for ix, n in enumerate(data_test['target_names'])}
         df_test['label'] = df_test['label'].map(lambda x: label_name_map[ixl[x]])
         df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt)  
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)  
         return df_train, df_test, df 
     
     def get_nyt_news(self):      
@@ -253,7 +254,7 @@ class load_data():
         ixl = {ix:l for ix, l in enumerate(names)}
         df['label'] = df['label'].map(lambda x: ixl[x])
         df_train, df_test = train_test_split(df, test_size=0.2)
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df.sample(frac=1)  
 
     def get_stsa(self):
@@ -265,7 +266,7 @@ class load_data():
         df_dev.columns = ['label', 'content']
         df_test = pd.concat([df_dev, df_test])
         df = pd.concat([df_train, df_test]).sample(frac=1) 
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df
 
     def get_snips(self):
@@ -274,7 +275,7 @@ class load_data():
         df_train.columns = ['label', 'content']
         df_test.columns = ['label', 'content']
         df = pd.concat([df_train, df_test]).sample(frac=1) 
-        df_train = sample_stratify(df_train, self.samplecnt)
+        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df        
 
 
