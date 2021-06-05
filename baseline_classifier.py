@@ -11,7 +11,8 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
 from eda import *
-import nltk #nltk.download('wordnet')
+import nltk 
+nltk.download('wordnet')
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 parser = argparse.ArgumentParser()
