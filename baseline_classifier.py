@@ -301,8 +301,8 @@ for ite in range(args.ite):
         accs_iters.append(cur_acc)
         aug_ratio_iters.append(aug_ratio)
         if (len(accs_iters) >= 7 and accs_iters[-1] < accs_iters[-3] and accs_iters[-2] < accs_iters[-3]) \
-            or aug_ratio>=100 \
-            or (len(accs_iters) >= 4 and accs_iters[-1] < best_val_acc_noaug and accs_iters[-2] < best_val_acc_noaug):
+            or aug_ratio>=50 \
+            or (len(accs_iters) >= 10 and accs_iters[-1] < best_val_acc_noaug and accs_iters[-2] < best_val_acc_noaug):
             accs.append(max(accs_iters))
             break
 
