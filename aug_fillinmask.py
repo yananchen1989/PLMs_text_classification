@@ -64,9 +64,13 @@ class fillInmask():
             if len(ner)<=2 or ner.lower() in stopwords or ner not in text:
                 continue
             #text_masked = text.replace(ner, self.tokenizer.mask_token)
-            text_masked = text.replace(ner, self.nlp.tokenizer.mask_token, 1)
+            try:
+                text_masked = text.replace(ner, self.nlp.tokenizer.mask_token, 1)
 
-            text = self.nlp(text_masked)[0]['sequence']
+                text = self.nlp(text_masked)[0]['sequence']
+            except:
+                print("fillinerror==>", text_masked)
+                continue
 
             #text = text_masked.replace( self.nlp.tokenizer.mask_token, pred_tokens[0]['token_str'])
 
