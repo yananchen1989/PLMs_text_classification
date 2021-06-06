@@ -97,7 +97,7 @@ class load_data():
                 inplace=True )
         ld = {'e':'entertainment', 'b':'business', 't':"science technology", 'm':"health"}
         df['label'] = df['label'].map(lambda x: ld[x])
-        df_train, df_test = train_test_split(df, test_size=0.2)
+        df_train, df_test = train_test_split(df, test_size=0.2, random_state=self.seed)
         df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test , df.sample(frac=1)
 
