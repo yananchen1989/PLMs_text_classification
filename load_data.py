@@ -301,7 +301,7 @@ def get_keras_data(df_train, df_test):
     #     y_train = df_train['label'].values
     #     y_test = df_test['label'].values    
 
-    return (x_train,y_train),  (x_test, y_test), num_classes
+    return (x_train,y_train),  (x_test, y_test), num_classes, label_idx
 
 
 

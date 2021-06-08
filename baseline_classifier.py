@@ -104,7 +104,7 @@ if args.aug == 'translate':
 
 def do_train_test(ds):
 
-    (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train_aug, ds.df_test)
+    (x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train_aug, ds.df_test)
 
     if args.model in ['albert','electra', 'dan']:
         model = get_model_bert(num_classes, args.model)
