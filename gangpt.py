@@ -161,9 +161,9 @@ while 1:
     prompts_tensor = tf.convert_to_tensor(np.array(prompts))
     prompts_syn_tensor = tf.convert_to_tensor(np.array(prompts_syn))
 
-    labels_tensor = tf.convert_to_tensor(np.array(labels))
-    labels_syn_tensor = tf.convert_to_tensor(np.array(labels_syn)) 
-    d_loss, g_loss, gr_loss = train_step(prompts_tensor,prompts_syn_tensor, labels_tensor, labels_syn_tensor)
+    labels_tensor = tf.convert_to_tensor(np.array(labels), dtype=tf.float32)
+    labels_syn_tensor = tf.convert_to_tensor(np.array(labels_syn), dtype=tf.float32) 
+    d_loss, g_loss, gr_loss = train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor)
     ite += 1
     print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
 
