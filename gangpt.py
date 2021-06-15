@@ -23,118 +23,177 @@ if gpus:
 from load_data import * 
 from transblock import * 
 ds = load_data(dataset='ag', samplecnt=-1, seed=45)
+ds.df_train['label'] = pd.Categorical(ds.df_train['label'])
+ds.df_train['label'] = ds.df_train['label'].cat.codes
+ds.df_test['label'] = pd.Categorical(ds.df_test['label'])
+ds.df_test['label'] = ds.df_test['label'].cat.codes
+max_len = get_tokens_len(ds, 0.99) 
+num_classes = ds.df_test.label.unique().shape[0]
 
-(x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train, ds.df_test)
+dstf = tf.data.Dataset.from_tensor_slices((ds.df_train['content'].values, ds.df_train['label'].values))
+dstf = dstf.shuffle(buffer_size=10000).batch(32)
 
-model = get_model_transormer(num_classes)
-model.fit(
-        x_train, y_train, batch_size=64, epochs=50, \
-        validation_batch_size=64,
-        validation_data=(x_test, y_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
+def parser(x):
+    inputs = tokenizer([ii.decode() for ii in xx], padding='max_length', add_prefix_space=True, truncation=True, max_length=max_len, return_tensors="tf")
+    return inputs
 
-
-# train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-# train_dataset = train_dataset.shuffle(buffer_size=10000).batch(64)
-
-# for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
+# for mm in dstf.map(lambda x, y: (x, y) ).take(5):
+#     print(mm)
+#     print(sent)
+#     print(label)
 #     break 
-
-
-
-
-
-
-# generator
+# get2
 from transformers import GPT2Tokenizer, TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 tokenizer.padding_side = "left" 
-tokenizer.pad_token = tokenizer.eos_token # to avoid an error
-
+tokenizer.pad_token = tokenizer.eos_token # to avoid an error "<|endoftext|>": 50256
 gpt2 = TFGPT2LMHeadModel.from_pretrained('gpt2')
 gpt2.trainable = True
+gpt2.config.pad_token_id=50256
 
-#model = TFAutoModelForCausalLM.from_pretrained("gpt2")
-#model = TFGPT2LMHeadModel.from_pretrained('gpt2')
+preprocessor_file = "./albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
+preprocessor_layer = hub.KerasLayer(preprocessor_file)
+encoder = hub.KerasLayer('albert_en_base_2', trainable=True)
 
-#model.train()
-# when generating, we will use the logits of right-most token to predict the next token
-# so the padding should be on the left
-
-rows = ds.df_test.sample(5)
-prompts = rows['content'].tolist()
-labels = rows['label'].tolist()
-
-num_return_sequences = 1
-#prompts = list(x_batch_train.numpy().reshape(-1))
-
-#token_lens = [len(tokenizer.tokenize(sent)) for sent in prompts]
-#max_length = math.ceil(np.array(token_lens).max())*2
-max_len = get_tokens_len(ds, 0.99) 
+def get_generator():
+    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+    encoder_inputs = preprocessor_layer(text_input)
+    outputs = encoder(encoder_inputs)
+    embed = outputs["pooled_output"] # (None, 768)
+    model = keras.Model(inputs=text_input, outputs=embed)
+    return model
 
 
-
-cce = tf.keras.losses.CategoricalCrossentropy()   
-optimizer = keras.optimizers.Adam(learning_rate=0.0001)
-
-
-def loss_fn(output_sequences, labels):
-    syn_sents = tokenizer.batch_decode(output_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
-    syn_sents_pure = []
-    for sent, sent_syn in zip(prompts, syn_sents):
-        syn_sents_pure.append(sent_syn.replace(sent, '').replace('\n',' ').strip())
-
-    preds = model.predict(np.array(syn_sents_pure), steps=1)
-
-    assert preds.shape[0] == len(prompts) and preds.shape[1] == num_classes
-
-    label_oht = tf.keras.utils.to_categorical( np.array([label_idx[l] for l in labels]), num_classes = num_classes, dtype='int' ) 
-
-    assert label_oht.shape == preds.shape
-
-    loss_value = cce(label_oht, preds)#.numpy()
-    return loss_value
+def get_discriminator():
+    input_embed = keras.Input(shape=(768, ))
+    x = layers.Dense(256, activation="relu")(input_embed)
+    outputs = layers.Dense(num_classes*2, activation="softmax")(x)
+    model = keras.Model(inputs=input_embed, outputs=outputs)
+    return model
 
 
-with tf.GradientTape() as tape:
-    # Run the forward pass of the layer.
-    # The operations that the layer applies
-    # to its inputs are going to be recorded
-    # on the GradientTape.
-    #logits = model(x_batch_train, training=True)  # Logits for this minibatch
-
+def synthesize(prompts):
     inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="tf")
     output_sequences = gpt2.generate(
         input_ids = inputs['input_ids'],
-        attention_mask = inputs['attention_mask'],
+        attention_mask = inputs['attention_mask'] ,
         max_length= max_len*2,
         temperature=1,
         top_k=0,
         top_p=0.9,
         repetition_penalty=1,
         do_sample=True,
-        num_return_sequences=num_return_sequences
+        num_return_sequences=1
     )
+    syn_sents = tokenizer.batch_decode(output_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
+    syn_sents_pure = []
+    for sent, sent_syn in zip(prompts, syn_sents):
+        sent_syn_rm = sent_syn.replace(sent, '').replace('\n',' ').strip()
+        sent_syn_eq = sent_syn_rm[:len(sent)]
+        syn_sents_pure.append(sent_syn_eq)
+    return syn_sents_pure
 
-    # Compute the loss value for this minibatch.
-    #loss_value = loss_fn(y_batch_train, logits)
-    loss_value = loss_fn(output_sequences, labels)
+generator = get_generator()
+generator_real = get_generator()
+discriminator = get_discriminator()
+
+d_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
+g_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
+gr_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
 
 
-# Use the gradient tape to automatically retrieve
-# the gradients of the trainable variables with respect to the loss.
-grads = tape.gradient(loss_value, gpt2.trainable_weights)
 
-# Run one step of gradient descent by updating
-# the value of the variables to minimize the loss.
-optimizer.apply_gradients(zip(grads, model.trainable_weights))
+@tf.function
+def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
+
+    generated_images = generator(prompts_syn_tensor )
+    real_images = generator_real(prompts_tensor)
+
+    combined_images = tf.concat([generated_images, real_images], axis=0)
+    combined_labels = tf.concat([labels_syn_tensor, labels_tensor], axis=0)
+    # discriminator update 
+    with tf.GradientTape() as tape:
+        predictions = discriminator(combined_images)
+        d_loss = keras.losses.SparseCategoricalCrossentropy()(combined_labels, predictions)
+    grads = tape.gradient(d_loss, discriminator.trainable_weights)
+    d_optimizer.apply_gradients(zip(grads, discriminator.trainable_weights))
+
+    # generator update
+    with tf.GradientTape() as tape:
+        predictions = discriminator(generator(prompts_syn_tensor))
+        g_loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
+    grads = tape.gradient(g_loss, generator.trainable_weights)
+    g_optimizer.apply_gradients(zip(grads, generator.trainable_weights))
+
+    # generator_ral update
+    with tf.GradientTape() as tape:
+        predictions = discriminator(generator_real(prompts_tensor))
+        gr_loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
+    grads = tape.gradient(gr_loss, generator_real.trainable_weights)
+    gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
+    return d_loss, g_loss, gr_loss
+
+batch_size = 32
+ite = 0
+# def loss_fn(output_sequences, labels):
+
+#     preds = model(np.array(syn_sents_pure))
+
+#     assert preds.shape[0] == len(prompts) and preds.shape[1] == num_classes
+
+#     label_oht = tf.keras.utils.to_categorical( np.array([label_idx[l] for l in labels]), num_classes = num_classes, dtype='int' ) 
+#     label_oht_tf = tf.convert_to_tensor(label_oht)
+#     assert label_oht.shape == preds.shape
+
+#     loss_value = cce(label_oht_tf, preds)#.numpy()
+#     return loss_value
+while 1:
+    rows = ds.df_train.sample(batch_size)
+    prompts = rows['content'].tolist()
+    labels = rows['label'].tolist()
+    prompts_syn = synthesize(prompts)
+    labels_syn = [i+num_classes for i in labels]
+
+    prompts_tensor = tf.convert_to_tensor(np.array(prompts))
+    prompts_syn_tensor = tf.convert_to_tensor(np.array(prompts_syn))
+
+    labels_tensor = tf.convert_to_tensor(np.array(labels))
+    labels_syn_tensor = tf.convert_to_tensor(np.array(labels_syn)) 
+    d_loss, g_loss, gr_loss = train_step(prompts_tensor,prompts_syn_tensor, labels_tensor, labels_syn_tensor)
+    ite += 1
+    print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
+
+    if ite % 100 == 0:
+        text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+        logits = discriminator(generator_real(text_input))
+        model = keras.Model(inputs=text_input, outputs=logits)
+
+        preds = model.predict(ds.df_test['content'].values, batch_size=256, verbose=1)
+
+        preds_uni = preds[:,:num_classes] + preds[:,num_classes:]
+
+        m = tf.keras.metrics.SparseCategoricalAccuracy()
+        m.update_state(ds.df_test['label'].values, preds_uni)
+        print('test acc:', m.result().numpy())
+
+    if ite % 100 == 0:
+        text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+        logits = discriminator(generator(text_input))
+        model_ = keras.Model(inputs=text_input, outputs=logits)
+
+        preds = model_.predict(ds.df_test['content'].values, batch_size=256, verbose=1)
+
+        preds_uni = preds[:,:num_classes] + preds[:,num_classes:]
+
+        m_ = tf.keras.metrics.SparseCategoricalAccuracy()
+        m_.update_state(ds.df_test['label'].values, preds_uni)
+        print('test acc:', m_.result().numpy())
 
 
-y_true = np.array([[0, 1, 0], [0, 0, 1]])
-y_pred = np.array([[0.05, 0.95, 0], [0.1, 0.8, 0.1]])
-# Using 'auto'/'sum_over_batch_size' reduction type.
-cce(y_true, y_pred).numpy()
+
+
+
+
 
 
 
