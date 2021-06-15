@@ -109,6 +109,9 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     generated_images = generator(prompts_syn_tensor )
     real_images = generator_real(prompts_tensor)
 
+    labels_tensor += 0.05 * tf.random.uniform(labels_tensor.shape)
+    labels_syn_tensor += 0.05 * tf.random.uniform(labels_syn_tensor.shape)
+
     combined_images = tf.concat([generated_images, real_images], axis=0)
     combined_labels = tf.concat([labels_syn_tensor, labels_tensor], axis=0)
     # discriminator update 
@@ -151,6 +154,7 @@ while 1:
     rows = ds.df_train.sample(batch_size)
     prompts = rows['content'].tolist()
     labels = rows['label'].tolist()
+    
     prompts_syn = synthesize(prompts)
     labels_syn = [i+num_classes for i in labels]
 
