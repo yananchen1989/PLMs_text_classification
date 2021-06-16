@@ -54,8 +54,10 @@ gpt2.config.pad_token_id=50256
 preprocessor_file = "./albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
 preprocessor_layer = hub.KerasLayer(preprocessor_file)
 encoder = hub.KerasLayer('albert_en_base_2', trainable=True)
+preprocessor = hub.load(preprocessor_file)
+vocab_size = preprocessor.tokenize.get_special_tokens_dict()['vocab_size'].numpy()
 
-def get_generator():
+def get_generator_bert():
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
     encoder_inputs = preprocessor_layer(text_input)
     outputs = encoder(encoder_inputs)
@@ -63,6 +65,21 @@ def get_generator():
     model = keras.Model(inputs=text_input, outputs=embed)
     return model
 
+def get_generator_former():
+    embed_dim = 32  # Embedding size for each token
+    num_heads = 2  # Number of attention heads
+    ff_dim = 32  # Hidden layer size in feed forward network inside transformer
+    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+    encoder_inputs = preprocessor_layer(text_input)['input_word_ids']
+    embedding_layer = TokenAndPositionEmbedding(encoder_inputs.shape[1], vocab_size, embed_dim)
+    x = embedding_layer(encoder_inputs)
+    transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
+    x = transformer_block(x)
+    #embed = layers.GlobalAveragePooling1D()(x)
+    x = tf.keras.layers.Flatten()(x)
+    embed = layers.Dense(768, activation="relu")(x)
+    model = keras.Model(inputs=text_input, outputs=embed)
+    return model
 
 def get_discriminator():
     input_embed = keras.Input(shape=(768, ))
@@ -93,8 +110,9 @@ def synthesize(prompts):
         syn_sents_pure.append(sent_syn_eq)
     return syn_sents_pure
 
-generator = get_generator()
-generator_real = get_generator()
+generator = get_generator_former()
+generator_real = tf.keras.models.clone_model(generator)
+
 discriminator = get_discriminator()
 
 d_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
@@ -136,8 +154,12 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
     return d_loss, g_loss, gr_loss
 
+m = tf.keras.metrics.SparseCategoricalAccuracy()
+m_ = tf.keras.metrics.SparseCategoricalAccuracy()
+
 batch_size = 32
 ite = 0
+stepp = 100
 # def loss_fn(output_sequences, labels):
 
 #     preds = model(np.array(syn_sents_pure))
@@ -167,7 +189,7 @@ while 1:
     ite += 1
     print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
 
-    if ite % 100 == 0:
+    if ite % stepp == 0:
         text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
         logits = discriminator(generator_real(text_input))
         model = keras.Model(inputs=text_input, outputs=logits)
@@ -176,22 +198,22 @@ while 1:
 
         preds_uni = preds[:,:num_classes] + preds[:,num_classes:]
 
-        m = tf.keras.metrics.SparseCategoricalAccuracy()
         m.update_state(ds.df_test['label'].values, preds_uni)
-        print('test acc:', m.result().numpy())
+        print('generator_real test acc:', m.result().numpy())
+        m.reset_states()
 
-    if ite % 100 == 0:
+    if ite % stepp == 0:
         text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
         logits = discriminator(generator(text_input))
         model_ = keras.Model(inputs=text_input, outputs=logits)
 
-        preds = model_.predict(ds.df_test['content'].values, batch_size=256, verbose=1)
+        preds_ = model_.predict(ds.df_test['content'].values, batch_size=256, verbose=1)
 
-        preds_uni = preds[:,:num_classes] + preds[:,num_classes:]
+        preds_uni_ = preds_[:,:num_classes] + preds_[:,num_classes:]
 
-        m_ = tf.keras.metrics.SparseCategoricalAccuracy()
-        m_.update_state(ds.df_test['label'].values, preds_uni)
-        print('test acc:', m_.result().numpy())
+        m_.update_state(ds.df_test['label'].values, preds_uni_)
+        print('generator test acc:', m_.result().numpy())
+        m_.reset_states()
 
 
 
