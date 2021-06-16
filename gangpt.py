@@ -157,7 +157,7 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
 m = tf.keras.metrics.SparseCategoricalAccuracy()
 m_ = tf.keras.metrics.SparseCategoricalAccuracy()
 
-batch_size = 32
+batch_size = 64
 ite = 0
 stepp = 100
 # def loss_fn(output_sequences, labels):
