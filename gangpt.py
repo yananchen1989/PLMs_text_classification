@@ -22,16 +22,26 @@ if gpus:
 
 from load_data import * 
 from transblock import * 
-ds = load_data(dataset='ag', samplecnt=-1, seed=45)
-ds.df_train['label'] = pd.Categorical(ds.df_train['label'])
-ds.df_train['label'] = ds.df_train['label'].cat.codes
-ds.df_test['label'] = pd.Categorical(ds.df_test['label'])
-ds.df_test['label'] = ds.df_test['label'].cat.codes
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--dsn", default="", type=str)
+parser.add_argument("--samplecnt", default=100, type=int)
+args = parser.parse_args()
+print('args==>', args)
+
+ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt)
+label_unique = ds.df_test.label.unique()
+label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
+ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
+ds.df_train['label'] = ds.df_train['label'].map(lambda x: label_ix[x])
+ds.df_test['label'] = ds.df_test['label'].map(lambda x: label_ix[x])
+
+
 max_len = get_tokens_len(ds, 0.99) 
 num_classes = ds.df_test.label.unique().shape[0]
 
 dstf = tf.data.Dataset.from_tensor_slices((ds.df_train['content'].values, ds.df_train['label'].values))
-dstf = dstf.shuffle(buffer_size=10000).batch(32)
+dstf = dstf.shuffle(buffer_size=10000).batch(64)
 
 def parser(x):
     inputs = tokenizer([ii.decode() for ii in xx], padding='max_length', add_prefix_space=True, truncation=True, max_length=max_len, return_tensors="tf")
@@ -89,7 +99,7 @@ def get_discriminator():
     return model
 
 
-def synthesize(prompts):
+def synthesize(prompts, labels):
     inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="tf")
     output_sequences = gpt2.generate(
         input_ids = inputs['input_ids'],
@@ -154,12 +164,9 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
     return d_loss, g_loss, gr_loss
 
-m = tf.keras.metrics.SparseCategoricalAccuracy()
 m_ = tf.keras.metrics.SparseCategoricalAccuracy()
 
-batch_size = 64
-ite = 0
-stepp = 100
+
 # def loss_fn(output_sequences, labels):
 
 #     preds = model(np.array(syn_sents_pure))
@@ -172,50 +179,37 @@ stepp = 100
 
 #     loss_value = cce(label_oht_tf, preds)#.numpy()
 #     return loss_value
-while 1:
-    rows = ds.df_train.sample(batch_size)
-    prompts = rows['content'].tolist()
-    labels = rows['label'].tolist()
-    
-    prompts_syn = synthesize(prompts)
-    labels_syn = [i+num_classes for i in labels]
+for epoch in range(5):
+    print("\nStart epoch", epoch)
+    for step, trunk in enumerate(dstf):
+        sents = trunk[0].numpy()
+        labels = trunk[1].numpy()
+        prompts = [s.decode() for s in sents]
 
-    prompts_tensor = tf.convert_to_tensor(np.array(prompts))
-    prompts_syn_tensor = tf.convert_to_tensor(np.array(prompts_syn))
+        prompts_syn = synthesize(prompts, list(labels))
+        labels_syn = [i+num_classes for i in labels]
 
-    labels_tensor = tf.convert_to_tensor(np.array(labels), dtype=tf.float32)
-    labels_syn_tensor = tf.convert_to_tensor(np.array(labels_syn), dtype=tf.float32) 
-    d_loss, g_loss, gr_loss = train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor)
-    ite += 1
-    print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
+        prompts_tensor = tf.convert_to_tensor(np.array(prompts))
+        prompts_syn_tensor = tf.convert_to_tensor(np.array(prompts_syn))
 
-    if ite % stepp == 0:
-        text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-        logits = discriminator(generator_real(text_input))
-        model = keras.Model(inputs=text_input, outputs=logits)
+        labels_tensor = tf.convert_to_tensor(np.array(labels), dtype=tf.float32)
+        labels_syn_tensor = tf.convert_to_tensor(np.array(labels_syn), dtype=tf.float32) 
+        d_loss, g_loss, gr_loss = train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor)
+        ite += 1
 
-        preds = model.predict(ds.df_test['content'].values, batch_size=256, verbose=1)
+        if ite % 100 == 0:
+            text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+            logits = discriminator(generator(text_input))
+            model_ = keras.Model(inputs=text_input, outputs=logits)
 
-        preds_uni = preds[:,:num_classes] + preds[:,num_classes:]
+            preds_ = model_.predict(ds.df_test['content'].values, batch_size=256, verbose=0)
 
-        m.update_state(ds.df_test['label'].values, preds_uni)
-        print('generator_real test acc:', m.result().numpy())
-        m.reset_states()
+            preds_uni_ = preds_[:,:num_classes] + preds_[:,num_classes:]
 
-    if ite % stepp == 0:
-        text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-        logits = discriminator(generator(text_input))
-        model_ = keras.Model(inputs=text_input, outputs=logits)
-
-        preds_ = model_.predict(ds.df_test['content'].values, batch_size=256, verbose=1)
-
-        preds_uni_ = preds_[:,:num_classes] + preds_[:,num_classes:]
-
-        m_.update_state(ds.df_test['label'].values, preds_uni_)
-        print('generator test acc:', m_.result().numpy())
-        m_.reset_states()
-
-
+            m_.update_state(ds.df_test['label'].values, preds_uni_)
+            print('generator test acc:', m_.result().numpy())
+            print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
+            m_.reset_states()
 
 
 

@@ -1,15 +1,16 @@
 
-for seed in range(5):
-    for dsn in ['uci']:
+
+for samplecnt in [100, 500, 1000, 2000]:
+    for dsn in ['ag']:
         for ite  in range(7):  
-            ds = load_data(dataset=dsn, samplecnt=100, seed=seed)
-            (x_train, y_train),  (x_test, y_test), num_classes = get_keras_data(ds.df_train, ds.df_test)
-            model = get_model_transormer(num_classes)
+            ds = load_data(dataset=dsn, samplecnt=samplecnt)
+            (x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train, ds.df_test)
+            model = get_model_bert(num_classes)
 
             history = model.fit(
-                                x_train, y_train, batch_size=8, epochs=100, \
+                                x_train, y_train, batch_size=32, epochs=100, \
                                 validation_batch_size=64,
-                                validation_data=(x_test, y_test), verbose=0,
+                                validation_data=(x_test, y_test), verbose=1,
                                 callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
                             )
             best_val_acc = max(history.history['val_acc'])
@@ -17,43 +18,6 @@ for seed in range(5):
 
 
 
-from load_data import * 
-ds = load_data(dataset='ag', samplecnt=100, seed=45)
-from transformers import GPT2Tokenizer, GPT2LMHeadModel, TFGPT2LMHeadModel
-tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-model = GPT2LMHeadModel.from_pretrained('gpt2')
-modeltf = TFGPT2LMHeadModel.from_pretrained('gpt2')
-model.train()
-# when generating, we will use the logits of right-most token to predict the next token
-# so the padding should be on the left
-tokenizer.padding_side = "left" 
-tokenizer.pad_token = tokenizer.eos_token # to avoid an error
-max_length = 300
-prompts = ds.df_test.sample(10)['content'].tolist()
-inputs = tokenizer(prompts, padding=True, truncation=True, max_length=max_len, return_tensors="tf")
-
-
-output_sequences = modeltf.generate(
-    input_ids=inputs['input_ids'],
-    attention_mask=inputs['attention_mask'],
-    max_length= max_length,
-    temperature=1,
-    top_k=0,
-    top_p=0.9,
-    repetition_penalty=1,
-    do_sample=True,
-    num_return_sequences=1,
-)
-assert output_sequences.shape[0] == len(prompts) and output_sequences[0].shape[0] == max_length
-
-for seq in output_sequences:
-    text_generated = tokenizer.decode(seq[len(encoded_prompt[0]):], clean_up_tokenization_spaces=True)
-
-syn_sents = tokenizer.batch_decode(output_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
-
-
-loss = black_box(output_sequences)
-loss.backward()
 
 
 
@@ -61,8 +25,15 @@ loss.backward()
 
 
 
-
-
+from transformers import AlbertTokenizer, TFAlbertForSequenceClassification
+import tensorflow as tf
+tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
+model = TFAlbertForSequenceClassification.from_pretrained('albert-base-v2')
+inputs = tokenizer("Hello, my dog is cute", return_tensors="tf")
+inputs["labels"] = tf.reshape(tf.constant(1), (-1, 1)) # Batch size 1
+outputs = model(inputs)
+loss = outputs.loss
+logits = outputs.logits
 
 
 
