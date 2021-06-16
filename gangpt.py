@@ -110,7 +110,7 @@ def synthesize(prompts):
         syn_sents_pure.append(sent_syn_eq)
     return syn_sents_pure
 
-generator = get_generator_former()
+generator = get_generator_bert()
 generator_real = tf.keras.models.clone_model(generator)
 
 discriminator = get_discriminator()
