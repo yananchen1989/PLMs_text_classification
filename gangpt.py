@@ -179,7 +179,7 @@ m_ = tf.keras.metrics.SparseCategoricalAccuracy()
 
 #     loss_value = cce(label_oht_tf, preds)#.numpy()
 #     return loss_value
-for epoch in range(5):
+for epoch in range(100):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(dstf):
         sents = trunk[0].numpy()
