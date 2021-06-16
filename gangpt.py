@@ -24,7 +24,7 @@ from load_data import *
 from transblock import * 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="", type=str)
+parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 args = parser.parse_args()
 print('args==>', args)
@@ -38,7 +38,7 @@ ds.df_test['label'] = ds.df_test['label'].map(lambda x: label_ix[x])
 
 
 max_len = get_tokens_len(ds, 0.99) 
-num_classes = ds.df_test.label.unique().shape[0]
+num_classes = label_unique.shape[0]
 
 dstf = tf.data.Dataset.from_tensor_slices((ds.df_train['content'].values, ds.df_train['label'].values))
 dstf = dstf.shuffle(buffer_size=10000).batch(64)
@@ -121,6 +121,7 @@ def synthesize(prompts, labels):
     return syn_sents_pure
 
 generator = get_generator_bert()
+#generator = get_generator_former()
 generator_real = tf.keras.models.clone_model(generator)
 
 discriminator = get_discriminator()
@@ -179,6 +180,7 @@ m_ = tf.keras.metrics.SparseCategoricalAccuracy()
 
 #     loss_value = cce(label_oht_tf, preds)#.numpy()
 #     return loss_value
+accs = []
 for epoch in range(100):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(dstf):
@@ -195,21 +197,23 @@ for epoch in range(100):
         labels_tensor = tf.convert_to_tensor(np.array(labels), dtype=tf.float32)
         labels_syn_tensor = tf.convert_to_tensor(np.array(labels_syn), dtype=tf.float32) 
         d_loss, g_loss, gr_loss = train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor)
-        ite += 1
 
-        if ite % 100 == 0:
-            text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-            logits = discriminator(generator(text_input))
-            model_ = keras.Model(inputs=text_input, outputs=logits)
+    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+    logits = discriminator(generator(text_input))
+    model_ = keras.Model(inputs=text_input, outputs=logits)
 
-            preds_ = model_.predict(ds.df_test['content'].values, batch_size=256, verbose=0)
+    preds_ = model_.predict(ds.df_test['content'].values, batch_size=256, verbose=0)
 
-            preds_uni_ = preds_[:,:num_classes] + preds_[:,num_classes:]
+    preds_uni_ = preds_[:,:num_classes] + preds_[:,num_classes:]
 
-            m_.update_state(ds.df_test['label'].values, preds_uni_)
-            print('generator test acc:', m_.result().numpy())
-            print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
-            m_.reset_states()
+    m_.update_state(ds.df_test['label'].values, preds_uni_)
+    print('generator test acc:', m_.result().numpy())
+    accs.append(m_.result().numpy())
+    print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
+    m_.reset_states()
+    if len(accs) >=7 and accs[-1] <= accs[-3] and accs[-2] <= accs[-3]:
+        print('best test acc:', max(accs))
+        break 
 
 
 
