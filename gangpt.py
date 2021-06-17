@@ -180,7 +180,7 @@ for epoch in range(100):
         val_acc_metric.update_state(y_batch_val, preds)
     print("baseline Validation acc: %.4f" % (float(val_acc_metric.result()),))
     #print('loss:', loss.numpy())
-    baseline_accs.append(float(val_acc_metric.result())
+    baseline_accs.append(float(val_acc_metric.result()))
     val_acc_metric.reset_states()
 
     print("summary==>", 'base:', max(baseline_accs), 'gan:', max(gan_accs) )
