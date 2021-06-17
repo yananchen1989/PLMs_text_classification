@@ -22,7 +22,7 @@ if gpus:
 
 from load_data import * 
 from transblock import * 
-
+from gan_config import * 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
@@ -40,91 +40,27 @@ ds.df_test['label'] = ds.df_test['label'].map(lambda x: label_ix[x])
 max_len = get_tokens_len(ds, 0.99) 
 num_classes = label_unique.shape[0]
 
-dstf = tf.data.Dataset.from_tensor_slices((ds.df_train['content'].values, ds.df_train['label'].values))
-dstf = dstf.shuffle(buffer_size=10000).batch(64)
+ds_train = tf.data.Dataset.from_tensor_slices((ds.df_train['content'].values, ds.df_train['label'].values))
+ds_train = ds_train.shuffle(buffer_size=12800).batch(64)
 
-def parser(x):
-    inputs = tokenizer([ii.decode() for ii in xx], padding='max_length', add_prefix_space=True, truncation=True, max_length=max_len, return_tensors="tf")
-    return inputs
+ds_test = tf.data.Dataset.from_tensor_slices((ds.df_test['content'].values, ds.df_test['label'].values))
+ds_test = ds_test.batch(64)
+
+# def parser(x):
+#     inputs = tokenizer([ii.decode() for ii in xx], padding='max_length', add_prefix_space=True, truncation=True, max_length=max_len, return_tensors="tf")
+#     return inputs
 
 # for mm in dstf.map(lambda x, y: (x, y) ).take(5):
 #     print(mm)
 #     print(sent)
 #     print(label)
 #     break 
-# get2
-from transformers import GPT2Tokenizer, TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-tokenizer.padding_side = "left" 
-tokenizer.pad_token = tokenizer.eos_token # to avoid an error "<|endoftext|>": 50256
-gpt2 = TFGPT2LMHeadModel.from_pretrained('gpt2')
-gpt2.trainable = True
-gpt2.config.pad_token_id=50256
-
-preprocessor_file = "./albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
-preprocessor_layer = hub.KerasLayer(preprocessor_file)
-encoder = hub.KerasLayer('albert_en_base_2', trainable=True)
-preprocessor = hub.load(preprocessor_file)
-vocab_size = preprocessor.tokenize.get_special_tokens_dict()['vocab_size'].numpy()
-
-def get_generator_bert():
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-    encoder_inputs = preprocessor_layer(text_input)
-    outputs = encoder(encoder_inputs)
-    embed = outputs["pooled_output"] # (None, 768)
-    model = keras.Model(inputs=text_input, outputs=embed)
-    return model
-
-def get_generator_former():
-    embed_dim = 32  # Embedding size for each token
-    num_heads = 2  # Number of attention heads
-    ff_dim = 32  # Hidden layer size in feed forward network inside transformer
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-    encoder_inputs = preprocessor_layer(text_input)['input_word_ids']
-    embedding_layer = TokenAndPositionEmbedding(encoder_inputs.shape[1], vocab_size, embed_dim)
-    x = embedding_layer(encoder_inputs)
-    transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
-    x = transformer_block(x)
-    #embed = layers.GlobalAveragePooling1D()(x)
-    x = tf.keras.layers.Flatten()(x)
-    embed = layers.Dense(768, activation="relu")(x)
-    model = keras.Model(inputs=text_input, outputs=embed)
-    return model
-
-def get_discriminator():
-    input_embed = keras.Input(shape=(768, ))
-    x = layers.Dense(256, activation="relu")(input_embed)
-    outputs = layers.Dense(num_classes*2, activation="softmax")(x)
-    model = keras.Model(inputs=input_embed, outputs=outputs)
-    return model
-
-
-def synthesize(prompts, labels):
-    inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="tf")
-    output_sequences = gpt2.generate(
-        input_ids = inputs['input_ids'],
-        attention_mask = inputs['attention_mask'] ,
-        max_length= max_len*2,
-        temperature=1,
-        top_k=0,
-        top_p=0.9,
-        repetition_penalty=1,
-        do_sample=True,
-        num_return_sequences=1
-    )
-    syn_sents = tokenizer.batch_decode(output_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
-    syn_sents_pure = []
-    for sent, sent_syn in zip(prompts, syn_sents):
-        sent_syn_rm = sent_syn.replace(sent, '').replace('\n',' ').strip()
-        sent_syn_eq = sent_syn_rm[:len(sent)]
-        syn_sents_pure.append(sent_syn_eq)
-    return syn_sents_pure
 
 generator = get_generator_bert()
 #generator = get_generator_former()
 generator_real = tf.keras.models.clone_model(generator)
 
-discriminator = get_discriminator()
+discriminator = get_discriminator(num_classes*2)
 
 d_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
 g_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
@@ -183,7 +119,7 @@ m_ = tf.keras.metrics.SparseCategoricalAccuracy()
 accs = []
 for epoch in range(100):
     print("\nStart epoch", epoch)
-    for step, trunk in enumerate(dstf):
+    for step, trunk in enumerate(ds_train):
         sents = trunk[0].numpy()
         labels = trunk[1].numpy()
         prompts = [s.decode() for s in sents]
@@ -215,6 +151,33 @@ for epoch in range(100):
         print('best test acc:', max(accs))
         break 
 
+
+
+
+
+
+############## baseline
+
+
+text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+
+
+generator = get_generator_bert()
+discriminator = get_discriminator(num_classes)
+logits = discriminator(generator(text_input))
+model_base = keras.Model(inputs=text_input, outputs=logits)
+
+
+@tf.function
+def train_step_base(prompts_tensor, labels_tensor):
+
+    # generator_ral update
+    with tf.GradientTape() as tape:
+        predictions = model_base(prompts_tensor)
+        loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
+    grads = tape.gradient(loss, generator_real.trainable_weights)
+    gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
+    return loss
 
 
 
