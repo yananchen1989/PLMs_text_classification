@@ -26,6 +26,7 @@ from gan_config import *
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
+parser.add_argument("--epoch", default=100, type=int)
 parser.add_argument("--model", default='bert', type=str)
 args = parser.parse_args()
 print('args==>', args)
@@ -140,7 +141,7 @@ def train_step_base(prompts, labels):
 #     return loss_value
 baseline_accs = []
 gan_accs = []
-for epoch in range(100):
+for epoch in range(args.epoch):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(ds_train):
         prompts = trunk[0]
@@ -183,7 +184,7 @@ for epoch in range(100):
     baseline_accs.append(float(val_acc_metric.result()))
     val_acc_metric.reset_states()
 
-    print("summary==>", 'base:', max(baseline_accs), 'gan:', max(gan_accs) )
+    print("summary==>", "dsn:",dsn, "samplecnt:",samplecnt,  'base:', max(baseline_accs), 'gan:', max(gan_accs) )
 
     # accs.append(val_acc_metric.result().numpy())
     # if len(accs) >=7 and accs[-1] <= accs[-3] and accs[-2] <= accs[-3]:
