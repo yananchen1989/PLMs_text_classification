@@ -29,6 +29,9 @@ parser.add_argument("--samplecnt", default=100, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
+
+
+####### prepare data
 ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt)
 label_unique = ds.df_test.label.unique()
 label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
@@ -56,17 +59,18 @@ ds_test = ds_test.batch(64)
 #     print(label)
 #     break 
 
+
+
+
+
 generator = get_generator_bert()
-#generator = get_generator_former()
 generator_real = tf.keras.models.clone_model(generator)
+generator_base = tf.keras.models.clone_model(generator)
 
 discriminator = get_discriminator(num_classes*2)
+discriminator_base = get_discriminator(num_classes)
 
-d_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
-g_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
-gr_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
-
-
+model_base = keras.Model(inputs=text_input, outputs=discriminator_base(generator_base(text_input)))
 
 @tf.function
 def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
@@ -93,7 +97,7 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     grads = tape.gradient(g_loss, generator.trainable_weights)
     g_optimizer.apply_gradients(zip(grads, generator.trainable_weights))
 
-    # generator_ral update
+    # generator_real update
     with tf.GradientTape() as tape:
         predictions = discriminator(generator_real(prompts_tensor))
         gr_loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
@@ -101,8 +105,16 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
     return d_loss, g_loss, gr_loss
 
-m_ = tf.keras.metrics.SparseCategoricalAccuracy()
 
+@tf.function
+def train_step_base(prompts, labels):
+    # generator_ral update
+    with tf.GradientTape() as tape:
+        predictions = model_base(prompts)
+        loss = keras.losses.SparseCategoricalCrossentropy()(labels, predictions)
+    grads = tape.gradient(loss, model_base.trainable_weights)
+    gr_optimizer.apply_gradients(zip(grads, model_base.trainable_weights))
+    return loss
 
 # def loss_fn(output_sequences, labels):
 
@@ -120,19 +132,21 @@ accs = []
 for epoch in range(100):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(ds_train):
-        sents = trunk[0].numpy()
-        labels = trunk[1].numpy()
-        prompts = [s.decode() for s in sents]
+        prompts = trunk[0]
+        labels = trunk[1]
 
-        prompts_syn = synthesize(prompts, list(labels))
-        labels_syn = [i+num_classes for i in labels]
+        prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
+        labels_syn = [i+num_classes for i in labels.numpy()]
 
-        prompts_tensor = tf.convert_to_tensor(np.array(prompts))
         prompts_syn_tensor = tf.convert_to_tensor(np.array(prompts_syn))
 
         labels_tensor = tf.convert_to_tensor(np.array(labels), dtype=tf.float32)
         labels_syn_tensor = tf.convert_to_tensor(np.array(labels_syn), dtype=tf.float32) 
-        d_loss, g_loss, gr_loss = train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor)
+        d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn_tensor, labels, labels_syn_tensor)
+        
+        # baseline
+
+        loss = train_step_base(prompts, labels)
 
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
     logits = discriminator(generator(text_input))
@@ -144,9 +158,12 @@ for epoch in range(100):
 
     m_.update_state(ds.df_test['label'].values, preds_uni_)
     print('generator test acc:', m_.result().numpy())
-    accs.append(m_.result().numpy())
+    
     print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
     m_.reset_states()
+
+
+    accs.append(val_acc_metric.result().numpy())
     if len(accs) >=7 and accs[-1] <= accs[-3] and accs[-2] <= accs[-3]:
         print('best test acc:', max(accs))
         break 
@@ -159,38 +176,24 @@ for epoch in range(100):
 ############## baseline
 
 
-text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-
-
-generator = get_generator_bert()
-discriminator = get_discriminator(num_classes)
-logits = discriminator(generator(text_input))
-model_base = keras.Model(inputs=text_input, outputs=logits)
-
-
-@tf.function
-def train_step_base(prompts_tensor, labels_tensor):
-
-    # generator_ral update
-    with tf.GradientTape() as tape:
-        predictions = model_base(prompts_tensor)
-        loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
-    grads = tape.gradient(loss, generator_real.trainable_weights)
-    gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
-    return loss
 
 
 
+accs = []
+for epoch in range(100):
+    print("\nStart epoch", epoch)
+    for step, trunk in enumerate(ds_train):
+        prompts = trunk[0]
+        labels = trunk[1]
+        loss = train_step_base(prompts, labels)
+        
 
-
-
-
-
-
-
-
-
-
+    for x_batch_val, y_batch_val in ds_test:
+        test_step(x_batch_val, y_batch_val)
+    val_acc = val_acc_metric.result()
+    val_acc_metric.reset_states()
+    print("baseline Validation acc: %.4f" % (float(val_acc),))
+    print('loss:', loss.numpy())
 
 
 

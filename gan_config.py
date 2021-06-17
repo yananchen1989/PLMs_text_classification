@@ -57,7 +57,7 @@ def get_discriminator(num_classes):
     return model
 
 
-def synthesize(prompts, labels):
+def synthesize(prompts, labels, max_len):
     inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="tf")
     output_sequences = gpt2.generate(
         input_ids = inputs['input_ids'],
@@ -77,3 +77,38 @@ def synthesize(prompts, labels):
         sent_syn_eq = sent_syn_rm[:len(sent)]
         syn_sents_pure.append(sent_syn_eq)
     return syn_sents_pure
+
+val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
+
+
+@tf.function
+def test_step(model, x, y):
+    val_logits = model(x, training=False)
+    val_acc_metric.update_state(y, val_logits)
+
+
+d_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
+g_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
+gr_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
+
+
+base_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
