@@ -173,12 +173,12 @@ for epoch in range(100):
     print("gan Validation acc: %.4f" % (float(val_acc_metric.result()),))
     gan_accs.append(val_acc_metric.result())
     val_acc_metric.reset_states()
-    print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
+    #print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
 
     for x_batch_val, y_batch_val in ds_test:
         test_step(model_base, x_batch_val, y_batch_val)
     print("baseline Validation acc: %.4f" % (float(val_acc_metric.result()),))
-    print('loss:', loss.numpy())
+    #print('loss:', loss.numpy())
     baseline_accs.append(val_acc_metric.result())
     val_acc_metric.reset_states()
 
