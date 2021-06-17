@@ -171,7 +171,7 @@ for epoch in range(100):
         preds_accum =  preds[:,:num_classes] + preds[:,num_classes:]
         val_acc_metric.update_state(y_batch_val, preds_accum)
     print("gan Validation acc: %.4f" % (float(val_acc_metric.result()),))
-    gan_accs.append(float(val_acc_metric.result())
+    gan_accs.append(float(val_acc_metric.result()))
     val_acc_metric.reset_states()
     #print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
 
