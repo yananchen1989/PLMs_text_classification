@@ -59,22 +59,21 @@ ds_test = ds_test.batch(64)
 #     print(label)
 #     break 
 
-
 def check_weights_no_identical(w1, w2):
     assert len(w2.trainable_weights) == len(w1.trainable_weights)
     for i in range(len(w2.trainable_weights)):
+        if tf.reduce_sum(w1.trainable_weights[0]).numpy()==0 and tf.reduce_sum(w2.trainable_weights[0]).numpy()==0:
+            continue 
         assert not np.array_equal(w1.trainable_weights[i], w2.trainable_weights[i])
-
 
 generator = get_generator_bert()
 
 generator_real = tf.keras.models.clone_model(generator)
 generator_base = tf.keras.models.clone_model(generator)
-check_weights_no_identical(generator_real, generator_base)
+
 discriminator = get_discriminator(num_classes*2)
 discriminator_base = get_discriminator(num_classes)
 
-check_weights_no_identical(discriminator, discriminator_base)
 text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
 model_base = keras.Model(inputs=text_input, outputs=discriminator_base(generator_base(text_input)))
 
@@ -119,7 +118,7 @@ def train_step_base(prompts, labels):
         predictions = model_base(prompts)
         loss = keras.losses.SparseCategoricalCrossentropy()(labels, predictions)
     grads = tape.gradient(loss, model_base.trainable_weights)
-    gr_optimizer.apply_gradients(zip(grads, model_base.trainable_weights))
+    base_optimizer.apply_gradients(zip(grads, model_base.trainable_weights))
     return loss
 
 # def loss_fn(output_sequences, labels):
@@ -142,13 +141,10 @@ for epoch in range(100):
         labels = trunk[1]
 
         prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
-        labels_syn = [i+num_classes for i in labels.numpy()]
+        labels_syn = labels + num_classes 
 
-        prompts_syn_tensor = tf.convert_to_tensor(np.array(prompts_syn))
-
-        labels_tensor = tf.convert_to_tensor(np.array(labels), dtype=tf.float32)
-        labels_syn_tensor = tf.convert_to_tensor(np.array(labels_syn), dtype=tf.float32) 
-        d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn_tensor, labels, labels_syn_tensor)
+        d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,\
+                            tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
         
         # baseline
 
@@ -157,6 +153,8 @@ for epoch in range(100):
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
     logits = discriminator(generator(text_input))
     model_ = keras.Model(inputs=text_input, outputs=logits)
+    for x_batch_val, y_batch_val in ds_test:
+        preds = model_(x, training=False)  
 
     preds_ = model_.predict(ds.df_test['content'].values, batch_size=256, verbose=0)
 
@@ -167,39 +165,22 @@ for epoch in range(100):
     
     print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
     m_.reset_states()
-
-
-    accs.append(val_acc_metric.result().numpy())
-    if len(accs) >=7 and accs[-1] <= accs[-3] and accs[-2] <= accs[-3]:
-        print('best test acc:', max(accs))
-        break 
-
-
-
-
-
-
-############## baseline
-
-
-
-
-
-accs = []
-for epoch in range(100):
-    print("\nStart epoch", epoch)
-    for step, trunk in enumerate(ds_train):
-        prompts = trunk[0]
-        labels = trunk[1]
-        loss = train_step_base(prompts, labels)
-        
+    
 
     for x_batch_val, y_batch_val in ds_test:
-        test_step(x_batch_val, y_batch_val)
-    val_acc = val_acc_metric.result()
-    val_acc_metric.reset_states()
-    print("baseline Validation acc: %.4f" % (float(val_acc),))
+        test_step(model_base, x_batch_val, y_batch_val)
+    print("baseline Validation acc: %.4f" % (float(val_acc_metric.result()),))
     print('loss:', loss.numpy())
+    val_acc_metric.reset_states()
+
+    # accs.append(val_acc_metric.result().numpy())
+    # if len(accs) >=7 and accs[-1] <= accs[-3] and accs[-2] <= accs[-3]:
+    #     print('best test acc:', max(accs))
+    #     break 
+
+
+
+
 
 
 

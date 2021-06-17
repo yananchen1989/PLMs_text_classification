@@ -76,7 +76,7 @@ def synthesize(prompts, labels, max_len):
         sent_syn_rm = sent_syn.replace(sent, '').replace('\n',' ').strip()
         sent_syn_eq = sent_syn_rm[:len(sent)]
         syn_sents_pure.append(sent_syn_eq)
-    return syn_sents_pure
+    return tf.convert_to_tensor(np.array(syn_sents_pure))
 
 val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
