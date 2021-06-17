@@ -140,7 +140,7 @@ def train_step_base(prompts, labels):
 #     return loss_value
 baseline_accs = []
 gan_accs = []
-for epoch in range(100):
+for epoch in range(50):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(ds_train):
         prompts = trunk[0]
@@ -171,7 +171,7 @@ for epoch in range(100):
         preds_accum =  preds[:,:num_classes] + preds[:,num_classes:]
         val_acc_metric.update_state(y_batch_val, preds_accum)
     print("gan Validation acc: %.4f" % (float(val_acc_metric.result()),))
-    gan_accs.append(val_acc_metric.result())
+    gan_accs.append(float(val_acc_metric.result())
     val_acc_metric.reset_states()
     #print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
 
@@ -179,10 +179,10 @@ for epoch in range(100):
         test_step(model_base, x_batch_val, y_batch_val)
     print("baseline Validation acc: %.4f" % (float(val_acc_metric.result()),))
     #print('loss:', loss.numpy())
-    baseline_accs.append(val_acc_metric.result())
+    baseline_accs.append(float(val_acc_metric.result())
     val_acc_metric.reset_states()
 
-    print("current==>", 'base:', max(baseline_accs), 'gan:', max(gan_accs) )
+    print("summary==>", 'base:', max(baseline_accs), 'gan:', max(gan_accs) )
 
     # accs.append(val_acc_metric.result().numpy())
     # if len(accs) >=7 and accs[-1] <= accs[-3] and accs[-2] <= accs[-3]:
