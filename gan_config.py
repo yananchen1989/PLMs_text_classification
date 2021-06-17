@@ -84,10 +84,10 @@ def synthesize(prompts, labels, max_len):
 val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
 
-@tf.function
-def test_step(model, x, y):
-    val_logits = model(x, training=False)
-    val_acc_metric.update_state(y, val_logits)
+# @tf.function
+# def test_step(model, x, y):
+#     val_logits = model(x, training=False)
+#     val_acc_metric.update_state(y, val_logits)
 
 
 d_optimizer = keras.optimizers.Adam(learning_rate=1e-5)

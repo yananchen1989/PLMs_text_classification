@@ -176,7 +176,8 @@ for epoch in range(100):
     #print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
 
     for x_batch_val, y_batch_val in ds_test:
-        test_step(model_base, x_batch_val, y_batch_val)
+        preds = model_base(x_batch_val, training=False)
+        val_acc_metric.update_state(y_batch_val, preds)
     print("baseline Validation acc: %.4f" % (float(val_acc_metric.result()),))
     #print('loss:', loss.numpy())
     baseline_accs.append(float(val_acc_metric.result())
