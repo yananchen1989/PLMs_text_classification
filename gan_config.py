@@ -9,7 +9,7 @@ import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
-
+from transblock import * 
 
 from transformers import GPT2Tokenizer, TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')

@@ -60,16 +60,22 @@ ds_test = ds_test.batch(64)
 #     break 
 
 
-
+def check_weights_no_identical(w1, w2):
+    assert len(w2.trainable_weights) == len(w1.trainable_weights)
+    for i in range(len(w2.trainable_weights)):
+        assert not np.array_equal(w1.trainable_weights[i], w2.trainable_weights[i])
 
 
 generator = get_generator_bert()
+
 generator_real = tf.keras.models.clone_model(generator)
 generator_base = tf.keras.models.clone_model(generator)
-
+check_weights_no_identical(generator_real, generator_base)
 discriminator = get_discriminator(num_classes*2)
 discriminator_base = get_discriminator(num_classes)
 
+check_weights_no_identical(discriminator, discriminator_base)
+text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
 model_base = keras.Model(inputs=text_input, outputs=discriminator_base(generator_base(text_input)))
 
 @tf.function
