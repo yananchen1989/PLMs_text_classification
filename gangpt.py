@@ -26,6 +26,7 @@ from gan_config import *
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
+parser.add_argument("--model", default='bert', type=str)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -66,10 +67,14 @@ def check_weights_no_identical(w1, w2):
             continue 
         assert not np.array_equal(w1.trainable_weights[i], w2.trainable_weights[i])
 
-generator = get_generator_bert()
-
-generator_real = tf.keras.models.clone_model(generator)
-generator_base = tf.keras.models.clone_model(generator)
+if args.model == 'bert':
+    generator = get_generator_bert()
+    generator_real = tf.keras.models.clone_model(generator)
+    generator_base = tf.keras.models.clone_model(generator)
+elif args.model == 'former':
+    generator = get_generator_former()
+    generator_real = get_generator_former()
+    generator_base = get_generator_former()
 
 discriminator = get_discriminator(num_classes*2)
 discriminator_base = get_discriminator(num_classes)
@@ -140,32 +145,33 @@ for epoch in range(100):
         prompts = trunk[0]
         labels = trunk[1]
 
+        print('begin to generate')
         prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
+        print('generated')
         labels_syn = labels + num_classes 
 
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,\
                             tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
         
         # baseline
-
         loss = train_step_base(prompts, labels)
+
+        check_weights_no_identical(generator_base, generator_real)
+        check_weights_no_identical(generator_base, generator)
+        check_weights_no_identical(generator_real, generator)
+
+        check_weights_no_identical(discriminator, discriminator_base)
 
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
     logits = discriminator(generator(text_input))
-    model_ = keras.Model(inputs=text_input, outputs=logits)
+    model_gan = keras.Model(inputs=text_input, outputs=logits)
     for x_batch_val, y_batch_val in ds_test:
-        preds = model_(x, training=False)  
-
-    preds_ = model_.predict(ds.df_test['content'].values, batch_size=256, verbose=0)
-
-    preds_uni_ = preds_[:,:num_classes] + preds_[:,num_classes:]
-
-    m_.update_state(ds.df_test['label'].values, preds_uni_)
-    print('generator test acc:', m_.result().numpy())
-    
+        preds = model_gan(x_batch_val, training=False)  
+        preds_accum =  preds[:,:num_classes] + preds[:,num_classes:]
+        val_acc_metric.update_state(y_batch_val, preds_accum)
+    print("gan Validation acc: %.4f" % (float(val_acc_metric.result()),))
+    val_acc_metric.reset_states()
     print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
-    m_.reset_states()
-    
 
     for x_batch_val, y_batch_val in ds_test:
         test_step(model_base, x_batch_val, y_batch_val)

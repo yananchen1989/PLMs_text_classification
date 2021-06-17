@@ -11,13 +11,15 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transblock import * 
 
-from transformers import GPT2Tokenizer, TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+from transformers import GPT2Tokenizer, GPT2LMHeadModel#TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 tokenizer.padding_side = "left" 
 tokenizer.pad_token = tokenizer.eos_token # to avoid an error "<|endoftext|>": 50256
-gpt2 = TFGPT2LMHeadModel.from_pretrained('gpt2')
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2')
 gpt2.trainable = True
 gpt2.config.pad_token_id=50256
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+gpt2.to(device)
 
 preprocessor_file = "./albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
 preprocessor_layer = hub.KerasLayer(preprocessor_file)
