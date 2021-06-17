@@ -140,7 +140,7 @@ def train_step_base(prompts, labels):
 #     return loss_value
 baseline_accs = []
 gan_accs = []
-for epoch in range(50):
+for epoch in range(100):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(ds_train):
         prompts = trunk[0]
