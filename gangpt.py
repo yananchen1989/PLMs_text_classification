@@ -184,7 +184,7 @@ for epoch in range(args.epoch):
     baseline_accs.append(float(val_acc_metric.result()))
     val_acc_metric.reset_states()
 
-    print("summary==>", "dsn:",dsn, "samplecnt:",samplecnt,  'base:', max(baseline_accs), 'gan:', max(gan_accs) )
+    print("summary==>", "dsn:", args.dsn, "samplecnt:", args.samplecnt,  'base:', max(baseline_accs), 'gan:', max(gan_accs) )
 
     # accs.append(val_acc_metric.result().numpy())
     # if len(accs) >=7 and accs[-1] <= accs[-3] and accs[-2] <= accs[-3]:
