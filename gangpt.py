@@ -19,7 +19,7 @@ if gpus:
       #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
   except RuntimeError as e:
     print(e)
-
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 from load_data import * 
 from transblock import * 
 from gan_config import * 
@@ -138,16 +138,17 @@ def train_step_base(prompts, labels):
 
 #     loss_value = cce(label_oht_tf, preds)#.numpy()
 #     return loss_value
-accs = []
+baseline_accs = []
+gan_accs = []
 for epoch in range(100):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(ds_train):
         prompts = trunk[0]
         labels = trunk[1]
 
-        print('begin to generate')
+        #print('begin to generate')
         prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
-        print('generated')
+        #print('generated')
         labels_syn = labels + num_classes 
 
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,\
@@ -170,6 +171,7 @@ for epoch in range(100):
         preds_accum =  preds[:,:num_classes] + preds[:,num_classes:]
         val_acc_metric.update_state(y_batch_val, preds_accum)
     print("gan Validation acc: %.4f" % (float(val_acc_metric.result()),))
+    gan_accs.append(val_acc_metric.result())
     val_acc_metric.reset_states()
     print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
 
@@ -177,7 +179,10 @@ for epoch in range(100):
         test_step(model_base, x_batch_val, y_batch_val)
     print("baseline Validation acc: %.4f" % (float(val_acc_metric.result()),))
     print('loss:', loss.numpy())
+    baseline_accs.append(val_acc_metric.result())
     val_acc_metric.reset_states()
+
+    print("current==>", 'base:', max(baseline_accs), 'gan:', max(gan_accs) )
 
     # accs.append(val_acc_metric.result().numpy())
     # if len(accs) >=7 and accs[-1] <= accs[-3] and accs[-2] <= accs[-3]:

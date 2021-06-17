@@ -60,7 +60,8 @@ def get_discriminator(num_classes):
 
 
 def synthesize(prompts, labels, max_len):
-    inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="tf")
+    inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="pt")
+    inputs.to(device)
     output_sequences = gpt2.generate(
         input_ids = inputs['input_ids'],
         attention_mask = inputs['attention_mask'] ,
