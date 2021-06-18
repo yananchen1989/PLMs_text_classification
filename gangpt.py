@@ -155,6 +155,7 @@ def train_step_base(prompts, labels):
 #     return loss_value
 baseline_accs = []
 gan_accs = []
+monitoracc = []
 for epoch in range(args.epoch):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(ds_train):
@@ -198,14 +199,16 @@ for epoch in range(args.epoch):
     baseline_accs.append(float(val_acc_metric.result()))
     val_acc_metric.reset_states()
 
+    base_cur_best = round(max(baseline_accs),4)
+    gan_cur_best = round(max(gan_accs),4)
+    gain = round( (gan_cur_best-base_cur_best) / base_cur_best, 4) 
     print("summary==>", "dsn:", args.dsn, "samplecnt:", args.samplecnt, 'epoch:',epoch,\
-      'base:', round(max(baseline_accs),4), 'gan:', round(max(gan_accs),4),
-      'gain:',   round((max(gan_accs)-max(baseline_accs))/max(baseline_accs),4)  )
+      'base:', base_cur_best, 'gan:', gan_cur_best, 'gain:',  gain  )
+    monitoracc.append( gain )
 
-    # accs.append(val_acc_metric.result().numpy())
-    # if len(accs) >=7 and accs[-1] <= accs[-3] and accs[-2] <= accs[-3]:
-    #     print('best test acc:', max(accs))
-    #     break 
+    if len(mm) >= 20 and len(set(mm[-10:])) ==1:
+        print('summary==> terminated')
+        break 
 
 
 
