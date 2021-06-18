@@ -36,7 +36,7 @@ print('args==>', args)
 
 
 ####### prepare data
-ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt)
+ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=random.sample(range(10000),1)[0])
 label_unique = ds.df_test.label.unique()
 label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
 ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
