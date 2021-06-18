@@ -21,6 +21,8 @@ gpt2.config.pad_token_id=50256
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 gpt2.to(device)
 
+#nlp_nli = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli', device=0)
+
 preprocessor_file = "./albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
 preprocessor_layer = hub.KerasLayer(preprocessor_file)
 encoder = hub.KerasLayer('albert_en_base_2', trainable=True)
@@ -59,7 +61,7 @@ def get_discriminator(num_classes):
     return model
 
 
-def synthesize(prompts, labels, max_len):
+def synthesize(prompts, labels, max_len, num_return_sequences):
     inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="pt")
     inputs.to(device)
     output_sequences = gpt2.generate(
@@ -71,7 +73,7 @@ def synthesize(prompts, labels, max_len):
         top_p=0.9,
         repetition_penalty=1,
         do_sample=True,
-        num_return_sequences=1
+        num_return_sequences=num_return_sequences
     )
     syn_sents = tokenizer.batch_decode(output_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
     syn_sents_pure = []
