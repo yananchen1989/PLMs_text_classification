@@ -90,12 +90,6 @@ val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 #     val_acc_metric.update_state(y, val_logits)
 
 
-d_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
-g_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
-gr_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
-
-
-base_optimizer = keras.optimizers.Adam(learning_rate=1e-5)
 
 
 
