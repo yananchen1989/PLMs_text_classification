@@ -94,7 +94,7 @@ if args.model == 'bert':
     g_optimizer = keras.optimizers.Adam(learning_rate=lr)
     gr_optimizer = keras.optimizers.Adam(learning_rate=lr)
     base_optimizer = keras.optimizers.Adam(learning_rate=lr)
-elif args.model == 'former':
+else:
     d_optimizer = keras.optimizers.Adam()
     g_optimizer = keras.optimizers.Adam()
     gr_optimizer = keras.optimizers.Adam()
