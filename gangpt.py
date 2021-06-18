@@ -166,7 +166,7 @@ for epoch in range(args.epoch):
         labels = trunk[1] 
 
         #print('begin to generate')
-        prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len, 64)
+        prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
         #print('generated')
         labels_syn = labels + num_classes 
 
