@@ -76,6 +76,8 @@ if args.model == 'bert':
     generator = get_generator_bert()
 elif args.model == 'former':
     generator = get_generator_former_()
+elif args.model == 'cnn':
+    generator = get_generator_textcnn()
 
 generator_real = tf.keras.models.clone_model(generator)
 generator_base = tf.keras.models.clone_model(generator)
@@ -161,7 +163,7 @@ for epoch in range(args.epoch):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(ds_train):
         prompts = trunk[0]
-        labels = trunk[1]
+        labels = trunk[1] 
 
         #print('begin to generate')
         prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len, 64)
