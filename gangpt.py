@@ -214,7 +214,7 @@ for epoch in range(args.epoch):
     monitoracc.append( gain )
 
     if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
-        print('summary==> terminated')
+        print('summary==> terminated ', max(monitoracc))
         break 
 
 
