@@ -207,7 +207,7 @@ for epoch in range(args.epoch):
       'base:', base_cur_best, 'gan:', gan_cur_best, 'gain:',  gain  )
     monitoracc.append( gain )
 
-    if len(mm) >= 20 and len(set(mm[-10:])) ==1:
+    if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
         print('summary==> terminated')
         break 
 
