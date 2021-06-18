@@ -93,7 +93,9 @@ class TokenAndPositionEmbedding(layers.Layer):
         super(TokenAndPositionEmbedding, self).__init__()
         self.token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
         self.pos_emb = layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
-
+    def get_config(self):
+        cfg = super().get_config()
+        return cfg    
     def call(self, x):
         maxlen = tf.shape(x)[-1]
         positions = tf.range(start=0, limit=maxlen, delta=1)
