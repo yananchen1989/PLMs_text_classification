@@ -1,22 +1,20 @@
 
 
-for samplecnt in [100, 500, 1000, 2000]:
-    for dsn in ['ag']:
-        for ite  in range(7):  
+for samplecnt in [100, 1000]:
+    for dsn in ['ag','yahoo']:
+        for ite  in range(3):  
             ds = load_data(dataset=dsn, samplecnt=samplecnt)
             (x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train, ds.df_test)
             model = get_model_bert(num_classes)
 
             history = model.fit(
-                                x_train, y_train, batch_size=32, epochs=100, \
+                                x_train, y_train, batch_size=64, epochs=100, \
                                 validation_batch_size=64,
                                 validation_data=(x_test, y_test), verbose=1,
                                 callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
                             )
             best_val_acc = max(history.history['val_acc'])
-            print(seed, dsn, ite, best_val_acc) 
-
-
+            print(samplecnt, dsn, ite, best_val_acc) 
 
 
 
@@ -82,13 +80,72 @@ ru2en.translate(en2ru.translate(content,  sampling = True, temperature = 0.9),  
 
 
 
+preprocessor_file = "./albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
+preprocessor = hub.load(preprocessor_file)
+vocab_size = preprocessor.tokenize.get_special_tokens_dict()['vocab_size'].numpy()
+
+class TokenAndPositionEmbedding(layers.Layer):
+    def __init__(self, maxlen, vocab_size, embed_dim):
+        super(TokenAndPositionEmbedding, self).__init__()
+        self.token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
+        self.pos_emb = layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
+    # def get_config(self):
+    #     cfg = super().get_config().copy()
+    #     return cfg    
+    def call(self, x):
+        maxlen = tf.shape(x)[-1]
+        positions = tf.range(start=0, limit=maxlen, delta=1)
+        positions = self.pos_emb(positions)
+        x = self.token_emb(x)
+        return x + positions
+
+def get_generator_former_():
+    embed_dim = 32  # Embedding size for each token
+    num_heads = 2  # Number of attention heads
+    ff_dim = 32  # Hidden layer size in feed forward network inside transformer
+    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+    encoder_inputs = preprocessor_layer(text_input)['input_word_ids']
+    #embedding_layer = TokenAndPositionEmbedding(encoder_inputs.shape[1], vocab_size, embed_dim)
+
+    token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
+    pos_emb = layers.Embedding(input_dim=encoder_inputs.shape[1], output_dim=embed_dim)    
+
+    positions = tf.range(start=0, limit=tf.shape(encoder_inputs)[-1], delta=1)
+    x = token_emb(encoder_inputs) + pos_emb(positions)
+
+    # transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
+    # x = transformer_block(x)
+
+    att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
+
+    ffn = keras.Sequential(
+            [layers.Dense(ff_dim, activation="relu"), layers.Dense(embed_dim),]
+        )
+    layernorm1 = layers.LayerNormalization(epsilon=1e-6)
+    layernorm2 = layers.LayerNormalization(epsilon=1e-6)
+    dropout1 = layers.Dropout(0.1)
+    dropout2 = layers.Dropout(0.1)
+    attn_output = att(x, x)
+    attn_output = dropout1(attn_output, training=True)
+    out1 = layernorm1(x + attn_output)
+    ffn_output = ffn(out1)
+    ffn_output = dropout2(ffn_output, training=True)
+    x = layernorm2(out1 + ffn_output)
+
+    #embed = layers.GlobalAveragePooling1D()(x)
+    x = tf.keras.layers.Flatten()(x)
+    embed = layers.Dense(768, activation="relu")(x)
+    model = keras.Model(inputs=text_input, outputs=embed)
+    return model
+
+generator = get_generator_former_()
+#new_model = generator.__class__.from_config(generator.get_config())
+
+generator_real = tf.keras.models.clone_model(generator)
 
 
+generator_real = tf.keras.Model().from_config(generator.get_config())
 
 
-
-
-
-
-
+model_ = tf.keras.models.clone_model(model)
 

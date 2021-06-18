@@ -93,6 +93,45 @@ val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
 
 
+def get_generator_former_():
+    embed_dim = 32  # Embedding size for each token
+    num_heads = 2  # Number of attention heads
+    ff_dim = 32  # Hidden layer size in feed forward network inside transformer
+    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+    encoder_inputs = preprocessor_layer(text_input)['input_word_ids']
+    #embedding_layer = TokenAndPositionEmbedding(encoder_inputs.shape[1], vocab_size, embed_dim)
+
+    token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
+    pos_emb = layers.Embedding(input_dim=encoder_inputs.shape[1], output_dim=embed_dim)    
+
+    positions = tf.range(start=0, limit=tf.shape(encoder_inputs)[-1], delta=1)
+    x = token_emb(encoder_inputs) + pos_emb(positions)
+
+    # transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
+    # x = transformer_block(x)
+
+    att = layers.MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)
+
+    ffn = keras.Sequential(
+            [layers.Dense(ff_dim, activation="relu"), layers.Dense(embed_dim),]
+        )
+    layernorm1 = layers.LayerNormalization(epsilon=1e-6)
+    layernorm2 = layers.LayerNormalization(epsilon=1e-6)
+    dropout1 = layers.Dropout(0.1)
+    dropout2 = layers.Dropout(0.1)
+    attn_output = att(x, x)
+    attn_output = dropout1(attn_output, training=True)
+    out1 = layernorm1(x + attn_output)
+    ffn_output = ffn(out1)
+    ffn_output = dropout2(ffn_output, training=True)
+    x = layernorm2(out1 + ffn_output)
+
+    #embed = layers.GlobalAveragePooling1D()(x)
+    x = tf.keras.layers.Flatten()(x)
+    embed = layers.Dense(768, activation="relu")(x)
+    model = keras.Model(inputs=text_input, outputs=embed)
+    return model
+
 
 
 

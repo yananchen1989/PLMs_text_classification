@@ -64,6 +64,7 @@ ds_test = ds_test.batch(64)
 #     print(label)
 #     break 
 
+
 def check_weights_no_identical(w1, w2):
     assert len(w2.trainable_weights) == len(w1.trainable_weights)
     for i in range(len(w2.trainable_weights)):
@@ -73,12 +74,11 @@ def check_weights_no_identical(w1, w2):
 
 if args.model == 'bert':
     generator = get_generator_bert()
-    generator_real = tf.keras.models.clone_model(generator)
-    generator_base = tf.keras.models.clone_model(generator)
 elif args.model == 'former':
-    generator = get_generator_former()
-    generator_real = get_generator_former()
-    generator_base = get_generator_former()
+    generator = get_generator_former_()
+
+generator_real = tf.keras.models.clone_model(generator)
+generator_base = tf.keras.models.clone_model(generator)
 
 discriminator = get_discriminator(num_classes*2)
 discriminator_base = get_discriminator(num_classes)
