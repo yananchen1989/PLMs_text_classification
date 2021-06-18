@@ -95,9 +95,9 @@ if args.model == 'bert':
     gr_optimizer = keras.optimizers.Adam(learning_rate=lr)
     base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 else:
-    d_optimizer = keras.optimizers.Adam()
-    g_optimizer = keras.optimizers.Adam()
-    gr_optimizer = keras.optimizers.Adam()
+    d_optimizer = keras.optimizers.Adam(1e-5)
+    g_optimizer = keras.optimizers.Adam(1e-5)
+    gr_optimizer = keras.optimizers.Adam(1e-5)
     base_optimizer = keras.optimizers.Adam()
 
 @tf.function
