@@ -11,7 +11,8 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
 gpus = tf.config.experimental.list_physical_devices('GPU')
-assert gpus
+if tf.__version__.startswith("2.3"):
+    assert gpus
 if gpus:
   try:
     for gpu in gpus:
