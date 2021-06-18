@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
 gpus = tf.config.experimental.list_physical_devices('GPU')
+assert gpus
 if gpus:
   try:
     for gpu in gpus:
@@ -20,6 +21,7 @@ if gpus:
   except RuntimeError as e:
     print(e)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+assert device.type=='cuda'
 from load_data import * 
 from transblock import * 
 from gan_config import * 
