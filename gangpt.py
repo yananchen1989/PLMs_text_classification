@@ -73,14 +73,14 @@ def check_weights_no_identical(w1, w2):
         assert not np.array_equal(w1.trainable_weights[i], w2.trainable_weights[i])
 
 if args.model == 'bert':
-    generator = get_generator_bert()
+    generator_fake = get_generator_bert()
 elif args.model == 'former':
-    generator = get_generator_former_()
+    generator_fake = get_generator_former_()
 elif args.model == 'cnn':
-    generator = get_generator_textcnn()
+    generator_fake = get_generator_textcnn()
 
-generator_real = tf.keras.models.clone_model(generator)
-generator_base = tf.keras.models.clone_model(generator)
+generator_real = tf.keras.models.clone_model(generator_fake)
+generator_base = tf.keras.models.clone_model(generator_fake)
 
 discriminator = get_discriminator(num_classes*2)
 discriminator_base = get_discriminator(num_classes)
@@ -103,7 +103,7 @@ else:
 @tf.function
 def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
 
-    generated_images = generator(prompts_syn_tensor )
+    generated_images = generator_fake(prompts_syn_tensor )
     real_images = generator_real(prompts_tensor)
 
     labels_tensor += 0.05 * tf.random.uniform(labels_tensor.shape)
@@ -118,12 +118,12 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     grads = tape.gradient(d_loss, discriminator.trainable_weights)
     d_optimizer.apply_gradients(zip(grads, discriminator.trainable_weights))
 
-    # generator update
+    # generator_fake update
     with tf.GradientTape() as tape:
-        predictions = discriminator(generator(prompts_syn_tensor))
+        predictions = discriminator(generator_fake(prompts_syn_tensor))
         g_loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
-    grads = tape.gradient(g_loss, generator.trainable_weights)
-    g_optimizer.apply_gradients(zip(grads, generator.trainable_weights))
+    grads = tape.gradient(g_loss, generator_fake.trainable_weights)
+    g_optimizer.apply_gradients(zip(grads, generator_fake.trainable_weights))
 
     # generator_real update
     with tf.GradientTape() as tape:
@@ -132,6 +132,10 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     grads = tape.gradient(gr_loss, generator_real.trainable_weights)
     gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
     return d_loss, g_loss, gr_loss
+    
+    # unify fake 
+
+
 
 
 @tf.function
@@ -177,13 +181,13 @@ for epoch in range(args.epoch):
         loss = train_step_base(prompts, labels)
 
         check_weights_no_identical(generator_base, generator_real)
-        check_weights_no_identical(generator_base, generator)
-        check_weights_no_identical(generator_real, generator)
+        check_weights_no_identical(generator_base, generator_fake)
+        check_weights_no_identical(generator_real, generator_fake)
 
         check_weights_no_identical(discriminator, discriminator_base)
 
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-    logits = discriminator(generator(text_input))
+    logits = discriminator(generator_fake(text_input))
     model_gan = keras.Model(inputs=text_input, outputs=logits)
     for x_batch_val, y_batch_val in ds_test:
         preds = model_gan(x_batch_val, training=False)  
