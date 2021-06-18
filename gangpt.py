@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math
+import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,random
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
@@ -84,6 +84,18 @@ discriminator_base = get_discriminator(num_classes)
 
 text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
 model_base = keras.Model(inputs=text_input, outputs=discriminator_base(generator_base(text_input)))
+
+if args.model == 'bert':
+    lr = 1e-5
+    d_optimizer = keras.optimizers.Adam(learning_rate=lr)
+    g_optimizer = keras.optimizers.Adam(learning_rate=lr)
+    gr_optimizer = keras.optimizers.Adam(learning_rate=lr)
+    base_optimizer = keras.optimizers.Adam(learning_rate=lr)
+elif args.model == 'former':
+    d_optimizer = keras.optimizers.Adam()
+    g_optimizer = keras.optimizers.Adam()
+    gr_optimizer = keras.optimizers.Adam()
+    base_optimizer = keras.optimizers.Adam()
 
 @tf.function
 def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
