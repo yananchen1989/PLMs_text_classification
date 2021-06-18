@@ -11,8 +11,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
 gpus = tf.config.experimental.list_physical_devices('GPU')
-if tf.__version__.startswith("2.3"):
-    assert gpus
+  
 if gpus:
   try:
     for gpu in gpus:
@@ -34,7 +33,8 @@ parser.add_argument("--model", default='bert', type=str)
 args = parser.parse_args()
 print('args==>', args)
 
-
+if args.model=='bert':
+    assert gpus
 
 ####### prepare data
 ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=random.sample(range(10000),1)[0])
