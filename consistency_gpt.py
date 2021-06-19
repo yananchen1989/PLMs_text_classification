@@ -30,7 +30,7 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 parser.add_argument("--model", default='former', type=str)
-parser.add_argument("--beam", default=8, type=int)
+parser.add_argument("--beams", default=8, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -131,6 +131,23 @@ def train_step_base(prompts, labels):
 #         if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == ix_label[label]:
 #         syn_sents_pure.append(sent_syn_eq)
 #     return tf.convert_to_tensor(np.array(syn_sents_pure))
+def synthesize_beams(prompts, labels):
+    prompts_syn_ll = []
+    labels_syn_ll = []
+
+    for _ in range(args.beams):
+        prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
+        labels_syn = labels + num_classes 
+        prompts_syn_ll.append(prompts_syn)
+        labels_syn_ll.append(labels_syn)
+
+    prompts_syn_beams = tf.concat(prompts_syn_ll, axis=0)
+    labels_syn_beams = tf.concat(labels_syn_ll, axis=0)
+
+    assert prompts_syn_beams.shape[0] == args.beam*prompts.shape[0] and prompts_syn_beams.shape[0]==labels_syn_beams.shape[0]
+    return prompts_syn_beams, labels_syn_beams
+
+
 
 baseline_accs = []
 gan_accs = []
@@ -141,7 +158,7 @@ for epoch in range(args.epoch):
         prompts = trunk[0]
         labels = trunk[1] 
 
-        prompts_syn_beams, labels_syn_beams = synthesize_beams(prompts, labels, args.beam, max_len)
+        prompts_syn_beams, labels_syn_beams = synthesize_beams(prompts, labels)
 
         loss_cs = train_step(prompts, prompts_syn_beams, labels, labels_syn_beams)
         # baseline

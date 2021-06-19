@@ -120,21 +120,6 @@ def synthesize(prompts, labels, max_len):
     return tf.convert_to_tensor(np.array(syn_sents_pure))
 
 
-def synthesize_beams(prompts, labels, beams, max_len):
-    prompts_syn_ll = []
-    labels_syn_ll = []
-
-    for _ in range(beams):
-        prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
-        labels_syn = labels + num_classes 
-        prompts_syn_ll.append(prompts_syn)
-        labels_syn_ll.append(labels_syn)
-
-    prompts_syn_beams = tf.concat(prompts_syn_ll, axis=0)
-    labels_syn_beams = tf.concat(labels_syn_ll, axis=0)
-
-    assert prompts_syn_beams.shape[0] == args.beam*prompts.shape[0] and prompts_syn_beams.shape[0]==labels_syn_beams.shape[0]
-    return prompts_syn_beams, labels_syn_beams
 
 val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
