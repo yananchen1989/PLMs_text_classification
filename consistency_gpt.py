@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,random
+import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,random,time
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
@@ -28,7 +28,7 @@ from gan_config import *
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
-parser.add_argument("--epoch", default=100, type=int)
+parser.add_argument("--epoch", default=200, type=int)
 parser.add_argument("--model", default='former', type=str)
 parser.add_argument("--beams", default=8, type=int)
 args = parser.parse_args()
@@ -40,7 +40,8 @@ elif args.model == 'former':
     assert tf.__version__.startswith('2.5')
 
 ####### prepare data
-ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=random.sample(range(10000),1)[0])
+seed = int(time.time())
+ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=seed)
 label_unique = ds.df_test.label.unique()
 label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
 ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
@@ -106,7 +107,8 @@ def train_step_base(prompts, labels):
     base_optimizer.apply_gradients(zip(grads, model_base.trainable_weights))
     return loss
 
-# nlp_nli = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli', device=-1)
+#nlp_nli = pipeline("zero-shot-classification", model='valhalla/distilbart-mnli-12-9', device=0)
+
 # def synthesize_nli(prompts, labels, max_len):
 #     inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="pt")
 #     inputs.to(device)
@@ -146,7 +148,6 @@ def synthesize_beams(prompts, labels):
 
     assert prompts_syn_beams.shape[0] == args.beams*prompts.shape[0] and prompts_syn_beams.shape[0]==labels_syn_beams.shape[0]
     return prompts_syn_beams, labels_syn_beams
-
 
 
 baseline_accs = []
@@ -191,10 +192,9 @@ for epoch in range(args.epoch):
     monitoracc.append( gain )
 
     if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
-        print('summary==> terminated ', max(monitoracc), args)
         break 
 
-
+print('summary==> terminated ', max(monitoracc), args, 'seed:', seed)
 
 
 
