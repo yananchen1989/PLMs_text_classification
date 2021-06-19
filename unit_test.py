@@ -78,10 +78,43 @@ ru2en.translate(en2ru.translate(content,  sampling = True, temperature = 0.9),  
 
 
 
+#### paraphrasing 
+import torch
+from transformers import PegasusForConditionalGeneration, PegasusTokenizer
+model_name = 'tuner007/pegasus_paraphrase'
+torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+tokenizer = PegasusTokenizer.from_pretrained(model_name)
+model = PegasusForConditionalGeneration.from_pretrained(model_name).to(torch_device)
+
+def get_response(input_text,num_return_sequences,num_beams, maxlen):
+  batch = tokenizer([input_text],truncation=True,padding='longest',max_length=maxlen, return_tensors="pt").to(torch_device)
+  translated = model.generate(**batch,max_length=maxlen,num_beams=num_beams, num_return_sequences=num_return_sequences, temperature=1.5)
+  tgt_text = tokenizer.batch_decode(translated, skip_special_tokens=True)
+  return tgt_text
+
+num_beams = 10
+num_return_sequences = 10
+context = '''
+It's barely dawn when Mike Fitzpatrick starts his shift with a blur of colorful maps, figures and endless charts, but already he knows what the day will bring. Lightning will strike in places he expects. Winds will pick up, moist places will dry and flames will roar.
+'''
+get_response(context, num_return_sequences, num_beams, 100)
 
 
-prompts = [s.decode() for s in prompts.numpy()] 
-labels = list(labels.numpy())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

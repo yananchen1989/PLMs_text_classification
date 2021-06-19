@@ -31,6 +31,7 @@ parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=200, type=int)
 parser.add_argument("--model", default='former', type=str)
 parser.add_argument("--beams", default=8, type=int)
+parser.add_argument("--batch_size", default=64, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -52,15 +53,14 @@ ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
 ds.df_train['label'] = ds.df_train['label'].map(lambda x: label_ix[x])
 ds.df_test['label'] = ds.df_test['label'].map(lambda x: label_ix[x])
 
-batch_size=64
 max_len = get_tokens_len(ds, 0.99) 
 num_classes = label_unique.shape[0]
 
 ds_train = tf.data.Dataset.from_tensor_slices((ds.df_train['content'].values, ds.df_train['label'].values))
-ds_train = ds_train.shuffle(buffer_size=12800).batch(batch_size)
+ds_train = ds_train.shuffle(buffer_size=12800).batch(args.batch_size)
 
 ds_test = tf.data.Dataset.from_tensor_slices((ds.df_test['content'].values, ds.df_test['label'].values))
-ds_test = ds_test.batch(batch_size)
+ds_test = ds_test.batch(args.batch_size)
 
 # def parser(x):
 #     inputs = tokenizer([ii.decode() for ii in xx], padding='max_length', add_prefix_space=True, truncation=True, max_length=max_len, return_tensors="tf")
@@ -198,7 +198,7 @@ for epoch in range(args.epoch):
     if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
         break 
 
-print('summary==> terminated ', max(monitoracc), args, 'seed:', seed)
+print('summary==> terminated ', monitoracc[-1], args, 'seed:', seed)
 
 with open(log,'a') as f:
     f.write('seed:{} base:{} gan:{} max_gain:{}\n'.format(seed, base_cur_best, gan_cur_best, max(monitoracc)))
