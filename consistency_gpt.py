@@ -35,7 +35,7 @@ parser.add_argument("--batch_size", default=64, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
-log = '-'.join(['{}_{}'.format(k, v) for k, v in vars(args).items()])
+log = '-'.join(['{}_{}'.format(k, v) for k, v in vars(args).items()])+'.log'
 
 
 
@@ -201,7 +201,7 @@ for epoch in range(args.epoch):
 print('summary==> terminated ', monitoracc[-1], args, 'seed:', seed)
 
 with open(log,'a') as f:
-    f.write('seed:{} base:{} gan:{} max_gain:{}\n'.format(seed, base_cur_best, gan_cur_best, max(monitoracc)))
+    f.write('seed:{} base:{} gan:{} max_gain:{}\n'.format(seed, base_cur_best, gan_cur_best, monitoracc[-1]))
 
 
 
