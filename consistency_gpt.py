@@ -141,7 +141,7 @@ for epoch in range(args.epoch):
         prompts = trunk[0]
         labels = trunk[1] 
 
-        prompts_syn_beams, labels_syn_beams = synthesize_beams(prompts, labels, args.beam)
+        prompts_syn_beams, labels_syn_beams = synthesize_beams(prompts, labels, args.beam, max_len)
 
         loss_cs = train_step(prompts, prompts_syn_beams, labels, labels_syn_beams)
         # baseline
