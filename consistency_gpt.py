@@ -132,7 +132,6 @@ def train_step_base(prompts, labels):
 #         syn_sents_pure.append(sent_syn_eq)
 #     return tf.convert_to_tensor(np.array(syn_sents_pure))
 
-
 baseline_accs = []
 gan_accs = []
 monitoracc = []
@@ -141,20 +140,9 @@ for epoch in range(args.epoch):
     for step, trunk in enumerate(ds_train):
         prompts = trunk[0]
         labels = trunk[1] 
-        prompts_syn_ll = []
-        labels_syn_ll = []
 
-        for _ in range(args.beam):
-            prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
-            labels_syn = labels + num_classes 
-            prompts_syn_ll.append(prompts_syn)
-            labels_syn_ll.append(labels_syn)
+        prompts_syn_beams, labels_syn_beams = synthesize_beams(prompts, labels, args.beam)
 
-        prompts_syn_beams = tf.concat(prompts_syn_ll, axis=0)
-        labels_syn_beams = tf.concat(labels_syn_ll, axis=0)
-
-        assert prompts_syn_beams.shape[0] == args.beam*batch_size and prompts_syn_beams.shape[0]==labels_syn_beams.shape[0]
-        
         loss_cs = train_step(prompts, prompts_syn_beams, labels, labels_syn_beams)
         # baseline
         loss = train_step_base(prompts, labels)
@@ -186,7 +174,7 @@ for epoch in range(args.epoch):
     monitoracc.append( gain )
 
     if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
-        print('summary==> terminated ', max(monitoracc))
+        print('summary==> terminated ', max(monitoracc), args)
         break 
 
 
