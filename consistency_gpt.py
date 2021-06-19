@@ -144,7 +144,7 @@ def synthesize_beams(prompts, labels):
     prompts_syn_beams = tf.concat(prompts_syn_ll, axis=0)
     labels_syn_beams = tf.concat(labels_syn_ll, axis=0)
 
-    assert prompts_syn_beams.shape[0] == args.beam*prompts.shape[0] and prompts_syn_beams.shape[0]==labels_syn_beams.shape[0]
+    assert prompts_syn_beams.shape[0] == args.beams*prompts.shape[0] and prompts_syn_beams.shape[0]==labels_syn_beams.shape[0]
     return prompts_syn_beams, labels_syn_beams
 
 
