@@ -35,6 +35,8 @@ print('args==>', args)
 
 if args.model=='bert':
     assert gpus
+elif args.model == 'former':
+    assert tf.__version__.startswith('2.5')
 
 ####### prepare data
 ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=random.sample(range(10000),1)[0])
