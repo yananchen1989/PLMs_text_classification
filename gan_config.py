@@ -120,7 +120,7 @@ def synthesize(prompts, labels, max_len):
     return tf.convert_to_tensor(np.array(syn_sents_pure))
 
 
-def synthesize_beams(prompts, labels, beams)
+def synthesize_beams(prompts, labels, beams):
     prompts_syn_ll = []
     labels_syn_ll = []
 
