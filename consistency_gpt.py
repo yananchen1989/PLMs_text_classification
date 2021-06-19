@@ -34,6 +34,10 @@ parser.add_argument("--beams", default=8, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
+log = '-'.join(['{}_{}'.format(k, v) for k, v in vars(args).items()])
+
+
+
 if args.model=='bert':
     assert gpus
 elif args.model == 'former':
@@ -196,7 +200,8 @@ for epoch in range(args.epoch):
 
 print('summary==> terminated ', max(monitoracc), args, 'seed:', seed)
 
-
+with open(log,'a') as f:
+    f.write('seed:{} base:{} gan:{} max_gain:{}\n'.format(seed, base_cur_best, gan_cur_best, max(monitoracc)))
 
 
 
