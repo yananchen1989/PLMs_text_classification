@@ -77,13 +77,16 @@ def check_weights_no_identical(w1, w2):
 
 if args.model == 'bert':
     generator_fake = get_generator_bert()
-elif args.model == 'former':
-    generator_fake = get_generator_former_()
-elif args.model == 'cnn':
-    generator_fake = get_generator_textcnn()
+    generator_real = tf.keras.models.clone_model(generator_fake)
+    generator_base = tf.keras.models.clone_model(generator_fake)
 
-generator_real = tf.keras.models.clone_model(generator_fake)
-generator_base = tf.keras.models.clone_model(generator_fake)
+elif args.model == 'former':
+    generator_fake = get_generator_former()
+    generator_real = get_generator_former()
+    generator_base = get_generator_former() 
+# elif args.model == 'cnn':
+#     generator_fake = get_generator_textcnn()
+
 
 discriminator = get_discriminator(num_classes*2)
 discriminator_base = get_discriminator(num_classes)
