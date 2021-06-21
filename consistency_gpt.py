@@ -32,10 +32,11 @@ parser.add_argument("--epoch", default=200, type=int)
 parser.add_argument("--model", default='former', type=str)
 parser.add_argument("--beams", default=8, type=int)
 parser.add_argument("--batch_size", default=64, type=int)
+parser.add_argument("--iter", default=5, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
-log = '-'.join(['{}_{}'.format(k, v) for k, v in vars(args).items()])+'.log'
+#log = '-'.join(['{}_{}'.format(k, v) for k, v in vars(args).items()])+'.log'
 
 
 
@@ -43,50 +44,6 @@ if args.model=='bert':
     assert gpus
 elif args.model == 'former':
     assert tf.__version__.startswith('2.5')
-
-####### prepare data
-seed = int(time.time())
-ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=seed)
-label_unique = ds.df_test.label.unique()
-label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
-ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
-ds.df_train['label'] = ds.df_train['label'].map(lambda x: label_ix[x])
-ds.df_test['label'] = ds.df_test['label'].map(lambda x: label_ix[x])
-
-max_len = get_tokens_len(ds, 0.99) 
-num_classes = label_unique.shape[0]
-
-ds_train = tf.data.Dataset.from_tensor_slices((ds.df_train['content'].values, ds.df_train['label'].values))
-ds_train = ds_train.shuffle(buffer_size=12800).batch(args.batch_size)
-
-ds_test = tf.data.Dataset.from_tensor_slices((ds.df_test['content'].values, ds.df_test['label'].values))
-ds_test = ds_test.batch(args.batch_size)
-
-# def parser(x):
-#     inputs = tokenizer([ii.decode() for ii in xx], padding='max_length', add_prefix_space=True, truncation=True, max_length=max_len, return_tensors="tf")
-#     return inputs
-
-# for mm in dstf.map(lambda x, y: (x, y) ).take(5):
-#     print(mm)
-#     print(sent)
-#     print(label)
-#     break 
-
-if args.model == 'bert':
-    lr = 1e-5
-    cs_optimizer = keras.optimizers.Adam(learning_rate=lr)
-    base_optimizer = keras.optimizers.Adam(learning_rate=lr)
-else:
-    cs_optimizer = keras.optimizers.Adam()
-    base_optimizer = keras.optimizers.Adam()
-
-if args.model == 'bert':
-    model_base = get_model_bert_(num_classes, 'albert')
-    model_cs = get_model_bert_(num_classes*2, 'albert')
-elif args.model == 'former':
-    model_base = get_model_transormer_(num_classes)
-    model_cs = get_model_transormer_(num_classes*2)
-
 
 @tf.function
 def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
@@ -154,55 +111,100 @@ def synthesize_beams(prompts, labels):
     return prompts_syn_beams, labels_syn_beams
 
 
-baseline_accs = []
-gan_accs = []
-monitoracc = []
-for epoch in range(args.epoch):
-    print("\nStart epoch", epoch)
-    for step, trunk in enumerate(ds_train):
-        prompts = trunk[0]
-        labels = trunk[1] 
+####### prepare data
+for ite in range(args.iter): 
+    #seed = ite
+    seed = int(time.time())
+    ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=seed)
+    label_unique = ds.df_test.label.unique()
+    label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
+    ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
+    ds.df_train['label'] = ds.df_train['label'].map(lambda x: label_ix[x])
+    ds.df_test['label'] = ds.df_test['label'].map(lambda x: label_ix[x])
 
-        prompts_syn_beams, labels_syn_beams = synthesize_beams(prompts, labels)
+    max_len = get_tokens_len(ds, 0.99) 
+    num_classes = label_unique.shape[0]
 
-        loss_cs = train_step(prompts, prompts_syn_beams, labels, labels_syn_beams)
-        # baseline
-        loss = train_step_base(prompts, labels)
+    ds_train = tf.data.Dataset.from_tensor_slices((ds.df_train['content'].values, ds.df_train['label'].values))
+    ds_train = ds_train.shuffle(buffer_size=12800).batch(args.batch_size)
 
-        #print(loss.numpy(), loss_cs.numpy())
+    ds_test = tf.data.Dataset.from_tensor_slices((ds.df_test['content'].values, ds.df_test['label'].values))
+    ds_test = ds_test.batch(args.batch_size)
 
-    for x_batch_val, y_batch_val in ds_test:
-        preds = model_cs(x_batch_val, training=False)  
-        preds_accum =  preds[:,:num_classes] + preds[:,num_classes:]
-        val_acc_metric.update_state(y_batch_val, preds_accum)
-    print("gan Validation acc: %.4f" % (float(val_acc_metric.result()),))
-    gan_accs.append(float(val_acc_metric.result()))
-    val_acc_metric.reset_states()
-    #print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
+    # def parser(x):
+    #     inputs = tokenizer([ii.decode() for ii in xx], padding='max_length', add_prefix_space=True, truncation=True, max_length=max_len, return_tensors="tf")
+    #     return inputs
 
-    for x_batch_val, y_batch_val in ds_test:
-        preds = model_base(x_batch_val, training=False)
-        val_acc_metric.update_state(y_batch_val, preds)
-    print("baseline Validation acc: %.4f" % (float(val_acc_metric.result()),))
-    #print('loss:', loss.numpy())
-    baseline_accs.append(float(val_acc_metric.result()))
-    val_acc_metric.reset_states()
+    # for mm in dstf.map(lambda x, y: (x, y) ).take(5):
+    #     print(mm)
+    #     print(sent)
+    #     print(label)
+    #     break 
 
-    base_cur_best = round(max(baseline_accs),4)
-    gan_cur_best = round(max(gan_accs),4)
-    gain = round( (gan_cur_best-base_cur_best) / base_cur_best, 4) 
-    print("summary==>", "dsn:", args.dsn, "samplecnt:", args.samplecnt, 'epoch:',epoch,\
-      'base:', base_cur_best, 'gan:', gan_cur_best, 'gain:',  gain  )
-    monitoracc.append( gain )
+    if args.model == 'bert':
+        lr = 1e-5
+        cs_optimizer = keras.optimizers.Adam(learning_rate=lr)
+        base_optimizer = keras.optimizers.Adam(learning_rate=lr)
+    else:
+        cs_optimizer = keras.optimizers.Adam()
+        base_optimizer = keras.optimizers.Adam()
 
-    if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
-        break 
-
-print('summary==> terminated ', monitoracc[-1], args, 'seed:', seed)
-
-with open(log,'a') as f:
-    f.write('seed:{} base:{} gan:{} max_gain:{}\n'.format(seed, base_cur_best, gan_cur_best, monitoracc[-1]))
+    if args.model == 'bert':
+        model_base = get_model_bert_(num_classes, 'albert')
+        model_cs = get_model_bert_(num_classes*2, 'albert')
+    elif args.model == 'former':
+        model_base = get_model_transormer_(num_classes)
+        model_cs = get_model_transormer_(num_classes*2)
 
 
+    baseline_accs = []
+    gan_accs = []
+    monitoracc = []
+    for epoch in range(args.epoch):
+        print("\nStart epoch", epoch)
+        for step, trunk in enumerate(ds_train):
+            prompts = trunk[0]
+            labels = trunk[1] 
+
+            prompts_syn_beams, labels_syn_beams = synthesize_beams(prompts, labels)
+
+            loss_cs = train_step(prompts, prompts_syn_beams, labels, labels_syn_beams)
+            # baseline
+            loss = train_step_base(prompts, labels)
+
+            #print(loss.numpy(), loss_cs.numpy())
+
+        for x_batch_val, y_batch_val in ds_test:
+            preds = model_cs(x_batch_val, training=False)  
+            preds_accum =  preds[:,:num_classes] + preds[:,num_classes:]
+            val_acc_metric.update_state(y_batch_val, preds_accum)
+        print("gan Validation acc: %.4f" % (float(val_acc_metric.result()),))
+        gan_accs.append(float(val_acc_metric.result()))
+        val_acc_metric.reset_states()
+        #print(d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
+
+        for x_batch_val, y_batch_val in ds_test:
+            preds = model_base(x_batch_val, training=False)
+            val_acc_metric.update_state(y_batch_val, preds)
+        print("baseline Validation acc: %.4f" % (float(val_acc_metric.result()),))
+        #print('loss:', loss.numpy())
+        baseline_accs.append(float(val_acc_metric.result()))
+        val_acc_metric.reset_states()
+
+        base_cur_best = round(max(baseline_accs),4)
+        gan_cur_best = round(max(gan_accs),4)
+        gain = round( (gan_cur_best-base_cur_best) / base_cur_best, 4) 
+        print("summary==>", "dsn:", args.dsn, "samplecnt:", args.samplecnt, 'epoch:',epoch,\
+          'base:', base_cur_best, 'gan:', gan_cur_best, 'gain:',  gain  )
+        monitoracc.append( gain )
+
+        if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
+            break 
+
+    record_log('log_consistency', \
+                     ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
+                     + ['iter:{}'.format(ite), 'seed:{}'.format(seed), \
+                     'base:{}'.format(base_cur_best), 'gan:{}'.format(gan_cur_best), 'max_gain:'.format(monitoracc[-1]) ]
+               )
 
 

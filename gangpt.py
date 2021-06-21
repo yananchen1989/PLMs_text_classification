@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,random
+import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,random, time
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
@@ -39,7 +39,8 @@ elif args.model == 'former':
     assert tf.__version__.startswith('2.5')
 
 ####### prepare data
-ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=random.sample(range(10000),1)[0])
+seed = int(time.time())
+ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=seed)
 label_unique = ds.df_test.label.unique()
 label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
 ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
@@ -90,16 +91,20 @@ discriminator_base = get_discriminator(num_classes)
 text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
 model_base = keras.Model(inputs=text_input, outputs=discriminator_base(generator_base(text_input)))
 
+model_gan = keras.Model(inputs=text_input, outputs=discriminator(generator_real(text_input)))
+
 if args.model == 'bert':
     lr = 1e-5
     d_optimizer = keras.optimizers.Adam(learning_rate=lr)
     g_optimizer = keras.optimizers.Adam(learning_rate=lr)
     gr_optimizer = keras.optimizers.Adam(learning_rate=lr)
+    uni_optimizer = keras.optimizers.Adam(learning_rate=lr)
     base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 else:
     d_optimizer = keras.optimizers.Adam()
     g_optimizer = keras.optimizers.Adam()
     gr_optimizer = keras.optimizers.Adam()
+    uni_optimizer = keras.optimizers.Adam()
     base_optimizer = keras.optimizers.Adam()
 
 @tf.function
@@ -133,10 +138,15 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
         gr_loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
     grads = tape.gradient(gr_loss, generator_real.trainable_weights)
     gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
-    return d_loss, g_loss, gr_loss
     
-    # unify fake 
+    # unified update 
+    with tf.GradientTape() as tape:
+        predictions = model_gan(combined_images)
+        loss_unify = keras.losses.SparseCategoricalCrossentropy()(combined_labels, predictions)
+    grads = tape.gradient(loss, model_gan.trainable_weights)
+    uni_optimizer.apply_gradients(zip(grads, model_gan.trainable_weights))
 
+    return d_loss, g_loss, gr_loss, loss_unify
 
 
 
@@ -217,10 +227,12 @@ for epoch in range(args.epoch):
 
     if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
         print('summary==> terminated ', max(monitoracc))
-        break 
-
-
-
+         
+record_log('log_gan', \
+                 ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
+                 + ['seed:{}'.format(seed), 'base:{}'.format(base_cur_best),
+                    'gan:{}'.format(gan_cur_best), 'max_gain:'.format(monitoracc[-1]) ]
+           )
 
 
 
