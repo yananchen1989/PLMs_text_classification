@@ -77,9 +77,9 @@ def check_weights_no_identical(w1, w2):
         assert not np.array_equal(w1.trainable_weights[i], w2.trainable_weights[i])
 
 
-generator_base = get_generator_former() 
-generator_fake = get_generator_former()
-generator_real = get_generator_former() 
+# generator_base = get_generator_former() 
+# generator_fake = get_generator_former()
+# generator_real = get_generator_former() 
 
 generator_fake = get_generator_bert()
 generator_real = tf.keras.models.clone_model(generator_fake)
