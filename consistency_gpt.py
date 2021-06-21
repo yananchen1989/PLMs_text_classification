@@ -135,8 +135,8 @@ for ite in range(args.iter):
     #     inputs = tokenizer([ii.decode() for ii in xx], padding='max_length', add_prefix_space=True, truncation=True, max_length=max_len, return_tensors="tf")
     #     return inputs
 
-    # for mm in dstf.map(lambda x, y: (x, y) ).take(5):
-    #     print(mm)
+    for mm in ds_train.map(lambda x, y: (x, y) ).take(5):
+        print(mm)
     #     print(sent)
     #     print(label)
     #     break 
@@ -150,11 +150,11 @@ for ite in range(args.iter):
         base_optimizer = keras.optimizers.Adam()
 
     if args.model == 'bert':
-        model_base = get_model_bert_(num_classes, 'albert')
-        model_cs = get_model_bert_(num_classes*2, 'albert')
+        model_base = get_model_bert(num_classes, 'albert')
+        model_cs = get_model_bert(num_classes*2, 'albert')
     elif args.model == 'former':
-        model_base = get_model_transormer_(num_classes)
-        model_cs = get_model_transormer_(num_classes*2)
+        model_base = get_model_transormer(num_classes)
+        model_cs = get_model_transormer(num_classes*2)
 
 
     baseline_accs = []

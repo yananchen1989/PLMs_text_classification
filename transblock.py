@@ -133,7 +133,7 @@ def get_model_transormer(num_classes):
     # else:
     outputs = layers.Dense(num_classes, activation="softmax")(x)
     model = keras.Model(inputs=text_input, outputs=outputs)
-    model.compile("adam", "categorical_crossentropy", metrics=["acc"])
+    #model.compile("adam", "categorical_crossentropy", metrics=["acc"])
 
     return model
 
@@ -160,62 +160,6 @@ def get_model_bert(num_classes, m='albert'):
     # else:
     out = layers.Dense(num_classes, activation="softmax")(embed)
     model = tf.keras.Model(inputs=text_input, outputs=out)
-    model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
-    return model
-
-
-def get_model_transormer_(num_classes):
-    embed_dim = 32  # Embedding size for each token
-    num_heads = 2  # Number of attention heads
-    ff_dim = 32  # Hidden layer size in feed forward network inside transformer
-    
-    preprocessor = hub.load(preprocessor_file)
-    vocab_size = preprocessor.tokenize.get_special_tokens_dict()['vocab_size'].numpy()
-
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-
-    encoder_inputs = preprocessor_layer(text_input)['input_word_ids']
-
-    embedding_layer = TokenAndPositionEmbedding(encoder_inputs.shape[1], vocab_size, embed_dim)
-    x = embedding_layer(encoder_inputs)
-    transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
-    x = transformer_block(x)
-    x = layers.GlobalAveragePooling1D()(x)
-    x = layers.Dense(32, activation="relu")(x)
-
-    # if num_classes == 2:
-    #     outputs = layers.Dense(1, activation="sigmoid")(x)
-    #     model = keras.Model(inputs=text_input, outputs=outputs)
-    #     model.compile("adam", "binary_crossentropy", metrics=["binary_accuracy"])
-    # else:
-    outputs = layers.Dense(num_classes, activation="softmax")(x)
-    model = keras.Model(inputs=text_input, outputs=outputs)
-    #model.compile("adam", "categorical_crossentropy", metrics=["acc"])
-
-    return model
-
-def get_model_bert_(num_classes, m='albert'):
-
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
-    m_file = {'albert':"./albert_en_base_2", 'electra':'./electra_base_2', 'dan':"./universal-sentence-encoder_4"}
-
-    encoder = hub.KerasLayer(m_file[m], trainable=True)
-
-    if m in ['albert', 'electra']:
-        encoder_inputs = preprocessor_layer(text_input)
-        outputs = encoder(encoder_inputs)
-        embed = outputs["pooled_output"]  
-    elif m in ['dan']:
-        embed = encoder(text_input)
-    else:
-        raise KeyError("model illegal!")
-
-    # if num_classes == 2:
-    #     out = layers.Dense(1, activation='sigmoid')(embed)
-    #     model = tf.keras.Model(inputs=text_input, outputs=out)
-    #     model.compile(Adam(lr=1e-5), "binary_crossentropy", metrics=["binary_accuracy"])
-    # else:
-    out = layers.Dense(num_classes, activation="softmax")(embed)
-    model = tf.keras.Model(inputs=text_input, outputs=out)
     #model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
     return model
+
