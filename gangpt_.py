@@ -30,6 +30,7 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 parser.add_argument("--model", default='bert', type=str)
+parser.add_argument("--train_uni", default=0, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
