@@ -123,7 +123,8 @@ def train_step_base(prompts, labels):
 
 for ite in range(args.iter): 
     ####### prepare data
-    seed = int(time.time())
+    #seed = int(time.time())
+    seed = ite
     ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=seed)
     label_unique = ds.df_test.label.unique()
     label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
@@ -224,7 +225,7 @@ for ite in range(args.iter):
           'base:', base_cur_best, 'gan:', gan_cur_best, 'gain:',  gain  )
         monitoracc.append( gain )
 
-        if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
+        if len(monitoracc) >= 20 and len(set(monitoracc[-7:])) ==1:
             print('summary==> terminated ', max(monitoracc))
             break
              
