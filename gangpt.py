@@ -11,7 +11,19 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
 gpus = tf.config.experimental.list_physical_devices('GPU')
-  
+#os.environ['CUDA_VISIBLE_DEVICES'] = '3'  
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--dsn", default="ag", type=str)
+parser.add_argument("--samplecnt", default=100, type=int)
+parser.add_argument("--epoch", default=100, type=int)
+parser.add_argument("--model", default='bert', type=str)
+parser.add_argument("--train_uni", default=0, type=int)
+parser.add_argument("--iter", default=7, type=int)
+args = parser.parse_args()
+print('args==>', args)
+
+
 if gpus:
   try:
     for gpu in gpus:
@@ -25,15 +37,6 @@ assert device.type=='cuda'
 from load_data import * 
 from transblock import * 
 from gan_config import * 
-parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="ag", type=str)
-parser.add_argument("--samplecnt", default=100, type=int)
-parser.add_argument("--epoch", default=100, type=int)
-parser.add_argument("--model", default='bert', type=str)
-parser.add_argument("--train_uni", default=0, type=int)
-parser.add_argument("--iter", default=7, type=int)
-args = parser.parse_args()
-print('args==>', args)
 
 assert gpus
 
