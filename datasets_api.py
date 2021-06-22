@@ -28,15 +28,39 @@ df.to_csv('cc_news.csv')
 
 
 # torchtext
+import torchtext 
 ds_train, ds_test =  torchtext.datasets.AG_NEWS(root='./torch_ds', split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.YahooAnswers(root='./torch_ds', split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.DBpedia(root='./torch_ds', split=('train', 'test'))
+
 ds_train, ds_test =  torchtext.datasets.YelpReviewPolarity(root='./torch_ds', split=('train', 'test'))
 ds_train, ds_test =  torchtext.datasets.YelpReviewFull(root='./torch_ds', split=('train', 'test'))
 ds_train, ds_test =  torchtext.datasets.AmazonReviewPolarity(root='./torch_ds', split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.AmazonReviewFull(root='./torch_ds', split=('train', 'test'))
 
-df_train = pd.DataFrame(ds_train, columns=['content','label'])
-df_test = pd.DataFrame(ds_test, columns=['content','label'])
+ds_train, ds_test =  torchtext.datasets.IMDB(root='./torch_ds', split=('train', 'test'))
+
+
+df_train = pd.DataFrame(ds_train, columns=['label', 'content'])
+df_test = pd.DataFrame(ds_test, columns=['label','content'])
 
 next(ds_train)
 
 # AG_NEWS YahooAnswers  DBpedia YelpReviewPolarity YelpReviewFull  AmazonReviewPolarity AmazonReviewFull 
 # IMDB
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

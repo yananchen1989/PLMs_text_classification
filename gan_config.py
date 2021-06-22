@@ -37,54 +37,54 @@ def get_generator_bert():
     model = keras.Model(inputs=text_input, outputs=embed)
     return model
 
-def encode_rcnn(x, rnn=False):
-    # Conv1D(64, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(title_embed)
-    #title_gru = layers.Bidirectional(layers.GRU(128, return_sequences=False))(x)#(?, ?, 256)
-    title_conv4 = layers.Conv1D(128, kernel_size = 4, padding = "valid", kernel_initializer = "glorot_uniform")(x) 
-    title_conv3 = layers.Conv1D(128, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 28, 128)
-    title_conv2 = layers.Conv1D(128, kernel_size = 2, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 29, 128)
-    title_conv1 = layers.Conv1D(128, kernel_size = 1, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 30, 128)
-    avg_pool_4 = layers.GlobalAveragePooling1D()(title_conv4)# (?, 128)
-    max_pool_4 = layers.GlobalMaxPooling1D()(title_conv4) # (?, 128)   
-    avg_pool_3 = layers.GlobalAveragePooling1D()(title_conv3)# (?, 128)
-    max_pool_3 = layers.GlobalMaxPooling1D()(title_conv3) # (?, 128)
-    avg_pool_2 = layers.GlobalAveragePooling1D()(title_conv2)# (?, 128)
-    max_pool_2 = layers.GlobalMaxPooling1D()(title_conv2) # (?, 128)
-    avg_pool_1 = layers.GlobalAveragePooling1D()(title_conv1)# (?, 128)
-    max_pool_1 = layers.GlobalMaxPooling1D()(title_conv1) # (?, 128)   
-    if rnn:
-        title_encode = layers.concatenate([title_gru, avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
-                                       avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
-    else:
-        title_encode = layers.concatenate([avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
-                                       avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
-    return title_encode
+# def encode_rcnn(x, rnn=False):
+#     # Conv1D(64, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(title_embed)
+#     #title_gru = layers.Bidirectional(layers.GRU(128, return_sequences=False))(x)#(?, ?, 256)
+#     title_conv4 = layers.Conv1D(128, kernel_size = 4, padding = "valid", kernel_initializer = "glorot_uniform")(x) 
+#     title_conv3 = layers.Conv1D(128, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 28, 128)
+#     title_conv2 = layers.Conv1D(128, kernel_size = 2, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 29, 128)
+#     title_conv1 = layers.Conv1D(128, kernel_size = 1, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 30, 128)
+#     avg_pool_4 = layers.GlobalAveragePooling1D()(title_conv4)# (?, 128)
+#     max_pool_4 = layers.GlobalMaxPooling1D()(title_conv4) # (?, 128)   
+#     avg_pool_3 = layers.GlobalAveragePooling1D()(title_conv3)# (?, 128)
+#     max_pool_3 = layers.GlobalMaxPooling1D()(title_conv3) # (?, 128)
+#     avg_pool_2 = layers.GlobalAveragePooling1D()(title_conv2)# (?, 128)
+#     max_pool_2 = layers.GlobalMaxPooling1D()(title_conv2) # (?, 128)
+#     avg_pool_1 = layers.GlobalAveragePooling1D()(title_conv1)# (?, 128)
+#     max_pool_1 = layers.GlobalMaxPooling1D()(title_conv1) # (?, 128)   
+#     if rnn:
+#         title_encode = layers.concatenate([title_gru, avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
+#                                        avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
+#     else:
+#         title_encode = layers.concatenate([avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
+#                                        avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
+#     return title_encode
 
-def get_generator_textcnn():
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-    encoder_inputs = preprocessor_layer(text_input)    
-    embedding = layers.Embedding(vocab_size, 128,  trainable=True)
-    text_embed = embedding(encoder_inputs['input_word_ids'])
-    text_cnn = encode_rcnn(text_embed)
-    mlp1 = layers.Dense(768,activation='relu',name='mlp1')(text_cnn)
-    model = keras.Model(inputs=text_input, outputs=mlp1)
-    return model
+# def get_generator_textcnn():
+#     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+#     encoder_inputs = preprocessor_layer(text_input)    
+#     embedding = layers.Embedding(vocab_size, 128,  trainable=True)
+#     text_embed = embedding(encoder_inputs['input_word_ids'])
+#     text_cnn = encode_rcnn(text_embed)
+#     mlp1 = layers.Dense(768,activation='relu',name='mlp1')(text_cnn)
+#     model = keras.Model(inputs=text_input, outputs=mlp1)
+#     return model
     
-def get_generator_former():
-    embed_dim = 32  # Embedding size for each token
-    num_heads = 2  # Number of attention heads
-    ff_dim = 32  # Hidden layer size in feed forward network inside transformer
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-    encoder_inputs = preprocessor_layer(text_input)['input_word_ids']
-    embedding_layer = TokenAndPositionEmbedding(encoder_inputs.shape[1], vocab_size, embed_dim)
-    x = embedding_layer(encoder_inputs)
-    transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
-    x = transformer_block(x)
-    #embed = layers.GlobalAveragePooling1D()(x)
-    x = tf.keras.layers.Flatten()(x)
-    embed = layers.Dense(768, activation="relu")(x)
-    model = keras.Model(inputs=text_input, outputs=embed)
-    return model
+# def get_generator_former():
+#     embed_dim = 32  # Embedding size for each token
+#     num_heads = 2  # Number of attention heads
+#     ff_dim = 32  # Hidden layer size in feed forward network inside transformer
+#     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+#     encoder_inputs = preprocessor_layer(text_input)['input_word_ids']
+#     embedding_layer = TokenAndPositionEmbedding(encoder_inputs.shape[1], vocab_size, embed_dim)
+#     x = embedding_layer(encoder_inputs)
+#     transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
+#     x = transformer_block(x)
+#     #embed = layers.GlobalAveragePooling1D()(x)
+#     x = tf.keras.layers.Flatten()(x)
+#     embed = layers.Dense(768, activation="relu")(x)
+#     model = keras.Model(inputs=text_input, outputs=embed)
+#     return model
 
 def get_discriminator(num_classes):
     input_embed = keras.Input(shape=(768, ))
