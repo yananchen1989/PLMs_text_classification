@@ -226,6 +226,7 @@ for ite in range(args.iter):
 
         if len(monitoracc) >= 20 and len(set(monitoracc[-10:])) ==1:
             print('summary==> terminated ', max(monitoracc))
+            break
              
     record_log('log', \
                      ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
