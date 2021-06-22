@@ -65,65 +65,65 @@ def check_weights_no_identical(w1, w2):
 
 
 
-@tf.function
-def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
-
-    generated_images = generator_fake(prompts_syn_tensor )
-    real_images = generator_real(prompts_tensor)
-
-    labels_tensor += 0.05 * tf.random.uniform(labels_tensor.shape)
-    labels_syn_tensor += 0.05 * tf.random.uniform(labels_syn_tensor.shape)
-
-    combined_images = tf.concat([generated_images, real_images], axis=0)
-    combined_labels = tf.concat([labels_syn_tensor, labels_tensor], axis=0)
-    # discriminator update 
-    with tf.GradientTape() as tape:
-        predictions = discriminator(combined_images)
-        d_loss = keras.losses.SparseCategoricalCrossentropy()(combined_labels, predictions)
-    grads = tape.gradient(d_loss, discriminator.trainable_weights)
-    d_optimizer.apply_gradients(zip(grads, discriminator.trainable_weights))
-
-    # generator_fake update
-    with tf.GradientTape() as tape:
-        predictions = discriminator(generator_fake(prompts_syn_tensor))
-        g_loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
-    grads = tape.gradient(g_loss, generator_fake.trainable_weights)
-    g_optimizer.apply_gradients(zip(grads, generator_fake.trainable_weights))
-
-    # generator_real update
-    with tf.GradientTape() as tape:
-        predictions = discriminator(generator_real(prompts_tensor))
-        gr_loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
-    grads = tape.gradient(gr_loss, generator_real.trainable_weights)
-    gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
-    
-    return d_loss, g_loss, gr_loss
-
-@tf.function
-def train_step_gan(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
-    combined_prompts = tf.concat([prompts_tensor, prompts_syn_tensor], axis=0)
-    combined_labels = tf.concat([labels_tensor, labels_syn_tensor], axis=0)
-    # generator_ral update
-    with tf.GradientTape() as tape:
-        predictions = model_gan(combined_prompts)
-        loss = keras.losses.SparseCategoricalCrossentropy()(combined_labels, predictions)
-    grads = tape.gradient(loss, model_gan.trainable_weights)
-    gan_optimizer.apply_gradients(zip(grads, model_gan.trainable_weights))
-    return loss
-
-
-@tf.function
-def train_step_base(prompts, labels):
-    # generator_ral update
-    with tf.GradientTape() as tape:
-        predictions = model_base(prompts)
-        loss = keras.losses.SparseCategoricalCrossentropy()(labels, predictions)
-    grads = tape.gradient(loss, model_base.trainable_weights)
-    base_optimizer.apply_gradients(zip(grads, model_base.trainable_weights))
-    return loss
-
 
 for ite in range(args.iter): 
+    @tf.function
+    def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
+
+        generated_images = generator_fake(prompts_syn_tensor )
+        real_images = generator_real(prompts_tensor)
+
+        labels_tensor += 0.05 * tf.random.uniform(labels_tensor.shape)
+        labels_syn_tensor += 0.05 * tf.random.uniform(labels_syn_tensor.shape)
+
+        combined_images = tf.concat([generated_images, real_images], axis=0)
+        combined_labels = tf.concat([labels_syn_tensor, labels_tensor], axis=0)
+        # discriminator update 
+        with tf.GradientTape() as tape:
+            predictions = discriminator(combined_images)
+            d_loss = keras.losses.SparseCategoricalCrossentropy()(combined_labels, predictions)
+        grads = tape.gradient(d_loss, discriminator.trainable_weights)
+        d_optimizer.apply_gradients(zip(grads, discriminator.trainable_weights))
+
+        # generator_fake update
+        with tf.GradientTape() as tape:
+            predictions = discriminator(generator_fake(prompts_syn_tensor))
+            g_loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
+        grads = tape.gradient(g_loss, generator_fake.trainable_weights)
+        g_optimizer.apply_gradients(zip(grads, generator_fake.trainable_weights))
+
+        # generator_real update
+        with tf.GradientTape() as tape:
+            predictions = discriminator(generator_real(prompts_tensor))
+            gr_loss = keras.losses.SparseCategoricalCrossentropy()(labels_tensor, predictions)
+        grads = tape.gradient(gr_loss, generator_real.trainable_weights)
+        gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
+        
+        return d_loss, g_loss, gr_loss
+
+    @tf.function
+    def train_step_gan(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
+        combined_prompts = tf.concat([prompts_tensor, prompts_syn_tensor], axis=0)
+        combined_labels = tf.concat([labels_tensor, labels_syn_tensor], axis=0)
+        # generator_ral update
+        with tf.GradientTape() as tape:
+            predictions = model_gan(combined_prompts)
+            loss = keras.losses.SparseCategoricalCrossentropy()(combined_labels, predictions)
+        grads = tape.gradient(loss, model_gan.trainable_weights)
+        gan_optimizer.apply_gradients(zip(grads, model_gan.trainable_weights))
+        return loss
+
+
+    @tf.function
+    def train_step_base(prompts, labels):
+        # generator_ral update
+        with tf.GradientTape() as tape:
+            predictions = model_base(prompts)
+            loss = keras.losses.SparseCategoricalCrossentropy()(labels, predictions)
+        grads = tape.gradient(loss, model_base.trainable_weights)
+        base_optimizer.apply_gradients(zip(grads, model_base.trainable_weights))
+        return loss
+
     ####### prepare data
     #seed = int(time.time())
     seed = ite
