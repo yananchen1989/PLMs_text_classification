@@ -22,7 +22,7 @@ parser.add_argument("--aug", default="no", type=str)
 parser.add_argument("--dsn", default="", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--ite", default=5, type=int)
-parser.add_argument("--ner_set", default=0, type=int)
+parser.add_argument("--ner_set", default=1, type=int)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
 parser.add_argument("--batch_size", default=32, type=int)
@@ -42,6 +42,7 @@ parser.add_argument("--trunk_size", default=50, type=int)
 #parser.add_argument("--dpp", default=0, type=int)
 #parser.add_argument("--dpp_retain", default=0.7, type=float)
 parser.add_argument("--max_aug_times", default=10, type=int)
+parser.add_argument("--setbase", default=1, type=int)
 
 parser.add_argument("--eda_times", required=False, type=int, default=1, help="number of augmented sentences per original sentence")
 parser.add_argument("--eda_sr", required=False, type=float, default=0.2, help="percent of words in each sentence to be replaced by synonyms")
@@ -275,9 +276,12 @@ for ite in range(args.ite):
     if args.samplecnt > 0:
         assert ds.df_train['label'].value_counts().min() == args.samplecnt
 
-    print("before augmentating")
-    ds.df_train_aug = ds.df_train
-    best_val_acc_noaug = do_train_test(ds)
+    if args.setbase:
+        print("before augmentating")
+        ds.df_train_aug = ds.df_train
+        best_val_acc_noaug = do_train_test(ds)
+    else:
+        best_val_acc_noaug = -99
     # accs_noaug.append(best_val_acc_noaug)
     # record_log('log_{}_{}'.format(args.dsn, args.aug), \
     #              ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
