@@ -10,6 +10,8 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
+tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
+#tf.keras.backend.set_floatx('float32')
 from eda import *
 import nltk 
 #nltk.download('wordnet')
@@ -23,7 +25,7 @@ parser.add_argument("--ite", default=5, type=int)
 parser.add_argument("--ner_set", default=0, type=int)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
-#parser.add_argument("--batch_size", default=64, type=int)
+parser.add_argument("--batch_size", default=32, type=int)
 #parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--model", default="former", type=str)
 parser.add_argument("--verbose", default=1, type=int)
@@ -38,7 +40,8 @@ parser.add_argument("--thres", default=0.65, type=float)
 parser.add_argument("--cap3rd", default=0.99, type=float)
 parser.add_argument("--trunk_size", default=50, type=int)
 parser.add_argument("--dpp", default=0, type=int)
-parser.add_argument("--dpp_retain", default=0.7, type=int)
+parser.add_argument("--dpp_retain", default=0.7, type=float)
+parser.add_argument("--max_aug_times", default=10, type=int)
 
 parser.add_argument("--eda_times", required=False, type=int, default=1, help="number of augmented sentences per original sentence")
 parser.add_argument("--eda_sr", required=False, type=float, default=0.2, help="percent of words in each sentence to be replaced by synonyms")
@@ -49,9 +52,6 @@ parser.add_argument("--eda_rd", required=False, type=float, default=0.2, help="p
 
 args = parser.parse_args()
 print('args==>', args)
-
-tf.random.set_seed(1234)
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -114,13 +114,9 @@ def do_train_test(ds):
         model.compile("adam", "categorical_crossentropy", metrics=["acc"])
     else:
         raise KeyError("input model illegal!")
-    if args.samplecnt == -1:
-        batch_size = 64
-    else:
-        batch_size = 8
 
     history = model.fit(
-        x_train, y_train, batch_size=batch_size, epochs=50, \
+        x_train, y_train, batch_size=args.batch_size, epochs=50, \
         validation_batch_size=64,
         validation_data=(x_test, y_test), verbose=args.verbose,
         callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
@@ -256,8 +252,8 @@ def synthesize(ds, max_len, seed):
 
 
 
-accs = []
-accs_noaug = []
+# accs = []
+# accs_noaug = []
 for ite in range(args.ite): 
 
     print("iter ==> {}".format(ite))
@@ -274,17 +270,16 @@ for ite in range(args.ite):
     print("before augmentating")
     ds.df_train_aug = ds.df_train
     best_val_acc_noaug = do_train_test(ds)
-    accs_noaug.append(best_val_acc_noaug)
-    record_log('log_{}_{}'.format(args.dsn, args.aug), \
-                 ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
-                      'iter:{}'.format(ite), \
-                      'noaug_acc:{}'.format(best_val_acc_noaug)])
+    # accs_noaug.append(best_val_acc_noaug)
+    # record_log('log_{}_{}'.format(args.dsn, args.aug), \
+    #              ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
+    #                   'iter:{}'.format(ite), \
+    #                   'noaug_acc:{}'.format(best_val_acc_noaug)])
 
     print("augmentating...")
 
     syn_df_ll = []
     accs_iters = []
-    aug_ratio_iters = []
     while True:
     
         df_synthesize = synthesize(ds, max_len, ite)
@@ -294,37 +289,43 @@ for ite in range(args.ite):
 
         aug_ratio = round(pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0], 2)
         cur_acc = do_train_test(ds)
-        record_log('log_{}_{}'.format(args.dsn, args.aug), \
-                     ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
-                          'iter:{}'.format(ite), \
-                          'check:{}'.format(args.check), \
-                          'aug_ratio:{}'.format(aug_ratio), \
-                          'cur_acc:{}'.format(cur_acc)])
         accs_iters.append(cur_acc)
-        aug_ratio_iters.append(aug_ratio)
+        gain = round( (max(accs_iters) - best_val_acc_noaug) / best_val_acc_noaug, 4)
+        record_log('log_corpus', \
+            ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] + \
+            ['iter:{}'.format(ite), \
+            'baseline_acc {}'.format(best_val_acc_noaug),
+            'aug_ratio {}'.format(aug_ratio), \
+            'cur_acc {}'.format(cur_acc),  \
+            'cur_best_acc {}'.format(max(accs_iters)), \
+            'cur_gain {}'.format(gain)
+            ])
+        
+
         if (len(accs_iters) >= 7 and accs_iters[-1] < accs_iters[-3] and accs_iters[-2] < accs_iters[-3]) \
-            or aug_ratio>=50 \
+            or aug_ratio>= args.max_aug_times \
             or (len(accs_iters) >= 10 and accs_iters[-1] < best_val_acc_noaug and accs_iters[-2] < best_val_acc_noaug):
             accs.append(max(accs_iters))
             break
 
 
-    
-if args.mm == 'max':
-    acc_mean = round(np.array(accs).max(), 4)
-    acc_noaug_mean = round(np.array(accs_noaug).max(), 4)
-    
-if args.mm == 'mean':
-    acc_mean = round(np.array(accs).mean(), 4)
-    acc_noaug_mean = round(np.array(accs_noaug).mean(), 4)
 
-gain = round((acc_mean-acc_noaug_mean) / acc_noaug_mean, 4)
+    
+# if args.mm == 'max':
+#     acc_mean = round(np.array(accs).max(), 4)
+#     acc_noaug_mean = round(np.array(accs_noaug).max(), 4)
+    
+# if args.mm == 'mean':
+#     acc_mean = round(np.array(accs).mean(), 4)
+#     acc_noaug_mean = round(np.array(accs_noaug).mean(), 4)
 
-record_log('log_{}_{}'.format(args.dsn, args.aug), \
-                 ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
-                 + ['acc=> {}'.format(acc_mean)] + ['noaug acc=> {}'.format(acc_noaug_mean)] \
-                 + ['gain=> {}'.format(gain)]
-           )
+# gain = round((acc_mean-acc_noaug_mean) / acc_noaug_mean, 4)
+
+# record_log('log_{}_{}'.format(args.dsn, args.aug), \
+#                  ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
+#                  + ['acc=> {}'.format(acc_mean)] + ['noaug acc=> {}'.format(acc_noaug_mean)] \
+#                  + ['gain=> {}'.format(gain)]
+#            )
 
 
 
