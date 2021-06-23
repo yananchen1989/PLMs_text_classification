@@ -17,70 +17,8 @@ for dsn in ['ag','yahoo','dbpedia']:
 
 
 
-ds = load_data(dataset='ag', samplecnt=-1)
-ds.df_train_aug = ds.df_train
-(x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train_aug, ds.df_test)
 
 
-from transformers import AlbertTokenizer, TFAlbertForSequenceClassification
-import tensorflow as tf
-
-tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
-model = TFAlbertForSequenceClassification.from_pretrained('albert-base-v2')
-
-inputs = tokenizer("Hello, my dog is cute", return_tensors="tf")
-inputs["labels"] = tf.reshape(tf.constant(1), (-1, 1)) # Batch size 1
-
-outputs = model(inputs)
-loss = outputs.loss
-logits = outputs.logits
-
-
-# map to the expected input to TFBertForSequenceClassification, see here 
-def map_example_to_dict(input_ids, attention_masks, token_type_ids, label):
-  return {
-      "input_ids": input_ids,
-      "token_type_ids": token_type_ids,
-      "attention_mask": attention_masks,
-  }, label
-
-def encode_examples(ds, limit=-1):
-  # prepare list, so that we can build up final TensorFlow dataset from slices.
-  input_ids_list = []
-  token_type_ids_list = []
-  attention_mask_list = []
-  label_list = []
-  if (limit > 0):
-      ds = ds.take(limit)
-    
-  for review, label in tfds.as_numpy(ds):
-    bert_input = convert_example_to_feature(review.decode())
-  
-    input_ids_list.append(bert_input['input_ids'])
-    token_type_ids_list.append(bert_input['token_type_ids'])
-    attention_mask_list.append(bert_input['attention_mask'])
-    label_list.append([label])
-  return tf.data.Dataset.from_tensor_slices((input_ids_list, attention_mask_list, token_type_ids_list, label_list)).map(map_example_to_dict)
-
-
-optimizer = tf.keras.optimizers.Adam(learning_rate=2e-5, epsilon=1e-08)
-# we do not have one-hot vectors, we can use sparce categorical cross entropy and accuracy
-loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-metric = tf.keras.metrics.SparseCategoricalAccuracy('accuracy')
-model.compile(optimizer=optimizer, loss=loss, metrics=[metric])
-
-
-
-
-
-
-
-
-nlp = pipeline("ner", model="flair/ner-english-fast")
-nlp = pipeline("ner", model="dslim/bert-base-NER")
-content = random.sample(contents,1)[0]
-print(content)
-nlp(content)
 
 
 

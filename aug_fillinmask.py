@@ -11,10 +11,10 @@ from flair.models import SequenceTagger
 from load_data import *
 # distilroberta-base
 class fillInmask():
-    def __init__(self, model_name='distilbert-base-uncased', mask_ratio=0.35, ner_set=1,device='cuda'):
+    def __init__(self, model_name='distilbert-base-uncased', mask_ratio=0.35, device='cuda'):
         #self.model_name = model_name
         self.mask_ratio = mask_ratio
-        self.ner_set = ner_set
+        #self.ner_set = ner_set
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         #self.device = torch.device(device)
         # load tagger
@@ -55,10 +55,10 @@ class fillInmask():
 
     def augment(self, text ):
         ner_replace = {}
-        if self.ner_set:
-            ners_to_masked = self.get_ners(text)
-        else:
-            ners_to_masked = self.get_random_span(text)
+        #if self.ner_set:
+        ners_to_masked = self.get_ners(text)
+        #else:
+        #    ners_to_masked = self.get_random_span(text)
             #print(ners_to_masked)
         for ner in ners_to_masked:
             if len(ner)<=2 or ner.lower() in stopwords or ner not in text:

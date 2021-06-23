@@ -252,8 +252,8 @@ def synthesize(ds, max_len, seed):
         raise KeyError("args.aug model illegal!")        
 
     df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
-
-    return sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min(), seed )
+    assert df_synthesize.shape[0] == ds.df_train.shape[0]
+    return df_synthesize #sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min(), seed )
 
 
 
