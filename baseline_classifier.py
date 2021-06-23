@@ -107,7 +107,7 @@ def do_train_test(ds):
 
     if args.model in ['albert','electra', 'dan']:
         model = get_model_bert(num_classes, args.model)
-        model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
+        model.compile(Adam(lr=4e-5), "categorical_crossentropy", metrics=["acc"])
     elif args.model == 'former':
         model = get_model_transormer(num_classes)
         model.compile("adam", "categorical_crossentropy", metrics=["acc"])
