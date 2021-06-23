@@ -10,8 +10,8 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
-tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
-#tf.keras.backend.set_floatx('float32')
+#tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
+tf.keras.backend.set_floatx('float16')
 from eda import *
 import nltk 
 #nltk.download('wordnet')
