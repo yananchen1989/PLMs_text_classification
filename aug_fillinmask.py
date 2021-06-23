@@ -11,7 +11,7 @@ from flair.models import SequenceTagger
 from load_data import *
 # distilroberta-base
 class fillInmask():
-    def __init__(self, model_name='distilbert-base-uncased', mask_ratio=0.35, ner_set=0,device='cuda'):
+    def __init__(self, model_name='distilbert-base-uncased', mask_ratio=0.35, ner_set=1,device='cuda'):
         #self.model_name = model_name
         self.mask_ratio = mask_ratio
         self.ner_set = ner_set

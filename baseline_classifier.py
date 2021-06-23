@@ -22,7 +22,7 @@ parser.add_argument("--aug", default="no", type=str)
 parser.add_argument("--dsn", default="", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--ite", default=5, type=int)
-parser.add_argument("--ner_set", default=1, type=int)
+parser.add_argument("--mask_ratio", default=0.5, type=float)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
 parser.add_argument("--batch_size", default=32, type=int)
@@ -232,7 +232,7 @@ def synthesize(ds, max_len, seed):
                 infos.append((sent, ori_labels[ii]))
 
     elif args.aug == 'fillin':
-        augmentor = fillInmask(ner_set=args.ner_set)
+        augmentor = fillInmask(mask_ratio=args.mask_ratio)
         sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x)).tolist()
         infos = zip(sentences, ds.df_train['label'].tolist())
 
