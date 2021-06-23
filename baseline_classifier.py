@@ -63,7 +63,9 @@ if gpus:
       #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
   except RuntimeError as e:
     print(e)
-
+assert gpus
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+assert device.type=='cuda'
 
 from aug_fillinmask import *
 #from aug_generation import * 
@@ -117,7 +119,6 @@ def do_train_test(ds):
 
     history = model.fit(
         x_train, y_train, batch_size=args.batch_size, epochs=50, \
-        validation_batch_size=64,
         validation_data=(x_test, y_test), verbose=args.verbose,
         callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
     )
