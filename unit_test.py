@@ -1,21 +1,19 @@
 
+target_path = '/root/topic_classification_augmentation/TransformersDataAugmentation/src/utils/datasets'
 
-for samplecnt in [100, 1000]:
-    for dsn in ['ag','yahoo']:
-        for ite  in range(3):  
-            ds = load_data(dataset=dsn, samplecnt=samplecnt)
-            (x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train, ds.df_test)
-            model = get_model_bert(num_classes)
+for dsn in ['ag','yahoo','dbpedia']:
+    ds = load_data(dataset=dsn, samplecnt=-1)
 
-            history = model.fit(
-                                x_train, y_train, batch_size=64, epochs=100, \
-                                validation_batch_size=64,
-                                validation_data=(x_test, y_test), verbose=1,
-                                callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-                            )
-            best_val_acc = max(history.history['val_acc'])
-            print(samplecnt, dsn, ite, best_val_acc) 
+    df_train, df_dev = train_test_split(ds.df_train, test_size=0.3)
 
+    df_train['content'] = df_train['content'].map(lambda x: x.replace('\t',' ').replace('\n',' '))
+    df_dev['content'] = df_dev['content'].map(lambda x: x.replace('\t',' ').replace('\n',' '))
+    ds.df_test['content'] = ds.df_test['content'].map(lambda x: x.replace('\t',' ').replace('\n',' '))
+
+
+    df_train[['label','content']].to_csv(target_path+'/{}/train.tsv'.format(dsn), sep='\t', header=None, index=False)
+    ds.df_test[['label','content']].to_csv(target_path+'/{}/test.tsv'.format(dsn), sep='\t', header=None, index=False)
+    df_dev[['label','content']].to_csv(target_path+'/{}/dev.tsv'.format(dsn), sep='\t', header=None, index=False)
 
 
 
@@ -23,15 +21,6 @@ for samplecnt in [100, 1000]:
 
 
 
-from transformers import AlbertTokenizer, TFAlbertForSequenceClassification
-import tensorflow as tf
-tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
-model = TFAlbertForSequenceClassification.from_pretrained('albert-base-v2')
-inputs = tokenizer("Hello, my dog is cute", return_tensors="tf")
-inputs["labels"] = tf.reshape(tf.constant(1), (-1, 1)) # Batch size 1
-outputs = model(inputs)
-loss = outputs.loss
-logits = outputs.logits
 
 
 

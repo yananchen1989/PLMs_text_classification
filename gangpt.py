@@ -223,19 +223,19 @@ for ite in range(args.iter):
         base_cur_best = round(max(baseline_accs),4)
         gan_cur_best = round(max(gan_accs),4)
         gain = round( (gan_cur_best-base_cur_best) / base_cur_best, 4) 
-        print("summary==>", "dsn:", args.dsn, "samplecnt:", args.samplecnt, 'epoch:',epoch,\
+        print("epoch==>", "dsn:", args.dsn, "samplecnt:", args.samplecnt, 'epoch:',epoch,\
           'base:', base_cur_best, 'gan:', gan_cur_best, 'gain:',  gain  )
         monitoracc.append( gain )
 
         if len(monitoracc) >= 20 and len(set(monitoracc[-7:])) ==1:
-            print('summary==> terminated ', max(monitoracc))
+            print('epochs terminated ', max(monitoracc))
             break
              
     record_log('log', \
                      ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
                      + ['seed:{}'.format(seed), 'final_epoch:{}'.format(epoch), \
-                       'base:{}'.format(base_cur_best),\
-                        'gan:{}'.format(gan_cur_best), 'max_gain:{}'.format(monitoracc[-1]) ]
+                       'base {}'.format(base_cur_best),\
+                        'gan {}'.format(gan_cur_best), 'max_gain {}'.format(monitoracc[-1]) ]
                )
 
 
