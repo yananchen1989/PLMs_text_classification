@@ -82,10 +82,10 @@ else:
     device = -1
 
 
-if args.aug == 'generate':
+if args.aug == 'generate' and args.check == 'enc':
     enc = encoder(args.enc_m)
 
-if args.aug == 'generate' and args.check in ['nli','double']:
+if args.aug == 'generate' and args.check == 'nli':
     nlp_nli = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli', device=device) #  1.8.1+cu102
 
 # "facebook/bart-large-mnli"  'joeddav/xlm-roberta-large-xnli'  "joeddav/bart-large-mnli-yahoo-answers"
@@ -127,12 +127,12 @@ def do_train_test(ds):
     best_val_acc = max(history.history['val_acc'])
     return round(best_val_acc, 4)
 
-def dpp_rerank(df_simi_filer, enc, dpp_retain):
-    embeds = enc.infer(df_simi_filer['content'].tolist())
-    sorted_ixs = extract_ix_dpp(embeds, df_simi_filer['simi'].values)
-    df_simi_filer_dpp = df_simi_filer.reset_index().iloc[sorted_ixs]
-    dpp_sents = df_simi_filer_dpp['content'].tolist()[:math.ceil(df_simi_filer_dpp.shape[0] * dpp_retain)]
-    return dpp_sents
+# def dpp_rerank(df_simi_filer, enc, dpp_retain):
+#     embeds = enc.infer(df_simi_filer['content'].tolist())
+#     sorted_ixs = extract_ix_dpp(embeds, df_simi_filer['simi'].values)
+#     df_simi_filer_dpp = df_simi_filer.reset_index().iloc[sorted_ixs]
+#     dpp_sents = df_simi_filer_dpp['content'].tolist()[:math.ceil(df_simi_filer_dpp.shape[0] * dpp_retain)]
+#     return dpp_sents
 
 def synthesize(ds, max_len, seed):
     if args.aug == 'generate':
