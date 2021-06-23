@@ -67,6 +67,7 @@ if gpus:
 assert gpus
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 assert device.type=='cuda'
+device = 0
 
 from aug_fillinmask import *
 #from aug_generation import * 
@@ -75,11 +76,6 @@ from load_data import *
 from transblock import * 
 from encoders import *
 from dpp_model import * 
-
-if torch.cuda.is_available():
-    device = 0
-else:
-    device = -1
 
 
 if args.aug == 'generate' and args.check == 'enc':
