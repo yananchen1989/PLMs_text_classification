@@ -11,9 +11,9 @@ from flair.models import SequenceTagger
 from load_data import *
 # distilroberta-base
 class fillInmask():
-    def __init__(self, model_name='distilbert-base-uncased', mask_ratio=0.35, device='cuda'):
+    def __init__(self):
         #self.model_name = model_name
-        self.mask_ratio = mask_ratio
+        #self.mask_ratio = mask_ratio
         #self.ner_set = ner_set
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         #self.device = torch.device(device)
@@ -48,10 +48,10 @@ class fillInmask():
         #ners_to_masked = random.sample(ners, int(len(ners) * ratio ))
         return ners
 
-    def get_random_span(self, text):
-        tokens = list(set(text.split(' ')))
-        random_tokens = random.sample(tokens, int(len(tokens)* self.mask_ratio ) )
-        return random_tokens
+    # def get_random_span(self, text):
+    #     tokens = list(set(text.split(' ')))
+    #     random_tokens = random.sample(tokens, int(len(tokens)* self.mask_ratio ) )
+    #     return random_tokens
 
     def augment(self, text ):
         ner_replace = {}

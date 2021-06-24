@@ -22,7 +22,6 @@ parser.add_argument("--aug", default="no", type=str)
 parser.add_argument("--dsn", default="", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 #parser.add_argument("--ite", default=5, type=int)
-parser.add_argument("--mask_ratio", default=0.5, type=float)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
 parser.add_argument("--batch_size", default=32, type=int)
@@ -32,7 +31,7 @@ parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--checkmode", default="rank", type=str) # rank or thres
 parser.add_argument("--beams", default=100, type=int)
 parser.add_argument("--rp", default=1.0, type=float)
-parser.add_argument("--check", default='enc', type=str)
+parser.add_argument("--check", default='enc', type=str, choices=['nli', 'enc', 'no'])
 parser.add_argument("--enc_m", default='dan', type=str)
 #parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 #parser.add_argument("--thres", default=0.65, type=float)
@@ -228,7 +227,7 @@ def synthesize(ds, max_len):
                 infos.append((sent, ori_labels[ii]))
 
     elif args.aug == 'fillin':
-        augmentor = fillInmask(mask_ratio=args.mask_ratio)
+        augmentor = fillInmask()
         sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x)).tolist()
         infos = zip(sentences, ds.df_train['label'].tolist())
 

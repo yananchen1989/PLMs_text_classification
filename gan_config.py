@@ -109,6 +109,7 @@ def synthesize(prompts, labels, max_len):
         num_return_sequences=1
     )
     syn_sents = tokenizer.batch_decode(output_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
+
     syn_sents_pure = []
     for sent, label, sent_syn in zip(prompts, labels, syn_sents):
         sent_syn_rm = sent_syn.replace(sent, '').replace('\n',' ').strip()
@@ -120,6 +121,13 @@ def synthesize(prompts, labels, max_len):
     return tf.convert_to_tensor(np.array(syn_sents_pure))
 
 
+def falsify(contents):
+    
+
+
+
+
+    
 
 val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 

@@ -21,22 +21,26 @@ news_train = datasets.load_dataset('newspop')
 import datasets
 cc_news = datasets.load_dataset('cc_news', split="train")
 
+cnndm_news = datasets.load_dataset('cnn_dailymail', '3.0.0')
+
 df = pd.DataFrame(zip(cc_news['title'], cc_news['text'] ))
 df.columns = ['title','content']
 df.to_csv('cc_news.csv')
 
 
 
+
 # torchtext
 import torchtext 
-ds_train, ds_test =  torchtext.datasets.AG_NEWS(root='./torch_ds', split=('train', 'test'))
-ds_train, ds_test =  torchtext.datasets.YahooAnswers(root='./torch_ds', split=('train', 'test'))
-ds_train, ds_test =  torchtext.datasets.DBpedia(root='./torch_ds', split=('train', 'test'))
+path = './torch_ds'
+ds_train, ds_test =  torchtext.datasets.AG_NEWS(root=path, split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.YahooAnswers(root=path, split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.DBpedia(root=path, split=('train', 'test'))
 
-ds_train, ds_test =  torchtext.datasets.YelpReviewPolarity(root='./torch_ds', split=('train', 'test'))
-ds_train, ds_test =  torchtext.datasets.YelpReviewFull(root='./torch_ds', split=('train', 'test'))
-ds_train, ds_test =  torchtext.datasets.AmazonReviewPolarity(root='./torch_ds', split=('train', 'test'))
-ds_train, ds_test =  torchtext.datasets.AmazonReviewFull(root='./torch_ds', split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.YelpReviewPolarity(root=path, split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.YelpReviewFull(root=path, split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.AmazonReviewPolarity(root=path, split=('train', 'test'))
+ds_train, ds_test =  torchtext.datasets.AmazonReviewFull(root=path, split=('train', 'test'))
 
 ds_train, ds_test =  torchtext.datasets.IMDB(root='./torch_ds', split=('train', 'test'))
 

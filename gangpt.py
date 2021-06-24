@@ -2,6 +2,7 @@ import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,random, ti
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
+import datasets
 from tensorflow.keras import layers
 from tensorflow.keras.callbacks import *
 import tensorflow_hub as hub
@@ -17,7 +18,7 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 parser.add_argument("--model", default='bert', type=str)
-#parser.add_argument("--train_uni", default=1, type=int)
+parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw'])
 #parser.add_argument("--iter", default=7, type=int)
 args = parser.parse_args()
 print('args==>', args)
@@ -38,6 +39,27 @@ from transblock import *
 from gan_config import * 
 
 assert gpus
+
+
+cc_news = datasets.load_dataset('cc_news', split="train")
+dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
+dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
+dfe = pd.concat([dfcc, dfcnndm])
+df_batch = dfe.sample(32)
+
+augmentor = fillInmask()
+sentences = df_batch['content'].map(lambda x: augmentor.augment(x)).tolist()
+
+
+
+content = 'Clarke s bid for the captaincy will not be helped by the upset caused when he withdrew from the 2014 race and publicly backed Colin Montgomerie rather than Paul McGinley'
+from flair.data import Sentence
+from flair.models import SequenceTagger
+
+tagger = SequenceTagger.load("ner-large")
+sentence = Sentence(content)
+tagger.predict(sentence)
+ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
 
 # if args.model=='bert':
 #     assert gpus
