@@ -261,7 +261,7 @@ def synthesize(ds, max_len):
 # accs_noaug = []
 #for ite in range(args.ite): 
 
-seed = int(time.time())
+seed = random.randint(0,int(time.time()))
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, seed=seed)
 if args.cap3rd > 1:
@@ -279,10 +279,12 @@ if args.setbase:
 else:
     best_val_acc_noaug = -99
 # accs_noaug.append(best_val_acc_noaug)
-# record_log('log_{}_{}'.format(args.dsn, args.aug), \
-#              ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
-#                   'iter:{}'.format(ite), \
-#                   'noaug_acc:{}'.format(best_val_acc_noaug)])
+
+if args.aug == 'no':
+    record_log('logg', \
+                 ['noaug==> '] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] +\
+                      ['noaug_acc:{}'.format(best_val_acc_noaug)])
+    os._exit(0)
 
 print("augmentating...")
 
@@ -318,22 +320,6 @@ while True:
 
 
 
-    
-# if args.mm == 'max':
-#     acc_mean = round(np.array(accs).max(), 4)
-#     acc_noaug_mean = round(np.array(accs_noaug).max(), 4)
-    
-# if args.mm == 'mean':
-#     acc_mean = round(np.array(accs).mean(), 4)
-#     acc_noaug_mean = round(np.array(accs_noaug).mean(), 4)
-
-# gain = round((acc_mean-acc_noaug_mean) / acc_noaug_mean, 4)
-
-# record_log('log_{}_{}'.format(args.dsn, args.aug), \
-#                  ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
-#                  + ['acc=> {}'.format(acc_mean)] + ['noaug acc=> {}'.format(acc_noaug_mean)] \
-#                  + ['gain=> {}'.format(gain)]
-#            )
 
 
 
