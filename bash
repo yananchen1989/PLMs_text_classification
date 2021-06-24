@@ -3,30 +3,34 @@
 
 
 
-CUDA_VISIBLE_DEVICES=0 nohup  python -u  gangpt.py --dsn ag --train_uni 0 --iter 30 > ag_log & 
-CUDA_VISIBLE_DEVICES=1 nohup  python -u  gangpt.py --dsn stsa --train_uni 1 --samplecnt 100 --iter 10 > stsa_log & 
-CUDA_VISIBLE_DEVICES=2 nohup  python -u  gangpt.py --dsn yahoo --train_uni 1 --iter 10 > yahoo_log & 
-CUDA_VISIBLE_DEVICES=3 nohup  python -u  gangpt.py --dsn dbpedia --train_uni 1 --iter 10 > dbpedia_log & 
+CUDA_VISIBLE_DEVICES=0 nohup python -u baseline_classifier.py --dsn ag --aug bt & 
+
+CUDA_VISIBLE_DEVICES=1 nohup  python -u baseline_classifier.py --dsn ag --aug generate --check no  & 
 
 
 
-dsn=${1}
-python -u baseline_classifier.py --dsn ${dsn} --aug eda --ite 3
-python -u baseline_classifier.py --dsn ${dsn} --aug bt --ite 3
-python -u baseline_classifier.py --dsn ${dsn} --aug fillin --ite 3
-python -u baseline_classifier.py --dsn ${dsn} --aug generate --check no --ite 3
+while true
+do
+for dsn ag yahoo stsa dbpedia
+do 
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn} --aug eda 
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn} --aug bt 
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn} --aug fillin 
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn} --aug generate --check no 
+done
+done 
 
-python -u baseline_classifier.py --dsn ${1}  --aug generate --check enc --ite 3
-python -u baseline_classifier.py --dsn ${1}  --aug generate --check nli --ite 3
-
-
-
-
-
-
-
+python -u baseline_classifier.py --dsn ${1}  --aug generate --check enc 
+python -u baseline_classifier.py --dsn ${1}  --aug generate --check nli 
 
 
+
+
+
+
+
+
+nohup python -u baseline_classifier.py --dsn ag --aug bt & 
 
 
 

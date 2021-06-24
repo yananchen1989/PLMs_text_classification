@@ -315,7 +315,6 @@ while True:
     if (len(accs_iters) >= 7 and accs_iters[-1] < accs_iters[-3] and accs_iters[-2] < accs_iters[-3]) \
         or aug_ratio>= args.max_aug_times \
         or (len(accs_iters) >= 10 and accs_iters[-1] < best_val_acc_noaug and accs_iters[-2] < best_val_acc_noaug):
-        accs.append(max(accs_iters))
         break
 
 
