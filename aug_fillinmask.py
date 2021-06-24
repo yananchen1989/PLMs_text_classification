@@ -28,11 +28,11 @@ class fillInmask():
         model = AutoModelWithLMHead.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
 
         if torch.cuda.is_available():
-            self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0)
+            self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1)
             #self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
         else:
             #self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased')
-            self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer)
+            self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1)
     #def load_model(self):
         #self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         #self.model = AutoModelWithLMHead.from_pretrained(self.model_name)
