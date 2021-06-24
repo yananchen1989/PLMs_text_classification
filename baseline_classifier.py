@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math
+import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,time
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="no", type=str)
 parser.add_argument("--dsn", default="", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
-parser.add_argument("--ite", default=5, type=int)
+#parser.add_argument("--ite", default=5, type=int)
 parser.add_argument("--mask_ratio", default=0.5, type=float)
 parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--generate_m", default="gpt2", type=str)
@@ -107,7 +107,7 @@ def do_train_test(ds):
 
     if args.model in ['albert','electra', 'dan']:
         model = get_model_bert(num_classes, args.model)
-        model.compile(Adam(lr=4e-5), "categorical_crossentropy", metrics=["acc"])
+        model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
     elif args.model == 'former':
         model = get_model_transormer(num_classes)
         model.compile("adam", "categorical_crossentropy", metrics=["acc"])
@@ -130,7 +130,7 @@ def do_train_test(ds):
 #     dpp_sents = df_simi_filer_dpp['content'].tolist()[:math.ceil(df_simi_filer_dpp.shape[0] * dpp_retain)]
 #     return dpp_sents
 
-def synthesize(ds, max_len, seed):
+def synthesize(ds, max_len):
     if args.aug == 'generate':
         contents = ds.df_train['content'].tolist()
         labels = ds.df_train['label'].tolist()
@@ -259,62 +259,62 @@ def synthesize(ds, max_len, seed):
 
 # accs = []
 # accs_noaug = []
-for ite in range(args.ite): 
+#for ite in range(args.ite): 
 
-    print("iter ==> {}".format(ite))
+seed = int(time.time())
 
-    ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, seed=ite)
-    if args.cap3rd > 1:
-        max_len = int(args.cap3rd)
-    else:
-        max_len = get_tokens_len(ds, args.cap3rd)
+ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, seed=seed)
+if args.cap3rd > 1:
+    max_len = int(args.cap3rd)
+else:
+    max_len = get_tokens_len(ds, args.cap3rd)
 
-    if args.samplecnt > 0:
-        assert ds.df_train['label'].value_counts().min() == args.samplecnt
+if args.samplecnt > 0:
+    assert ds.df_train['label'].value_counts().min() == args.samplecnt
 
-    if args.setbase:
-        print("before augmentating")
-        ds.df_train_aug = ds.df_train
-        best_val_acc_noaug = do_train_test(ds)
-    else:
-        best_val_acc_noaug = -99
-    # accs_noaug.append(best_val_acc_noaug)
-    # record_log('log_{}_{}'.format(args.dsn, args.aug), \
-    #              ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
-    #                   'iter:{}'.format(ite), \
-    #                   'noaug_acc:{}'.format(best_val_acc_noaug)])
+if args.setbase:
+    print("before augmentating")
+    ds.df_train_aug = ds.df_train
+    best_val_acc_noaug = do_train_test(ds)
+else:
+    best_val_acc_noaug = -99
+# accs_noaug.append(best_val_acc_noaug)
+# record_log('log_{}_{}'.format(args.dsn, args.aug), \
+#              ['boost_{}==> dsn:{}'.format(args.aug, args.dsn),\
+#                   'iter:{}'.format(ite), \
+#                   'noaug_acc:{}'.format(best_val_acc_noaug)])
 
-    print("augmentating...")
+print("augmentating...")
 
-    syn_df_ll = []
-    accs_iters = []
-    while True:
+syn_df_ll = []
+accs_iters = []
+while True:
+
+    df_synthesize = synthesize(ds, max_len)
+    syn_df_ll.append(df_synthesize)
+
+    ds.df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
+
+    aug_ratio = round(pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0], 2)
+    cur_acc = do_train_test(ds)
+    accs_iters.append(cur_acc)
+    gain = round( (max(accs_iters) - best_val_acc_noaug) / best_val_acc_noaug, 4)
+    record_log('logg', \
+        ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
+        ['seed:{}'.format(seed), \
+        'baseline_acc {}'.format(best_val_acc_noaug),
+        'aug_ratio {}'.format(aug_ratio), \
+        'cur_acc {}'.format(cur_acc),  \
+        'cur_best_acc {}'.format(max(accs_iters)), \
+        'cur_gain {}'.format(gain)
+        ])
     
-        df_synthesize = synthesize(ds, max_len, ite)
-        syn_df_ll.append(df_synthesize)
 
-        ds.df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
-
-        aug_ratio = round(pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0], 2)
-        cur_acc = do_train_test(ds)
-        accs_iters.append(cur_acc)
-        gain = round( (max(accs_iters) - best_val_acc_noaug) / best_val_acc_noaug, 4)
-        record_log('log_corpus', \
-            ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-            ['iter:{}'.format(ite), \
-            'baseline_acc {}'.format(best_val_acc_noaug),
-            'aug_ratio {}'.format(aug_ratio), \
-            'cur_acc {}'.format(cur_acc),  \
-            'cur_best_acc {}'.format(max(accs_iters)), \
-            'cur_gain {}'.format(gain)
-            ])
-        
-
-        if (len(accs_iters) >= 7 and accs_iters[-1] < accs_iters[-3] and accs_iters[-2] < accs_iters[-3]) \
-            or aug_ratio>= args.max_aug_times \
-            or (len(accs_iters) >= 10 and accs_iters[-1] < best_val_acc_noaug and accs_iters[-2] < best_val_acc_noaug):
-            accs.append(max(accs_iters))
-            break
+    if (len(accs_iters) >= 7 and accs_iters[-1] < accs_iters[-3] and accs_iters[-2] < accs_iters[-3]) \
+        or aug_ratio>= args.max_aug_times \
+        or (len(accs_iters) >= 10 and accs_iters[-1] < best_val_acc_noaug and accs_iters[-2] < best_val_acc_noaug):
+        accs.append(max(accs_iters))
+        break
 
 
 
