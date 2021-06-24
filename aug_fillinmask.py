@@ -57,16 +57,14 @@ class fillInmask():
         #ner_replace = {}
         #if self.ner_set:
         doc = self.ner_model(text)
-        ners_to_masked = doc.ents
+        ners_to_masked = list(set([ii.text for ii in doc.ents]))
         #else:
         #    ners_to_masked = self.get_random_span(text)
             #print(ners_to_masked)
         for ner in ners_to_masked:
-            ner = ner.text
             if len(ner)<=2 or ner.lower() in stopwords or ner not in text:
                 continue
-            #text_masked = text.replace(ner, self.tokenizer.mask_token)
-            #try:
+
             text_masked = text.replace(ner, self.nlp.tokenizer.mask_token, 1)
 
             text = self.nlp(text_masked)[0]['sequence']

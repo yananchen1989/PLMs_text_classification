@@ -21,19 +21,30 @@ for dsn in ['ag','yahoo','dbpedia']:
 from aug_fillinmask import *
 #cc_news = datasets.load_dataset('cc_news', split="train")
 #dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
-dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
+dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv", nrows=10000)
 #dfcc = pd.concat([dfcc, dfcnndm])
 df_batch = dfcnndm.sample(32)
 
 augmentor = fillInmask()
 sentences = df_batch['content'].map(lambda x: x.replace('\n',' ')).map(lambda x: augmentor.augment(x)).tolist()
 
+
 for sent in df_batch['content'].tolist():
-    augmentor.augment(sent)
+    sent_aug = augmentor.augment(sent)
 
+sent_ = sent.replace('\n',' ')
+doc = augmentor.ner_model(sent_)
 
+ners_to_masked = list(set([ii.text for ii in doc.ents]))
+for ner in ners_to_masked:
+    print(ner)
+    if len(ner)<=2 or ner.lower() in stopwords or ner not in sent_:
+        continue
+    #text_masked = text.replace(ner, self.tokenizer.mask_token)
+    #try:
+    text_masked = sent_.replace(ner, augmentor.nlp.tokenizer.mask_token, 1)
 
-
+    sent_ = augmentor.nlp(text_masked)[0]['sequence']
 
 
 
