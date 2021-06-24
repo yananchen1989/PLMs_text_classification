@@ -121,7 +121,7 @@ def synthesize(prompts, labels, max_len):
     return tf.convert_to_tensor(np.array(syn_sents_pure))
 
 
-def falsify(contents):
+# def falsify(contents):
     
 
 
