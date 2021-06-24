@@ -41,26 +41,6 @@ from gan_config import *
 assert gpus
 
 
-cc_news = datasets.load_dataset('cc_news', split="train")
-dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
-dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
-dfe = pd.concat([dfcc, dfcnndm])
-df_batch = dfe.sample(32)
-
-augmentor = fillInmask()
-sentences = df_batch['content'].map(lambda x: augmentor.augment(x)).tolist()
-
-
-
-content = 'Clarke s bid for the captaincy will not be helped by the upset caused when he withdrew from the 2014 race and publicly backed Colin Montgomerie rather than Paul McGinley'
-from flair.data import Sentence
-from flair.models import SequenceTagger
-
-tagger = SequenceTagger.load("ner-large")
-sentence = Sentence(content)
-tagger.predict(sentence)
-ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
-
 # if args.model=='bert':
 #     assert gpus
 # elif args.model == 'former':

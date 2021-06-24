@@ -54,7 +54,7 @@ class fillInmask():
     #     return random_tokens
 
     def augment(self, text ):
-        ner_replace = {}
+        #ner_replace = {}
         #if self.ner_set:
         ners_to_masked = self.get_ners(text)
         #else:

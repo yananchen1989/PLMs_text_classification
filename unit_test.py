@@ -18,6 +18,29 @@ for dsn in ['ag','yahoo','dbpedia']:
 
 
 
+from aug_fillinmask import *
+#cc_news = datasets.load_dataset('cc_news', split="train")
+#dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
+dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
+#dfcc = pd.concat([dfcc, dfcnndm])
+df_batch = dfcnndm.sample(32)
+
+augmentor = fillInmask()
+sentences = df_batch['content'].map(lambda x: x.replace('\n',' ')).map(lambda x: augmentor.augment(x)).tolist()
+
+for sent in df_batch['content'].tolist():
+    augmentor.augment(sent)
+
+
+
+content = 'Clarke s bid for the captaincy will not be helped by the upset caused when he withdrew from the 2014 race and publicly backed Colin Montgomerie rather than Paul McGinley'
+from flair.data import Sentence
+from flair.models import SequenceTagger
+
+tagger = SequenceTagger.load("ner-large")
+sentence = Sentence(content)
+tagger.predict(sentence)
+ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
 
 
 
