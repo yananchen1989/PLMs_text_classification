@@ -19,7 +19,7 @@ parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 parser.add_argument("--model", default='bert', type=str)
 parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw'])
-#parser.add_argument("--iter", default=7, type=int)
+parser.add_argument("--unify", default=1, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -189,7 +189,8 @@ for epoch in range(args.epoch):
 
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
         
-        loss_gan = train_step_gan(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
+        if args.unify:
+            loss_gan = train_step_gan(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
 
         # baseline
         loss = train_step_base(prompts, labels)
