@@ -33,14 +33,10 @@ for sent in df_batch['content'].tolist():
 
 
 
-content = 'Clarke s bid for the captaincy will not be helped by the upset caused when he withdrew from the 2014 race and publicly backed Colin Montgomerie rather than Paul McGinley'
-from flair.data import Sentence
-from flair.models import SequenceTagger
 
-tagger = SequenceTagger.load("ner-large")
-sentence = Sentence(content)
-tagger.predict(sentence)
-ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
+
+for ent in doc.ents: 
+    print(ent)
 
 
 

@@ -1,11 +1,11 @@
 import sys,os,logging,glob,pickle,random
 import numpy as np
-import torch
+import torch,spacy
 import pandas as pd 
 from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelWithLMHead
-from flair.data import Sentence
-from flair.models import SequenceTagger
+#from flair.data import Sentence
+#from flair.models import SequenceTagger
 # from nltk.corpus import stopwords
 # stopwords = stopwords.words('english')
 from load_data import *
@@ -22,7 +22,8 @@ class fillInmask():
         #     self.tagger = SequenceTagger.load("flair/ner-english-large")
         # else:
         #     self.tagger = SequenceTagger.load("flair/ner-english-fast")
-        self.tagger = SequenceTagger.load("ner-large")
+        #self.tagger = SequenceTagger.load("ner-large")
+        self.ner_model = spacy.load('en_core_web_sm')
         tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
         model = AutoModelWithLMHead.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
 
@@ -38,15 +39,14 @@ class fillInmask():
         #self.model.to(self.device)
 
 
-    def get_ners(self, text):
+    #def get_ners(self, text):
         # make example sentence
-        sentence = Sentence(text)
+        #sentence = Sentence(text)
         # predict NER tags
-        self.tagger.predict(sentence)
-        ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
-        #ratio = 1
-        #ners_to_masked = random.sample(ners, int(len(ners) * ratio ))
-        return ners
+        #self.tagger.predict(sentence)
+        #ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
+        
+        #return doc.ents
 
     # def get_random_span(self, text):
     #     tokens = list(set(text.split(' ')))
@@ -56,7 +56,8 @@ class fillInmask():
     def augment(self, text ):
         #ner_replace = {}
         #if self.ner_set:
-        ners_to_masked = self.get_ners(text)
+        doc = self.ner_model(text)
+        ners_to_masked = doc.ents
         #else:
         #    ners_to_masked = self.get_random_span(text)
             #print(ners_to_masked)
@@ -128,8 +129,8 @@ nlp(content_mask)
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 from transformers import pipeline
 
-tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
-model = AutoModelForTokenClassification.from_pretrained("dslim/bert-base-NER")
+tokenizer = AutoTokenizer.from_pretrained("flair/ner-english-large")
+model = AutoModelForTokenClassification.from_pretrained("flair/ner-english-large")
 
 label_list = [
      "O",       # Outside of a named entity
