@@ -35,10 +35,6 @@ for sent in df_batch['content'].tolist():
 
 
 
-for ent in doc.ents: 
-    print(ent)
-
-
 
 
 content = "Edelman Partners. New York NY\n\nJ.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc\n\nFrequent speaker, former U.S. Ambassador"
