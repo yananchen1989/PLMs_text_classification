@@ -28,8 +28,6 @@ dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv", nrows=10000)
 df_batch = dfcnndm.sample(32)
 
 
-
-
 model = get_model_bert('dan')
 
 
