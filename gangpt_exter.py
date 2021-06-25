@@ -18,7 +18,7 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 #parser.add_argument("--model", default='bert', type=str)
-parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw'])
+parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw','exter'])
 #parser.add_argument("--unify", default=1, type=int, choices=[0,1,2])
 args = parser.parse_args()
 print('args==>', args)
@@ -180,6 +180,9 @@ base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 #from aug_fillinmask import *
 #augmentor = fillInmask()
 #print('fillin augmentor initialized')
+if args.syn == 'exter':
+    dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
+
 
 def get_sents_fake(ds_, batch_size):
     df_batch = ds_.df_train.sample(batch_size)
@@ -210,6 +213,8 @@ for epoch in range(args.epoch):
             for sent1, sent2 in zip(df_trunk1['content'].tolist(), df_trunk2['content'].tolist()):
                 sent_syn.append(sent1 + sent2 )
             prompts_syn = tf.convert_to_tensor(np.array(sent_syn))
+        elif args.syn == 'exter':
+            prompts_syn = tf.convert_to_tensor(dfcnndm.sample(32).values)
         labels_syn = labels + num_classes 
 
         #print('train_step')
