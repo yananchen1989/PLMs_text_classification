@@ -15,7 +15,7 @@ class fillInmask():
         #self.model_name = model_name
         #self.mask_ratio = mask_ratio
         #self.ner_set = ner_set
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         #self.device = torch.device(device)
         # load tagger
         # if torch.__version__.startswith('1.8'):
@@ -27,12 +27,12 @@ class fillInmask():
         tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
         model = AutoModelWithLMHead.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
 
-        if torch.cuda.is_available():
-            self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1)
+        #if torch.cuda.is_available():
+        self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1)
             #self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
-        else:
+        #else:
             #self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased')
-            self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1)
+        #    self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1)
     #def load_model(self):
         #self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         #self.model = AutoModelWithLMHead.from_pretrained(self.model_name)
