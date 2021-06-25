@@ -15,40 +15,29 @@ for dsn in ['ag','yahoo','dbpedia']:
     ds.df_test[['label','content']].to_csv(target_path+'/{}/test.tsv'.format(dsn), sep='\t', header=None, index=False)
     df_dev[['label','content']].to_csv(target_path+'/{}/dev.tsv'.format(dsn), sep='\t', header=None, index=False)
 
+ds_ = load_data(dataset='ag', samplecnt=-1, seed=seed)
 
 
 
-from aug_fillinmask import *
+
+
 #cc_news = datasets.load_dataset('cc_news', split="train")
 #dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
 dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv", nrows=10000)
 #dfcc = pd.concat([dfcc, dfcnndm])
 df_batch = dfcnndm.sample(32)
 
-augmentor = fillInmask()
-sentences = df_batch['content'].map(lambda x: x.replace('\n',' ')).map(lambda x: augmentor.augment(x)).tolist()
-
-
-for sent in df_batch['content'].tolist():
-    sent_aug = augmentor.augment(sent)
-
-sent_ = sent.replace('\n',' ')
-doc = augmentor.ner_model(sent_)
-
-ners_to_masked = list(set([ii.text for ii in doc.ents]))
-for ner in ners_to_masked:
-    print(ner)
-    if len(ner)<=2 or ner.lower() in stopwords or ner not in sent_:
-        continue
-    #text_masked = text.replace(ner, self.tokenizer.mask_token)
-    #try:
-    text_masked = sent_.replace(ner, augmentor.nlp.tokenizer.mask_token, 1)
-
-    sent_ = augmentor.nlp(text_masked)[0]['sequence']
 
 
 
-content = "Edelman Partners. New York NY\n\nJ.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc\n\nFrequent speaker, former U.S. Ambassador"
+model = get_model_bert('dan')
+
+
+
+
+
+
+sent = "Edelman Partners. New York NY\n\nJ.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc\n\nFrequent speaker, former U.S. Ambassador"
 
 content = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
 

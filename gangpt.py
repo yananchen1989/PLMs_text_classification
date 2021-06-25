@@ -185,7 +185,10 @@ for epoch in range(args.epoch):
         labels = trunk[1] 
 
         #print('begin to generate')
+        #if args.syn == 'gpt':
         prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
+        #elif args.syn == 'raw':
+
         #print('generated')
         labels_syn = labels + num_classes 
 
