@@ -176,14 +176,9 @@ gan_optimizer = keras.optimizers.Adam(learning_rate=lr)
 ext_optimizer = keras.optimizers.Adam(learning_rate=lr)
 
 base_optimizer = keras.optimizers.Adam(learning_rate=lr)
-# else:
-#     d_optimizer = keras.optimizers.Adam()
-#     g_optimizer = keras.optimizers.Adam()
-#     gr_optimizer = keras.optimizers.Adam()
-#     uni_optimizer = keras.optimizers.Adam()
-#     base_optimizer = keras.optimizers.Adam()
-from aug_fillinmask import *
-augmentor = fillInmask()
+
+#from aug_fillinmask import *
+#augmentor = fillInmask()
 print('fillin augmentor initialized')
 
 def get_sents_fake(ds_, batch_size):
