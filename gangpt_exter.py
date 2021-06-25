@@ -214,7 +214,7 @@ for epoch in range(args.epoch):
                 sent_syn.append(sent1 + sent2 )
             prompts_syn = tf.convert_to_tensor(np.array(sent_syn))
         elif args.syn == 'exter':
-            prompts_syn = tf.convert_to_tensor(dfcnndm.sample(32).values)
+            prompts_syn = tf.convert_to_tensor(dfcnndm.sample(prompts.shape[0])['content'].values)
         labels_syn = labels + num_classes 
 
         #print('train_step')
