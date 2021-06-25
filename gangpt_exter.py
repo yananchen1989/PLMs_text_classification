@@ -18,7 +18,7 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 #parser.add_argument("--model", default='bert', type=str)
-#parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw'])
+parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw'])
 #parser.add_argument("--unify", default=1, type=int, choices=[0,1,2])
 args = parser.parse_args()
 print('args==>', args)
@@ -206,21 +206,28 @@ for epoch in range(args.epoch):
         labels = trunk[1] 
 
         #print('begin to generate')
-        prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
-        #print('generated')
+        if args.syn == 'gpt':
+            prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
+        elif args.syn == 'raw':
+            df_trunk1 = ds_.df_train.sample(32)
+            df_trunk2 = ds_.df_train.sample(32)
+            sent_syn =[]
+            for sent1, sent2 in zip(df_trunk1['content'].tolist(), df_trunk2['content'].tolist()):
+                sent_syn.append(sent1 + sent2 )
+            prompts_syn = tf.convert_to_tensor(np.array(sent_syn))
         labels_syn = labels + num_classes 
 
         #print('train_step')
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
         
         #print('train_step_gan')
-        loss_gan = train_step_gan(prompts, prompts_syn,  \
-                       tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32))
+        #loss_gan = train_step_gan(prompts, prompts_syn,  \
+        #               tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32))
 
         #print('get_sents_fake')
-        sents_syn, sents_real, sents_syn_label, sents_real_label = get_sents_fake(ds_, 32)
+        #sents_syn, sents_real, sents_syn_label, sents_real_label = get_sents_fake(ds_, 32)
         #print('train_step_ext')
-        loss_gan = train_step_ext(sents_syn, sents_real, sents_syn_label, sents_real_label)
+        #loss_gan = train_step_ext(sents_syn, sents_real, sents_syn_label, sents_real_label)
         #else:
         #    pass 
 

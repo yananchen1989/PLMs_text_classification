@@ -101,7 +101,7 @@ def get_discriminator(num_classes):
     return model
 
 
-def synthesize(prompts, labels, max_len):
+def synthesize(prompts,  max_len):
     inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="pt")
     inputs.to(device)
     output_sequences = gpt2.generate(
@@ -118,7 +118,7 @@ def synthesize(prompts, labels, max_len):
     syn_sents = tokenizer.batch_decode(output_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
 
     syn_sents_pure = []
-    for sent, label, sent_syn in zip(prompts, labels, syn_sents):
+    for sent, sent_syn in zip(prompts, syn_sents):
         sent_syn_rm = sent_syn.replace(sent, '').replace('\n',' ').strip()
         sent_syn_eq = sent_syn_rm[:len(sent)]
 

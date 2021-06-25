@@ -15,7 +15,6 @@ for dsn in ['ag','yahoo','dbpedia']:
     ds.df_test[['label','content']].to_csv(target_path+'/{}/test.tsv'.format(dsn), sep='\t', header=None, index=False)
     df_dev[['label','content']].to_csv(target_path+'/{}/dev.tsv'.format(dsn), sep='\t', header=None, index=False)
 
-ds_ = load_data(dataset='ag', samplecnt=-1, seed=seed)
 
 
 
@@ -28,7 +27,42 @@ dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv", nrows=10000)
 df_batch = dfcnndm.sample(32)
 
 
-ds = load_data(dataset='dbpedia', samplecnt=-1)
+ds = load_data(dataset='dbpedia', samplecnt=1000)
+(x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train.sample(10000), ds.df_test.sample(5000), sparse=True)
+model = get_model_bert(num_classes, 'albert')
+model.compile(Adam(lr=1e-5), 'sparse_categorical_crossentropy', metrics=["acc"])
+
+model.fit(
+        x_train, y_train, batch_size=32, epochs=50, \
+        validation_data=(x_test, y_test), verbose=1,
+        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+    )
+
+intermediate_layer_model = tf.keras.Model(inputs=model.input,
+                                 outputs=model.get_layer('keras_layer_2').output['pooled_output'])
+
+
+
+preds = intermediate_layer_model.predict(x_test, verbose=1, batch_size=64)
+dff = pd.DataFrame(preds, columns=['c{}'.format(ii) for ii in range(preds.shape[1])])
+dff['label'] = y_test
+dff.to_csv('mnnbenchdata_test.csv',index=False)
+
+
+df_train = pd.read_csv('mnnbenchdata_train.csv')
+df_test = pd.read_csv('mnnbenchdata_test.csv')
+
+input_embed = keras.Input(shape=(768, ))
+outputs = layers.Dense(14, activation="softmax")(input_embed)
+model = keras.Model(inputs=input_embed, outputs=outputs)
+model.compile(Adam(lr=1e-5), 'sparse_categorical_crossentropy', metrics=["acc"])
+
+feat_columns = [c for c in df_train.columns if c != 'label']
+model.fit(
+        df_train[feat_columns].values, df_train['label'].values, batch_size=32, epochs=50, \
+        validation_data=(df_test[feat_columns].values, df_test['label'].values), verbose=1,
+        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+    )
 
 
 
