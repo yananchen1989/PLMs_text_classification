@@ -111,6 +111,25 @@ def train_step_gan(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn
 
 
 @tf.function
+def train_step_gan_exter(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor,
+                        sents_syn, sents_real, sents_syn_label, sents_real_label):
+    combined_prompts = tf.concat([prompts_tensor, prompts_syn_tensor], axis=0)
+    combined_labels = tf.concat([labels_tensor, labels_syn_tensor], axis=0)
+    combined_prompts_exter = tf.concat([sents_syn, sents_real], axis=0)
+    combined_labels_exter = tf.concat([sents_syn_label, sents_real_label], axis=0)
+    # generator_ral update
+    with tf.GradientTape() as tape:
+        predictions = model_gan(combined_prompts)
+        loss = keras.losses.SparseCategoricalCrossentropy()(combined_labels, predictions)
+        predictions_ = model_gan(combined_prompts_exter)
+        loss_exter = keras.losses.SparseCategoricalCrossentropy()(combined_labels_exter, predictions_)
+    grads = tape.gradient(loss+loss_exter, model_gan.trainable_weights)
+    gan_optimizer.apply_gradients(zip(grads, model_gan.trainable_weights))
+    return loss
+
+
+
+@tf.function
 def train_step_base(prompts, labels):
     # generator_ral update
     with tf.GradientTape() as tape:
@@ -169,9 +188,15 @@ base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 from aug_fillinmask import *
 augmentor = fillInmask()
 
-df_batch = ds_.df_train.sample(32)
+def get_sents_fake(ds_):
+    df_batch = ds_.df_train.sample(32)
+    df_batch['content_fake'] = df_batch['content'].map(lambda x: augmentor.augment(x))
+    sents_syn = tf.convert_to_tensor(df_batch['content_fake'].values)
+    sents_syn_label = tf.convert_to_tensor([0.0]*32)
 
-sentences = df_batch['content'].map(lambda x: augmentor.augment(x)).tolist()
+    sents_real = tf.convert_to_tensor(df_batch['content'].values)
+    sents_real_label = tf.convert_to_tensor([1.0]*32)
+    return sents_syn, sents_real, sents_syn_label, sents_real_label
 
 baseline_accs = []
 gan_accs = []
@@ -189,8 +214,19 @@ for epoch in range(args.epoch):
 
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
         
-        if args.unify:
-            loss_gan = train_step_gan(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
+        
+        if args.unify == 1:
+            loss_gan = train_step_gan(prompts, prompts_syn,  \
+                       tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32))
+
+        elif args.unify == 2:
+            sents_syn, sents_real, sents_syn_label, sents_real_label = get_sents_fake(ds_)
+            loss_gan = train_step_gan_exter(prompts, prompts_syn,  \
+                       tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32), \
+                        sents_syn, sents_real, sents_syn_label, sents_real_label
+                        )
+        else:
+            pass 
 
         # baseline
         loss = train_step_base(prompts, labels)
