@@ -179,7 +179,7 @@ base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 
 #from aug_fillinmask import *
 #augmentor = fillInmask()
-print('fillin augmentor initialized')
+#print('fillin augmentor initialized')
 
 def get_sents_fake(ds_, batch_size):
     df_batch = ds_.df_train.sample(batch_size)
