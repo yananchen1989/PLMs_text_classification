@@ -53,21 +53,26 @@ class fillInmask():
     #     random_tokens = random.sample(tokens, int(len(tokens)* self.mask_ratio ) )
     #     return random_tokens
 
-    def augment(self, text ):
+    def augment(self, sent ):
         #ner_replace = {}
         #if self.ner_set:
-        doc = self.ner_model(text)
+        doc = self.ner_model(sent)
         ners_to_masked = list(set([ii.text for ii in doc.ents]))
-        #else:
-        #    ners_to_masked = self.get_random_span(text)
-            #print(ners_to_masked)
         for ner in ners_to_masked:
-            if len(ner)<=2 or ner.lower() in stopwords or ner not in text:
+            if len(ner)<=2 or ner.lower() in stopwords or ner not in sent:
                 continue
+            text_masked = sent.replace(ner, augmentor.nlp.tokenizer.mask_token, 1) 
+            fillin_results = self.nlp(text_masked)
+            fillin_ners = [i['token_str'] for i in fillin_results]
+            sent = text_masked.replace(augmentor.nlp.tokenizer.mask_token, fillin_ners[0])
+        return sent
+        # for ner in ners_to_masked:
+        #     if len(ner)<=2 or ner.lower() in stopwords or ner not in text:
+        #         continue
 
-            text_masked = text.replace(ner, self.nlp.tokenizer.mask_token, 1)
+        #     text_masked = text.replace(ner, self.nlp.tokenizer.mask_token, 1)
 
-            text = self.nlp(text_masked)[0]['sequence']
+        #     text = self.nlp(text_masked)[0]['sequence']
             # except:
             #     #print("fillinerror==>", text_masked)
             #     continue
@@ -88,7 +93,7 @@ class fillInmask():
 
         # for ner, alter in ner_replace.items():
         #     text = text.replace(ner, alter)
-        return text
+        
 
 
 # unit test

@@ -8,6 +8,14 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 
+def check_weights_no_identical(w1, w2):
+    assert len(w2.trainable_weights) == len(w1.trainable_weights)
+    for i in range(len(w2.trainable_weights)):
+        if tf.reduce_sum(w1.trainable_weights[0]).numpy()==0 and tf.reduce_sum(w2.trainable_weights[0]).numpy()==0:
+            continue 
+        assert not np.array_equal(w1.trainable_weights[i], w2.trainable_weights[i])
+
+
 # class MultiHeadSelfAttention(layers.Layer):
 #     def __init__(self, embed_dim, num_heads=8):
 #         super(MultiHeadSelfAttention, self).__init__()
