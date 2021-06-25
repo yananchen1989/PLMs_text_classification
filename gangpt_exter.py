@@ -204,8 +204,8 @@ for epoch in range(args.epoch):
         if args.syn == 'gpt':
             prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
         elif args.syn == 'raw':
-            df_trunk1 = ds_.df_train.sample(32)
-            df_trunk2 = ds_.df_train.sample(32)
+            df_trunk1 = ds_.df_train.sample(prompts.shape[0])
+            df_trunk2 = ds_.df_train.sample(prompts.shape[0])
             sent_syn =[]
             for sent1, sent2 in zip(df_trunk1['content'].tolist(), df_trunk2['content'].tolist()):
                 sent_syn.append(sent1 + sent2 )
