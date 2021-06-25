@@ -58,12 +58,6 @@ assert gpus
 #     break 
 
 
-def check_weights_no_identical(w1, w2):
-    assert len(w2.trainable_weights) == len(w1.trainable_weights)
-    for i in range(len(w2.trainable_weights)):
-        if tf.reduce_sum(w1.trainable_weights[0]).numpy()==0 and tf.reduce_sum(w2.trainable_weights[0]).numpy()==0:
-            continue 
-        assert not np.array_equal(w1.trainable_weights[i], w2.trainable_weights[i])
 
 
 
@@ -129,6 +123,7 @@ def train_step_base(prompts, labels):
 ####### prepare data
 seed = random.randint(0,int(time.time()))
 ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=seed)
+ds_ = load_data(dataset=args.dsn, samplecnt=-1, seed=seed)
 label_unique = ds.df_test.label.unique()
 label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
 ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
@@ -171,7 +166,12 @@ base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 #     gr_optimizer = keras.optimizers.Adam()
 #     uni_optimizer = keras.optimizers.Adam()
 #     base_optimizer = keras.optimizers.Adam()
+from aug_fillinmask import *
+augmentor = fillInmask()
 
+df_batch = ds_.df_train.sample(32)
+
+sentences = df_batch['content'].map(lambda x: augmentor.augment(x)).tolist()
 
 baseline_accs = []
 gan_accs = []

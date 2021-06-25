@@ -61,10 +61,10 @@ class fillInmask():
         for ner in ners_to_masked:
             if len(ner)<=2 or ner.lower() in stopwords or ner not in sent:
                 continue
-            text_masked = sent.replace(ner, augmentor.nlp.tokenizer.mask_token, 1) 
+            text_masked = sent.replace(ner, self.nlp.tokenizer.mask_token, 1) 
             fillin_results = self.nlp(text_masked)
             fillin_ners = [i['token_str'] for i in fillin_results]
-            sent = text_masked.replace(augmentor.nlp.tokenizer.mask_token, fillin_ners[0])
+            sent = text_masked.replace(self.nlp.tokenizer.mask_token, fillin_ners[0])
         return sent
         # for ner in ners_to_masked:
         #     if len(ner)<=2 or ner.lower() in stopwords or ner not in text:
