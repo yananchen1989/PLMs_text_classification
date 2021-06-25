@@ -58,6 +58,11 @@ assert gpus
 #     break 
 
 
+
+
+
+
+
 @tf.function
 def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
 
@@ -105,6 +110,18 @@ def train_step_gan(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn
     return loss
 
 
+@tf.function
+def train_step_ext(sents_syn, sents_real, sents_syn_label, sents_real_label):
+    combined_prompts_exter = tf.concat([sents_syn, sents_real], axis=0)
+    combined_labels_exter = tf.concat([sents_syn_label, sents_real_label], axis=0)
+    with tf.GradientTape() as tape:    
+        predictions = model_ext(combined_prompts_exter)
+        loss = keras.losses.BinaryCrossentropy(from_logits=True)(combined_labels_exter, predictions)
+    grads = tape.gradient(loss, model_ext.trainable_weights)
+    ext_optimizer.apply_gradients(zip(grads, model_ext.trainable_weights))
+    return loss
+
+
 
 @tf.function
 def train_step_base(prompts, labels):
@@ -142,19 +159,22 @@ generator_base = tf.keras.models.clone_model(generator_fake)
 
 
 discriminator = get_discriminator(num_classes*2)
+discriminator_ext = get_discriminator_exter()
 discriminator_base = get_discriminator(num_classes)
 
 text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
 model_base = keras.Model(inputs=text_input, outputs=discriminator_base(generator_base(text_input)))
 
 model_gan = keras.Model(inputs=text_input, outputs=discriminator(generator_real(text_input)))
+model_ext = keras.Model(inputs=text_input, outputs=discriminator_ext(generator_real(text_input)))
 
-#if args.model == 'bert':
 lr = 1e-5
 d_optimizer = keras.optimizers.Adam(learning_rate=lr)
 g_optimizer = keras.optimizers.Adam(learning_rate=lr)
 gr_optimizer = keras.optimizers.Adam(learning_rate=lr)
 gan_optimizer = keras.optimizers.Adam(learning_rate=lr)
+ext_optimizer = keras.optimizers.Adam(learning_rate=lr)
+
 base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 # else:
 #     d_optimizer = keras.optimizers.Adam()
@@ -165,14 +185,14 @@ base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 from aug_fillinmask import *
 augmentor = fillInmask()
 
-def get_sents_fake(ds_):
-    df_batch = ds_.df_train.sample(32)
+def get_sents_fake(ds_, batch_size):
+    df_batch = ds_.df_train.sample(batch_size)
     df_batch['content_fake'] = df_batch['content'].map(lambda x: augmentor.augment(x))
     sents_syn = tf.convert_to_tensor(df_batch['content_fake'].values)
-    sents_syn_label = tf.convert_to_tensor([0.0]*32)
+    sents_syn_label = tf.convert_to_tensor([0.0]*batch_size)
 
     sents_real = tf.convert_to_tensor(df_batch['content'].values)
-    sents_real_label = tf.convert_to_tensor([1.0]*32)
+    sents_real_label = tf.convert_to_tensor([1.0]*batch_size)
     return sents_syn, sents_real, sents_syn_label, sents_real_label
 
 baseline_accs = []
@@ -192,11 +212,15 @@ for epoch in range(args.epoch):
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
         
         
-        if args.unify == 1:
-            loss_gan = train_step_gan(prompts, prompts_syn,  \
+        #if args.unify == 1:
+        loss_gan = train_step_gan(prompts, prompts_syn,  \
                        tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32))
-        else:
-            pass 
+
+        #elif args.unify == 2:
+        sents_syn, sents_real, sents_syn_label, sents_real_label = get_sents_fake(ds_, 64)
+        loss_gan = train_step_ext(sents_syn, sents_real, sents_syn_label, sents_real_label)
+        #else:
+        #    pass 
 
         # baseline
         loss = train_step_base(prompts, labels)

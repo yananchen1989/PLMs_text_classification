@@ -86,6 +86,13 @@ def get_generator_bert():
 #     model = keras.Model(inputs=text_input, outputs=embed)
 #     return model
 
+def get_discriminator_exter():
+    input_embed = keras.Input(shape=(768, ))
+    x = layers.Dense(256, activation="relu")(input_embed)
+    outputs = layers.Dense(1, activation="sigmoid")(x)
+    model = keras.Model(inputs=input_embed, outputs=outputs)
+    return model
+
 def get_discriminator(num_classes):
     input_embed = keras.Input(shape=(768, ))
     x = layers.Dense(256, activation="relu")(input_embed)
@@ -122,12 +129,12 @@ def synthesize(prompts, labels, max_len):
 
 
 # def falsify(contents):
-    
 
 
 
 
-    
+
+
 
 val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
