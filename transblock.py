@@ -7,7 +7,7 @@ import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
-
+import numpy as np 
 def check_weights_no_identical(w1, w2):
     assert len(w2.trainable_weights) == len(w1.trainable_weights)
     for i in range(len(w2.trainable_weights)):
