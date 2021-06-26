@@ -20,8 +20,8 @@ for dsn in ['ag','yahoo','dbpedia']:
 
 
 
-#cc_news = datasets.load_dataset('cc_news', split="train")
-#dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
+cc_news = datasets.load_dataset('cc_news', split="train")
+dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
 dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv", nrows=10000)
 #dfcc = pd.concat([dfcc, dfcnndm])
 df_batch = dfcnndm.sample(32)
@@ -48,14 +48,33 @@ dff = pd.DataFrame(preds, columns=['c{}'.format(ii) for ii in range(preds.shape[
 dff['label'] = y_test
 dff.to_csv('mnnbenchdata_test.csv',index=False)
 
+from sklearn.model_selection import train_test_split
+
+df = pd.read_csv("HIGGS.csv.gz", error_bad_lines=False, header=None, nrows=500000) #  0.6371
+df.columns = ['label'] + [str(i+1) for i in range(28)]
+df_train, df_test = train_test_split(df, test_size=0.2)
+
+labels_train = df_train.pop('label').values
+labels_test = df_test.pop('label').values
+input_embed = keras.Input(shape=(df_train.shape[1], ))
+outputs = layers.Dense(1, activation="sigmoid")(input_embed)
+model = keras.Model(inputs=input_embed, outputs=outputs)
+model.compile('adam', 'binary_crossentropy', metrics=["acc"])
+model.fit(
+        df_train.values, labels_train, batch_size=32, epochs=50, \
+        validation_data=(df_test.values, labels_test), verbose=1,
+        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
+    )
+
+
 
 df_train = pd.read_csv('mnnbenchdata_train.csv')
 df_test = pd.read_csv('mnnbenchdata_test.csv')
 
-input_embed = keras.Input(shape=(768, ))
+input_embed = keras.Input(shape=(df_train.shape[1], ))
 outputs = layers.Dense(14, activation="softmax")(input_embed)
 model = keras.Model(inputs=input_embed, outputs=outputs)
-model.compile(Adam(lr=1e-5), 'sparse_categorical_crossentropy', metrics=["acc"])
+model.compile('adam', 'sparse_categorical_crossentropy', metrics=["acc"])
 
 feat_columns = [c for c in df_train.columns if c != 'label']
 model.fit(
@@ -79,47 +98,7 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 
 
-# https://github.com/GT-SALT/MixText/blob/master/data/yahoo_answers_csv/back_translate.ipynb
-import torch
-while 1:
-    en2ru = torch.hub.load('pytorch/fairseq', 'transformer.wmt19.en-ru.single_model', tokenizer='moses', bpe='fastbpe')
-    ru2en = torch.hub.load('pytorch/fairseq', 'transformer.wmt19.ru-en.single_model', tokenizer='moses', bpe='fastbpe')
-    en2de = torch.hub.load('pytorch/fairseq', 'transformer.wmt19.en-de.single_model', tokenizer='moses', bpe='fastbpe')
-    de2en = torch.hub.load('pytorch/fairseq', 'transformer.wmt19.de-en.single_model', tokenizer='moses', bpe='fastbpe')
 
-
-en2ru.cuda()
-ru2en.cuda()
-
-en2de.cuda()
-de2en.cuda()
-
-ru2en.translate(en2ru.translate(content,  sampling = True, temperature = 0.9),  sampling = True, temperature = 0.9)
-
-
-
-
-
-#### paraphrasing 
-import torch
-from transformers import PegasusForConditionalGeneration, PegasusTokenizer
-model_name = 'tuner007/pegasus_paraphrase'
-torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
-tokenizer = PegasusTokenizer.from_pretrained(model_name)
-model = PegasusForConditionalGeneration.from_pretrained(model_name).to(torch_device)
-
-def get_response(input_text,num_return_sequences,num_beams, maxlen):
-  batch = tokenizer([input_text],truncation=True,padding='longest',max_length=maxlen, return_tensors="pt").to(torch_device)
-  translated = model.generate(**batch,max_length=maxlen,num_beams=num_beams, num_return_sequences=num_return_sequences, temperature=1.5)
-  tgt_text = tokenizer.batch_decode(translated, skip_special_tokens=True)
-  return tgt_text
-
-num_beams = 10
-num_return_sequences = 10
-context = '''
-It's barely dawn when Mike Fitzpatrick starts his shift with a blur of colorful maps, figures and endless charts, but already he knows what the day will bring. Lightning will strike in places he expects. Winds will pick up, moist places will dry and flames will roar.
-'''
-get_response(context, num_return_sequences, num_beams, 100)
 
 
 

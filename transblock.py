@@ -171,3 +171,37 @@ def get_model_bert(num_classes, m='albert'):
     #model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
     return model
 
+
+
+
+def get_model_bert_pair():
+
+    text_input1 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
+    text_input2 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
+
+    encoder = hub.KerasLayer('albert_en_base_2', trainable=True)
+
+    embed = []
+    for textin in [text_input1, text_input2]:
+        encoder_inputs = preprocessor_layer(textin)
+        outputs = encoder(encoder_inputs)
+        embed.append(outputs["pooled_output"])
+    embed_all = tf.concat(embed, axis=1)
+    x = layers.Dense(512, activation="relu")(embed_all)
+    # if num_classes == 2:
+    #     out = layers.Dense(1, activation='sigmoid')(embed)
+    #     model = tf.keras.Model(inputs=text_input, outputs=out)
+    #     model.compile(Adam(lr=1e-5), "binary_crossentropy", metrics=["binary_accuracy"])
+    # else:
+    out = layers.Dense(1, activation="sigmoid")(x)
+    model = tf.keras.Model(inputs=[text_input1, text_input2], outputs=out)
+    #model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
+    return model
+
+
+
+
+
+
+
+
