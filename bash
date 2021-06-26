@@ -44,13 +44,7 @@ done
 
 
 
-python -c "import tensorflow;print(tensorflow.__version__)"
-python -c "import torch;print(torch.__version__)"
-python -c "import transformers;print(transformers.__version__)"
-#python -c "import flair;print(flair.__version__)"
-python -c "import gensim;print(gensim.__version__)"
-python -c "import sklearn;print(sklearn.__version__)"
-python -c "import chainer;print(chainer.__version__)"
+
 
 pip3 install torch torchvision torchaudio
 
