@@ -6,5 +6,5 @@ python -c "import spacy;print(spacy.__version__);ner_model = spacy.load('en_core
 python -c "import gensim;print(gensim.__version__)"
 python -c "import sklearn;print(sklearn.__version__)"
 python -c "import nltk;from nltk.corpus import wordnet"
-
+python -c "import tensorflow_text;print(tensorflow_text.__version__)"
 #python -c "import chainer;print(chainer.__version__)"
