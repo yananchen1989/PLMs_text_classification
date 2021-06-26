@@ -18,7 +18,7 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 #parser.add_argument("--model", default='bert', type=str)
-parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw'])
+#parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw'])
 parser.add_argument("--unify", default=1, type=int, choices=[0,1,2])
 args = parser.parse_args()
 print('args==>', args)
@@ -185,11 +185,8 @@ for epoch in range(args.epoch):
         labels = trunk[1] 
 
         #print('begin to generate')
-        #if args.syn == 'gpt':
         prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
-        #elif args.syn == 'raw':
 
-        #print('generated')
         labels_syn = labels + num_classes 
 
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
