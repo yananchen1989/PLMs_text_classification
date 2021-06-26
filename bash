@@ -25,10 +25,11 @@ done
 
 
 
+CUDA_VISIBLE_DEVICES=0 python -u baseline_classifier.py --dsn ag --aug eda --max_aug_times 5
 
 
 
-
+pip install https://ghproxy.com/https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.0.0/en_core_web_sm-3.0.0-py3-none-any.whl --no-cache
 
 
 
