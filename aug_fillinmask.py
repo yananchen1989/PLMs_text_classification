@@ -23,6 +23,7 @@ class fillInmask():
         # else:
         #     self.tagger = SequenceTagger.load("flair/ner-english-fast")
         #self.tagger = SequenceTagger.load("ner-large")
+        # python -m spacy download en_core_web_sm
         self.ner_model = spacy.load('en_core_web_sm')
         tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
         model = AutoModelWithLMHead.from_pretrained('distilbert-base-uncased',cache_dir="./cache")

@@ -289,7 +289,8 @@ print("augmentating...")
 
 syn_df_ll = []
 accs_iters = []
-while True:
+
+while 1:
 
     df_synthesize = synthesize(ds, max_len)
     syn_df_ll.append(df_synthesize)
@@ -300,24 +301,24 @@ while True:
     cur_acc = do_train_test(ds)
     accs_iters.append(cur_acc)
     gain = round( (max(accs_iters) - best_val_acc_noaug) / best_val_acc_noaug, 4)
-    record_log('logg', \
-        ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-        ['seed:{}'.format(seed), \
-        'baseline_acc {}'.format(best_val_acc_noaug),
-        'aug_ratio {}'.format(aug_ratio), \
-        'cur_acc {}'.format(cur_acc),  \
-        'cur_best_acc {}'.format(max(accs_iters)), \
-        'cur_gain {}'.format(gain)
-        ])
-    
 
-    if (len(accs_iters) >= 7 and accs_iters[-1] < accs_iters[-3] and accs_iters[-2] < accs_iters[-3]) \
-        or aug_ratio>= args.max_aug_times \
-        or (len(accs_iters) >= 10 and accs_iters[-1] < best_val_acc_noaug and accs_iters[-2] < best_val_acc_noaug):
+    if aug_ratio >= args.max_aug_times:
         break
+   
+    # if (len(accs_iters) >= 7 and accs_iters[-1] < accs_iters[-3] and accs_iters[-2] < accs_iters[-3]) \
+    #     or aug_ratio>= args.max_aug_times \
+    #     or (len(accs_iters) >= 10 and accs_iters[-1] < best_val_acc_noaug and accs_iters[-2] < best_val_acc_noaug):
+    #     break
 
-
-
+record_log('logb', \
+    ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
+    ['seed:{}'.format(seed), \
+    'baseline_acc {}'.format(best_val_acc_noaug),
+    'aug_ratio {}'.format(aug_ratio), \
+    'accs_iters {}'.format(' '.join([str(ii) for ii in accs_iters])),  \
+    'cur_best_acc {}'.format(max(accs_iters)), \
+    'cur_gain {}'.format(gain)
+    ])
 
 
 
