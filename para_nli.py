@@ -9,7 +9,7 @@ import tensorflow_hub as hub
 import tensorflow_text as text
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
-from transformers import pipeline
+#from transformers import pipeline
 gpus = tf.config.experimental.list_physical_devices('GPU')
 #os.environ['CUDA_VISIBLE_DEVICES'] = '3'  
 if gpus:
@@ -24,7 +24,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 assert device.type=='cuda'
 from load_data import * 
 from transblock import * 
-from gan_config import * 
+
 
 assert gpus
 
@@ -38,7 +38,7 @@ def train_step_base(prompts, labels):
     # generator_ral update
     with tf.GradientTape() as tape:
         predictions = model(prompts)
-        loss = keras.losses.BinaryCrossentropy()(labels, predictions)
+        loss = keras.losses.BinaryCrossentropy(from_logits=True)(labels, predictions)
     grads = tape.gradient(loss, model.trainable_weights)
     base_optimizer.apply_gradients(zip(grads, model.trainable_weights))
     return loss
@@ -75,38 +75,46 @@ def get_pairs(trunk):
         ll.append(elements)
 
     if len(ll) <= 4:
-        return tf.convert_to_tensor([]), tf.convert_to_tensor([])
+        return []
 
     for ii in ll:
         pos_pairs.append(tuple(random.sample(ii, 2)))
         rnd_paras = random.sample(ll, 2)
         neg_pairs.append((random.sample(rnd_paras[0], 1)[0], random.sample(rnd_paras[1], 1)[0]))
 
-    return tf.convert_to_tensor(pos_pairs), tf.convert_to_tensor(neg_pairs)
+    df_trunk = pd.DataFrame(pos_pairs+neg_pairs, columns=['sent1','sent2'])
+    df_trunk['label'] = [1] * len(pos_pairs)+ [0] * len(pos_pairs)
+    if df_trunk.shape[0] > 64:
+        df_trunk = df_trunk.sample(64)
+    return df_trunk
 
 
-val_acc_metric = tf.keras.metrics.BinaryAccuracy()
+
 
 
 for epoch in range(100):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(ds_train):
-        pos_pairs_tf, neg_pairs_tf = get_pairs(trunk)
-        if pos_pairs_tf.shape[0] == 0:
+        df_trunk = get_pairs(trunk)
+        if len(df_trunk) == 0:
             print("not enough ll")
             continue
-        labels_pos = tf.convert_to_tensor([1.0]*pos_pairs_tf.shape[0])
-        labels_neg = tf.convert_to_tensor([0.0]*neg_pairs_tf.shape[0])
-        combined_images = tf.concat([pos_pairs_tf, neg_pairs_tf], axis=0)
-        combined_labels = tf.concat([labels_pos, labels_neg], axis=0)
-        loss = train_step_base(combined_images, combined_labels)
-        print(loss)
+        loss = train_step_base([df_trunk['sent1'].values, df_trunk['sent2'].values], df_trunk['label'].values)        
+        if step % 100 == 0:
+            print(loss.numpy())
 
-    for x_batch_val, y_batch_val in ds_test:
-        preds = model(x_batch_val, training=False)  
-        val_acc_metric.update_state(y_batch_val, preds)
-    print("gan Validation acc: %.4f" % (float(val_acc_metric.result()),))
-    val_acc_metric.reset_states()
+
+    results_pred = []
+    results_label = []
+    for step, trunk in enumerate(ds_test):
+        df_trunk = get_pairs(trunk)
+        preds = model([df_trunk['sent1'].values, df_trunk['sent2'].values], training=False)  
+        results_pred.append(tf.reshape(preds, -1))
+        results_label.append(tf.convert_to_tensor(df_trunk['label'].values))
+    pred_val = tf.concat(results_pred, axis=0)
+    label_val = tf.concat(results_label, axis=0)
+    val_loss = keras.losses.BinaryCrossentropy(from_logits=True)(label_val, pred_val)
+    print('epoch:', epoch, 'val loss:', val_loss.numpy())
 
 
 
