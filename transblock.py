@@ -174,12 +174,12 @@ def get_model_bert(num_classes, m='albert'):
 
 
 
-def get_model_bert_pair():
+def get_model_bert_pair(trainable):
 
     text_input1 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
     text_input2 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 
-    encoder = hub.KerasLayer('albert_en_base_2', trainable=True)
+    encoder = hub.KerasLayer('albert_en_base_2', trainable=trainable)
 
     embed = []
     for textin in [text_input1, text_input2]:

@@ -31,7 +31,7 @@ assert gpus
 cc_news = datasets.load_dataset('cc_news', split="train")
 dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
 
-model = get_model_bert_pair()
+model = get_model_bert_pair(False)
 
 @tf.function
 def train_step_base(prompts, labels):
