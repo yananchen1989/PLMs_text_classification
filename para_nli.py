@@ -28,9 +28,11 @@ from transblock import *
 
 assert gpus
 
-cc_news = datasets.load_dataset('cc_news', split="train")
-dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
+# cc_news = datasets.load_dataset('cc_news', split="train")
+# dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
+# dfcc.to_csv('cc_news.csv', index=False)
 
+dfcc = pd.read_csv("cc_news.csv")
 text_input1 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 text_input2 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 
