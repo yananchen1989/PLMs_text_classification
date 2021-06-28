@@ -31,7 +31,19 @@ assert gpus
 cc_news = datasets.load_dataset('cc_news', split="train")
 dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
 
-model = get_model_bert_pair(False)
+text_input1 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
+text_input2 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
+
+encoder = hub.KerasLayer('albert_en_base_2', trainable=False)
+embed = []
+for textin in [text_input1, text_input2]:
+    encoder_inputs = preprocessor_layer(textin)
+    outputs = encoder(encoder_inputs)
+    embed.append(outputs["pooled_output"])
+embed_all = tf.concat(embed, axis=1)
+x = layers.Dense(512, activation="relu")(embed_all)
+out = layers.Dense(1, activation="sigmoid")(x)
+model = tf.keras.Model(inputs=[text_input1, text_input2], outputs=out)
 
 @tf.function
 def train_step_base(prompts, labels):
@@ -90,31 +102,34 @@ def get_pairs(trunk):
 
 
 
+for trainable in [False, True]:
+    encoder.trainable = trainable
+    if not trainable:
+        epochs = 7 
+    else:
+        epochs = 100
+    for epoch in range(epochs):
+        print("\nStart epoch", epoch)
+        for step, trunk in enumerate(ds_train):
+            df_trunk = get_pairs(trunk)
+            if len(df_trunk) == 0:
+                print("not enough ll")
+                continue
+            loss = train_step_base([df_trunk['sent1'].values, df_trunk['sent2'].values], df_trunk['label'].values)        
+            if step % 100 == 0:
+                print(loss.numpy())
 
-
-for epoch in range(100):
-    print("\nStart epoch", epoch)
-    for step, trunk in enumerate(ds_train):
-        df_trunk = get_pairs(trunk)
-        if len(df_trunk) == 0:
-            print("not enough ll")
-            continue
-        loss = train_step_base([df_trunk['sent1'].values, df_trunk['sent2'].values], df_trunk['label'].values)        
-        if step % 100 == 0:
-            print(loss.numpy())
-
-
-    results_pred = []
-    results_label = []
-    for step, trunk in enumerate(ds_test):
-        df_trunk = get_pairs(trunk)
-        preds = model([df_trunk['sent1'].values, df_trunk['sent2'].values], training=False)  
-        results_pred.append(tf.reshape(preds, -1))
-        results_label.append(tf.convert_to_tensor(df_trunk['label'].values))
-    pred_val = tf.concat(results_pred, axis=0)
-    label_val = tf.concat(results_label, axis=0)
-    val_loss = keras.losses.BinaryCrossentropy(from_logits=True)(label_val, pred_val)
-    print('epoch:', epoch, 'val loss:', val_loss.numpy())
+        results_pred = []
+        results_label = []
+        for step, trunk in enumerate(ds_test):
+            df_trunk = get_pairs(trunk)
+            preds = model([df_trunk['sent1'].values, df_trunk['sent2'].values], training=False)  
+            results_pred.append(tf.reshape(preds, -1))
+            results_label.append(tf.convert_to_tensor(df_trunk['label'].values))
+        pred_val = tf.concat(results_pred, axis=0)
+        label_val = tf.concat(results_label, axis=0)
+        val_loss = keras.losses.BinaryCrossentropy(from_logits=True)(label_val, pred_val)
+        print('epoch:', epoch, 'val loss:', val_loss.numpy())
 
 
 
