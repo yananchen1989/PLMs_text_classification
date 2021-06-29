@@ -3,7 +3,6 @@
 
 import random
 from random import shuffle
-random.seed(1)
 
 #stop words list
 stop_words = ['i', 'me', 'my', 'myself', 'we', 'our', 
@@ -59,7 +58,7 @@ def get_only_chars(line):
 
 #for the first time you use wordnet
 import nltk
-nltk.download('wordnet')
+#nltk.download('wordnet')
 from nltk.corpus import wordnet 
 
 def synonym_replacement(words, n):
