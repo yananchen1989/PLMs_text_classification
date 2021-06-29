@@ -261,7 +261,7 @@ def synthesize(ds, max_len):
 #for ite in range(args.ite): 
 
 seed = random.randint(0,int(time.time()))
-
+print('curseed:', seed)
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, seed=seed)
 if args.cap3rd > 1:
     max_len = int(args.cap3rd)
