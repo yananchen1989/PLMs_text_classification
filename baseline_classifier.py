@@ -87,9 +87,9 @@ if args.aug == 'generate' and args.check == 'nli':
 # https://huggingface.co/facebook/bart-large-mnli
 
 if args.aug == 'generate':
-    if args.generate_m == 'ctrl':
-        args.rp = 1.2
-    nlp  = pipeline("text-generation", model=args.generate_m, device=device, return_full_text=False)
+    # if args.generate_m == 'ctrl':
+    #     args.rp = 1.2
+    nlp  = pipeline("text-generation", model='gpt2', device=device, return_full_text=False)
 
 if args.aug == 'bt':
     tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache")

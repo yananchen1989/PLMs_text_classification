@@ -22,7 +22,7 @@ for dsn in ['ag','yahoo','dbpedia']:
 
 cc_news = datasets.load_dataset('cc_news', split="train")
 dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
-dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv", nrows=10000)
+dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
 #dfcc = pd.concat([dfcc, dfcnndm])
 df_batch = dfcnndm.sample(32)
 
@@ -49,8 +49,8 @@ dff['label'] = y_test
 dff.to_csv('mnnbenchdata_test.csv',index=False)
 
 from sklearn.model_selection import train_test_split
-
-df = pd.read_csv("HIGGS.csv.gz", error_bad_lines=False, header=None, nrows=500000) #  0.6371
+import pandas as pd 
+df = pd.read_csv("HIGGS.csv.gz", error_bad_lines=False, header=None, nrows=800000) #  0.6371
 df.columns = ['label'] + [str(i+1) for i in range(28)]
 df_train, df_test = train_test_split(df, test_size=0.2)
 
