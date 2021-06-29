@@ -255,11 +255,6 @@ def synthesize(ds, max_len):
     return df_synthesize #sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min(), seed )
 
 
-
-# accs = []
-# accs_noaug = []
-#for ite in range(args.ite): 
-
 seed = random.randint(0,int(time.time()))
 print('curseed:', seed)
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, seed=seed)
@@ -277,7 +272,6 @@ if args.setbase:
     best_val_acc_noaug = do_train_test(ds)
 else:
     best_val_acc_noaug = -99
-# accs_noaug.append(best_val_acc_noaug)
 
 if args.aug == 'no':
     record_log('logg', \

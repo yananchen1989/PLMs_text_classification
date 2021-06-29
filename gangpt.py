@@ -12,7 +12,7 @@ from tensorflow import keras
 from transformers import pipeline
 gpus = tf.config.experimental.list_physical_devices('GPU')
 #os.environ['CUDA_VISIBLE_DEVICES'] = '3'  
-
+tf.keras.backend.set_floatx('float16')
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
