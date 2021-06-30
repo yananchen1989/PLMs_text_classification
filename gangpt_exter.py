@@ -18,7 +18,7 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 #parser.add_argument("--model", default='bert', type=str)
-parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw','exter'])
+parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw','cnndm'])
 #parser.add_argument("--unify", default=1, type=int, choices=[0,1,2])
 args = parser.parse_args()
 print('args==>', args)
@@ -110,16 +110,16 @@ def train_step_gan(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn
     return loss
 
 
-@tf.function
-def train_step_ext(sents_syn, sents_real, sents_syn_label, sents_real_label):
-    combined_prompts_exter = tf.concat([sents_syn, sents_real], axis=0)
-    combined_labels_exter = tf.concat([sents_syn_label, sents_real_label], axis=0)
-    with tf.GradientTape() as tape:    
-        predictions = model_ext(combined_prompts_exter)
-        loss = keras.losses.BinaryCrossentropy(from_logits=True)(combined_labels_exter, predictions)
-    grads = tape.gradient(loss, model_ext.trainable_weights)
-    ext_optimizer.apply_gradients(zip(grads, model_ext.trainable_weights))
-    return loss
+# @tf.function
+# def train_step_ext(sents_syn, sents_real, sents_syn_label, sents_real_label):
+#     combined_prompts_exter = tf.concat([sents_syn, sents_real], axis=0)
+#     combined_labels_exter = tf.concat([sents_syn_label, sents_real_label], axis=0)
+#     with tf.GradientTape() as tape:    
+#         predictions = model_ext(combined_prompts_exter)
+#         loss = keras.losses.BinaryCrossentropy(from_logits=True)(combined_labels_exter, predictions)
+#     grads = tape.gradient(loss, model_ext.trainable_weights)
+#     ext_optimizer.apply_gradients(zip(grads, model_ext.trainable_weights))
+#     return loss
 
 
 
@@ -166,7 +166,7 @@ text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
 model_base = keras.Model(inputs=text_input, outputs=discriminator_base(generator_base(text_input)))
 
 model_gan = keras.Model(inputs=text_input, outputs=discriminator(generator_real(text_input)))
-model_ext = keras.Model(inputs=text_input, outputs=discriminator_ext(generator_real(text_input)))
+#model_ext = keras.Model(inputs=text_input, outputs=discriminator_ext(generator_real(text_input)))
 
 lr = 1e-5
 d_optimizer = keras.optimizers.Adam(learning_rate=lr)
@@ -213,7 +213,7 @@ for epoch in range(args.epoch):
             for sent1, sent2 in zip(df_trunk1['content'].tolist(), df_trunk2['content'].tolist()):
                 sent_syn.append(sent1 + sent2 )
             prompts_syn = tf.convert_to_tensor(np.array(sent_syn))
-        elif args.syn == 'exter':
+        elif args.syn == 'cnndm':
             prompts_syn = tf.convert_to_tensor(dfcnndm.sample(prompts.shape[0])['content'].values)
         labels_syn = labels + num_classes 
 
@@ -221,7 +221,7 @@ for epoch in range(args.epoch):
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
         
         #print('train_step_gan')
-        #loss_gan = train_step_gan(prompts, prompts_syn,  \
+        # loss_gan = train_step_gan(prompts, prompts_syn,  \
         #               tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32))
 
         #print('get_sents_fake')

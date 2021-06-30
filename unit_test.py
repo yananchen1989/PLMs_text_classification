@@ -52,7 +52,11 @@ from sklearn.model_selection import train_test_split
 import pandas as pd 
 df = pd.read_csv("HIGGS.csv.gz", error_bad_lines=False, header=None, nrows=800000) #  0.6371
 df.columns = ['label'] + [str(i+1) for i in range(28)]
-df_train, df_test = train_test_split(df, test_size=0.2)
+df_train, df_test = train_test_split(df, test_size=0.125)
+
+df_train[[str(i+1) for i in range(28)] + ['label']].to_csv('higgs_train.csv', index=False)
+df_test[[str(i+1) for i in range(28)] + ['label']].to_csv('higgs_test.csv', index=False)
+
 
 labels_train = df_train.pop('label').values
 labels_test = df_test.pop('label').values
@@ -87,7 +91,7 @@ model.fit(
 
 
 
-sent = "Edelman Partners. New York NY\n\nJ.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc\n\nFrequent speaker, former U.S. Ambassador"
+sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
 
 content = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
 
@@ -104,7 +108,25 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 
 
+# import transformations, contraints, and the Augmenter
+from textattack.transformations import WordSwapRandomCharacterDeletion
+from textattack.transformations import WordSwapQWERTY
+from textattack.transformations import CompositeTransformation
 
+from textattack.constraints.pre_transformation import RepeatModification
+from textattack.constraints.pre_transformation import StopwordModification
+
+from textattack.augmentation import Augmenter
+
+# Set up transformation using CompositeTransformation()
+transformation = CompositeTransformation([WordSwapRandomCharacterDeletion(), WordSwapQWERTY()])
+# Set up constraints
+constraints = [RepeatModification(), StopwordModification()]
+# Create augmenter with specified parameters
+augmenter = Augmenter(transformation=transformation, constraints=constraints, pct_words_to_swap=0.5, transformations_per_example=10)
+
+# Augment!
+augmenter.augment(sent)
 
 
 

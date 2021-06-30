@@ -37,16 +37,16 @@ ds_train, ds_test =  torchtext.datasets.AG_NEWS(root=path, split=('train', 'test
 ds_train, ds_test =  torchtext.datasets.YahooAnswers(root=path, split=('train', 'test'))
 ds_train, ds_test =  torchtext.datasets.DBpedia(root=path, split=('train', 'test'))
 
+# sentiment classification datasets
 ds_train, ds_test =  torchtext.datasets.YelpReviewPolarity(root=path, split=('train', 'test'))
 ds_train, ds_test =  torchtext.datasets.YelpReviewFull(root=path, split=('train', 'test'))
 ds_train, ds_test =  torchtext.datasets.AmazonReviewPolarity(root=path, split=('train', 'test'))
 ds_train, ds_test =  torchtext.datasets.AmazonReviewFull(root=path, split=('train', 'test'))
-
 ds_train, ds_test =  torchtext.datasets.IMDB(root='./torch_ds', split=('train', 'test'))
 
 
-df_train = pd.DataFrame(ds_train, columns=['label', 'content'])
-df_test = pd.DataFrame(ds_test, columns=['label','content'])
+df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
+
 
 next(ds_train)
 

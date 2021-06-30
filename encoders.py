@@ -16,6 +16,7 @@ class encoder():
         if self.m == 'dan':
             # https://tfhub.dev/google/universal-sentence-encoder/4
             #self.model = hub.load("./universal-sentence-encoder_4")
+            # https://tfhub.dev/google/universal-sentence-encoder-lite/2
             encoder = hub.KerasLayer("./universal-sentence-encoder_4")
             embed = encoder(text_input)
         elif self.m == 'distil':

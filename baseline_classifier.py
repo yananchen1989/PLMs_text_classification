@@ -133,7 +133,7 @@ def synthesize(ds, max_len):
     if args.aug == 'generate':
         contents = ds.df_train['content'].tolist()
         labels = ds.df_train['label'].tolist()
-        labels_candidates = list(ds.df.label.unique())
+        labels_candidates = list(ds.df_test.label.unique())
         results = []
         for i in range(0, ds.df_train.shape[0], args.trunk_size):
             contents_trunk = contents[i:i+args.trunk_size]
