@@ -88,7 +88,7 @@ class load_data():
         else:
             raise KeyError("dsn illegal!")  
 
-        if ds_train and ds_test:
+        if self.dataset not in ['stsa', 'snips']:
             self.df_train, self.df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
         else:
             self.df_train, self.df_test = df_train, df_test
