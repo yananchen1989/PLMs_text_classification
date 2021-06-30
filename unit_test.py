@@ -130,11 +130,20 @@ augmenter.augment(sent)
 
 
 
+# import the CheckListAugmenter
+from textattack.augmentation import CheckListAugmenter
+# Alter default values if desired
+augmenter = CheckListAugmenter(pct_words_to_swap=0.2, transformations_per_example=5)
+s = "I'd love to go to Japan but the tickets are 500 dollars"
+# Augment
+augmenter.augment(sent)
 
 
 
-
-
+from textattack.augmentation import WordNetAugmenter
+augmenter = WordNetAugmenter(pct_words_to_swap=0.2, transformations_per_example=5)
+s = "I'd love to go to Japan but the tickets are 500 dollars"
+augmenter.augment(s)
 
 
 

@@ -25,16 +25,16 @@ class load_data():
         self.path = './torch_ds'
 
         if self.dataset == 'yahoo':
-            #ixl = {1: 'Society & Culture',
-                             2: 'Science & Mathematics',
-                             3: 'Health',
-                             4: 'Education & Reference',
-                             5: 'Computers & Internet',
-                             6: 'Sports',
-                             7: 'Business & Finance',
-                             8: 'Entertainment & Music',
-                             9: 'Family & Relationships',
-                             10: 'Politics & Government'}
+            # ixl = {1: 'Society & Culture',
+            #                  2: 'Science & Mathematics',
+            #                  3: 'Health',
+            #                  4: 'Education & Reference',
+            #                  5: 'Computers & Internet',
+            #                  6: 'Sports',
+            #                  7: 'Business & Finance',
+            #                  8: 'Entertainment & Music',
+            #                  9: 'Family & Relationships',
+            #                  10: 'Politics & Government'}
             ds_train, ds_test =  torchtext.datasets.YahooAnswers(root=self.path, split=('train', 'test'))
 
         elif self.dataset == 'ag':
