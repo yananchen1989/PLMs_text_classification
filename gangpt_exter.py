@@ -180,7 +180,7 @@ base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 #from aug_fillinmask import *
 #augmentor = fillInmask()
 #print('fillin augmentor initialized')
-if args.syn == 'exter':
+if args.syn == 'cnndm':
     dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
 
 
