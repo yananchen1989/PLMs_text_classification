@@ -78,8 +78,8 @@ class load_data():
 
         elif self.dataset == 'stsa':
             df_train = pd.read_csv("{}/stsa/train.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
-            df_test = pd.read_csv("{}/stsa/test.tsv", sep='\t', header=None, names=['label', 'content'])
-            df_dev = pd.read_csv("{}/stsa/dev.tsv", sep='\t', header=None, names=['label', 'content'])
+            df_test = pd.read_csv("{}/stsa/test.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
+            df_dev = pd.read_csv("{}/stsa/dev.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
             df_test = pd.concat([df_dev, df_test])
         elif self.dataset == 'snips':
             df_train = pd.read_csv("{}/snips/train.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])

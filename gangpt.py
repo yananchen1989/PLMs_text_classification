@@ -19,7 +19,7 @@ parser.add_argument("--samplecnt", default=100, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 #parser.add_argument("--model", default='bert', type=str)
 #parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw'])
-parser.add_argument("--unify", default=1, type=int, choices=[0,1,2])
+parser.add_argument("--unify", default=0, type=int, choices=[0,1,2])
 args = parser.parse_args()
 print('args==>', args)
 
