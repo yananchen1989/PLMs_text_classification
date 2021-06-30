@@ -1,9 +1,9 @@
-import sys,os,logging,glob,pickle,torch,joblib
+import sys,os,logging,glob,pickle,torch,joblib,torchtext
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
-from sklearn.model_selection import train_test_split
-from sklearn.datasets import fetch_20newsgroups
+#from sklearn.model_selection import train_test_split
+#from sklearn.datasets import fetch_20newsgroups
 
 
 cap = 600
@@ -23,35 +23,9 @@ class load_data():
         self.dataset = dataset
         self.seed = seed 
         self.path = './torch_ds'
-        if self.dataset == 'ag':
-            self.df_train, self.df_test, self.df = self.get_ag_news()
-        elif self.dataset == 'bbc':
-            self.df_train, self.df_test, self.df = self.get_bbc_news()
-        elif self.dataset ==  'bbcsport':
-            self.df_train, self.df_test, self.df = self.get_bbcsports_news()
-        elif self.dataset == 'tweet':
-            self.df_train, self.df_test, self.df = self.get_tweet()
-        elif self.dataset == 'yahoo':
-            self.df_train, self.df_test, self.df = self.get_yahoo_news()
-        elif self.dataset == 'pop':
-            self.df_train, self.df_test, self.df = self.get_pop_news()    
-        elif self.dataset == 'uci':
-            self.df_train, self.df_test, self.df = self.get_uci_news()   
-        elif self.dataset == 'dbpedia':
-            self.df_train, self.df_test, self.df = self.get_dbpedia_news() 
-        elif self.dataset == '20news':
-            self.df_train, self.df_test, self.df = self.get_20_news() 
-        elif self.dataset == 'nyt':
-            self.df_train, self.df_test, self.df = self.get_nyt_news()
-        elif self.dataset == 'snips':
-            self.df_train, self.df_test, self.df = self.get_snips()
-        elif self.dataset == 'stsa':
-            self.df_train, self.df_test, self.df = self.get_stsa()
-        else:
-            raise KeyError("dataset illegal!")
 
-    def get_yahoo_news(self):
-        yahoo_label_name = {1: 'Society & Culture',
+        if self.dataset == 'yahoo':
+            #ixl = {1: 'Society & Culture',
                              2: 'Science & Mathematics',
                              3: 'Health',
                              4: 'Education & Reference',
@@ -61,55 +35,69 @@ class load_data():
                              8: 'Entertainment & Music',
                              9: 'Family & Relationships',
                              10: 'Politics & Government'}
-        ds_train, ds_test =  torchtext.datasets.YahooAnswers(root=self.path, split=('train', 'test'))
-        df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
+            ds_train, ds_test =  torchtext.datasets.YahooAnswers(root=self.path, split=('train', 'test'))
 
-        df_train['label'] = df_train['label'].map(lambda x: yahoo_label_name[x])
-        df_test['label'] = df_test['label'].map(lambda x: yahoo_label_name[x])
+        elif self.dataset == 'ag':
+            #world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
+            #           'Crime','Murder','Religion','Jurisdiction', 'Democracy'])
+            #ixl = {1:world_replace, 2:"Sports", 3:"Business", 4:"Science and technology"}
+            ds_train, ds_test =  torchtext.datasets.AG_NEWS(root=self.path, split=('train', 'test'))
+            
+        elif self.dataset == 'imbd':
+            #ixl = {'pos':'positive', 'neg':'negative'}
+            ds_train, ds_test =  torchtext.datasets.IMDB(root=self.path, split=('train', 'test'))  
 
-        df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df 
-    
-    def get_imdb(self):
-        ds_train, ds_test =  torchtext.datasets.IMDB(root=self.path, split=('train', 'test'))      
-        df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
-        ixl = {'pos':'positive', 'neg':'negative'}
-        df_train['label'] = df_train['label'].map(lambda x: ixl[x])
-        df_test['label'] = df_test['label'].map(lambda x: ixl[x])
-        df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df 
+        elif self.dataset == 'yelp5':
+            ds_train, ds_test =  torchtext.datasets.YelpReviewFull(root=self.path, split=('train', 'test'))
 
-    def get_yelp5(self):
-        ds_train, ds_test =  torchtext.datasets.YelpReviewFull(root=self.path, split=('train', 'test'))
-        df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
-        df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df       
+        elif self.dataset == 'yelp2':
+            ds_train, ds_test =  torchtext.datasets.YelpReviewPolarity(root=self.path, split=('train', 'test'))
 
-    def get_yelp2(self):
-        ds_train, ds_test =  torchtext.datasets.YelpReviewPolarity(root=self.path, split=('train', 'test'))
-        df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
-        df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df   
+        elif self.dataset == 'amazon5':
+            ds_train, ds_test =  torchtext.datasets.AmazonReviewFull(root=self.path, split=('train', 'test'))
+        
+        elif self.dataset == 'amazon2':
+            ds_train, ds_test =  torchtext.datasets.AmazonReviewPolarity(root=self.path, split=('train', 'test'))
+        
+        elif self.dataset == 'dbpedia':
+            ds_train, ds_test =  torchtext.datasets.DBpedia(root=self.path, split=('train', 'test'))
+            ixl = {1:"Company",
+                    2:"Educational Institution",
+                    3:"Artist",
+                    4:"Athlete",
+                    5:"Office Holder",
+                    6:"Mean Of Transportation",
+                    7:"Building",
+                    8:"Natural Place",
+                    9:"Village",
+                    10:"Animal",
+                    11:"Plant",
+                    12:"Album",
+                    13:"Film",
+                    14:"Written Work"}            
+
+        elif self.dataset == 'stsa':
+            df_train = pd.read_csv("../datasets_aug/stsa/train.tsv", sep='\t', header=None)
+            df_test = pd.read_csv("../datasets_aug/stsa/test.tsv", sep='\t', header=None)
+            df_dev = pd.read_csv("../datasets_aug/stsa/dev.tsv", sep='\t', header=None)
+            df_train.columns = ['label', 'content']
+            df_test.columns = ['label', 'content']
+            df_dev.columns = ['label', 'content']
+            df_test = pd.concat([df_dev, df_test])
+
+        else:
+            raise KeyError("dsn illegal!")  
+
+        if self.dataset not in ['stsa']:
+            self.df_train, self.df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
+        else:
+            self.df_train, self.df_test = df_train, df_test
+
+        self.df_train = sample_stratify(self.df_train, self.samplecnt, self.seed)
+ 
 
 
-    def get_amazon5(self):
-        ds_train, ds_test =  torchtext.datasets.AmazonReviewFull(root=self.path, split=('train', 'test'))
-        df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
-        df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df       
-
-    def get_amazon2(self):
-        ds_train, ds_test =  torchtext.datasets.AmazonReviewPolarity(root=self.path, split=('train', 'test'))
-        df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
-        df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df   
-
+'''
     def get_tweet(self):
         files = glob.glob("../datasets_aug/tweetraw/*.txt")
         infos = []
@@ -120,8 +108,6 @@ class load_data():
                     infos.append((label, line.strip()))
         df = pd.DataFrame(infos, columns=['label','content'])
         df_train, df_test = train_test_split(df, test_size=0.2)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df.sample(frac=1)   
 
     def get_uci_news(self):
         df = pd.read_csv("../datasets_aug/uci-news-aggregator.csv")  
@@ -132,48 +118,7 @@ class load_data():
         ld = {'e':'entertainment', 'b':'business', 't':"science technology", 'm':"health"}
         df['label'] = df['label'].map(lambda x: ld[x])
         df_train, df_test = train_test_split(df, test_size=0.2, random_state=self.seed)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test , df.sample(frac=1)
 
-    # ag news
-    def get_dbpedia_news(self):
-        ds_train, ds_test =  torchtext.datasets.DBpedia(root=path, split=('train', 'test'))
-        df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
-
-        ixl = {1:"Company",
-                2:"Educational Institution",
-                3:"Artist",
-                4:"Athlete",
-                5:"Office Holder",
-                6:"Mean Of Transportation",
-                7:"Building",
-                8:"Natural Place",
-                9:"Village",
-                10:"Animal",
-                11:"Plant",
-                12:"Album",
-                13:"Film",
-                14:"Written Work"}
-
-        df_train['label'] = df_train['label'].map(lambda x: ixl[x])
-        df_test['label'] = df_test['label'].map(lambda x: ixl[x])
-        df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df
-
-    # ag news
-    def get_ag_news(self):
-        world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
-                   'Crime','Murder','Religion','Jurisdiction', 'Democracy'])
-        ds_train, ds_test =  torchtext.datasets.AG_NEWS(root=path, split=('train', 'test'))
-        df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
-
-        agnews_label = {1:world_replace, 2:"Sports", 3:"Business", 4:"Science and technology"}
-        df_train['label'] = df_train['label'].map(lambda x: agnews_label[x])
-        df_test['label'] = df_test['label'].map(lambda x: agnews_label[x])
-        df = pd.concat([df_train, df_test]).sample(frac=1)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df
 
     # bbc 
     def get_bbc_news(self):
@@ -286,17 +231,6 @@ class load_data():
         df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df.sample(frac=1)  
 
-    def get_stsa(self):
-        df_train = pd.read_csv("../datasets_aug/stsa/train.tsv", sep='\t', header=None)
-        df_test = pd.read_csv("../datasets_aug/stsa/test.tsv", sep='\t', header=None)
-        df_dev = pd.read_csv("../datasets_aug/stsa/dev.tsv", sep='\t', header=None)
-        df_train.columns = ['label', 'content']
-        df_test.columns = ['label', 'content']
-        df_dev.columns = ['label', 'content']
-        df_test = pd.concat([df_dev, df_test])
-        df = pd.concat([df_train, df_test]).sample(frac=1) 
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df
 
     def get_snips(self):
         df_train = pd.read_csv("../datasets_aug/snips/train.tsv", sep='\t', header=None)
@@ -307,7 +241,7 @@ class load_data():
         df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df        
 
-
+'''
 
 
 def get_keras_data(df_train, df_test, sparse=False):
