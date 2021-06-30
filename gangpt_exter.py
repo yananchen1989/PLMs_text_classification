@@ -205,7 +205,7 @@ for epoch in range(args.epoch):
 
         #print('begin to generate')
         if args.syn == 'gpt':
-            prompts_syn = synthesize([s.decode() for s in prompts.numpy()], list(labels.numpy()), max_len)
+            prompts_syn = synthesize([s.decode() for s in prompts.numpy()], max_len)
         elif args.syn == 'raw':
             df_trunk1 = ds_.df_train.sample(prompts.shape[0])
             df_trunk2 = ds_.df_train.sample(prompts.shape[0])
