@@ -77,18 +77,18 @@ class load_data():
                     14:"Written Work"}            
 
         elif self.dataset == 'stsa':
-            df_train = pd.read_csv("../datasets_aug/stsa/train.tsv", sep='\t', header=None)
-            df_test = pd.read_csv("../datasets_aug/stsa/test.tsv", sep='\t', header=None)
-            df_dev = pd.read_csv("../datasets_aug/stsa/dev.tsv", sep='\t', header=None)
-            df_train.columns = ['label', 'content']
-            df_test.columns = ['label', 'content']
-            df_dev.columns = ['label', 'content']
+            df_train = pd.read_csv("{}/stsa/train.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
+            df_test = pd.read_csv("{}/stsa/test.tsv", sep='\t', header=None, names=['label', 'content'])
+            df_dev = pd.read_csv("{}/stsa/dev.tsv", sep='\t', header=None, names=['label', 'content'])
             df_test = pd.concat([df_dev, df_test])
+        elif self.dataset == 'snips':
+            df_train = pd.read_csv("{}/snips/train.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
+            df_test = pd.read_csv("{}/snips/devtest.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
 
         else:
             raise KeyError("dsn illegal!")  
 
-        if self.dataset not in ['stsa']:
+        if ds_train and ds_test:
             self.df_train, self.df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
         else:
             self.df_train, self.df_test = df_train, df_test
@@ -230,16 +230,7 @@ class load_data():
         df_train, df_test = train_test_split(df, test_size=0.2)
         df_train = sample_stratify(df_train, self.samplecnt, self.seed)
         return df_train, df_test, df.sample(frac=1)  
-
-
-    def get_snips(self):
-        df_train = pd.read_csv("../datasets_aug/snips/train.tsv", sep='\t', header=None)
-        df_test = pd.read_csv("../datasets_aug/snips/devtest.tsv", sep='\t', header=None)
-        df_train.columns = ['label', 'content']
-        df_test.columns = ['label', 'content']
-        df = pd.concat([df_train, df_test]).sample(frac=1) 
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df        
+   
 
 '''
 
