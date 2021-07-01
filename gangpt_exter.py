@@ -217,22 +217,13 @@ for epoch in range(args.epoch):
             prompts_syn = tf.convert_to_tensor(dfcnndm.sample(prompts.shape[0])['content'].values)
         labels_syn = labels + num_classes 
 
-        #print('train_step')
+        print('train_step')
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
         
-        #print('train_step_gan')
-        # loss_gan = train_step_gan(prompts, prompts_syn,  \
-        #               tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32))
-
-        #print('get_sents_fake')
-        #sents_syn, sents_real, sents_syn_label, sents_real_label = get_sents_fake(ds_, 32)
-        #print('train_step_ext')
-        #loss_gan = train_step_ext(sents_syn, sents_real, sents_syn_label, sents_real_label)
-        #else:
-        #    pass 
+        print('loss:', d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
 
         # baseline
-        #print('train_step_base')
+        print('train_step_base')
         loss = train_step_base(prompts, labels)
 
         check_weights_no_identical(generator_base, generator_real)
