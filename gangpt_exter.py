@@ -135,12 +135,15 @@ def train_step_base(prompts, labels):
 
 ####### prepare data
 ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: truncate(x))
+
 ds_ = load_data(dataset=args.dsn, samplecnt=-1)
 label_unique = ds.df_test.label.unique()
 label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
 ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
 ds.df_train['label'] = ds.df_train['label'].map(lambda x: label_ix[x])
 ds.df_test['label'] = ds.df_test['label'].map(lambda x: label_ix[x])
+
 
 
 max_len = get_tokens_len(ds, 0.99) 

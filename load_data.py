@@ -97,8 +97,7 @@ class load_data():
             self.df_train, self.df_test = df_train, df_test
 
         self.df_train = sample_stratify(self.df_train, self.samplecnt)
-        self.df_train['content'] = self.df_train['content'].map(lambda x: truncate(x))
-
+        
 
 '''
     def get_tweet(self):

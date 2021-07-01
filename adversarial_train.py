@@ -35,8 +35,7 @@ predictions = decode_predictions(predictions, top=3)[0]
 
 def clip_eps(tensor, eps):
     # clip the values of the tensor to a given range and return it
-    return tf.clip_by_value(tensor, clip_value_min=-eps,
-        clip_value_max=eps)
+    return tf.clip_by_value(tensor, clip_value_min=-eps, clip_value_max=eps)
 
 
 def generate_adversaries(model, baseImage, delta, classIdx, steps=50):
@@ -55,7 +54,7 @@ def generate_adversaries(model, baseImage, delta, classIdx, steps=50):
             # model and calculate the loss with respect to the
             # *original* class index
             predictions = model(adversary, training=False)
-            loss = -sccLoss(tf.convert_to_tensor([classIdx]),
+            loss = -keras.losses.SparseCategoricalCrossentropy()(tf.convert_to_tensor([classIdx]),
                 predictions)
             # check to see if we are logging the loss value, and if
             # so, display it to our terminal
