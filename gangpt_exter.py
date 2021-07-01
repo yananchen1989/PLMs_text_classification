@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="yelp2", type=str)
 parser.add_argument("--samplecnt", default=500, type=int)
 parser.add_argument("--epoch", default=100, type=int)
+parser.add_argument("--maxlen", default=500, type=int)
 #parser.add_argument("--model", default='bert', type=str)
 parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw','cnndm','fillin'])
 #parser.add_argument("--unify", default=1, type=int, choices=[0,1,2])
@@ -135,7 +136,7 @@ def train_step_base(prompts, labels):
 
 ####### prepare data
 ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt)
-ds.df_train['content'] = ds.df_train['content'].map(lambda x: truncate(x))
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: truncate(x, maxlen))
 
 ds_ = load_data(dataset=args.dsn, samplecnt=-1)
 label_unique = ds.df_test.label.unique()

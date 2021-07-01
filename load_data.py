@@ -6,8 +6,8 @@ import pandas as pd
 #from sklearn.datasets import fetch_20newsgroups
 from transformers import AutoTokenizer
 tokenizer_bert = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
-def truncate(sent):
-    return tokenizer_bert.batch_decode([tokenizer_bert.encode(sent, truncation=True, max_length=512)], skip_special_tokens=True, clean_up_tokenization_spaces=True)[0]
+def truncate(sent, max_length):
+    return tokenizer_bert.batch_decode([tokenizer_bert.encode(sent, truncation=True, max_length=max_length)], skip_special_tokens=True, clean_up_tokenization_spaces=True)[0]
 
 
 cap = 600
