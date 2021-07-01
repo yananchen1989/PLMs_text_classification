@@ -25,11 +25,11 @@ class fillInmask():
         #self.tagger = SequenceTagger.load("ner-large")
         # python -m spacy download en_core_web_sm
         self.ner_model = spacy.load('en_core_web_sm')
-        tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
-        model = AutoModelWithLMHead.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
+        self.tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
+        self.model = AutoModelWithLMHead.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
 
         #if torch.cuda.is_available():
-        self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0)
+        self.nlp = pipeline("fill-mask", model=self.model, tokenizer=self.tokenizer, device=0)
             #self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
         #else:
             #self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased')
@@ -56,7 +56,7 @@ class fillInmask():
 
     def augment(self, sent ):
 
-        sent = tokenizer.batch_decode([tokenizer.encode(sent)[1:512]], clean_up_tokenization_spaces=True)
+        sent = self.tokenizer.batch_decode([self.tokenizer.encode(sent)[1:512]], clean_up_tokenization_spaces=True)
 
         doc = self.ner_model(sent)
         ners_to_masked = list(set([ii.text for ii in doc.ents]))
