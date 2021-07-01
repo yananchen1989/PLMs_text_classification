@@ -7,7 +7,7 @@ import pandas as pd
 from transformers import AutoTokenizer
 tokenizer_bert = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
 def truncate(sent):
-    return tokenizer_bert.batch_decode([tokenizer_bert.encode(sent, truncation=True, max_length=512)], skip_special_tokens=True, clean_up_tokenization_spaces=True)
+    return tokenizer_bert.batch_decode([tokenizer_bert.encode(sent, truncation=True, max_length=512)], skip_special_tokens=True, clean_up_tokenization_spaces=True)[0]
 
 
 cap = 600
@@ -449,12 +449,12 @@ def record_log(file, record):
         writer.writerow([cur] + record)
 
 from transformers import GPT2Tokenizer
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained("gpt2")
 
 def get_tokens_len(ds, cap3rd):
     lens = []
-    for content in ds.df_test['content'].tolist():
-        tokens = tokenizer.tokenize(content)
+    for content in ds.df_train['content'].tolist():
+        tokens = tokenizer_gpt2.tokenize(content)
         lens.append(len(tokens))
     return int(np.quantile(np.array(lens), cap3rd, axis=0))
 
