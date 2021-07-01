@@ -136,7 +136,7 @@ def train_step_base(prompts, labels):
 
 ####### prepare data
 ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt)
-ds.df_train['content'] = ds.df_train['content'].map(lambda x: truncate(x, maxlen))
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: truncate(x, args.maxlen))
 
 ds_ = load_data(dataset=args.dsn, samplecnt=-1)
 label_unique = ds.df_test.label.unique()
