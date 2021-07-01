@@ -116,9 +116,8 @@ def train_step_base(prompts, labels):
     return loss
 
 ####### prepare data
-seed = random.randint(0,int(time.time()))
-ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=seed)
-ds_ = load_data(dataset=args.dsn, samplecnt=-1, seed=seed)
+ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt)
+ds_ = load_data(dataset=args.dsn, samplecnt=-1)
 label_unique = ds.df_test.label.unique()
 label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
 ix_label = {i:label_unique[i] for i in range(label_unique.shape[0])}
@@ -239,7 +238,7 @@ for epoch in range(args.epoch):
          
 record_log('log', \
                  ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
-                 + ['seed:{}'.format(seed), 'final_epoch:{}'.format(epoch), \
+                 + ['final_epoch:{}'.format(epoch), \
                    'base {}'.format(base_cur_best),\
                     'gan {}'.format(gan_cur_best), 'max_gain {}'.format(monitoracc[-1]) ]
            )

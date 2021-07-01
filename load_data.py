@@ -8,20 +8,19 @@ import pandas as pd
 
 cap = 600
 
-def sample_stratify(df, samplecnt, seed):
+def sample_stratify(df, samplecnt):
     if samplecnt < 0:
         return df 
     ll = []
     for cate in df['label'].unique():
-        dfs = df.loc[df['label']==cate].sample(samplecnt, random_state=seed)
+        dfs = df.loc[df['label']==cate].sample(samplecnt)
         ll.append(dfs)
     return pd.concat(ll).sample(frac=1)
 
 class load_data():
-    def __init__(self, samplecnt = -1, dataset='yahoo', seed=1234):
+    def __init__(self, samplecnt = -1, dataset='yahoo'):
         self.samplecnt = samplecnt
         self.dataset = dataset
-        self.seed = seed 
         self.path = './torch_ds'
 
         if self.dataset == 'yahoo':
@@ -93,7 +92,7 @@ class load_data():
         else:
             self.df_train, self.df_test = df_train, df_test
 
-        self.df_train = sample_stratify(self.df_train, self.samplecnt, self.seed)
+        self.df_train = sample_stratify(self.df_train, self.samplecnt)
  
 
 

@@ -255,9 +255,7 @@ def synthesize(ds, max_len):
     return df_synthesize #sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min(), seed )
 
 
-seed = random.randint(0,int(time.time()))
-print('curseed:', seed)
-ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, seed=seed)
+ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 if args.cap3rd > 1:
     max_len = int(args.cap3rd)
 else:
@@ -306,8 +304,7 @@ while 1:
 
 record_log('logb', \
     ['summary==>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-    ['seed:{}'.format(seed), \
-    'baseline_acc {}'.format(best_val_acc_noaug),
+    ['baseline_acc {}'.format(best_val_acc_noaug),
     'aug_ratio {}'.format(aug_ratio), \
     'accs_iters {}'.format(' '.join([str(ii) for ii in accs_iters])),  \
     'cur_best_acc {}'.format(max(accs_iters)), \
