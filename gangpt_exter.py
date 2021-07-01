@@ -200,8 +200,7 @@ for epoch in range(args.epoch):
     print("\nStart epoch", epoch)
     for step, trunk in enumerate(ds_train):
         prompts = trunk[0]
-        labels = trunk[1] 
-        break 
+        labels = trunk[1]  
 
         #print('begin to generate')
         if args.syn == 'gpt':
