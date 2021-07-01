@@ -14,7 +14,7 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 #os.environ['CUDA_VISIBLE_DEVICES'] = '3'  
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="yelp2", type=str)
+parser.add_argument("--dsn", default="amazon2", type=str)
 parser.add_argument("--samplecnt", default=500, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 #parser.add_argument("--model", default='bert', type=str)
@@ -135,7 +135,10 @@ def train_step_base(prompts, labels):
 
 ####### prepare data
 seed = random.randint(0,int(time.time()))
-ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=seed)
+for args.dsn in ['yelp2', 'yelp5','amazon2','amazon5', 'imbd']:
+    ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt, seed=seed)
+    print(args.dsn, ds.df_train.shape[0], ds.df_test.shape[0])
+
 ds_ = load_data(dataset=args.dsn, samplecnt=-1, seed=seed)
 label_unique = ds.df_test.label.unique()
 label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
