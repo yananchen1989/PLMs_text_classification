@@ -14,7 +14,7 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 #os.environ['CUDA_VISIBLE_DEVICES'] = '3'  
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="amazon2", type=str)
+parser.add_argument("--dsn", default="yelp2", type=str)
 parser.add_argument("--samplecnt", default=500, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 #parser.add_argument("--model", default='bert', type=str)

@@ -4,6 +4,10 @@ import tensorflow as tf
 import pandas as pd 
 #from sklearn.model_selection import train_test_split
 #from sklearn.datasets import fetch_20newsgroups
+from transformers import AutoTokenizer
+tokenizer_bert = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
+def truncate(sent):
+    return tokenizer_bert.batch_decode([tokenizer_bert.encode(sent, truncation=True, max_length=512)], skip_special_tokens=True, clean_up_tokenization_spaces=True)
 
 
 cap = 600
@@ -93,7 +97,7 @@ class load_data():
             self.df_train, self.df_test = df_train, df_test
 
         self.df_train = sample_stratify(self.df_train, self.samplecnt)
- 
+        self.df_train['content'] = self.df_train['content'].map(lambda x: truncate(x))
 
 
 '''
