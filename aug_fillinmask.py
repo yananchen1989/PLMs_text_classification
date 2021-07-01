@@ -56,7 +56,7 @@ class fillInmask():
 
     def augment(self, sent ):
 
-        sent = self.tokenizer.batch_decode([self.tokenizer.encode(sent)[1:512]], clean_up_tokenization_spaces=True)
+        sent = self.tokenizer.batch_decode([self.tokenizer.encode(sent)], skip_special_tokens=True, clean_up_tokenization_spaces=True)
 
         doc = self.ner_model(sent)
         ners_to_masked = list(set([ii.text for ii in doc.ents]))
