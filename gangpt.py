@@ -2,7 +2,6 @@ import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,random, ti
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
-import datasets
 from tensorflow.keras import layers
 from tensorflow.keras.callbacks import *
 import tensorflow_hub as hub
@@ -162,18 +161,18 @@ base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 #     gr_optimizer = keras.optimizers.Adam()
 #     uni_optimizer = keras.optimizers.Adam()
 #     base_optimizer = keras.optimizers.Adam()
-from aug_fillinmask import *
-augmentor = fillInmask()
+# from aug_fillinmask import *
+# augmentor = fillInmask()
 
-def get_sents_fake(ds_):
-    df_batch = ds_.df_train.sample(32)
-    df_batch['content_fake'] = df_batch['content'].map(lambda x: augmentor.augment(x))
-    sents_syn = tf.convert_to_tensor(df_batch['content_fake'].values)
-    sents_syn_label = tf.convert_to_tensor([0.0]*32)
+# def get_sents_fake(ds_):
+#     df_batch = ds_.df_train.sample(32)
+#     df_batch['content_fake'] = df_batch['content'].map(lambda x: augmentor.augment(x))
+#     sents_syn = tf.convert_to_tensor(df_batch['content_fake'].values)
+#     sents_syn_label = tf.convert_to_tensor([0.0]*32)
 
-    sents_real = tf.convert_to_tensor(df_batch['content'].values)
-    sents_real_label = tf.convert_to_tensor([1.0]*32)
-    return sents_syn, sents_real, sents_syn_label, sents_real_label
+#     sents_real = tf.convert_to_tensor(df_batch['content'].values)
+#     sents_real_label = tf.convert_to_tensor([1.0]*32)
+#     return sents_syn, sents_real, sents_syn_label, sents_real_label
 
 baseline_accs = []
 gan_accs = []
@@ -190,13 +189,12 @@ for epoch in range(args.epoch):
         labels_syn = labels + num_classes 
 
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
-        
-        
-        if args.unify == 1:
-            loss_gan = train_step_gan(prompts, prompts_syn,  \
-                       tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32))
-        else:
-            pass 
+             
+        # if args.unify == 1:
+        #     loss_gan = train_step_gan(prompts, prompts_syn,  \
+        #                tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32))
+        # else:
+        #     pass 
 
         # baseline
         loss = train_step_base(prompts, labels)
@@ -206,6 +204,7 @@ for epoch in range(args.epoch):
         check_weights_no_identical(generator_real, generator_fake)
 
         check_weights_no_identical(discriminator, discriminator_base)
+        print("loss:", loss)
 
     # gan validate
     for x_batch_val, y_batch_val in ds_test:

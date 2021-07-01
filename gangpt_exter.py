@@ -159,7 +159,7 @@ generator_base = tf.keras.models.clone_model(generator_fake)
 
 
 discriminator = get_discriminator(num_classes*2)
-discriminator_ext = get_discriminator_exter()
+#discriminator_ext = get_discriminator_exter()
 discriminator_base = get_discriminator(num_classes)
 
 text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
@@ -173,7 +173,7 @@ d_optimizer = keras.optimizers.Adam(learning_rate=lr)
 g_optimizer = keras.optimizers.Adam(learning_rate=lr)
 gr_optimizer = keras.optimizers.Adam(learning_rate=lr)
 gan_optimizer = keras.optimizers.Adam(learning_rate=lr)
-ext_optimizer = keras.optimizers.Adam(learning_rate=lr)
+#ext_optimizer = keras.optimizers.Adam(learning_rate=lr)
 
 base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 
@@ -184,15 +184,15 @@ if args.syn == 'cnndm':
     dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
 
 
-def get_sents_fake(ds_, batch_size):
-    df_batch = ds_.df_train.sample(batch_size)
-    df_batch['content_fake'] = df_batch['content'].map(lambda x: augmentor.augment(x))
-    sents_syn = tf.convert_to_tensor(df_batch['content_fake'].values)
-    sents_syn_label = tf.convert_to_tensor([0.0]*batch_size)
+# def get_sents_fake(ds_, batch_size):
+#     df_batch = ds_.df_train.sample(batch_size)
+#     df_batch['content_fake'] = df_batch['content'].map(lambda x: augmentor.augment(x))
+#     sents_syn = tf.convert_to_tensor(df_batch['content_fake'].values)
+#     sents_syn_label = tf.convert_to_tensor([0.0]*batch_size)
 
-    sents_real = tf.convert_to_tensor(df_batch['content'].values)
-    sents_real_label = tf.convert_to_tensor([1.0]*batch_size)
-    return sents_syn, sents_real, sents_syn_label, sents_real_label
+#     sents_real = tf.convert_to_tensor(df_batch['content'].values)
+#     sents_real_label = tf.convert_to_tensor([1.0]*batch_size)
+#     return sents_syn, sents_real, sents_syn_label, sents_real_label
 
 baseline_accs = []
 gan_accs = []

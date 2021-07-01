@@ -86,12 +86,12 @@ def get_generator_bert():
 #     model = keras.Model(inputs=text_input, outputs=embed)
 #     return model
 
-def get_discriminator_exter():
-    input_embed = keras.Input(shape=(768, ))
-    x = layers.Dense(256, activation="relu")(input_embed)
-    outputs = layers.Dense(1, activation="sigmoid")(x)
-    model = keras.Model(inputs=input_embed, outputs=outputs)
-    return model
+# def get_discriminator_exter():
+#     input_embed = keras.Input(shape=(768, ))
+#     x = layers.Dense(256, activation="relu")(input_embed)
+#     outputs = layers.Dense(1, activation="sigmoid")(x)
+#     model = keras.Model(inputs=input_embed, outputs=outputs)
+#     return model
 
 def get_discriminator(num_classes):
     input_embed = keras.Input(shape=(768, ))
@@ -107,7 +107,7 @@ def synthesize(prompts,  max_len):
     output_sequences = gpt2.generate(
         input_ids = inputs['input_ids'],
         attention_mask = inputs['attention_mask'] ,
-        max_length= max_len*2,
+        max_length= min(1024, max_len*2),
         temperature=1,
         top_k=0,
         top_p=0.9,
