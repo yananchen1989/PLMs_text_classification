@@ -134,6 +134,7 @@ def train_step_base(prompts, labels):
     return loss
 
 ####### prepare data
+ds = load_data(dataset=args.dsn, samplecnt=args.samplecnt)
 ds_ = load_data(dataset=args.dsn, samplecnt=-1)
 label_unique = ds.df_test.label.unique()
 label_ix = {label_unique[i]:i for i in range(label_unique.shape[0])}
