@@ -55,8 +55,9 @@ class fillInmask():
     #     return random_tokens
 
     def augment(self, sent ):
-        #ner_replace = {}
-        #if self.ner_set:
+
+        sent = tokenizer.batch_decode([tokenizer.encode(sent)[1:512]], clean_up_tokenization_spaces=True)
+
         doc = self.ner_model(sent)
         ners_to_masked = list(set([ii.text for ii in doc.ents]))
         for ner in ners_to_masked:

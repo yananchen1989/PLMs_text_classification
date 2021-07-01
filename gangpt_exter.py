@@ -14,11 +14,11 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 #os.environ['CUDA_VISIBLE_DEVICES'] = '3'  
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="ag", type=str)
-parser.add_argument("--samplecnt", default=100, type=int)
+parser.add_argument("--dsn", default="yelp2", type=str)
+parser.add_argument("--samplecnt", default=500, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 #parser.add_argument("--model", default='bert', type=str)
-parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw','cnndm'])
+parser.add_argument("--syn", default='gpt', type=str, choices=['gpt', 'raw','cnndm','fillin'])
 #parser.add_argument("--unify", default=1, type=int, choices=[0,1,2])
 args = parser.parse_args()
 print('args==>', args)
@@ -177,9 +177,10 @@ gan_optimizer = keras.optimizers.Adam(learning_rate=lr)
 
 base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 
-#from aug_fillinmask import *
-#augmentor = fillInmask()
-#print('fillin augmentor initialized')
+from aug_fillinmask import *
+augmentor = fillInmask()
+print('fillin augmentor initialized')
+
 if args.syn == 'cnndm':
     dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
 
@@ -202,6 +203,7 @@ for epoch in range(args.epoch):
     for step, trunk in enumerate(ds_train):
         prompts = trunk[0]
         labels = trunk[1] 
+        break 
 
         #print('begin to generate')
         if args.syn == 'gpt':
@@ -215,6 +217,9 @@ for epoch in range(args.epoch):
             prompts_syn = tf.convert_to_tensor(np.array(sent_syn))
         elif args.syn == 'cnndm':
             prompts_syn = tf.convert_to_tensor(dfcnndm.sample(prompts.shape[0])['content'].values)
+        elif args.syn == 'fillin':
+            prompts_syn = tf.convert_to_tensor(np.array([augmentor.augment(s.decode()) for s in prompts.numpy()]))
+
         labels_syn = labels + num_classes 
 
         print('train_step')
