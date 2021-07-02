@@ -191,17 +191,6 @@ gan_optimizer = keras.optimizers.Adam(learning_rate=lr)
 
 base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 
-
-if args.syn == 'fillin':  
-    from aug_fillinmask import *
-    augmentor = fillInmask()
-    print('fillin augmentor initialized')
-
-elif args.syn == 'cnndm':
-    dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
-
-elif args.syn == 'raw':
-    ds_ = load_data(dataset=args.dsn, samplecnt=-1)
 # def get_sents_fake(ds_, batch_size):
 #     df_batch = ds_.df_train.sample(batch_size)
 #     df_batch['content_fake'] = df_batch['content'].map(lambda x: augmentor.augment(x))
