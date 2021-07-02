@@ -70,14 +70,13 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     generated_images = generator_fake(prompts_syn_tensor )
     real_images = generator_real(prompts_tensor)
 
-    #labels_tensor += 0.05 * tf.random.uniform(labels_tensor.shape)
-    #labels_syn_tensor += 0.05 * tf.random.uniform(labels_syn_tensor.shape)
-
     labels_tensor_oht = tf.one_hot(labels_tensor, depth=num_classes*2)
     labels_syn_tensor_oht = tf.one_hot(labels_syn_tensor, depth=num_classes*2)
-    combined_labels = tf.concat([labels_tensor_oht, labels_syn_tensor_oht], axis=0)
 
-    combined_labels += 0.05 * tf.random.uniform(combined_labels.shape)
+    labels_tensor_oht += 0.05 * tf.random.uniform(labels_tensor_oht.shape)
+    labels_syn_tensor_oht += 0.05 * tf.random.uniform(labels_syn_tensor_oht.shape)
+
+    combined_labels = tf.concat([labels_tensor_oht, labels_syn_tensor_oht], axis=0)
 
     combined_images = tf.concat([generated_images, real_images], axis=0)
     #combined_labels = tf.concat([labels_syn_tensor, labels_tensor], axis=0)
@@ -91,14 +90,14 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     # generator_fake update
     with tf.GradientTape() as tape:
         predictions = discriminator(generator_fake(prompts_syn_tensor))
-        g_loss = keras.losses.CategoricalCrossentropy()(labels_tensor, predictions)
+        g_loss = keras.losses.CategoricalCrossentropy()(labels_tensor_oht, predictions)
     grads = tape.gradient(g_loss, generator_fake.trainable_weights)
     g_optimizer.apply_gradients(zip(grads, generator_fake.trainable_weights))
 
     # generator_real update
     with tf.GradientTape() as tape:
         predictions = discriminator(generator_real(prompts_tensor))
-        gr_loss = keras.losses.CategoricalCrossentropy()(labels_tensor, predictions)
+        gr_loss = keras.losses.CategoricalCrossentropy()(labels_tensor_oht, predictions)
     grads = tape.gradient(gr_loss, generator_real.trainable_weights)
     gr_optimizer.apply_gradients(zip(grads, generator_real.trainable_weights))
     
@@ -187,8 +186,9 @@ gan_optimizer = keras.optimizers.Adam(learning_rate=lr)
 base_optimizer = keras.optimizers.Adam(learning_rate=lr)
 
 from aug_fillinmask import *
-augmentor = fillInmask()
-print('fillin augmentor initialized')
+if args.syn == 'fillin':  
+    augmentor = fillInmask()
+    print('fillin augmentor initialized')
 
 if args.syn == 'cnndm':
     dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
@@ -212,7 +212,6 @@ for epoch in range(args.epoch):
     for step, trunk in enumerate(ds_train):
         prompts = trunk[0]
         labels = trunk[1]  
-
 
         #print('begin to generate')
         if args.syn == 'gpt':
