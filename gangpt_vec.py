@@ -217,11 +217,11 @@ for epoch in range(args.epoch):
         #print('train_step_base')
         loss = train_step_base(prompts, labels)
 
-        check_weights_no_identical(generator_base, generator_real)
-        check_weights_no_identical(generator_base, generator_fake)
-        check_weights_no_identical(generator_real, generator_fake)
+        # check_weights_no_identical(generator_base, generator_real)
+        # check_weights_no_identical(generator_base, generator_fake)
+        # check_weights_no_identical(generator_real, generator_fake)
 
-        check_weights_no_identical(discriminator, discriminator_base)
+        # check_weights_no_identical(discriminator, discriminator_base)
 
         print('step:',step, 'loss_d:', d_loss.numpy(), 'loss_g:', g_loss.numpy(), 'loss_gr:', gr_loss.numpy(), \
                'loss_base:', loss.numpy())
