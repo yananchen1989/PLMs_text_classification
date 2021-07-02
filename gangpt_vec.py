@@ -64,9 +64,9 @@ assert gpus
 
 
 @tf.function
-def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_tensor):
+def train_step(prompts_tensor, prompts_fake_vec, labels_tensor, labels_syn_tensor):
 
-    generated_images = generator_fake(prompts_syn_tensor )
+    generated_images = generator_fake(prompts_fake_vec )
     real_images = generator_real(prompts_tensor)
 
     labels_tensor_oht = tf.one_hot(labels_tensor, depth=num_classes*2)
@@ -87,6 +87,10 @@ def train_step(prompts_tensor, prompts_syn_tensor, labels_tensor, labels_syn_ten
     d_optimizer.apply_gradients(zip(grads, discriminator.trainable_weights))
 
     # generator_fake update 
+    with tf.GradientTape() as tape:
+        predictions = discriminator(generator_fake(prompts_fake_vec))
+        g_loss = keras.losses.CategoricalCrossentropy()(labels_tensor_oht, predictions)        
+
     with tf.GradientTape() as tape:
         predictions = discriminator(generator_fake(prompts_syn_tensor))
         g_loss = keras.losses.CategoricalCrossentropy()(labels_tensor_oht, predictions)
@@ -165,6 +169,8 @@ generator_fake = get_generator_bert()
 generator_real = tf.keras.models.clone_model(generator_fake)
 generator_base = tf.keras.models.clone_model(generator_fake)
 
+generator_fake = get_generator_mlp()
+
 
 discriminator = get_discriminator(num_classes*2)
 #discriminator_ext = get_discriminator_exter()
@@ -215,25 +221,12 @@ for epoch in range(args.epoch):
         prompts = trunk[0]
         labels = trunk[1]  
 
-        #print('begin to generate')
-        if args.syn == 'gpt':
-            prompts_syn = synthesize([s.decode() for s in prompts.numpy()], max_len)
-        elif args.syn == 'raw':
-            df_trunk1 = ds_.df_train.sample(prompts.shape[0])
-            df_trunk2 = ds_.df_train.sample(prompts.shape[0])
-            sent_syn =[]
-            for sent1, sent2 in zip(df_trunk1['content'].tolist(), df_trunk2['content'].tolist()):
-                sent_syn.append(sent1 + sent2 )
-            prompts_syn = tf.convert_to_tensor(np.array(sent_syn))
-        elif args.syn == 'cnndm':
-            prompts_syn = tf.convert_to_tensor(dfcnndm.sample(prompts.shape[0])['content'].values)
-        elif args.syn == 'fillin':
-            prompts_syn = tf.convert_to_tensor(np.array([augmentor.augment(s.decode()) for s in prompts.numpy()]))
+        prompts_fake_vec = tf.random.uniform([prompts.shape[0], 512])
 
         labels_syn = labels + num_classes 
 
         #print('train_step')
-        d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  labels, labels_syn )
+        d_loss, g_loss, gr_loss = train_step(prompts, prompts_fake_vec,  labels, labels_syn )
         
         # baseline
         #print('train_step_base')

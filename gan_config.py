@@ -37,6 +37,13 @@ def get_generator_bert():
     model = keras.Model(inputs=text_input, outputs=embed)
     return model
 
+def get_generator_mlp():
+    input_embed = keras.Input(shape=(512, ))
+    x = layers.Dense(256, activation="relu")(input_embed)
+    embed = layers.Dense(768)(x)# (None, 768)
+    model = keras.Model(inputs=input_embed, outputs=embed)
+    return model
+
 # def encode_rcnn(x, rnn=False):
 #     # Conv1D(64, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(title_embed)
 #     #title_gru = layers.Bidirectional(layers.GRU(128, return_sequences=False))(x)#(?, ?, 256)
@@ -99,6 +106,7 @@ def get_discriminator(num_classes):
     outputs = layers.Dense(num_classes, activation="softmax")(x)
     model = keras.Model(inputs=input_embed, outputs=outputs)
     return model
+
 
 
 def synthesize(prompts,  max_len):
