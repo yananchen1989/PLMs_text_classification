@@ -252,10 +252,12 @@ def synthesize(ds, max_len):
 
     df_synthesize = pd.DataFrame(infos, columns = ['content','label'])
     assert df_synthesize.shape[0] == ds.df_train.shape[0]
-    return df_synthesize #sample_stratify(df_synthesize, df_synthesize['label'].value_counts().min(), seed )
+    return df_synthesize 
 
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: truncate(x, args.maxlen))
+
 if args.cap3rd > 1:
     max_len = int(args.cap3rd)
 else:

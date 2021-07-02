@@ -266,7 +266,8 @@ for epoch in range(args.epoch):
       'base:', base_cur_best, 'gan:', gan_cur_best, 'gain:',  gain  )
     monitoracc.append( gain )
 
-    if len(monitoracc) >= 20 and len(set(monitoracc[-7:])) ==1:
+    if (len(monitoracc) >= 20 and len(set(monitoracc[-5:])) ==1) or \
+       (len(monitoracc) >= 30 and monitoracc[-1]<=0 )  :
         print('epochs terminated ', max(monitoracc))
         break
          
