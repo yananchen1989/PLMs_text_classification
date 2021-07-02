@@ -46,7 +46,7 @@ class load_data():
             #ixl = {1:world_replace, 2:"Sports", 3:"Business", 4:"Science and technology"}
             ds_train, ds_test =  torchtext.datasets.AG_NEWS(root=self.path, split=('train', 'test'))
             
-        elif self.dataset == 'imbd':
+        elif self.dataset == 'imdb':
             #ixl = {'pos':'positive', 'neg':'negative'}
             ds_train, ds_test =  torchtext.datasets.IMDB(root=self.path, split=('train', 'test'))  
 
