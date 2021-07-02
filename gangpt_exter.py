@@ -232,7 +232,7 @@ for epoch in range(args.epoch):
         labels_syn = labels + num_classes 
 
         print('train_step')
-        d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
+        d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  labels, labels_syn )
         
         # baseline
         print('train_step_base')
