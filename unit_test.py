@@ -101,7 +101,13 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 
 
-
+for ner in ners_to_masked:
+    if len(ner)<=2 or ner.lower() in stopwords or ner not in sent:
+        continue
+    text_masked = sent.replace(ner, augmentor.nlp.tokenizer.mask_token, 1) 
+    fillin_results = augmentor.nlp(text_masked)
+    fillin_ners = [i['token_str'] for i in fillin_results]
+    sent = text_masked.replace(augmentor.nlp.tokenizer.mask_token, fillin_ners[0])
 
 
 

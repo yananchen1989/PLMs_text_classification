@@ -42,7 +42,7 @@ parser.add_argument("--trunk_size", default=50, type=int)
 #parser.add_argument("--dpp_retain", default=0.7, type=float)
 parser.add_argument("--max_aug_times", default=10, type=int)
 parser.add_argument("--setbase", default=1, type=int)
-
+parser.add_argument("--maxlen", default=500, type=int)
 parser.add_argument("--eda_times", required=False, type=int, default=1, help="number of augmented sentences per original sentence")
 parser.add_argument("--eda_sr", required=False, type=float, default=0.2, help="percent of words in each sentence to be replaced by synonyms")
 parser.add_argument("--eda_ri", required=False, type=float, default=0.2, help="percent of words in each sentence to be inserted")

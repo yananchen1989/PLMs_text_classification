@@ -11,15 +11,12 @@ CUDA_VISIBLE_DEVICES=1 nohup  python -u baseline_classifier.py --dsn ag --aug ge
 
 while true
 do
-for dsn in ag yahoo stsa dbpedia
-do 
-CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn} --aug eda 
-CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn} --aug bt 
-CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn} --aug fillin 
-CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn} --aug generate --check no 
-CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn}  --aug generate --check enc 
-CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${dsn}  --aug generate --check nli 
-done
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${2} --aug eda --samplecnt 512
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${2} --aug bt --samplecnt 512
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${2} --aug fillin --samplecnt 512
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${2} --aug generate --check no --samplecnt 512
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${2}  --aug generate --check enc --samplecnt 512
+CUDA_VISIBLE_DEVICES=${1} python -u baseline_classifier.py --dsn ${2}  --aug generate --check nli --samplecnt 512
 done 
 
 
@@ -33,10 +30,11 @@ pip install https://ghproxy.com/https://github.com/explosion/spacy-models/releas
 
 
 
+git add .;git commit -m "update";git push
 
 
 
-
+python gangpt_exter.py --dsn ag --samplecnt 500 --syn raw
 
 
 
