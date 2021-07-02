@@ -90,10 +90,6 @@ def train_step(prompts_tensor, prompts_fake_vec, labels_tensor, labels_syn_tenso
     with tf.GradientTape() as tape:
         predictions = discriminator(generator_fake(prompts_fake_vec))
         g_loss = keras.losses.CategoricalCrossentropy()(labels_tensor_oht, predictions)        
-
-    with tf.GradientTape() as tape:
-        predictions = discriminator(generator_fake(prompts_syn_tensor))
-        g_loss = keras.losses.CategoricalCrossentropy()(labels_tensor_oht, predictions)
     grads = tape.gradient(g_loss, generator_fake.trainable_weights)
     g_optimizer.apply_gradients(zip(grads, generator_fake.trainable_weights))
 
