@@ -171,7 +171,7 @@ for epoch in range(args.epoch):
         loss = train_step_base(prompts, labels)
 
         print('base loss:', loss.numpy(), 'cs loss:', loss_cs.numpy())
-
+    print('epochloss {}:'.format(epoch), 'base loss:', loss.numpy(), 'cs loss:', loss_cs.numpy())
     for x_batch_val, y_batch_val in ds_test:
         preds = model_cs(x_batch_val, training=False)  
         preds_accum =  preds[:,:num_classes] + preds[:,num_classes:]

@@ -227,8 +227,6 @@ for epoch in range(args.epoch):
         print('train_step')
         d_loss, g_loss, gr_loss = train_step(prompts, prompts_syn,  tf.cast(labels, tf.float32), tf.cast(labels_syn, tf.float32) )
         
-        print('loss:', d_loss.numpy(), g_loss.numpy(), gr_loss.numpy())
-
         # baseline
         print('train_step_base')
         loss = train_step_base(prompts, labels)
@@ -239,6 +237,10 @@ for epoch in range(args.epoch):
 
         check_weights_no_identical(discriminator, discriminator_base)
 
+        print('loss_d:', d_loss.numpy(), 'loss_g:', g_loss.numpy(), 'loss_gr:', gr_loss.numpy(), \
+               'loss_base:', loss.numpy())
+    print('epochloss {}:'.format(epoch), 'loss_d:', d_loss.numpy(), 'loss_g:', g_loss.numpy(), 'loss_gr:', gr_loss.numpy(), \
+           'loss_base:', loss.numpy())
     # gan validate
     for x_batch_val, y_batch_val in ds_test:
         preds = model_gan(x_batch_val, training=False)  
