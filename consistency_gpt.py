@@ -14,8 +14,9 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 #os.environ['CUDA_VISIBLE_DEVICES'] = '3'  
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="yelp2", type=str)
-parser.add_argument("--samplecnt", default=512, type=int)
+parser.add_argument("--dsn", default="yelp2", type=str, choices=['ag','yahoo','stsa','imdb','yelp5',\
+                            'yelp2','amazon5','amazon2', 'dbpedia','stsa','snips'])
+parser.add_argument("--samplecnt", default=32, type=int)
 parser.add_argument("--epoch", default=100, type=int)
 parser.add_argument("--maxlen", default=500, type=int)
 parser.add_argument("--model", default='bert', type=str)
@@ -36,7 +37,7 @@ if gpus:
     print(e)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 assert device.type=='cuda'
-from load_data import * 
+from ./utils/load_data import * 
 from transblock import * 
 from gan_config import * 
 
