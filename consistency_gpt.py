@@ -37,9 +37,9 @@ if gpus:
     print(e)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 assert device.type=='cuda'
-from ./utils/load_data import * 
-from transblock import * 
-from gan_config import * 
+from utils.load_data import *
+from utils.transblock import * 
+from utils.gan_config import * 
 
 assert gpus
 

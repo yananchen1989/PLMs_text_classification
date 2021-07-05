@@ -12,7 +12,7 @@ from tensorflow import keras
 from transformers import pipeline
 #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
 tf.keras.backend.set_floatx('float16')
-from eda import *
+from utils.eda import *
 import nltk 
 #nltk.download('wordnet')
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
@@ -68,13 +68,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 assert device.type=='cuda'
 device = 0
 
-from aug_fillinmask import *
+from utils.aug_fillinmask import *
 #from aug_generation import * 
 #from aug_translation import *
-from load_data import * 
-from transblock import * 
-from encoders import *
-from dpp_model import * 
+from utils.load_data import * 
+from utils.transblock import * 
+from utils.encoders import *
+from utils.dpp_model import * 
 
 
 if args.aug == 'generate' and args.check == 'enc':
