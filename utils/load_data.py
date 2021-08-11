@@ -1,11 +1,15 @@
-import sys,os,logging,glob,pickle,torch,joblib,torchtext
+import sys,os,logging,glob,pickle,torch,joblib
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
+import transformers
 #from sklearn.model_selection import train_test_split
 #from sklearn.datasets import fetch_20newsgroups
 from transformers import AutoTokenizer
-tokenizer_bert = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
+
+
+tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-uncased',cache_dir="./cache")
+
 def truncate(sent, max_length):
     return tokenizer_bert.batch_decode([tokenizer_bert.encode(sent, truncation=True, max_length=max_length)], skip_special_tokens=True, clean_up_tokenization_spaces=True)[0]
 
@@ -22,82 +26,81 @@ def sample_stratify(df, samplecnt):
     return pd.concat(ll).sample(frac=1)
 
 class load_data():
-    def __init__(self, samplecnt = -1, dataset='yahoo'):
+    def __init__(self, samplecnt = -1, dataset='yahoo', samplecnt_test=10000):
         self.samplecnt = samplecnt
         self.dataset = dataset
         self.path = './torch_ds'
+        self.samplecnt_test = samplecnt_test
 
-        if self.dataset == 'yahoo':
-            # ixl = {1: 'Society & Culture',
-            #                  2: 'Science & Mathematics',
-            #                  3: 'Health',
-            #                  4: 'Education & Reference',
-            #                  5: 'Computers & Internet',
-            #                  6: 'Sports',
-            #                  7: 'Business & Finance',
-            #                  8: 'Entertainment & Music',
-            #                  9: 'Family & Relationships',
-            #                  10: 'Politics & Government'}
-            ds_train, ds_test =  torchtext.datasets.YahooAnswers(root=self.path, split=('train', 'test'))
-
-        elif self.dataset == 'ag':
-            #world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
-            #           'Crime','Murder','Religion','Jurisdiction', 'Democracy'])
-            #ixl = {1:world_replace, 2:"Sports", 3:"Business", 4:"Science and technology"}
-            ds_train, ds_test =  torchtext.datasets.AG_NEWS(root=self.path, split=('train', 'test'))
+        if self.dataset in ['ag','yahoo']:
+            self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, self.dataset))
+            self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, self.dataset))
             
-        elif self.dataset == 'imdb':
-            #ixl = {'pos':'positive', 'neg':'negative'}
-            ds_train, ds_test =  torchtext.datasets.IMDB(root=self.path, split=('train', 'test'))  
+            if self.dataset == 'ag':
+                world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
+                                  'Crime','Murder','Religion','Jurisdiction', 'Democracy'])
+                ixl = {1:'World', 2:"Sports", 3:"Business", 4:"Science and technology"} 
+            if self.dataset == 'yahoo':
+                ixl = {  1: 'Society & Culture',
+                  2: 'Science & Mathematics',
+                  3: 'Health',
+                  4: 'Education & Reference',
+                  5: 'Computers & Internet',
+                  6: 'Sports',
+                  7: 'Business & Finance',
+                  8: 'Entertainment & Music',
+                  9: 'Family & Relationships',
+                 10: 'Politics & Government'}
+            self.df_train['label_name'] = self.df_train['label'].map(lambda x: ixl.get(x))
+            self.df_test['label_name'] = self.df_test['label'].map(lambda x: ixl.get(x))
+            self.df_train['label'] = self.df_train['label'] - 1
+            self.df_test['label'] = self.df_test['label'] - 1
 
-        elif self.dataset == 'yelp5':
-            ds_train, ds_test =  torchtext.datasets.YelpReviewFull(root=self.path, split=('train', 'test'))
-
-        elif self.dataset == 'yelp2':
-            ds_train, ds_test =  torchtext.datasets.YelpReviewPolarity(root=self.path, split=('train', 'test'))
-
-        elif self.dataset == 'amazon5':
-            ds_train, ds_test =  torchtext.datasets.AmazonReviewFull(root=self.path, split=('train', 'test'))
-        
-        elif self.dataset == 'amazon2':
-            ds_train, ds_test =  torchtext.datasets.AmazonReviewPolarity(root=self.path, split=('train', 'test'))
-        
-        elif self.dataset == 'dbpedia':
-            ds_train, ds_test =  torchtext.datasets.DBpedia(root=self.path, split=('train', 'test'))
-            ixl = {1:"Company",
-                    2:"Educational Institution",
-                    3:"Artist",
-                    4:"Athlete",
-                    5:"Office Holder",
-                    6:"Mean Of Transportation",
-                    7:"Building",
-                    8:"Natural Place",
-                    9:"Village",
-                    10:"Animal",
-                    11:"Plant",
-                    12:"Album",
-                    13:"Film",
-                    14:"Written Work"}            
 
         elif self.dataset == 'stsa':
-            df_train = pd.read_csv("{}/stsa/train.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
-            df_test = pd.read_csv("{}/stsa/test.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
-            df_dev = pd.read_csv("{}/stsa/dev.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
-            df_test = pd.concat([df_dev, df_test])
-        elif self.dataset == 'snips':
-            df_train = pd.read_csv("{}/snips/train.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
-            df_test = pd.read_csv("{}/snips/devtest.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
+            self.df_train = pd.read_csv("{}/stsa/train.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
+            self.df_test = pd.read_csv("{}/stsa/test.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
+            self.df_dev = pd.read_csv("{}/stsa/dev.tsv".format(self.path), sep='\t', header=None, names=['label', 'content'])
+            self.df_test = pd.concat([self.df_dev, self.df_test])
+
+            self.df_train['label_name'] = self.df_train['label'].map(lambda x: x.lower())
+            self.df_test['label_name'] = self.df_test['label'].map(lambda x: x.lower())
+
+            self.df_train['label'] = self.df_train['label'].map({'Negative':0, 'Positive':1})
+            self.df_test['label'] = self.df_test['label'].map({'Negative':0, 'Positive':1})
+        
+        elif self.dataset in ['yelp2','amazon2']:
+            self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, self.dataset))
+            self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, self.dataset))
+            ixl = {1:'negative', 2:'positive'}
+            self.df_train['label_name'] = self.df_train['label'].map(lambda x: ixl.get(x))
+            self.df_test['label_name'] = self.df_test['label'].map(lambda x: ixl.get(x))
+            self.df_train['label'] = self.df_train['label'] - 1
+            self.df_test['label'] = self.df_test['label'] - 1
+
+        elif self.dataset == 'imdb':
+            self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, self.dataset))
+            self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, self.dataset))
+            ixl = {'neg':'negative', 'pos':'positive'}                                
+            self.df_train['label_name'] = self.df_train['label'].map(lambda x: ixl.get(x))
+            self.df_test['label_name'] = self.df_test['label'].map(lambda x: ixl.get(x))
+            self.df_train['label'] = self.df_train['label'].map({'neg':0, 'pos':1})
+            self.df_test['label'] = self.df_test['label'].map({'neg':0, 'pos':1})
+
+
 
         else:
             raise KeyError("dsn illegal!")  
 
-        if self.dataset not in ['stsa', 'snips']:
-            self.df_train, self.df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
-        else:
-            self.df_train, self.df_test = df_train, df_test
-
         self.df_train = sample_stratify(self.df_train, self.samplecnt)
+        if self.samplecnt_test > 0:
+            self.df_test = self.df_test.sample(min(self.df_test.shape[0], self.samplecnt_test))
+
+
+
+
         
+
 
 '''
     def get_tweet(self):
@@ -237,209 +240,6 @@ class load_data():
 '''
 
 
-def get_keras_data(df_train, df_test, sparse=False):
-    num_classes = df_test['label'].unique().shape[0]
-    x_train = df_train['content'].values.reshape(-1,1)
-    x_test = df_test['content'].values.reshape(-1,1)
-
-    #if num_classes > 2:
-    labels = df_test['label'].unique().tolist()
-    label_idx = {l:ix for ix, l in enumerate(labels)}
-
-    if not sparse:
-        y_train = tf.keras.utils.to_categorical(\
-                          df_train['label'].map(lambda x: label_idx.get(x)).values, \
-                          num_classes = num_classes, dtype='int' )
-        y_test = tf.keras.utils.to_categorical(\
-                         df_test['label'].map(lambda x: label_idx.get(x)).values, \
-                         num_classes = num_classes, dtype='int' )       
-    else:
-        y_train = df_train['label'].map(lambda x: label_idx.get(x)).values
-        y_test = df_test['label'].map(lambda x: label_idx.get(x)).values   
-
-    return (x_train,y_train),  (x_test, y_test), num_classes, label_idx
-
-
-   
-stopwords = ['i',
- 'me',
- 'my',
- 'myself',
- 'we',
- 'our',
- 'ours',
- 'ourselves',
- 'you',
- "you're",
- "you've",
- "you'll",
- "you'd",
- 'your',
- 'yours',
- 'yourself',
- 'yourselves',
- 'he',
- 'him',
- 'his',
- 'himself',
- 'she',
- "she's",
- 'her',
- 'hers',
- 'herself',
- 'it',
- "it's",
- 'its',
- 'itself',
- 'they',
- 'them',
- 'their',
- 'theirs',
- 'themselves',
- 'what',
- 'which',
- 'who',
- 'whom',
- 'this',
- 'that',
- "that'll",
- 'these',
- 'those',
- 'am',
- 'is',
- 'are',
- 'was',
- 'were',
- 'be',
- 'been',
- 'being',
- 'have',
- 'has',
- 'had',
- 'having',
- 'do',
- 'does',
- 'did',
- 'doing',
- 'a',
- 'an',
- 'the',
- 'and',
- 'but',
- 'if',
- 'or',
- 'because',
- 'as',
- 'until',
- 'while',
- 'of',
- 'at',
- 'by',
- 'for',
- 'with',
- 'about',
- 'against',
- 'between',
- 'into',
- 'through',
- 'during',
- 'before',
- 'after',
- 'above',
- 'below',
- 'to',
- 'from',
- 'up',
- 'down',
- 'in',
- 'out',
- 'on',
- 'off',
- 'over',
- 'under',
- 'again',
- 'further',
- 'then',
- 'once',
- 'here',
- 'there',
- 'when',
- 'where',
- 'why',
- 'how',
- 'all',
- 'any',
- 'both',
- 'each',
- 'few',
- 'more',
- 'most',
- 'other',
- 'some',
- 'such',
- 'no',
- 'nor',
- 'not',
- 'only',
- 'own',
- 'same',
- 'so',
- 'than',
- 'too',
- 'very',
- 's',
- 't',
- 'can',
- 'will',
- 'just',
- 'don',
- "don't",
- 'should',
- "should've",
- 'now',
- 'd',
- 'll',
- 'm',
- 'o',
- 're',
- 've',
- 'y',
- 'ain',
- 'aren',
- "aren't",
- 'couldn',
- "couldn't",
- 'didn',
- "didn't",
- 'doesn',
- "doesn't",
- 'hadn',
- "hadn't",
- 'hasn',
- "hasn't",
- 'haven',
- "haven't",
- 'isn',
- "isn't",
- 'ma',
- 'mightn',
- "mightn't",
- 'mustn',
- "mustn't",
- 'needn',
- "needn't",
- 'shan',
- "shan't",
- 'shouldn',
- "shouldn't",
- 'wasn',
- "wasn't",
- 'weren',
- "weren't",
- 'won',
- "won't",
- 'wouldn',
- "wouldn't"]
 
 import datetime,csv
 def record_log(file, record):
@@ -448,23 +248,40 @@ def record_log(file, record):
         writer = csv.writer(f, delimiter=' ')
         writer.writerow([cur] + record)
 
-from transformers import GPT2Tokenizer
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained("gpt2")
-
 def get_tokens_len(ds, cap3rd):
     lens = []
     for content in ds.df_train['content'].tolist():
-        tokens = tokenizer_gpt2.tokenize(content)
+        tokens = tokenizer_bert.tokenize(content)
         lens.append(len(tokens))
     return int(np.quantile(np.array(lens), cap3rd, axis=0))
 
 
 
+def process_ds(ds, maxlen=500):
+    # ds.df_train['content'] = ds.df_train['content']\
+    #       .map(lambda x: x.replace('<br />',' '))
+    #if not transformers.__version__.startswith('2.'):
+    ds.df_train['content'] = ds.df_train['content'].map(lambda x: truncate(x, maxlen))
+    #label_unique = ds.df_test.label.unique()
+    # num_classes = label_unique.shape[0]
+    proper_len = get_tokens_len(ds, 0.9)
+    return ds,  proper_len
 
 
 
 
-
+expand_label_nli = {}
+expand_label_nli['World'] = ['Politics','War','Military','Terrorism','Election','Finance','government', 'ideology',\
+                            'legitimacy','socialism','totalitarian','constitution','court','fascism',
+                                  'Crime','Murder','Religion','Jurisdiction', 'Democracy']
+expand_label_nli['Science and technology'] = ['science','technology','IT','Computers','Internet',\
+                                    'algorithm','Space technology','aerospace','boitech','physics','chemistry',\
+                                    'biology','scientist','astronomy','universe']
+expand_label_nli['Business'] = ['business','finance','oil price','supply','inflation','dollors','bank','Wall Street',\
+                        'Federal Reserve','accrual','accountancy','sluggishness','consumers','trade','quarterly earnings',\
+                         'deposit','revenue','stocks','recapitalization','marketing']
+expand_label_nli['Sports'] = ['sports','athletics','Championships','Football','Olympic','tournament','Chelsea','league','Golf',\
+                            'NFL','super bowl','World Cup']
 
 
 

@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
 #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
-tf.keras.backend.set_floatx('float16')
+#tf.keras.backend.set_floatx('float16')
 from utils.eda import *
 import nltk 
 #nltk.download('wordnet')
@@ -20,7 +20,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="no", type=str)
 parser.add_argument("--dsn", default="", type=str)
-parser.add_argument("--samplecnt", default=100, type=int)
+parser.add_argument("--samplecnt", default=128, type=int)
 #parser.add_argument("--ite", default=5, type=int)
 parser.add_argument("--lang", default="zh", type=str)
 #parser.add_argument("--generate_m", default="gpt2", type=str)
@@ -31,8 +31,8 @@ parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--checkmode", default="rank", type=str) # rank or thres
 parser.add_argument("--beams", default=100, type=int)
 parser.add_argument("--rp", default=1.0, type=float)
-parser.add_argument("--check", default='enc', type=str, choices=['nli', 'enc', 'no'])
-parser.add_argument("--enc_m", default='dan', type=str)
+parser.add_argument("--check", default='enc', type=str, choices=['nli', 'enc', 'no','self'])
+parser.add_argument("--enc_m", default='dan', type=str, choices=['dan','cmlm','distil'])
 #parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 #parser.add_argument("--thres", default=0.65, type=float)
 #parser.add_argument("--times", default=2, type=int)
@@ -92,35 +92,13 @@ if args.aug == 'generate':
     nlp  = pipeline("text-generation", model='gpt2', device=device, return_full_text=False)
 
 if args.aug == 'bt':
-    tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache")
-    model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache")
-    tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache")
-    model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache")
+    tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache", local_files_only=True)
+    model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache", local_files_only=True)
+    tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache", local_files_only=True)
+    model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache", local_files_only=True)
     nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=device)
     nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=device)
 
-
-def do_train_test(ds):
-
-    (x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train_aug, ds.df_test)
-
-    if args.model in ['albert','electra', 'dan']:
-        model = get_model_bert(num_classes, args.model)
-        model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
-    elif args.model == 'former':
-        model = get_model_transormer(num_classes)
-        model.compile("adam", "categorical_crossentropy", metrics=["acc"])
-    else:
-        raise KeyError("input model illegal!")
-
-    history = model.fit(
-        x_train, y_train, batch_size=args.batch_size, epochs=50, \
-        validation_data=(x_test, y_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-
-    best_val_acc = max(history.history['val_acc'])
-    return round(best_val_acc, 4)
 
 # def dpp_rerank(df_simi_filer, enc, dpp_retain):
 #     embeds = enc.infer(df_simi_filer['content'].tolist())
@@ -269,7 +247,7 @@ if args.samplecnt > 0:
 if args.setbase:
     print("before augmentating")
     ds.df_train_aug = ds.df_train
-    best_val_acc_noaug = do_train_test(ds)
+    best_val_acc_noaug, model_base = do_train_test(ds)
 else:
     best_val_acc_noaug = -99
 
@@ -292,7 +270,7 @@ while 1:
     ds.df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
 
     aug_ratio = round(pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0], 2)
-    cur_acc = do_train_test(ds)
+    cur_acc, model_aug = do_train_test(ds)
     accs_iters.append(cur_acc)
     gain = round( (max(accs_iters) - best_val_acc_noaug) / best_val_acc_noaug, 4)
 

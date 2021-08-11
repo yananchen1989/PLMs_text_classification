@@ -1,96 +1,3 @@
-
-target_path = '/root/topic_classification_augmentation/TransformersDataAugmentation/src/utils/datasets'
-
-for dsn in ['ag','yahoo','dbpedia']:
-    ds = load_data(dataset=dsn, samplecnt=-1)
-
-    df_train, df_dev = train_test_split(ds.df_train, test_size=0.3)
-
-    df_train['content'] = df_train['content'].map(lambda x: x.replace('\t',' ').replace('\n',' '))
-    df_dev['content'] = df_dev['content'].map(lambda x: x.replace('\t',' ').replace('\n',' '))
-    ds.df_test['content'] = ds.df_test['content'].map(lambda x: x.replace('\t',' ').replace('\n',' '))
-
-
-    df_train[['label','content']].to_csv(target_path+'/{}/train.tsv'.format(dsn), sep='\t', header=None, index=False)
-    ds.df_test[['label','content']].to_csv(target_path+'/{}/test.tsv'.format(dsn), sep='\t', header=None, index=False)
-    df_dev[['label','content']].to_csv(target_path+'/{}/dev.tsv'.format(dsn), sep='\t', header=None, index=False)
-
-
-
-
-
-
-cc_news = datasets.load_dataset('cc_news', split="train")
-dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
-dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
-#dfcc = pd.concat([dfcc, dfcnndm])
-df_batch = dfcnndm.sample(32)
-
-
-ds = load_data(dataset='dbpedia', samplecnt=1000)
-(x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train.sample(10000), ds.df_test.sample(5000), sparse=True)
-model = get_model_bert(num_classes, 'albert')
-model.compile(Adam(lr=1e-5), 'sparse_categorical_crossentropy', metrics=["acc"])
-
-model.fit(
-        x_train, y_train, batch_size=32, epochs=50, \
-        validation_data=(x_test, y_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-
-intermediate_layer_model = tf.keras.Model(inputs=model.input,
-                                 outputs=model.get_layer('keras_layer_2').output['pooled_output'])
-
-
-
-preds = intermediate_layer_model.predict(x_test, verbose=1, batch_size=64)
-dff = pd.DataFrame(preds, columns=['c{}'.format(ii) for ii in range(preds.shape[1])])
-dff['label'] = y_test
-dff.to_csv('mnnbenchdata_test.csv',index=False)
-
-from sklearn.model_selection import train_test_split
-import pandas as pd 
-df = pd.read_csv("HIGGS.csv.gz", error_bad_lines=False, header=None, nrows=800000) #  0.6371
-df.columns = ['label'] + [str(i+1) for i in range(28)]
-df_train, df_test = train_test_split(df, test_size=0.125)
-
-df_train[[str(i+1) for i in range(28)] + ['label']].to_csv('higgs_train.csv', index=False)
-df_test[[str(i+1) for i in range(28)] + ['label']].to_csv('higgs_test.csv', index=False)
-
-
-labels_train = df_train.pop('label').values
-labels_test = df_test.pop('label').values
-input_embed = keras.Input(shape=(df_train.shape[1], ))
-outputs = layers.Dense(1, activation="sigmoid")(input_embed)
-model = keras.Model(inputs=input_embed, outputs=outputs)
-model.compile('adam', 'binary_crossentropy', metrics=["acc"])
-model.fit(
-        df_train.values, labels_train, batch_size=32, epochs=50, \
-        validation_data=(df_test.values, labels_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-
-
-
-df_train = pd.read_csv('mnnbenchdata_train.csv')
-df_test = pd.read_csv('mnnbenchdata_test.csv')
-
-input_embed = keras.Input(shape=(df_train.shape[1], ))
-outputs = layers.Dense(14, activation="softmax")(input_embed)
-model = keras.Model(inputs=input_embed, outputs=outputs)
-model.compile('adam', 'sparse_categorical_crossentropy', metrics=["acc"])
-
-feat_columns = [c for c in df_train.columns if c != 'label']
-model.fit(
-        df_train[feat_columns].values, df_train['label'].values, batch_size=32, epochs=50, \
-        validation_data=(df_test[feat_columns].values, df_test['label'].values), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-
-
-
-
-
 sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
 
 content = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
@@ -100,56 +7,131 @@ They are fed up with slow speeds, high prices and the level of customer service 
 '''
 
 
-
-for ner in ners_to_masked:
-    if len(ner)<=2 or ner.lower() in stopwords or ner not in sent:
-        continue
-    text_masked = sent.replace(ner, augmentor.nlp.tokenizer.mask_token, 1) 
-    fillin_results = augmentor.nlp(text_masked)
-    fillin_ners = [i['token_str'] for i in fillin_results]
-    sent = text_masked.replace(augmentor.nlp.tokenizer.mask_token, fillin_ners[0])
+tokenizer(sent, padding='max_length',  # Pad to max_length
+                                      truncation=True,  # Truncate to max_length
+                                      max_length=500,  
+                                      return_tensors='pt') 
 
 
 
+import os, argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--dsn", default="yahoo", type=str)
+parser.add_argument("--gpu", default=0, type=int)
+args = parser.parse_args()
+os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
+from utils.transblock import * 
+from utils.load_data import * 
+
+ds = load_data(dataset=args.dsn, samplecnt= -1)
+(x_train, y_train),  (x_test, y_test)= get_keras_data(ds.df_train, ds.df_test)
+model = get_model_bert(ds.df_test['label'].unique().shape[0])
+history = model.fit(
+        x_train, y_train, batch_size=32, epochs=30, \
+        validation_data=(x_test, y_test), verbose=1, validation_batch_size=64, validation_freq=5)
 
 
 
-# import transformations, contraints, and the Augmenter
-from textattack.transformations import WordSwapRandomCharacterDeletion
-from textattack.transformations import WordSwapQWERTY
-from textattack.transformations import CompositeTransformation
 
-from textattack.constraints.pre_transformation import RepeatModification
-from textattack.constraints.pre_transformation import StopwordModification
-
-from textattack.augmentation import Augmenter
-
-# Set up transformation using CompositeTransformation()
-transformation = CompositeTransformation([WordSwapRandomCharacterDeletion(), WordSwapQWERTY()])
-# Set up constraints
-constraints = [RepeatModification(), StopwordModification()]
-# Create augmenter with specified parameters
-augmenter = Augmenter(transformation=transformation, constraints=constraints, pct_words_to_swap=0.5, transformations_per_example=10)
-
-# Augment!
-augmenter.augment(sent)
+model.save_weights('./cls/model_former_{}.h5'.format(args.dsn) )
 
 
+model.load_weights('model_full_{}.h5'.format(args.dsn))
 
-# import the CheckListAugmenter
-from textattack.augmentation import CheckListAugmenter
-# Alter default values if desired
-augmenter = CheckListAugmenter(pct_words_to_swap=0.2, transformations_per_example=5)
-s = "I'd love to go to Japan but the tickets are 500 dollars"
-# Augment
-augmenter.augment(sent)
+model.evaluate()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#tokenizer.padding_side = "left" 
+#tokenizer.pad_token = tokenizer.eos_token
+gpt2_ft = GPT2LMHeadModel.from_pretrained('finetune_gpt2_ppo_ag_1024_1628217816', local_files_only=True)
+gpt2_ft.trainable = False
+gpt2_ft.config.pad_token_id=50256
 
-from textattack.augmentation import WordNetAugmenter
-augmenter = WordNetAugmenter(pct_words_to_swap=0.2, transformations_per_example=5)
-s = "I'd love to go to Japan but the tickets are 500 dollars"
-augmenter.augment(s)
+gpt2_ori = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2_ori.trainable = False
+gpt2_ori.config.pad_token_id=50256
+
+
+from transformers import pipeline
+gpt2_ori_nlp  = pipeline("text-generation", model=gpt2_ori, tokenizer=tokenizer, device=0, return_full_text=False)
+gpt2_ft_nlp  = pipeline("text-generation", model=gpt2_ft, tokenizer=tokenizer, device=0, return_full_text=False)
+
+dfs = ds.df_train.sample(50)
+
+
+
+#gpt2_imdb_pos  = pipeline("text-generation", model=gpt2_imdb_pos, tokenizer=tokenizer, device=0, return_full_text=False)
+#gpt2_imdb_ctrl  = pipeline("text-generation", model=gpt2_imdb_ctrl, tokenizer=tokenizer, device=0, return_full_text=False)
+
+continuations = gpt2_ft_nlp(dfs['content'].tolist(), max_length=256, do_sample=True, top_p=0.0, top_k=0, \
+                    repetition_penalty=2.0, num_return_sequences=1, clean_up_tokenization_spaces=True)
+
+# for i in zip(dfs['content'].tolist(), [ii[0]['generated_text'] for ii in continuations]):
+#     print('ori==>', i[0])
+#     print('syn==>', i[1])
+#     print('\n')
+
+gpt2_ft.to(device)
+for ix, row in ds.df_train.sample(frac=1).iterrows():
+    prompt = row['label_name'] + ' {} '.format(tokenizer.bos_token) + ' '.join(row['content'].split(' ')[:3])
+    print('ori ==> ', row['content'])
+
+    context_tokens = tokenizer.encode(prompt, return_tensors='pt').to(device)
+    out = gpt2_ft.generate(
+        input_ids=context_tokens,
+        max_length=tokenizer.model_max_length,
+        num_return_sequences=1,
+        do_sample=True,
+        temperature=1.0,
+        top_k=0,
+        top_p=0.9,
+        repetition_penalty=1.0,
+        pad_token_id=50256
+    )
+
+    out = out[:, len(context_tokens):].tolist()
+    #for o in out:
+    text = tokenizer.decode(out[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
+    aug_text = text.split(tokenizer.bos_token )[-1]
+    print('syn ==> ', aug_text)
+    print('label==>', row['label_name'])
+    print('\n')
+
+
+
+
+
+
+
+
+# import pandas as pd
+# df = pd.read_csv("imdb-dataset.csv")
+# imdb_str = " <|endoftext|> ".join(df['review'].tolist())
+
+# with open ('imdb.txt', 'w') as f:
+#     f.write(imdb_str)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

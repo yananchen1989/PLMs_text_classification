@@ -2,7 +2,7 @@ python -c "import tensorflow as tf;print(tf.__version__);gpus = tf.config.experi
 python -c "import torch;print(torch.__version__);device = torch.device('cuda' if torch.cuda.is_available() else 'cpu');assert device.type=='cuda'"
 python -c "import transformers;print(transformers.__version__)"
 #python -c "import flair;print(flair.__version__)"
-python -c "import spacy;print(spacy.__version__);ner_model = spacy.load('en_core_web_sm')"
+#python -c "import spacy;print(spacy.__version__);ner_model = spacy.load('en_core_web_sm')"
 python -c "import gensim;print(gensim.__version__)"
 python -c "import sklearn;print(sklearn.__version__)"
 python -c "import nltk;from nltk.corpus import wordnet"

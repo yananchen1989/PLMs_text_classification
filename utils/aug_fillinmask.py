@@ -4,11 +4,12 @@ import torch,spacy
 import pandas as pd 
 from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelWithLMHead
+from utils.load_data import *
 #from flair.data import Sentence
 #from flair.models import SequenceTagger
-# from nltk.corpus import stopwords
-# stopwords = stopwords.words('english')
-from load_data import *
+from nltk.corpus import stopwords
+stopwords = stopwords.words('english')
+#from load_data import *
 # distilroberta-base
 class fillInmask():
     def __init__(self):
@@ -25,19 +26,12 @@ class fillInmask():
         #self.tagger = SequenceTagger.load("ner-large")
         # python -m spacy download en_core_web_sm
         self.ner_model = spacy.load('en_core_web_sm')
-        self.tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
-        self.model = AutoModelWithLMHead.from_pretrained('distilbert-base-uncased',cache_dir="./cache")
+        self.tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased',cache_dir="./cache",local_files_only=True)
+        self.model = AutoModelWithLMHead.from_pretrained('distilbert-base-uncased',cache_dir="./cache",local_files_only=True)
 
         #if torch.cuda.is_available():
         self.nlp = pipeline("fill-mask", model=self.model, tokenizer=self.tokenizer, device=0)
-            #self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased', device=0)
-        #else:
-            #self.nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased')
-        #    self.nlp = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1)
-    #def load_model(self):
-        #self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        #self.model = AutoModelWithLMHead.from_pretrained(self.model_name)
-        #self.model.to(self.device)
+
 
 
     #def get_ners(self, text):

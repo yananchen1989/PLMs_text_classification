@@ -1,44 +1,42 @@
 import pandas as pd 
 import tensorflow as tf
-from load_data import * 
+#from load_data import * 
 import tensorflow_hub as hub
 import tensorflow_text as text
 import random,gc,csv
 from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
+
 from torch.nn import functional as F
+import torch
 
 class encoder():
-    def __init__(self, m):
+    def __init__(self, m, device):
         self.m = m
+        self.device = device
         print('loading m:', self.m)
         text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
         if self.m == 'dan':
             # https://tfhub.dev/google/universal-sentence-encoder/4
-            #self.model = hub.load("./universal-sentence-encoder_4")
             # https://tfhub.dev/google/universal-sentence-encoder-lite/2
-            encoder = hub.KerasLayer("./universal-sentence-encoder_4")
+            encoder = hub.KerasLayer("./resource/universal-sentence-encoder_4")
             embed = encoder(text_input)
-        elif self.m == 'distil':
-            self.model = SentenceTransformer('paraphrase-distilroberta-base-v1', device='cuda')
-            #self.model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens', device='cuda')
         elif self.m == 'cmlm':    
             # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
-            encoder = hub.KerasLayer("./universal-sentence-encoder-cmlm_en-base_1")
-            preprocessor = hub.KerasLayer("./bert_en_uncased_preprocess_3")
+            encoder = hub.KerasLayer("./resource/universal-sentence-encoder-cmlm_en-base_1")
+            preprocessor = hub.KerasLayer("./resource/bert_en_uncased_preprocess_3")
             embed = encoder(preprocessor(text_input))["default"]
         else:
-            raise KeyError("model illegal!")
+            from sentence_transformers import SentenceTransformer
+            self.model = SentenceTransformer(self.m, device=self.device, cache_folder='./sentberts')
+
         if self.m in ['dan','cmlm']:
             self.model = tf.keras.Model(inputs=text_input, outputs=embed)
 
     def infer(self, sents, batch_size=32):
         if self.m in ['dan', 'cmlm']:
             embeds = self.model.predict(sents, batch_size=batch_size, verbose=0)
-        elif self.m == 'distil':
-            embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=False)
         else:
-            raise KeyError("model illegal!")
+            embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=False)
         return embeds
 
 

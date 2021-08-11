@@ -9,26 +9,40 @@ import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
+from transformers import pipeline
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 from transformers import GPT2Tokenizer, GPT2LMHeadModel#TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-tokenizer.padding_side = "left" 
-tokenizer.pad_token = tokenizer.eos_token # to avoid an error "<|endoftext|>": 50256
-gpt2 = GPT2LMHeadModel.from_pretrained('gpt2')
-gpt2.trainable = True
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+print('gpt2 tokenizer:', tokenizer_gpt2.unk_token, tokenizer_gpt2.bos_token, tokenizer_gpt2.eos_token)
+
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2.trainable = False
 gpt2.config.pad_token_id=50256
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 gpt2.to(device)
 
-#nlp_nli = pipeline("zero-shot-classification", model='joeddav/xlm-roberta-large-xnli', device=-1)
+gpt2_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-preprocessor_file = "./albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
-preprocessor_layer = hub.KerasLayer(preprocessor_file)
-encoder = hub.KerasLayer('albert_en_base_2', trainable=True)
-preprocessor = hub.load(preprocessor_file)
-vocab_size = preprocessor.tokenize.get_special_tokens_dict()['vocab_size'].numpy()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def get_generator_bert():
+    preprocessor_layer = hub.KerasLayer("./resource/albert_en_preprocess_3")
+    encoder = hub.KerasLayer('./resource/albert_en_base_2', trainable=True)
+
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
     encoder_inputs = preprocessor_layer(text_input)
     outputs = encoder(encoder_inputs)
@@ -43,38 +57,7 @@ def get_generator_mlp():
     model = keras.Model(inputs=input_embed, outputs=embed)
     return model
 
-# def encode_rcnn(x, rnn=False):
-#     # Conv1D(64, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(title_embed)
-#     #title_gru = layers.Bidirectional(layers.GRU(128, return_sequences=False))(x)#(?, ?, 256)
-#     title_conv4 = layers.Conv1D(128, kernel_size = 4, padding = "valid", kernel_initializer = "glorot_uniform")(x) 
-#     title_conv3 = layers.Conv1D(128, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 28, 128)
-#     title_conv2 = layers.Conv1D(128, kernel_size = 2, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 29, 128)
-#     title_conv1 = layers.Conv1D(128, kernel_size = 1, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 30, 128)
-#     avg_pool_4 = layers.GlobalAveragePooling1D()(title_conv4)# (?, 128)
-#     max_pool_4 = layers.GlobalMaxPooling1D()(title_conv4) # (?, 128)   
-#     avg_pool_3 = layers.GlobalAveragePooling1D()(title_conv3)# (?, 128)
-#     max_pool_3 = layers.GlobalMaxPooling1D()(title_conv3) # (?, 128)
-#     avg_pool_2 = layers.GlobalAveragePooling1D()(title_conv2)# (?, 128)
-#     max_pool_2 = layers.GlobalMaxPooling1D()(title_conv2) # (?, 128)
-#     avg_pool_1 = layers.GlobalAveragePooling1D()(title_conv1)# (?, 128)
-#     max_pool_1 = layers.GlobalMaxPooling1D()(title_conv1) # (?, 128)   
-#     if rnn:
-#         title_encode = layers.concatenate([title_gru, avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
-#                                        avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
-#     else:
-#         title_encode = layers.concatenate([avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
-#                                        avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
-#     return title_encode
 
-# def get_generator_textcnn():
-#     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-#     encoder_inputs = preprocessor_layer(text_input)    
-#     embedding = layers.Embedding(vocab_size, 128,  trainable=True)
-#     text_embed = embedding(encoder_inputs['input_word_ids'])
-#     text_cnn = encode_rcnn(text_embed)
-#     mlp1 = layers.Dense(768,activation='relu',name='mlp1')(text_cnn)
-#     model = keras.Model(inputs=text_input, outputs=mlp1)
-#     return model
     
 # def get_generator_former():
 #     embed_dim = 32  # Embedding size for each token
@@ -108,39 +91,34 @@ def get_discriminator(num_classes):
 
 
 
-def synthesize(prompts,  max_len):
-    inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="pt")
-    inputs.to(device)
-    output_sequences = gpt2.generate(
-        input_ids = inputs['input_ids'],
-        attention_mask = inputs['attention_mask'] ,
-        max_length= min(1024, max_len*2),
-        temperature=1,
-        top_k=0,
-        top_p=0.9,
-        repetition_penalty=1,
-        do_sample=True,
-        num_return_sequences=1
-    )
-    syn_sents = tokenizer.batch_decode(output_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
+# def synthesize_for_gan(prompts,  max_len, gpt2):
+#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#     gpt2.to(device)
+#     inputs = tokenizer(prompts, padding='max_length', truncation=True, max_length=max_len, return_tensors="pt")
+#     inputs.to(device)
+#     output_sequences = gpt2.generate(
+#         input_ids = inputs['input_ids'],
+#         attention_mask = inputs['attention_mask'] ,
+#         max_length= min(tokenizer.model_max_length, max_len*2),
+#         temperature=1,
+#         top_k=0,
+#         top_p=0.9,
+#         repetition_penalty=1,
+#         do_sample=True,
+#         num_return_sequences=1
+#     )
+#     syn_sents = tokenizer.batch_decode(output_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
 
-    syn_sents_pure = []
-    for sent, sent_syn in zip(prompts, syn_sents):
-        sent_syn_rm = sent_syn.replace(sent, '').replace('\n',' ').strip()
-        sent_syn_eq = sent_syn_rm[:len(sent)]
+#     syn_sents_pure = []
+#     for sent, sent_syn in zip(prompts, syn_sents):
+#         sent_syn_rm = sent_syn.replace(sent, '').replace('\n',' ').strip()
+#         sent_syn_eq = sent_syn_rm[:len(sent)]
 
-        # result_nli = nlp_nli(sent_syn_eq, list(label_ix.keys()), multi_label=False, hypothesis_template="This text is about {}.")
-        # if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == ix_label[label]:
-        syn_sents_pure.append(sent_syn_eq)
-    return tf.convert_to_tensor(np.array(syn_sents_pure))
+#         # result_nli = nlp_nli(sent_syn_eq, list(label_ix.keys()), multi_label=False, hypothesis_template="This text is about {}.")
+#         # if result_nli['scores'][0] >= args.thres and result_nli['labels'][0] == ix_label[label]:
+#         syn_sents_pure.append(sent_syn_eq)
+#     return tf.convert_to_tensor(np.array(syn_sents_pure))
 
-
-
-
-
-
-
-val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
 
 # @tf.function
