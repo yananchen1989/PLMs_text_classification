@@ -25,7 +25,7 @@ parser.add_argument("--w_cce", default=1.0, type=float)
 parser.add_argument("--ppo_batchsize", default=32, type=int)
 args = parser.parse_args()
 
-os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
+#os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print('======>',gpus,'<=======')

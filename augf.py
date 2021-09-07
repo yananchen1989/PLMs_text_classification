@@ -1,35 +1,32 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,time,operator
+import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,time,operator,traceback
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="eda", type=str)
-parser.add_argument("--dsn", default="ag", type=str)
+parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','nyt'])
 parser.add_argument("--samplecnt", default=64, type=int)
-parser.add_argument("--lang", default="zh", type=str)
 parser.add_argument("--temp", default=1.0, type=float)
 parser.add_argument("--batch_size", default=32, type=int)
-parser.add_argument("--model", default="former", type=str)
+parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--verbose", default=0, type=int)
 parser.add_argument("--basemode", default="max", type=str) # rank or thres
 parser.add_argument("--beams", default=1, type=int)
-parser.add_argument("--rp", default=1.0, type=float)
-#parser.add_argument("--nli_m", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
-parser.add_argument("--cbert_sample_ratio", default=0.3, type=float)
-parser.add_argument("--epochs_ft", default=7, type=int)
-parser.add_argument("--cap3rd", default=0.99, type=float)
+parser.add_argument("--abundance", default=1, type=int)
+
+#parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
+parser.add_argument("--epochs_ft", default=3, type=int)
 parser.add_argument("--trunk_size", default=32, type=int)
 parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--freq", default=20, type=int)
-parser.add_argument("--boostsample_ft", default=0, type=int)
-parser.add_argument("--cbertgpt_batct_size", default=8, type=int)
-parser.add_argument("--nli_check", default=1, type=int)
-#parser.add_argument("--dpp_retain", default=0.7, type=float)
-parser.add_argument("--max_aug_times", default=4, type=int)
+
+parser.add_argument("--dpp", default=0, type=int)
+
+parser.add_argument("--filter", default='nli', type=str, choices=['nli','cls','both','either','no'])
+
+parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl'])
+parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','cnndmcc'])
+parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--basetry", default=3, type=int)
-parser.add_argument("--eda_times", required=False, type=int, default=1, help="number of augmented sentences per original sentence")
-parser.add_argument("--eda_sr", required=False, type=float, default=0.2, help="percent of words in each sentence to be replaced by synonyms")
-parser.add_argument("--eda_ri", required=False, type=float, default=0.2, help="percent of words in each sentence to be inserted")
-parser.add_argument("--eda_rs", required=False, type=float, default=0.2, help="percent of words in each sentence to be swapped")
-parser.add_argument("--eda_rd", required=False, type=float, default=0.2, help="percent of words in each sentence to be deleted")
+
 parser.add_argument("--gpu", default=0, type=int)
 parser.add_argument("--encm", default='dan', type=str, \
      choices=['dan', 'cmlm', \
@@ -38,7 +35,7 @@ parser.add_argument("--encm", default='dan', type=str, \
 
 args = parser.parse_args()
 print('args==>', args)
-os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
+#os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
 import numpy as np
 import tensorflow as tf
@@ -68,33 +65,108 @@ if gpus:
   except RuntimeError as e:
     print(e)
 #assert gpus
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
 assert device.type=='cuda'
 
 from utils.load_data import * 
 from utils.transblock import * 
 from utils.encoders import *
 from utils.cbert_cgpt_config import * 
-#from utils.dpp_model import * 
+from utils.dpp_model import * 
+
+ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+ds, proper_len = process_ds(ds, 256)
+print(ds.df_train.sample(8))
+print('proper_len==>', proper_len)
+
+if args.epochs > 0 and args.filter in ['cls','both']:
+    acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
+               1, args.samplecnt, args.basemode, args.model, args.gpu)
+else:
+    acc_noaug = -1
+
 if args.aug == 'eda':
     from utils.eda import *
 
 if args.aug == 'generate':
-    # if args.generate_m == 'ctrl':
-    #     args.rp = 1.2
-    from utils.gan_config import *  
-    print('generate model loaded')
-    nlp_nli = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=0) #  1.8.1+cu102
-    print('nli model loaded')
+    if args.genm == 'gpt':
+        from transformers import GPT2Tokenizer, GPT2LMHeadModel#TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+        tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+        #tokenizer_gpt2.padding_side = "left" 
+        tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+        print('gpt2 tokenizer:', tokenizer_gpt2.unk_token, tokenizer_gpt2.bos_token, tokenizer_gpt2.eos_token)
+
+        if args.genft == 'no':
+            gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+
+        elif args.genft in ['entire', 'lambda']:
+            seed = random.sample(list(range(10000)), 1)[0]
+            train_file = './fintune_csvs/{}_train_finetune_32_{}.txt'.format(args.dsn, seed)
+            validation_file = './fintune_csvs/{}_test_finetune_32_{}.txt'.format(args.dsn, seed)
+
+            df_train_ft = ds.df_train.copy()
+            df_test_ft = ds.df_test.copy()
+
+            if args.genft == 'lambda':
+                df_train_ft['ctrl'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) )
+                df_train_ft['text'] = df_train_ft['ctrl'] + df_train_ft['content']
+
+                df_test_ft['ctrl'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) )
+                df_test_ft['text'] = df_test_ft['ctrl'] + df_test_ft['content']
+
+            elif args.genft == 'entire':
+                df_train_ft['text'] = df_train_ft['content']
+                df_test_ft['text'] = df_test_ft['content']
+
+            with open (train_file, 'w') as f:
+                f.write(" {} ".format(tokenizer_gpt2.eos_token).join(df_train_ft['text'].tolist()))
+
+            with open (validation_file, 'w') as f:
+                f.write(" {} ".format(tokenizer_gpt2.eos_token).join(df_test_ft['text'].tolist()))
+
+            model_output_path = "./finetune_gpt2/{}_32_{}".format(args.dsn, seed) 
+            os.system(
+            "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
+                    --num_train_epochs {} \
+                    --train_file {} \
+                    --validation_file {} \
+                    --model_name_or_path gpt2 \
+                    --per_device_train_batch_size 16 \
+                    --per_device_eval_batch_size 16 \
+                    --output_dir {} \
+                    --preprocessing_num_workers 16 --overwrite_cache True \
+                    --block_size {}".format(args.gpu, 20, train_file, validation_file, model_output_path, 128) ) 
+            gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
+
+        elif args.genft == 'cnndmcc':
+            model_output_path = './finetune_gpt2/external_cccnndm_epoch12'
+            gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
+
+        gpt2.trainable = False
+        gpt2.config.pad_token_id=50256
+        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=args.gpu, return_full_text=False)
+
+    elif args.genm == 'ctrl':
+        gen_nlp = pipeline("text-generation", model='ctrl', device=args.gpu, return_full_text=False)
+
+    print('generate model loaded ==>{}'.format(args.genm))
+
+    if args.filter in ['both','either','nli']: 
+        nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=args.gpu) #  1.8.1+cu102
+        print('nli model loaded')
+    
+    dsn_maxlen = {'uci':64, 'ag':256, 'nyt':512}
+    enc = encoder('dan','cpu')
+
 
 if args.aug == 'bt':
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-    tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache", local_files_only=True)
-    model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-{}-en".format(args.lang), cache_dir="./cache", local_files_only=True)
-    tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache", local_files_only=True)
-    model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-{}".format(args.lang), cache_dir="./cache", local_files_only=True)
-    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=0)
-    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=0)
+    tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
+    model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
+    tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
+    model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
+    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=args.gpu)
+    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=args.gpu)
     print('bt model loaded')
 
 if args.aug == 'fillin':
@@ -102,13 +174,7 @@ if args.aug == 'fillin':
 
 if args.aug == 'cbert':
     from utils.cbert_config import * 
-    if args.dsn in ['yelp2','stsa','imdb', 'amazon2']:
-        label_list_len = 2
-    elif args.dsn == 'ag':
-        label_list_len = 4
-    elif args.dsn == 'yahoo':
-        label_list_len = 10
-
+    label_list_len = ds.df_test['label_name'].unique().shape[0]
     if label_list_len > 2:
         model.bert.embeddings.token_type_embeddings = torch.nn.Embedding(label_list_len, 768)
         model.bert.embeddings.token_type_embeddings.weight.data.normal_(mean=0.0, std=0.02)
@@ -117,35 +183,77 @@ if args.aug == 'cbert':
 if args.aug == 'cgpt':
     from utils.cgpt_config import * 
 
+# def nli_classify(generated_text, label_name, expand_label_nli):
+#     assert label_name and  expand_label_nli
+#     if not generated_text or len(generated_text) <= 10:
+#         return 0, -99
+#     labels_candidates = []
+#     for label_expand in expand_label_nli.values():
+#         labels_candidates.extend(label_expand)
+#     result = nli_nlp(generated_text,  labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
+#     if result['labels'][0] in expand_label_nli[label_name]:
+#         return 1, result['scores'][0]
+#     else:
+#         return 0, result['scores'][0]
 
-# def dpp_rerank(df_simi_filer, enc, dpp_retain):
-#     embeds = enc.infer(df_simi_filer['content'].tolist())
-#     sorted_ixs = extract_ix_dpp(embeds, df_simi_filer['simi'].values)
-#     df_simi_filer_dpp = df_simi_filer.reset_index().iloc[sorted_ixs]
-#     dpp_sents = df_simi_filer_dpp['content'].tolist()[:math.ceil(df_simi_filer_dpp.shape[0] * dpp_retain)]
-#     return dpp_sents
-def nli_classify(generated_text, label_name, expand_label_nli):
-    assert label_name and  expand_label_nli
+
+
+def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev):
+    assert label_name and  labels_candidates
     if not generated_text or len(generated_text) <= 10:
         return 0, -99
-    labels_candidates = []
-    for label_expand in expand_label_nli.values():
-        labels_candidates.extend(label_expand)
-    result = nlp_nli(generated_text,  labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
-    if result['labels'][0] in expand_label_nli[label_name]:
-        return 1, result['scores'][0]
+    result = nli_nlp(generated_text,  list(labels_candidates), multi_label=True, hypothesis_template="This text is about {}.")
+    accum_label = {l:[] for l in ds.df_test['label_name'].unique()}
+
+    for l, score in zip(result['labels'], result['scores']):
+        accum_label[ln_extend__rev[l]].append(score)
+
+    for l in accum_label.keys():
+        accum_label[l] = sum(accum_label[l]) / len(accum_label[l])
+
+    pred_label = max(accum_label.items(), key=operator.itemgetter(1))[0]
+
+    score = accum_label[pred_label]
+    if pred_label == label_name:
+        return 1, score 
     else:
-        return 0, result['scores'][0]
+        return 0, score
 
-
+def bertcls_classify(generated_text, label_name):
+    pred = model_cls.predict([generated_text], batch_size=1, verbose=0)  
+    pred_name = ds.df_train.loc[ds.df_train['label']==pred[0].argmax()]['label_name'].unique()[0]
+    if pred_name == label_name:
+        return 1, float(pred[0].max())
+    else:
+        return 0, float(pred[0].max())
 
 def synthesize(ds, proper_len, syn_df_ll):
     labels = ds.df_train['label'].tolist()
-    contents = ds.df_train['content'].tolist()
+    if args.genm == 'gpt':
+        if args.genft == 'lambda':
+            contents = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
+                        + ds.df_train['content'].map(lambda x: ' '.join(x.split(' ')[:3] )) ).tolist()
+        else:
+            contents = ds.df_train['content'].tolist()
+    elif args.genm == 'ctrl':
+        contents = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
+
     label_names = ds.df_train['label_name'].tolist()
-    #gpt2_nlp_  = pipeline("text-generation", model='gpt2', device=device, return_full_text=False)
 
     if args.aug == 'generate':
+        num_return_sequences = 4
+        # nli config
+        ln_extend = {}
+        for l in ds.df_test['label_name'].unique():
+            ln_extend[l] = expand_label_nli[l]
+        ln_extend__rev = {}
+        for i, j in ln_extend.items():
+            for jj in j:
+                ln_extend__rev[jj] = i
+        labels_candidates = set()
+        for v in ln_extend.values():
+            labels_candidates.update(v)
+
         samples_syn_all = []
         for itr in range(100):     
             results = []
@@ -153,8 +261,12 @@ def synthesize(ds, proper_len, syn_df_ll):
                 contents_trunk = contents[i:i+args.trunk_size]
                 labels_trunk = labels[i:i+args.trunk_size] 
                 # contents_trunk: list of contents
-                results_trunk = gpt2_nlp(contents_trunk, max_length=200, do_sample=True, top_p=0.9, top_k=0, \
-                        repetition_penalty=args.rp, num_return_sequences=4, clean_up_tokenization_spaces=True)
+                if args.genm == 'gpt':
+                    results_trunk = gen_nlp(contents_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, \
+                        repetition_penalty=1.0, num_return_sequences=num_return_sequences, clean_up_tokenization_spaces=True)
+                elif args.genm == 'ctrl':
+                    results_trunk = gen_nlp(contents_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1, \
+                        repetition_penalty=1.2, num_return_sequences=num_return_sequences, clean_up_tokenization_spaces=True)
                 results.extend(results_trunk)
                 print('generate trunk==>', i, i+args.trunk_size, 'of', ds.df_train.shape[0])
             assert len(results) == ds.df_train.shape[0]
@@ -163,27 +275,55 @@ def synthesize(ds, proper_len, syn_df_ll):
             for ii in range(ds.df_train.shape[0]):
                 for s in results[ii]:
                     generated_text = s['generated_text']
-                    #print('==>', generated_text)
+                    if not generated_text:
+                        continue
                     label = labels[ii]
                     label_name = label_names[ii]
-                    if args.nli_check:
-                        nli_check, nli_score = nli_classify(generated_text, label_name, expand_label_nli)
+                    assert label_name in ds.df_test['label_name'].unique()
+                    if args.filter == 'nli':
+                        nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
                         if nli_check:
                             buffer.append((generated_text, label, label_name, nli_score))
+
+                    elif args.filter == 'cls':  
+                        cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
+                        if cls_check and generated_text:
+                            buffer.append((generated_text, label, label_name, cls_score))
+
+                    # elif args.filter == 'either':  
+                    #     nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
+                    #     cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
+                    #     if nli_check or cls_check:
+                    #         buffer.append((generated_text, label, label_name, nli_score * cls_score))    
+                    #         print('nli_score:', nli_score, 'cls_score:', cls_score)                 
+
+                    elif args.filter == 'both': 
+                        nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
+                        cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
+                        if nli_check and cls_check:
+                            buffer.append((generated_text, label, label_name, nli_score * cls_score ))
+                            print('nli_score:', nli_score, 'cls_score:', cls_score)   
                     else:
                         buffer.append((generated_text, label, label_name, 0))
 
-            print('itr:', itr , 'nli filter ratio:', len(buffer) / ds.df_train.shape[0] )
+                    if args.filter!='no':
+                        print("itr:{}".format(itr), "label:{}".format(label_name), "filter:{}==>".format(args.filter))
+                        print("generated_text==>", generated_text.replace('\n', ' '),'\n' )
+
+            print('itr:', itr , 'nli filter ratio:', len(buffer) / (ds.df_train.shape[0]*num_return_sequences) )
 
             samples_syn_all.extend(buffer)
-            df_syn_tmp = pd.DataFrame(samples_syn_all, columns=['content','label','label_name','nli_score'])
+            df_syn_tmp = pd.DataFrame(samples_syn_all, columns=['content','label','label_name','score'])
             print(df_syn_tmp['label_name'].value_counts())
 
-            if df_syn_tmp['label_name'].value_counts().values.min() >= args.samplecnt:
+            if df_syn_tmp['label_name'].value_counts().values.min() >= args.samplecnt * args.abundance:
+                
                 df_syn_filter_ll = []
                 for label_name in df_syn_tmp['label_name'].unique():
                     df_syn_tmp_l = df_syn_tmp.loc[df_syn_tmp['label_name']==label_name].copy()
-                    df_syn_tmp_l.sort_values(by=['nli_score'], ascending=False, inplace=True) 
+                    df_syn_tmp_l.sort_values(by=['score'], ascending=False, inplace=True) 
+                    if args.dpp:
+                        df_syn_tmp_l = dpp_rerank(df_syn_tmp_l, enc)
                     df_syn_filter_ll.append(df_syn_tmp_l.head(args.samplecnt))
 
                 df_syn_filter = pd.concat(df_syn_filter_ll)
@@ -192,8 +332,8 @@ def synthesize(ds, proper_len, syn_df_ll):
                 break
 
     elif args.aug == 'eda':
-        aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=args.eda_sr, alpha_ri=args.eda_ri, \
-                                   alpha_rs=args.eda_rs, p_rd=args.eda_rd, num_aug=args.beams)).tolist()
+        aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
+                                   alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
         assert len(aug_sentences) == ds.df_train.shape[0] and len(aug_sentences[1]) == args.beams \
                 and len(aug_sentences) == len(labels)
         samples_syn = []
@@ -228,7 +368,7 @@ def synthesize(ds, proper_len, syn_df_ll):
         temp_path_ft = "augf__{}_{}_ft".format(args.dsn, args.aug)
         
         write_for_cbert(ds.df_train, ds.df_test, temp_path, 0)
-        write_for_cbert(ds.df_train, ds.df_test, temp_path_ft, args.boostsample_ft)
+        write_for_cbert(ds.df_train, ds.df_test, temp_path_ft, 0)
 
         processor = get_task_processor(args.dsn, temp_path)
         processor_ft = get_task_processor(args.dsn, temp_path_ft)
@@ -240,6 +380,7 @@ def synthesize(ds, proper_len, syn_df_ll):
         dev_examples = processor.get_dev_examples()   
 
         seed = int(time.time())
+        cbertgpt_batct_size = 8
 
         if args.aug == 'cgpt':
             train_features =    convert_examples_to_features(train_examples, block_size, tokenizer, seed)
@@ -254,20 +395,20 @@ def synthesize(ds, proper_len, syn_df_ll):
         # train data
         train_data = prepare_data(train_features)
         train_sampler = RandomSampler(train_data)
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.cbertgpt_batct_size)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=cbertgpt_batct_size)
 
         train_data_ft = prepare_data(train_features_ft)
         train_sampler_ft = RandomSampler(train_data_ft)
-        train_dataloader_ft = DataLoader(train_data_ft, sampler=train_sampler_ft, batch_size=args.cbertgpt_batct_size)
+        train_dataloader_ft = DataLoader(train_data_ft, sampler=train_sampler_ft, batch_size=cbertgpt_batct_size)
 
         #dev data
         dev_data = prepare_data(dev_features)
         dev_sampler = SequentialSampler(dev_data)
-        dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=args.cbertgpt_batct_size)
+        dev_dataloader = DataLoader(dev_data, sampler=dev_sampler, batch_size=cbertgpt_batct_size)
 
         print("***** Running training {} *****".format(args.aug))
         print("  Num examples = %d", len(train_features))
-        print("  Batch size = %d", args.cbertgpt_batct_size)
+        print("  Batch size = %d", cbertgpt_batct_size)
 
         best_dev_loss = float('inf')
         #model_name = './{}_{}_best_{}.pt'.format(args.dsn, seed, args.aug)
@@ -382,11 +523,12 @@ def synthesize(ds, proper_len, syn_df_ll):
                         #torch.save(model.state_dict(), model_name)
 
             train_sampler = SequentialSampler(train_data)
-            train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.cbertgpt_batct_size)
+            train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=cbertgpt_batct_size)
             #model.load_state_dict(torch.load(model_name))
 
             print("generate augmentated samples")
             MASK_id = tokenizer.convert_tokens_to_ids(['[MASK]'])[0]
+            cbert_sample_ratio = 0.3 # tune
             #tsv_writer = csv.writer(save_train_file, delimiter='\t')
             samples_syn = []
             for step, batch in enumerate(train_dataloader):
@@ -395,7 +537,7 @@ def synthesize(ds, proper_len, syn_df_ll):
                 init_ids, _, input_mask, segment_ids, _ = batch
                 input_lens = [sum(mask).item() for mask in input_mask]
                 masked_idx = np.squeeze(
-                    [np.random.randint(0, l, max( int(l * args.cbert_sample_ratio), 1) ) for l in input_lens])
+                    [np.random.randint(0, l, max( int(l * cbert_sample_ratio), 1) ) for l in input_lens])
                 for ids, idx in zip(init_ids, masked_idx):
                     ids[idx] = MASK_id
                 # print('mask tokens', [ii.shape[0] for ii in masked_idx])
@@ -438,7 +580,7 @@ def synthesize(ds, proper_len, syn_df_ll):
 # if args.aug in ['eda']:
 #     enc = encoder('paraphrase-mpnet-base-v2','cuda')
 # else:
-#     enc = encoder('paraphrase-mpnet-base-v2','cpu')
+#     enc = encoder('dan','cpu')
 
 def filterp(df_synthesize, model_base, ds):
     # step1 
@@ -480,53 +622,28 @@ def filterp(df_synthesize, model_base, ds):
     filter_ratio_cluster = round(df_synthesize_filter2.shape[0] / df_synthesize_filter.shape[0], 4)
     return df_synthesize_filter2, filter_ratio_self, filter_ratio_cluster
 
-#for args.dsn in ['ag','yahoo','stsa','yelp2','amazon2','imdb']:
-ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
-ds, proper_len = process_ds(ds)
-print(ds.df_train.sample(8))
-proper_len = min(500, proper_len)
-print('proper_len==>', proper_len)
-
-if args.epochs > 0:
-    best_val_acc_noaug, _ = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
-               args.basetry, args.samplecnt, args.basemode, args.model)
-else:
-    best_val_acc_noaug = -1
 
 
-# if args.aug == 'no':
-#     record_log('logg', \
-#                  ['noaug==> '] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] +\
-#                       ['noaug_acc:{}'.format(best_val_acc_noaug)])
-#     os._exit(0)
+
+
 
 print("augmentating...")
 
-
 syn_df_ll = []
-accs_iters = []
-
-while 1:
-
+for _ in range(args.max_aug_times):
     df_synthesize = synthesize(ds, proper_len, syn_df_ll)
-
     syn_df_ll.append(df_synthesize)
 
-    df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
+df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
+acc_aug, _ = do_train_test(df_train_aug, ds.df_test, args.epochs, args.freq, args.verbose, \
+                        args.basetry, args.samplecnt, args.basemode, args.model, args.gpu)
 
-    aug_ratio = pd.concat(syn_df_ll).shape[0] / ds.df_train.shape[0]
-    if int(aug_ratio) in [1, 2, 4]:
-        acc_aug, _ = do_train_test(df_train_aug, ds.df_test, args.epochs, args.freq, args.verbose, \
-                                args.basetry, args.samplecnt, args.basemode, args.model)
-        accs_iters.append(acc_aug)
 
-    if aug_ratio >= args.max_aug_times:
-        print('max_aug_times terminated==>', accs_iters, args.dsn, args.aug)
-        break
+
 
 
 summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-    ['acc_base:{}'.format(best_val_acc_noaug), 'acc_aug:{}'.format(max(accs_iters))]
+    ['acc_base:{}'.format(acc_noaug), 'acc_aug:{}'.format(acc_aug)]
 
 
 record_log('logb', summary)

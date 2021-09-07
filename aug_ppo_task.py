@@ -12,16 +12,16 @@ from sklearn.metrics.pairwise import cosine_distances
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str)
-parser.add_argument("--samplecnt", default=128, type=int)
+parser.add_argument("--samplecnt", default=32, type=int)
 parser.add_argument("--gpu", default=0, type=int)
 parser.add_argument("--num_train_epochs_ft", default=1, type=int)
 parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--verbose", default=0, type=int)
 parser.add_argument("--basemode", default="max", type=str) 
-parser.add_argument("--epochs", default=30, type=int)
+parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--basetry", default=3, type=int)
 parser.add_argument("--batch_size", default=32, type=int)
-parser.add_argument("--freq", default=10, type=int)
+parser.add_argument("--freq", default=20, type=int)
 parser.add_argument("--boostmodel", default=1, type=int) # tune
 parser.add_argument("--boostsample_ppo", default=0, type=int)# tune
 parser.add_argument("--use_ent", default=0, type=int) # tune
@@ -34,7 +34,12 @@ parser.add_argument("--returnmodel", default=1, type=int)
 parser.add_argument("--noeval", default=0, type=int)
 #parser.add_argument("--txtin", default="mean", type=str)
 
-#parser.add_argument("--ft", default=1, type=int)
+parser.add_argument("--external_frac", default=0.9, type=float)
+parser.add_argument("--external_thres", default=0.9, type=float)
+parser.add_argument("--add_external_ft", default=0, type=int)
+parser.add_argument("--add_external_ppo", default=0, type=int)
+
+
 #parser.add_argument("--warmup_epoch", default=-1, type=int)
 parser.add_argument("--fbs", default=8, type=int)
 parser.add_argument("--ppo_epoch", default=100, type=int)
@@ -56,7 +61,7 @@ parser.add_argument("--res_beams", default=1, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
-os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
+#os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print('======>',gpus,'<=======')
@@ -69,7 +74,7 @@ if gpus:
   except RuntimeError as e:
     print(e)
 #assert gpus
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
 assert device.type=='cuda'
 
 from utils.load_data import * 
@@ -95,17 +100,16 @@ ixl_rev = {ii[1]:ii[0] for ii in ixl.items()}
 print('ixl==>', ixl)
 num_classes = len(ixl)
 
-ds, proper_len = process_ds(ds)
+ds, proper_len = process_ds(ds, 256)
 print(ds.df_train.sample(10))
-proper_len = min(500, proper_len)
 print('proper_len:', proper_len)
 
+
+
 if args.load_bert:
-    model = get_model_bert(ds.df_test.label.unique().shape[0])
-    # if args.dsn == 'ag' and  ds.df_test.label.unique().shape[0] == 2:
-    #     model.load_weights("model_full_ag_2.h5")
-    # else:
-    model.load_weights("./cls/model_full_{}.h5".format(args.dsn) )
+    with tf.distribute.MirroredStrategy().scope():
+        model = get_model_bert(ds.df_test.label.unique().shape[0])
+        model.load_weights("./cls/model_full_{}.h5".format(args.dsn) )
     best_val_acc_noaug = -1
 else:
     best_val_acc_noaug, model = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
@@ -113,14 +117,30 @@ else:
     print('best_val_acc_noaug:', best_val_acc_noaug)
     assert best_val_acc_noaug > 0.6
 
-# if not args.evalbaseline:
-#     best_val_acc_noaug = -1
-# else:
 
-# run baseline
-# best_val_acc_noaug, model = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
-#                                             args.basetry, args.samplecnt, args.basemode, args.model)
-# print('best_val_acc_noaug:', best_val_acc_noaug)
+def get_external_news_purified(model, cols, thres, external_frac):
+    df_news = get_external_news(external_frac)
+    preds = model.predict(df_news['content'].values, batch_size=256, verbose=1)
+
+    df_news['label'] = preds.argmax(axis=1)
+    df_news['label_name'] = df_news['label'].map(lambda x: ixl_rev[x])
+    df_news['pred_score'] = preds.max(axis=1)
+
+    df_news_use = df_news.loc[(df_news['pred_score']>=thres)]
+    print('df_news_use==>')
+    print(df_news_use['label_name'].value_counts())
+    min_class_cnt = df_news_use['label_name'].value_counts().min()
+
+    df_news_use_balance = sample_stratify(df_news_use, min_class_cnt)
+    df_news_use_balance['content'] = df_news_use_balance['content'].map(lambda x: truncate(x, 300))
+    return df_news_use_balance[cols]
+
+if args.add_external_ft or args.add_external_ppo:
+    df_news_use_balance = get_external_news_purified(model, list(ds.df_train.columns), \
+        args.external_thres, args.external_frac )
+    print('df_news_use_balance==>', df_news_use_balance.shape[0])
+
+
 if args.gpt_ft or args.ref_ft:
     seed = random.sample(list(range(10000)), 1)[0]
     os.makedirs('fintune_csvs', exist_ok=True)
@@ -132,7 +152,10 @@ if args.gpt_ft or args.ref_ft:
     train_file = './fintune_csvs/{}_train_finetune_{}_{}.csv'.format(args.dsn, args.samplecnt, seed)
     validation_file = './fintune_csvs/{}_test_finetune_{}_{}.csv'.format(args.dsn, args.samplecnt, seed)
 
-    df_train_ft = ds.df_train.copy()
+    if args.add_external_ft:
+        df_train_ft = pd.concat([ds.df_train.copy(), df_news_use_balance])
+    else:
+        df_train_ft = ds.df_train.copy()
     df_test_ft = ds.df_test.copy()
 
 
@@ -316,6 +339,10 @@ print('tokens_cnt ==>', ds.df_train['tokens_cnt'].min(), ds.df_train['tokens_cnt
  # 32 0.77867
  # -1 1.17
 
+if args.add_external_ppo:
+    ds.df_train_ = pd.concat([ds.df_train, df_news_use_balance])
+else:
+    ds.df_train_ = ds.df_train
 #. ppo training
 gains = []
 df_syn_aug_ll = []
@@ -323,15 +350,16 @@ for epoch in range(args.ppo_epoch):
     print('\n')
     print('<<<epoch {} begin>>>>'.format(epoch))
     syn_df_ll = []
-    ds.df_train = ds.df_train.sample(frac=1)
+
+    ds.df_train_ = ds.df_train_.sample(frac=1)
     ix = 0
-    while ix < ds.df_train.shape[0]:
+    while ix < ds.df_train_.shape[0]:
         torch.cuda.empty_cache()    
 
         #game_data = dict()
         #### get a batch from the dataset
         #df_batch = ds.df_train.sample(config['batch_size']) 
-        df_batch = ds.df_train[ix:ix+args.ppo_batchsize].copy()
+        df_batch = ds.df_train_[ix:ix+args.ppo_batchsize].copy()
         if args.boostsample_ppo:
             df_batch['content'] = df_batch['content'].map(lambda x: pick_prefix(x))
 

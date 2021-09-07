@@ -30,7 +30,7 @@ parser.add_argument("--noeval", default=0, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
-os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu )
+#os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu )
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
   try:

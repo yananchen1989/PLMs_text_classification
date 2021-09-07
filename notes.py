@@ -1,3 +1,20 @@
+#ner 
+from flair.data import Sentence
+from flair.models import SequenceTagger
+tagger = SequenceTagger.load("flair/ner-english-large")
+
+
+def get_ners(text):
+    sentence = Sentence(text)
+    tagger.predict(sentence)
+    ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
+    return ners
+
+
+
+
+    
+
 
 # translation
 from fairseq.models.transformer import TransformerModel
@@ -87,3 +104,72 @@ next_token = tf.random.categorical(filtered_next_token_logits, dtype=tf.int32, n
 generated = tf.concat([input_ids, next_token], axis=1)
 
 resulting_string = tokenizer.decode(generated.numpy().tolist()[0])
+
+
+
+
+
+
+
+
+#  tokenizer
+tokens = tokenizer.tokenize(text) 
+# ['hello', 'world', '!']
+token_ids = tokenizer.convert_tokens_to_ids(tokens)
+# [7592, 2088, 999]
+
+# Encode and Encode+
+tokens = tokenizer.encode(text)
+# [101, 7592, 2088, 999, 102]
+
+tokens = tokenizer.encode_plus(text)
+# {'input_ids': [101, 7592, 2088, 999, 102], 'token_type_ids': [0, 0, 0, 0, 0], 'attention_mask': [1, 1, 1, 1, 1]}
+
+tokens = tokenizer.encode(text, max_length=512, padding='max_length', return_tensors='pt')
+# tensor([ 101, 7592, 2088,  999,  102,    0,    0,    0,    0,    0,    0,    0,
+#            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+#            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+#            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+#            0,    0])
+
+
+tokens = tokenizer.encode_plus(text, max_length=512, padding='max_length',
+                               return_tensors='pt')
+tokens.keys()
+# dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
+tokens['input_ids'][0,:50]
+# tensor([ 101, 7592, 2088,  999,  102,    0,    0,    0,    0,    0,    0,    0,
+#            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+#            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+#            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+#            0,    0])
+
+
+
+# For Batches
+text_list = ['hello world!', 'hello mars!']
+tokens = tokenizer.batch_encode_plus(text_list)
+# {'input_ids': [[101, 7592, 2088, 999, 102], [101, 7592, 7733, 999, 102]], 
+#    'token_type_ids': [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], 
+#    'attention_mask': [[1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]}
+
+tokens = tokenizer.batch_encode_plus(text_list, max_length=8,
+                                     padding='max_length',
+                                     return_tensors='pt')
+# {'input_ids': tensor([[ 101, 7592, 2088,  999,  102,    0,    0,    0],
+#         [ 101, 7592, 7733,  999,  102,    0,    0,    0]]), 'token_type_ids': tensor([[0, 0, 0, 0, 0, 0, 0, 0],
+#         [0, 0, 0, 0, 0, 0, 0, 0]]), 'attention_mask': tensor([[1, 1, 1, 1, 1, 0, 0, 0],
+#         [1, 1, 1, 1, 1, 0, 0, 0]])}
+
+# calling our tokenizer class directly.
+tokens = tokenizer(text)
+# {'input_ids': [101, 7592, 2088, 999, 102], 'token_type_ids': [0, 0, 0, 0, 0], 'attention_mask': [1, 1, 1, 1, 1]}
+tokens = tokenizer(text_list)
+# {'input_ids': [[101, 7592, 2088, 999, 102], [101, 7592, 7733, 999, 102]], 'token_type_ids': [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], 'attention_mask': [[1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]}
+
+
+
+
+
+
+

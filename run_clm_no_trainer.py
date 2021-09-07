@@ -31,11 +31,11 @@ import random
 import datasets
 import torch
 from datasets import load_dataset
-from torch.utils.data.dataloader import DataLoader
+from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 import transformers
-from accelerate import Accelerator
+from accelerate import Accelerator, DistributedType
 from transformers import (
     CONFIG_MAPPING,
     MODEL_MAPPING,
@@ -48,12 +48,12 @@ from transformers import (
     get_scheduler,
     set_seed,
 )
-#from transformers.utils.versions import require_version
-from utils.load_data import * 
+from transformers.utils.versions import require_version
+
 
 logger = logging.getLogger(__name__)
 
-#require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
+require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
 
 MODEL_CONFIG_CLASSES = list(MODEL_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
@@ -174,18 +174,8 @@ def parse_args():
         "--overwrite_cache", type=bool, default=False, help="Overwrite the cached training and evaluation sets"
     )
 
-    # parser.add_argument(
-    #     "--dsn", type=str, default=''
-    # )
-    # parser.add_argument(
-    #     "--samplecnt", type=int, default=64
-    # )
-
     args = parser.parse_args()
 
-    # args.train_file = './torch_ds/{}_train_finetune.csv'.format(args.dsn)
-    # args.validation_file = './torch_ds/{}_test_finetune.csv'.format(args.dsn)
-    
     # Sanity checks
     if args.dataset_name is None and args.train_file is None and args.validation_file is None:
         raise ValueError("Need either a dataset name or a training/validation file.")
@@ -197,7 +187,8 @@ def parse_args():
             extension = args.validation_file.split(".")[-1]
             assert extension in ["csv", "json", "txt"], "`validation_file` should be a csv, json or txt file."
 
-    os.makedirs(args.output_dir, exist_ok=True)
+    if args.output_dir is not None:
+        os.makedirs(args.output_dir, exist_ok=True)
 
     return args
 
@@ -228,53 +219,6 @@ def main():
     # If passed along, set the training seed now.
     if args.seed is not None:
         set_seed(args.seed)
-
-    # Load pretrained model and tokenizer
-    #
-    # In distributed training, the .from_pretrained methods guarantee that only one local process can concurrently
-    # download model & vocab.
-    if args.config_name:
-        config = AutoConfig.from_pretrained(args.config_name)
-    elif args.model_name_or_path:
-        config = AutoConfig.from_pretrained(args.model_name_or_path, cache_dir="./cache", local_files_only=True)
-    else:
-        config = CONFIG_MAPPING[args.model_type]()
-        logger.warning("You are instantiating a new config instance from scratch.")
-
-    if args.tokenizer_name:
-        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, use_fast=not args.use_slow_tokenizer, cache_dir="./cache", local_files_only=True)
-    elif args.model_name_or_path:
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=not args.use_slow_tokenizer, cache_dir="./cache", local_files_only=True)
-    else:
-        raise ValueError(
-            "You are instantiating a new tokenizer from scratch. This is not supported by this script."
-            "You can do it from another script, save it, and load it from here, using --tokenizer_name."
-        )
-
-    if args.model_name_or_path:
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model_name_or_path,
-            from_tf=bool(".ckpt" in args.model_name_or_path),
-            config=config, cache_dir="./cache", local_files_only=True
-        )
-    else:
-        logger.info("Training new model from scratch")
-        model = AutoModelForCausalLM.from_config(config)
-
-    #tokenizer.bos_token = '<|beginoftext|>'
-    #tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    tokenizer.pad_token = tokenizer.eos_token 
-    model.resize_token_embeddings(len(tokenizer))
-
-    # dsn 
-    #ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
-
-    # ds.df_train['content'] = ds.df_train['label_name'] + ' {} '.format(tokenizer.bos_token) + ds.df_train['content'] + ' {}'.format(tokenizer.eos_token)
-    # ds.df_test['content'] = ds.df_test['label_name'] + ' {} '.format(tokenizer.bos_token) + ds.df_test['content'] + ' {}'.format(tokenizer.eos_token)
-
-    # ds.df_train.rename(columns={'content': 'text'}).to_csv(args.train_file, index=False)
-    # ds.df_test.rename(columns={'content': 'text'}).to_csv(args.validation_file, index=False)
-    # logger.info("ds data written to csv locally")
 
     # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files (see below)
     # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
@@ -325,15 +269,47 @@ def main():
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
+    # Load pretrained model and tokenizer
+    #
+    # In distributed training, the .from_pretrained methods guarantee that only one local process can concurrently
+    # download model & vocab.
+    if args.config_name:
+        config = AutoConfig.from_pretrained(args.config_name)
+    elif args.model_name_or_path:
+        config = AutoConfig.from_pretrained(args.model_name_or_path, cache_dir="./cache", local_files_only=True)
+    else:
+        config = CONFIG_MAPPING[args.model_type]()
+        logger.warning("You are instantiating a new config instance from scratch.")
 
+    if args.tokenizer_name:
+        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, use_fast=not args.use_slow_tokenizer, cache_dir="./cache", local_files_only=True)
+    elif args.model_name_or_path:
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=not args.use_slow_tokenizer, cache_dir="./cache", local_files_only=True)
+    else:
+        raise ValueError(
+            "You are instantiating a new tokenizer from scratch. This is not supported by this script."
+            "You can do it from another script, save it, and load it from here, using --tokenizer_name."
+        )
+
+    if args.model_name_or_path:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model_name_or_path,
+            from_tf=bool(".ckpt" in args.model_name_or_path),
+            config=config, cache_dir="./cache", local_files_only=True
+        )
+    else:
+        logger.info("Training new model from scratch")
+        model = AutoModelForCausalLM.from_config(config)
+
+    model.resize_token_embeddings(len(tokenizer))
 
     # Preprocessing the datasets.
     # First we tokenize all the texts.
     column_names = raw_datasets["train"].column_names
-    text_column_name = "text" if "text" in column_names else 'content' #column_names[0]
+    text_column_name = "text" if "text" in column_names else column_names[0]
 
     def tokenize_function(examples):
-        return tokenizer(examples[text_column_name] )# , padding=True, truncation=True, max_length=512 , 
+        return tokenizer(examples[text_column_name])
 
     tokenized_datasets = raw_datasets.map(
         tokenize_function,
@@ -427,6 +403,10 @@ def main():
         model, optimizer, train_dataloader, eval_dataloader
     )
 
+    # On TPU, the tie weights in our model have been disconnected, so we need to restore the ties.
+    if accelerator.distributed_type == DistributedType.TPU:
+        model.tie_weights()
+
     # Note -> the training dataloader needs to be prepared before we grab his length below (cause its length will be
     # shorter in multiprocess)
 
@@ -457,6 +437,29 @@ def main():
     # Only show the progress bar once on each machine.
     progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
     completed_steps = 0
+
+    # original gpt2 perplexity
+    model.eval()
+    losses = []
+    for step, batch in enumerate(eval_dataloader):
+        with torch.no_grad():
+            outputs = model(**batch)
+
+        loss = outputs.loss
+        losses.append(accelerator.gather(loss.repeat(args.per_device_eval_batch_size)))
+
+    losses = torch.cat(losses)
+    losses = losses[: len(eval_dataset)]
+    try:
+        perplexity = math.exp(torch.mean(losses))
+    except OverflowError:
+        perplexity = float("inf")
+
+    logger.info(f"original gpt  perplexity: {perplexity}")
+    ###########
+
+    cur_perplexity = perplexity
+    best_model = model
 
     for epoch in range(args.num_train_epochs):
         model.train()
@@ -491,12 +494,17 @@ def main():
         except OverflowError:
             perplexity = float("inf")
 
-        logger.info(f"epoch {epoch}: loss: {torch.mean(losses)}")
+        logger.info(f"epoch {epoch}: perplexity: {perplexity}")
+        if perplexity < cur_perplexity:
+            logger.info("<==perplexity dropped==>")
+            cur_perplexity = perplexity
+            best_model = model
 
-    #if args.output_dir is not None:
-    accelerator.wait_for_everyone()
-    unwrapped_model = accelerator.unwrap_model(model)
-    unwrapped_model.save_pretrained(args.output_dir, save_function=accelerator.save)
+
+    if args.output_dir is not None:
+        accelerator.wait_for_everyone()
+        unwrapped_model = accelerator.unwrap_model(best_model)
+        unwrapped_model.save_pretrained(args.output_dir, save_function=accelerator.save)
 
 
 if __name__ == "__main__":
