@@ -53,7 +53,7 @@ def get_pairs(samples, label=2):
     infos = []
     for ix in range(samples.shape[0]):
         para = samples[ix]
-        sents = nltk.sent_tokenize(para.decode())
+        sents = nltk.sent_tokenize(para)
         if len(sents) < 2:
             continue 
         for sent in sents:
@@ -68,14 +68,11 @@ def get_pairs(samples, label=2):
     for i in range(len(infos)-1):
         if infos[i][-1] == infos[i+1][-1]:
             pairs.append((infos[i][0], infos[i+1][0], 1))
-            if label > 1:
-                candidates = [j for j in ixs if j != infos[i][-1]]
-                ix_ = random.sample(candidates, 1)[0]
-                candidates_e = [j for j in infos if j[-1]==ix_]
-                ee = random.sample(candidates_e, 1)[0]
-                pairs.append((infos[i][0], ee[0], 0))
-            else:
-                continue
+            candidates = [j for j in ixs if j != infos[i][-1]]
+            ix_ = random.sample(candidates, 1)[0]
+            candidates_e = [j for j in infos if j[-1]==ix_]
+            ee = random.sample(candidates_e, 1)[0]
+            pairs.append((infos[i][0], ee[0], 0))
         else:
             continue
     random.shuffle(pairs)
@@ -129,56 +126,66 @@ for test_step, trunk in ds_test.enumerate():
 
 print('train_step:', train_step.numpy(), 'test_step:', test_step.numpy())
 
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache')
 
 
-def get_ids(sentence_pairs):
-    encoded = tokenizer.batch_encode_plus(
-        sentence_pairs,
-        add_special_tokens=True,
-        max_length= args.max_length,
-        return_attention_mask=True,
-        return_token_type_ids=True,
-        padding=True,
-        return_tensors="tf",
-        truncation=True,  # Truncate to max_length
-    )
-    return encoded["input_ids"] , encoded["attention_mask"], encoded["token_type_ids"]
 
 
-def get_model(max_length):
-
-    # Encoded token ids from BERT tokenizer.
-    input_ids = tf.keras.layers.Input(
-        shape=(max_length,), dtype=tf.int32, name="input_ids"
-    )
-    # Attention masks indicates to the model which tokens should be attended to.
-    attention_masks = tf.keras.layers.Input(
-        shape=(max_length,), dtype=tf.int32, name="attention_masks"
-    )
-    # Token type ids are binary masks identifying different sequences in the model.
-    token_type_ids = tf.keras.layers.Input(
-        shape=(max_length,), dtype=tf.int32, name="token_type_ids"
-    )
-    bert_layer = TFBertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache')
-
-    logits = bert_layer(input_ids, token_type_ids=token_type_ids)[0]
-
-    #out = tf.keras.layers.Dense(2, activation="softmax")(logits)
-    out = tf.keras.layers.Dense(1, activation="sigmoid")(logits)
-    
-    model = tf.keras.models.Model(
-        inputs=[input_ids, attention_masks, token_type_ids], outputs=out
-    )
-    return model
-    # model.compile(
-    #     optimizer=tf.keras.optimizers.Adam(),
-    #     loss="binary_crossentropy",
-    #     metrics=["binary_accuracy"],
-    # )
 
 
-# model_cls_pair  = get_model(args.max_length)
+
+model_cls_pair  = get_model(128)
+
+
+ds = load_data(dataset='ag', samplecnt= -1)
+
+classes = ds.df_test['label_name'].unique()
+
+accs = []
+
+for ix, row in ds.df_test.iterrows():
+
+    train_x = get_ids_(row['content'], classes,  128)
+    preds = model_cls_pair.predict(train_x)
+    pred_ix = np.argmax(preds[:,0])
+    if classes[pred_ix] == row['label_name']:
+        accs.append(1)
+    else:
+        accs.append(0)
+    print(sum(accs) / len(accs))
+
+
+
+df_cc = get_cc_news(0.3)
+
+from sklearn.metrics import accuracy_score
+
+while 1:
+    df_batch = df_cc.sample(512)
+    pairs = get_pairs(df_batch['content'].values)
+    df_pairs = pd.DataFrame(pairs, columns=['text1', 'text2', 'label'])
+    df_pairs['label'] = df_pairs['label'].map(lambda x: 0 if x==1 else 1)
+    train_x = get_ids(df_pairs, 128)
+    preds = model_cls_pair.predict(train_x, batch_size=64)
+    pred_ix = np.argmax(preds, axis=1)    
+    acc_tmp = accuracy_score(df_pairs['label'].values, pred_ix)
+    print(acc_tmp)
+
+
+
+
+
+# df_pair = pd.read_csv("df_content_prompt_test_one_shot.csv")
+# df_train, df_test = train_test_split(df_pair, test_size=0.15)
+
+
+# train_x = get_ids(df_train, 64)
+# test_x = get_ids(df_test, 64)
+
+# model_cls_pair.fit(train_x, df_train['label'].values , \
+#              batch_size=32, epochs=10, \
+#             validation_data=(test_x, df_test['label'].values), verbose=1)
+
+
 # model_cls_pair.load_weights("./cls_pairs/bert_{}.h5".format(args.dsn))
 
 ###### train cls

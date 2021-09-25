@@ -17,15 +17,20 @@ parser.add_argument("--epochs_ft", default=3, type=int)
 parser.add_argument("--trunk_size", default=32, type=int)
 parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--freq", default=20, type=int)
+parser.add_argument("--testbed", default=0, type=int)
 
 parser.add_argument("--dpp", default=0, type=int)
 
-parser.add_argument("--filter", default='nli', type=str, choices=['nli','cls','both','either','no'])
+parser.add_argument("--filter", default='nli', type=str, choices=['nli','cls','both','either','no','enc','nsp'])
 
-parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl'])
-parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','cnndmcc'])
+parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
+parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp'])
+parser.add_argument("--ft_model_path", default="", type=str)
+
 parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--basetry", default=3, type=int)
+parser.add_argument("--num_return_sequences", default=8, type=int)
+
 
 parser.add_argument("--gpu", default=0, type=int)
 parser.add_argument("--encm", default='dan', type=str, \
@@ -51,7 +56,7 @@ from transformers import pipeline
 #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
 #tf.keras.backend.set_floatx('float16')
 import nltk 
-from sklearn.metrics.pairwise import cosine_distances
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
 #nltk.download('wordnet')
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -78,10 +83,12 @@ ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 ds, proper_len = process_ds(ds, 256)
 print(ds.df_train.sample(8))
 print('proper_len==>', proper_len)
+ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 
-if args.epochs > 0 and args.filter in ['cls','both']:
+if args.epochs > 0 and args.testbed:
     acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
-               1, args.samplecnt, args.basemode, args.model, args.gpu)
+               args.basetry, args.samplecnt, args.basemode, args.model, args.gpu)
 else:
     acc_noaug = -1
 
@@ -94,7 +101,9 @@ if args.aug == 'generate':
         tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
         #tokenizer_gpt2.padding_side = "left" 
         tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-        print('gpt2 tokenizer:', tokenizer_gpt2.unk_token, tokenizer_gpt2.bos_token, tokenizer_gpt2.eos_token)
+        tokenizer_gpt2.sep_token = '<|sep|>'
+        #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+        print(tokenizer_gpt2)
 
         if args.genft == 'no':
             gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -138,25 +147,55 @@ if args.aug == 'generate':
                     --block_size {}".format(args.gpu, 20, train_file, validation_file, model_output_path, 128) ) 
             gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
 
-        elif args.genft == 'cnndmcc':
-            model_output_path = './finetune_gpt2/external_cccnndm_epoch12'
-            gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
+        # elif args.genft == 'cc':
+        #     gpt2 = GPT2LMHeadModel.from_pretrained(args.ft_model_path)
+
+        elif args.genft in ['tc', 'pp']:
+            gpt2 = GPT2LMHeadModel.from_pretrained('gpt2_{}_ft_on_ccnews'.format(args.genft))
 
         gpt2.trainable = False
         gpt2.config.pad_token_id=50256
         gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=args.gpu, return_full_text=False)
 
+    elif args.genm == 't5':
+        from transformers import T5Tokenizer, AutoModelWithLMHead
+        tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache")
+        print(tokenizer_t5)
+        if args.genft == 'no':
+            t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache")
+        elif args.genft in ['tc', 'pp']:
+            args.ft_model_path = 't5_{}_ft_on_ccnews_lighting'.format(args.genft)
+            checkpoint_files = glob.glob(args.ft_model_path+"/checkpoint_loss_*")
+            list.sort(checkpoint_files)
+            t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=args.gpu)
+
     elif args.genm == 'ctrl':
+        from transformers import CTRLTokenizer, TFCTRLLMHeadModel
+        tokenizer_ctrl = CTRLTokenizer.from_pretrained('ctrl', cache_dir='./cache')
+        model_ctrl = TFCTRLLMHeadModel.from_pretrained('ctrl', cache_dir='./cache')
+        print(tokenizer_ctrl)
+        control_codes = tokenizer_ctrl.control_codes.keys()
+        ctrl_nlp  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=1, return_full_text=False)
+
         gen_nlp = pipeline("text-generation", model='ctrl', device=args.gpu, return_full_text=False)
 
+    elif args.genm == 'neo':
+        gen_nlp = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B', device=args.gpu)
+
     print('generate model loaded ==>{}'.format(args.genm))
+
+    dsn_maxlen = {'uci':64, 'ag':256, 'nyt':512}
 
     if args.filter in ['both','either','nli']: 
         nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=args.gpu) #  1.8.1+cu102
         print('nli model loaded')
+
+    if args.filter in ['nsp']:
+        model_cls_pair  = get_model_nsp(min(512, dsn_maxlen[args.dsn]*2))
     
-    dsn_maxlen = {'uci':64, 'ag':256, 'nyt':512}
-    enc = encoder('dan','cpu')
+    if args.filter in ['enc']:
+        enc = encoder('cmlm-large','cpu')
 
 
 if args.aug == 'bt':
@@ -233,15 +272,20 @@ def synthesize(ds, proper_len, syn_df_ll):
         if args.genft == 'lambda':
             contents = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
                         + ds.df_train['content'].map(lambda x: ' '.join(x.split(' ')[:3] )) ).tolist()
+        elif args.genft in ['tc', 'pp']:
+            contents = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
         else:
             contents = ds.df_train['content'].tolist()
+
     elif args.genm == 'ctrl':
         contents = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
 
+    elif args.genm == 't5':
+        contents = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
+
     label_names = ds.df_train['label_name'].tolist()
 
-    if args.aug == 'generate':
-        num_return_sequences = 4
+    if args.aug == 'generate' and args.genm not in ['neo']:
         # nli config
         ln_extend = {}
         for l in ds.df_test['label_name'].unique():
@@ -262,12 +306,22 @@ def synthesize(ds, proper_len, syn_df_ll):
                 labels_trunk = labels[i:i+args.trunk_size] 
                 # contents_trunk: list of contents
                 if args.genm == 'gpt':
+                    #return 32*8
                     results_trunk = gen_nlp(contents_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, \
-                        repetition_penalty=1.0, num_return_sequences=num_return_sequences, clean_up_tokenization_spaces=True)
+                        repetition_penalty=1.0, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
                 elif args.genm == 'ctrl':
+                    #return 32*8
                     results_trunk = gen_nlp(contents_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1, \
-                        repetition_penalty=1.2, num_return_sequences=num_return_sequences, clean_up_tokenization_spaces=True)
+                        repetition_penalty=1.2, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
+                elif args.genm == 't5':
+                    results_trunk = []
+                    for sent in contents_trunk:
+                        contents_trunk_ = gen_nlp(sent, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                            repetition_penalty=1.0, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True) 
+                        results_trunk.append(contents_trunk_)
+
                 results.extend(results_trunk)
+
                 print('generate trunk==>', i, i+args.trunk_size, 'of', ds.df_train.shape[0])
             assert len(results) == ds.df_train.shape[0]
 
@@ -288,29 +342,40 @@ def synthesize(ds, proper_len, syn_df_ll):
                     elif args.filter == 'cls':  
                         cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
                         if cls_check and generated_text:
-                            buffer.append((generated_text, label, label_name, cls_score))
-
-                    # elif args.filter == 'either':  
-                    #     nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
-                    #     cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
-                    #     if nli_check or cls_check:
-                    #         buffer.append((generated_text, label, label_name, nli_score * cls_score))    
-                    #         print('nli_score:', nli_score, 'cls_score:', cls_score)                 
+                            buffer.append((generated_text, label, label_name, cls_score))              
 
                     elif args.filter == 'both': 
                         nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
                         cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
                         if nli_check and cls_check:
                             buffer.append((generated_text, label, label_name, nli_score * cls_score ))
-                            print('nli_score:', nli_score, 'cls_score:', cls_score)   
+                            #print('nli_score:', nli_score, 'cls_score:', cls_score)   
+
+                    elif args.filter == 'enc':
+                        content_ori = ds.df_train['content'].tolist()[ii]
+                        gen_enc = enc.infer([generated_text])
+                        ori_enc = enc.infer([content_ori])
+                        enc_score = cosine_similarity(gen_enc, ori_enc)[0][0]
+                        #print('enc_score:', enc_score)
+                        buffer.append((generated_text, label, label_name, enc_score))
+
+                    elif args.filter == 'nsp':
+                        content_ori = ds.df_train['content'].tolist()[ii]
+                        pairs = [[content_ori, generated_text]]
+                        pairs_ids = get_ids(pairs, min(512, dsn_maxlen[args.dsn]*2), tokenizer_bert )
+                        preds = model_cls_pair.predict(pairs_ids, batch_size=32)
+                        nsp_score = preds[0][0]
+                        if nsp_score > 0.9:
+                            buffer.append((generated_text, label, label_name, nsp_score))  
+
                     else:
                         buffer.append((generated_text, label, label_name, 0))
 
-                    if args.filter!='no':
-                        print("itr:{}".format(itr), "label:{}".format(label_name), "filter:{}==>".format(args.filter))
-                        print("generated_text==>", generated_text.replace('\n', ' '),'\n' )
+                    # if args.filter!='no':
+                    #     print("itr:{}".format(itr), "label:{}".format(label_name), "filter:{}==>".format(args.filter))
+                    #     print("generated_text==>", generated_text.replace('\n', ' '),'\n' )
 
-            print('itr:', itr , 'nli filter ratio:', len(buffer) / (ds.df_train.shape[0]*num_return_sequences) )
+            print('itr:', itr , 'filter ratio:', len(buffer) / (ds.df_train.shape[0]*args.num_return_sequences) )
 
             samples_syn_all.extend(buffer)
             df_syn_tmp = pd.DataFrame(samples_syn_all, columns=['content','label','label_name','score'])
@@ -321,9 +386,57 @@ def synthesize(ds, proper_len, syn_df_ll):
                 df_syn_filter_ll = []
                 for label_name in df_syn_tmp['label_name'].unique():
                     df_syn_tmp_l = df_syn_tmp.loc[df_syn_tmp['label_name']==label_name].copy()
-                    df_syn_tmp_l.sort_values(by=['score'], ascending=False, inplace=True) 
-                    if args.dpp:
-                        df_syn_tmp_l = dpp_rerank(df_syn_tmp_l, enc)
+                    if args.filter=='no':
+                        df_syn_tmp_l = df_syn_tmp_l.sample(frac=1)
+                    else:
+                        df_syn_tmp_l.sort_values(by=['score'], ascending=False, inplace=True) 
+                    # if args.dpp:
+                    #     df_syn_tmp_l = dpp_rerank(df_syn_tmp_l, enc)
+                    df_syn_filter_ll.append(df_syn_tmp_l.head(args.samplecnt))
+
+                df_syn_filter = pd.concat(df_syn_filter_ll)
+                
+                samples_syn = [(ii[0],ii[1]) for ii in df_syn_filter[['content','label']].values]
+                break
+
+    elif args.aug == 'generate' and args.genm  in ['neo']:
+        infos = []
+        while True:
+            prompt = ''
+            for ix, row in ds.df_train.sample(16).iterrows():
+                prompt += "label:{}\ncontent:{}\n###\n".format(row['label_name'], row['content']) 
+
+            next_label = ds.df_train.sample(1)['label_name'].tolist()[0]
+            prompt += "label:{}\ncontent:".format(next_label)
+            #print(prompt)
+
+            gen_text = gen_nlp(prompt, do_sample=True, max_length=1024, top_p=0.9,  \
+                        clean_up_tokenization_spaces=True, return_full_text=False)
+            #print('======>')
+            #print(gen_text[0]['generated_text'])
+
+
+            tokens = gen_text[0]['generated_text'].split('###')
+
+            infos.append((next_label, tokens[0].strip()))
+            for ii in tokens[1:]:
+                tt = ii.strip().split("\n")
+                if not tt or len(tt)!=2:
+                    continue
+                infos.append((tt[0].split(':')[-1] ,  tt[1].split(':')[-1])) 
+            df_syn_tmp = pd.DataFrame(infos, columns=['label_name', 'content'])
+            print('neo step==>')
+            print(df_syn_tmp['label_name'].value_counts())
+
+            if df_syn_tmp['label_name'].value_counts().values.min() >= args.samplecnt * args.abundance:
+                df_syn_tmp['label'] = df_syn_tmp['label_name'].map(lambda x: ixl_rev[x])
+                df_syn_filter_ll = []
+                for label_name in df_syn_tmp['label_name'].unique():
+                    df_syn_tmp_l = df_syn_tmp.loc[df_syn_tmp['label_name']==label_name].copy()
+                    #if args.filter=='no':
+                    df_syn_tmp_l = df_syn_tmp_l.sample(frac=1)
+                    #else:
+                    #    df_syn_tmp_l.sort_values(by=['score'], ascending=False, inplace=True) 
                     df_syn_filter_ll.append(df_syn_tmp_l.head(args.samplecnt))
 
                 df_syn_filter = pd.concat(df_syn_filter_ll)
@@ -565,64 +678,9 @@ def synthesize(ds, proper_len, syn_df_ll):
     print('samples_syn done...')
     df_synthesize = pd.DataFrame(samples_syn, columns = ['content','label'])
     assert df_synthesize.shape[0] == ds.df_train.shape[0] #* args.beams 
-    if args.aug != 'generate':
-        assert df_synthesize['label'].tolist() == ds.df_train['label'].tolist()
-
-        for ix in random.sample(list(range(0, ds.df_train.shape[0])), 10):
-            print('label==>',ds.df_train.iloc[ix]['label'], df_synthesize.iloc[ix]['label'])
-            print('demo_{} ori sample==>'.format(args.aug), ds.df_train.iloc[ix]['content'])
-            print('demo_{} aug sample==>'.format(args.aug), df_synthesize.iloc[ix]['content'])
-            print()
-
+    for ix, row in df_synthesize.iterrows():
+        print('final_sample==>', row['content'], '<==', ixl[row['label']])
     return df_synthesize 
-
-
-# if args.aug in ['eda']:
-#     enc = encoder('paraphrase-mpnet-base-v2','cuda')
-# else:
-#     enc = encoder('dan','cpu')
-
-def filterp(df_synthesize, model_base, ds):
-    # step1 
-    print("<==filterp 1==>")
-    preds = model_base.predict(df_synthesize['content'].values, batch_size=args.batch_size, verbose=args.verbose)
-    pred_l = np.argmax(preds, axis=1)
-    df_synthesize['pred_label'] = pred_l
-    df_synthesize_filter = df_synthesize.loc[df_synthesize['label'] == df_synthesize['pred_label']]
-    print('self filter==>', df_synthesize_filter.shape[0], df_synthesize.shape[0], args.dsn, args.aug, args.beams )
-    print('self vc==>\n', df_synthesize_filter['label'].value_counts() )
-    filter_ratio_self = round(df_synthesize_filter.shape[0] / df_synthesize.shape[0], 4)
-
-    # step 2
-    print("<==filterp 2==>")
-    enc = encoder(args.encm, 'cuda')
-    label_embed = {}
-    for l in ds.df_train['label'].unique():
-        print('label==>', l)
-        embeds_ = enc.infer(ds.df_train.loc[ds.df_train['label']==l]['content'].tolist(), batch_size=args.batch_size )
-        label_embed[l] = embeds_
-    embeds_syn =  enc.infer(df_synthesize_filter['content'].tolist(), batch_size=args.batch_size)
-    infos = []
-    test_labels = df_synthesize_filter['label'].tolist()
-    contens = df_synthesize_filter['content'].tolist()
-    for i in range(df_synthesize_filter.shape[0]):
-        embed = embeds_syn[i].reshape(1,-1)
-        label = test_labels[i]
-
-        label_simi = {}
-        for l, embed_anchor in label_embed.items():
-            simi = cosine_distances(embed, embed_anchor) 
-            label_simi[l] = simi.mean()
-
-        if min(label_simi.items(), key=operator.itemgetter(1))[0] == label:
-            infos.append((contens[i], test_labels[i]))
-    df_synthesize_filter2 = pd.DataFrame(infos, columns = ['content','label'])
-    print('cluster filter==>', df_synthesize_filter2.shape[0], df_synthesize_filter.shape[0], args.dsn, args.aug, args.beams)
-    print('cluster vc==>\n', df_synthesize_filter2['label'].value_counts()  )
-    filter_ratio_cluster = round(df_synthesize_filter2.shape[0] / df_synthesize_filter.shape[0], 4)
-    return df_synthesize_filter2, filter_ratio_self, filter_ratio_cluster
-
-
 
 
 
@@ -638,12 +696,14 @@ df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
 acc_aug, _ = do_train_test(df_train_aug, ds.df_test, args.epochs, args.freq, args.verbose, \
                         args.basetry, args.samplecnt, args.basemode, args.model, args.gpu)
 
-
-
+if acc_noaug > 0:
+    gain = round((acc_aug - acc_noaug) / acc_noaug, 4)
+else:
+    gain = -1
 
 
 summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-    ['acc_base:{}'.format(acc_noaug), 'acc_aug:{}'.format(acc_aug)]
+    ['acc_base:{} acc_aug:{} gain:{}'.format(acc_noaug, acc_aug, gain )]
 
 
 record_log('logb', summary)

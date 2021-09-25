@@ -86,7 +86,7 @@ tokenizer = GPT2Tokenizer.from_pretrained(GPT2_MODEL,
                                           do_lower_case=True,
                                           cache_dir='./CACHE')
 
-model = GPT2LMHeadModel.from_pretrained(GPT2_MODEL, local_files_only=True, 
+model = GPT2LMHeadModel.from_pretrained(GPT2_MODEL, #local_files_only=True, 
                                         cache_dir='./CACHE')
 
 #gpt2_nlp  = pipeline("text-generation", model=model, tokenizer=tokenizer, device=0, return_full_text=False)

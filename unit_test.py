@@ -29,7 +29,7 @@ df_batch = dfcnndm.sample(32)
 
 ds = load_data(dataset='dbpedia', samplecnt=1000)
 (x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train.sample(10000), ds.df_test.sample(5000), sparse=True)
-model = get_model_bert(num_classes, 'albert')
+model = get_model_bert(num_classes)
 model.compile(Adam(lr=1e-5), 'sparse_categorical_crossentropy', metrics=["acc"])
 
 model.fit(

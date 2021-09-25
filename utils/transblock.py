@@ -102,7 +102,7 @@ def get_model_former(num_classes):
         model.compile("adam", "sparse_categorical_crossentropy", metrics=["acc"])
     return model
 
-def get_model_bert(num_classes, m='albert'):
+def get_model_bert(num_classes):
 
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 
@@ -123,68 +123,57 @@ def get_model_bert(num_classes, m='albert'):
     return model
 
 
-def encode_rcnn(x, rnn=False):
-    # Conv1D(64, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(title_embed)
-    #title_gru = layers.Bidirectional(layers.GRU(128, return_sequences=False))(x)#(?, ?, 256)
-    title_conv4 = layers.Conv1D(128, kernel_size = 5, padding = "valid", kernel_initializer = "glorot_uniform")(x) 
-    title_conv3 = layers.Conv1D(128, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 28, 128)
-    title_conv2 = layers.Conv1D(128, kernel_size = 2, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 29, 128)
-    title_conv1 = layers.Conv1D(128, kernel_size = 1, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 30, 128)
-    avg_pool_4 = layers.GlobalAveragePooling1D()(title_conv4)# (?, 128)
-    max_pool_4 = layers.GlobalMaxPooling1D()(title_conv4) # (?, 128)   
-    avg_pool_3 = layers.GlobalAveragePooling1D()(title_conv3)# (?, 128)
-    max_pool_3 = layers.GlobalMaxPooling1D()(title_conv3) # (?, 128)
-    avg_pool_2 = layers.GlobalAveragePooling1D()(title_conv2)# (?, 128)
-    max_pool_2 = layers.GlobalMaxPooling1D()(title_conv2) # (?, 128)
-    avg_pool_1 = layers.GlobalAveragePooling1D()(title_conv1)# (?, 128)
-    max_pool_1 = layers.GlobalMaxPooling1D()(title_conv1) # (?, 128)   
-    if rnn:
-        title_encode = layers.concatenate([title_gru, avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
-                                       avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
+# def encode_rcnn(x, rnn=False):
+#     # Conv1D(64, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(title_embed)
+#     #title_gru = layers.Bidirectional(layers.GRU(128, return_sequences=False))(x)#(?, ?, 256)
+#     title_conv4 = layers.Conv1D(128, kernel_size = 5, padding = "valid", kernel_initializer = "glorot_uniform")(x) 
+#     title_conv3 = layers.Conv1D(128, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 28, 128)
+#     title_conv2 = layers.Conv1D(128, kernel_size = 2, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 29, 128)
+#     title_conv1 = layers.Conv1D(128, kernel_size = 1, padding = "valid", kernel_initializer = "glorot_uniform")(x) # (?, 30, 128)
+#     avg_pool_4 = layers.GlobalAveragePooling1D()(title_conv4)# (?, 128)
+#     max_pool_4 = layers.GlobalMaxPooling1D()(title_conv4) # (?, 128)   
+#     avg_pool_3 = layers.GlobalAveragePooling1D()(title_conv3)# (?, 128)
+#     max_pool_3 = layers.GlobalMaxPooling1D()(title_conv3) # (?, 128)
+#     avg_pool_2 = layers.GlobalAveragePooling1D()(title_conv2)# (?, 128)
+#     max_pool_2 = layers.GlobalMaxPooling1D()(title_conv2) # (?, 128)
+#     avg_pool_1 = layers.GlobalAveragePooling1D()(title_conv1)# (?, 128)
+#     max_pool_1 = layers.GlobalMaxPooling1D()(title_conv1) # (?, 128)   
+#     if rnn:
+#         title_encode = layers.concatenate([title_gru, avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
+#                                        avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
+#     else:
+#         title_encode = layers.concatenate([avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
+#                                        avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
+#     return title_encode
+
+# def get_model_cnn(num_classes):
+#     preprocessor = hub.load(preprocessor_file)
+#     vocab_size = preprocessor.tokenize.get_special_tokens_dict()['vocab_size'].numpy()
+
+#     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
+#     encoder_inputs = preprocessor_layer(text_input)    
+#     embedding = layers.Embedding(vocab_size, 128,  trainable=True)
+#     text_embed = embedding(encoder_inputs['input_word_ids'])
+#     text_cnn = encode_rcnn(text_embed)
+#     mlp1 = layers.Dense(768,activation='relu',name='mlp1')(text_cnn)
+#     out = layers.Dense(num_classes, activation="softmax")(mlp1)
+#     model = keras.Model(inputs=text_input, outputs=out)
+#     model.compile("adam", "sparse_categorical_crossentropy", metrics=["acc"])
+#     return model
+
+
+def get_model_mlp(x_train, num_classes):
+    text_input = tf.keras.layers.Input(shape=(x_train.shape[1]), dtype=tf.float32) 
+    if num_classes == 2:
+        out = tf.keras.layers.Dense(1, activation='sigmoid')(text_input)
+        model = tf.keras.Model(inputs=text_input, outputs=out)
+        model.compile(tf.keras.optimizers.Adam(lr=0.01), "binary_crossentropy", metrics=["binary_accuracy"])
     else:
-        title_encode = layers.concatenate([avg_pool_4, max_pool_4, avg_pool_3, max_pool_3, \
-                                       avg_pool_2, max_pool_2, avg_pool_1, max_pool_1]) 
-    return title_encode
-
-def get_model_cnn(num_classes):
-    preprocessor = hub.load(preprocessor_file)
-    vocab_size = preprocessor.tokenize.get_special_tokens_dict()['vocab_size'].numpy()
-
-    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) 
-    encoder_inputs = preprocessor_layer(text_input)    
-    embedding = layers.Embedding(vocab_size, 128,  trainable=True)
-    text_embed = embedding(encoder_inputs['input_word_ids'])
-    text_cnn = encode_rcnn(text_embed)
-    mlp1 = layers.Dense(768,activation='relu',name='mlp1')(text_cnn)
-    out = layers.Dense(num_classes, activation="softmax")(mlp1)
-    model = keras.Model(inputs=text_input, outputs=out)
-    model.compile("adam", "sparse_categorical_crossentropy", metrics=["acc"])
+        out = tf.keras.layers.Dense(num_classes, activation="softmax")(text_input)
+        model = tf.keras.Model(inputs=text_input, outputs=out)
+        model.compile(tf.keras.optimizers.Adam(lr=0.01), "sparse_categorical_crossentropy", metrics=["acc"])
     return model
 
-
-# def get_model_bert_pair(trainable):
-
-#     text_input1 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
-#     text_input2 = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
-
-#     encoder = hub.KerasLayer('albert_en_base_2', trainable=trainable)
-
-#     embed = []
-#     for textin in [text_input1, text_input2]:
-#         encoder_inputs = preprocessor_layer(textin)
-#         outputs = encoder(encoder_inputs)
-#         embed.append(outputs["pooled_output"])
-#     embed_all = tf.concat(embed, axis=1)
-#     x = layers.Dense(512, activation="relu")(embed_all)
-#     # if num_classes == 2:
-#     #     out = layers.Dense(1, activation='sigmoid')(embed)
-#     #     model = tf.keras.Model(inputs=text_input, outputs=out)
-#     #     model.compile(Adam(lr=1e-5), "binary_crossentropy", metrics=["binary_accuracy"])
-#     # else:
-#     out = layers.Dense(1, activation="sigmoid")(x)
-#     model = tf.keras.Model(inputs=[text_input1, text_input2], outputs=out)
-#     #model.compile(Adam(lr=1e-5), "categorical_crossentropy", metrics=["acc"])
-#     return model
 def get_keras_data(df_train, df_test):
     #num_classes = df_test['label'].unique().shape[0]
     x_train = df_train['content'].values.reshape(-1,1)
@@ -208,7 +197,7 @@ def get_keras_data(df_train, df_test):
 
 
 def do_train_test(df_train, df_test, epochs=50, freq=10, verbose=1, \
-               basetry=3, samplecnt=32, basemode='max', model_name='albert'):
+               basetry=3, samplecnt=32, basemode='max', model_name='albert', gpu=0):
         
     if samplecnt <= 32:
         batch_size = 8
@@ -219,19 +208,21 @@ def do_train_test(df_train, df_test, epochs=50, freq=10, verbose=1, \
 
     (x_train, y_train),  (x_test, y_test)= get_keras_data(df_train, df_test)
     best_val_accs = []
+    models = []
     for ii in range(basetry):
-        
-        if model_name == 'albert':
-            model = get_model_bert(df_test.label.unique().shape[0], 'albert')
-            
-        elif model_name == 'former':
-            model = get_model_former(df_test.label.unique().shape[0])
-            
-        elif model_name == 'cnn':
-            model = get_model_cnn(df_test.label.unique().shape[0])
-            
-        else:
-            raise KeyError("input model illegal!")
+        #with tf.distribute.MirroredStrategy().scope():
+        with tf.device('/GPU:{}'.format(gpu)):
+            if model_name == 'albert':
+                model = get_model_bert(df_test.label.unique().shape[0])
+                
+            elif model_name == 'former':
+                model = get_model_former(df_test.label.unique().shape[0])
+                
+            elif model_name == 'cnn':
+                model = get_model_cnn(df_test.label.unique().shape[0])
+                
+            else:
+                raise KeyError("input model illegal!")
 
         history = model.fit(
             x_train, y_train, batch_size=batch_size, epochs=epochs, \
@@ -244,15 +235,106 @@ def do_train_test(df_train, df_test, epochs=50, freq=10, verbose=1, \
             val_acc = 'val_acc'
 
         best_val_accs.append(max(history.history[val_acc]))
+        models.append(model)
         print('do_train_test iter==>', ii, 'acc:', max(history.history[val_acc]))
     print('do_train_test iters==>', best_val_accs)
+
+    best_model = models[np.array(best_val_accs).argmax()]
     if basemode == 'mean':
-        return round(np.array(best_val_accs).mean(), 4), model
+        return round(np.array(best_val_accs).mean(), 4), best_model
     elif basemode == 'max':
-        return round(np.array(best_val_accs).max(), 4), model
+        return round(np.array(best_val_accs).max(), 4), best_model
+
+# from utils.load_data import * 
+
+# enc = encoder('cmlm-large','cpu')
+# for _ in range(5):
+#     ds = load_data(dataset='ag', samplecnt= 1024)
+#     acc_aug, _ = do_train_test_cmlm(ds.df_train, ds.df_test, enc)
+#     print('iter', acc_aug)
+
+
+# from utils.encoders import *
+def do_train_test_cmlm(df_train, df_test, enc, basemode='max',  gpu=0):
+    
+    x_train = enc.infer(df_train['content'].values)
+    x_test = enc.infer(df_test['content'].values)
+
+    y_train, y_test = df_train['label'].values, df_test['label'].values
+
+    best_val_accs = []
+    models = []
+    for ii in range(3):
+        #with tf.distribute.MirroredStrategy().scope():
+        with tf.device('/GPU:{}'.format(gpu)):
+            model = get_model_mlp(x_train, df_test.label.unique().shape[0])
+                
+        if df_test.label.unique().shape[0] == 2:
+            val_acc = 'val_binary_accuracy'   
+        else:
+            val_acc = 'val_acc'
+
+        history = model.fit(
+            x_train, y_train, batch_size=32, epochs=400, \
+            validation_data=(x_test, y_test), verbose=0, validation_batch_size=64,validation_freq=1
+            #callbacks = [tf.keras.callbacks.EarlyStopping(monitor=val_acc, patience=10, mode='max')
+        )
+        best_val_accs.append(max(history.history[val_acc]))
+        models.append(model)
+        print('do_train_test iter==>', ii, 'acc:', max(history.history[val_acc]))
+    print('do_train_test iters==>', best_val_accs)
+
+    best_model = models[np.array(best_val_accs).argmax()]
+    if basemode == 'mean':
+        return round(np.array(best_val_accs).mean(), 4), best_model
+    elif basemode == 'max':
+        return round(np.array(best_val_accs).max(), 4), best_model
 
 
 
+from transformers import BertTokenizer, TFBertForNextSentencePrediction
+def get_model_nsp(max_length):
+
+    # Encoded token ids from BERT tokenizer.
+    input_ids = tf.keras.layers.Input(
+        shape=(max_length,), dtype=tf.int32, name="input_ids"
+    )
+    # Attention masks indicates to the model which tokens should be attended to.
+    attention_masks = tf.keras.layers.Input(
+        shape=(max_length,), dtype=tf.int32, name="attention_masks"
+    )
+    # Token type ids are binary masks identifying different sequences in the model.
+    token_type_ids = tf.keras.layers.Input(
+        shape=(max_length,), dtype=tf.int32, name="token_type_ids"
+    )
+    bert_layer = TFBertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache')
+
+    logits = bert_layer(input_ids, token_type_ids=token_type_ids)[0]
+    out = tf.keras.activations.softmax(logits)
+    #out = tf.keras.layers.Dense(2, activation="softmax")(logits)
+    #out = tf.keras.layers.Dense(1, activation="sigmoid")(logits)
+    
+    model = tf.keras.models.Model(
+        inputs=[input_ids, attention_masks, token_type_ids], outputs=out
+    )
+    
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(),
+        loss="binary_crossentropy",
+        metrics=["binary_accuracy"],
+    )
+    return model
 
 
-
+def get_ids(sentence_pairs,  max_length, tokenizer_bert):
+    encoded = tokenizer_bert.batch_encode_plus(
+        sentence_pairs,
+        add_special_tokens=True,
+        max_length= max_length,
+        return_attention_mask=True,
+        return_token_type_ids=True,
+        padding='max_length',
+        return_tensors="tf",
+        truncation=True,  # Truncate to max_length
+    )
+    return (encoded["input_ids"] , encoded["attention_mask"], encoded["token_type_ids"])

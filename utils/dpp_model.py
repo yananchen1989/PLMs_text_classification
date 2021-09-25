@@ -61,7 +61,12 @@ temperatures = [(t or 1) / 100 for t in range(0, 101, 10)]
 
 
 
-
+def dpp_rerank(df, enc):
+    embeds = enc.infer(df['content'].tolist(), batch_size=32)
+    sorted_ixs = extract_ix_dpp(embeds, df['score'].values)
+    df_dpp = df.reset_index().iloc[sorted_ixs]
+    #dpp_sents = df_dpp['content'].tolist()[:math.ceil(df_dpp.shape[0] * dpp_retain)]
+    return df_dpp
 
 
 

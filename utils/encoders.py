@@ -20,20 +20,20 @@ class encoder():
             # https://tfhub.dev/google/universal-sentence-encoder-lite/2
             encoder = hub.KerasLayer("./resource/universal-sentence-encoder_4")
             embed = encoder(text_input)
-        elif self.m == 'cmlm':    
+        elif self.m.startswith('cmlm'):    
             # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
-            encoder = hub.KerasLayer("./resource/universal-sentence-encoder-cmlm_en-base_1")
+            encoder = hub.KerasLayer("./resource/universal-sentence-encoder-cmlm_en-{}_1".format(self.m.split('-')[-1]))
             preprocessor = hub.KerasLayer("./resource/bert_en_uncased_preprocess_3")
-            embed = encoder(preprocessor(text_input))["default"]
+            embed = encoder(preprocessor(text_input))["default"] # base:768 large:1024
         else:
             from sentence_transformers import SentenceTransformer
             self.model = SentenceTransformer(self.m, device=self.device, cache_folder='./sentberts')
 
-        if self.m in ['dan','cmlm']:
+        if self.m in ['dan'] or self.m.startswith('cmlm'):
             self.model = tf.keras.Model(inputs=text_input, outputs=embed)
 
     def infer(self, sents, batch_size=32):
-        if self.m in ['dan', 'cmlm']:
+        if self.m in ['dan'] or self.m.startswith('cmlm'):
             embeds = self.model.predict(sents, batch_size=batch_size, verbose=0)
         else:
             embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=False)

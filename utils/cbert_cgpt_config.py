@@ -34,6 +34,10 @@ def pick_prefix(para, model=None, use_ent=0):
         dfs = df_sents.sample(frac=1, weights='ent')
         return ' '.join(dfs['sent'].tolist())
 
+
+
+
+
 def boost_for_ft(df_train_ft, boostsample_ft, model, use_ent=0):
     df_train_ft_ll = []
     df_train_ft_ll.append(df_train_ft)

@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math
+import sys,os,logging,glob,pickle,csv,datetime,gc,argparse,math
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
@@ -7,26 +7,17 @@ from tensorflow.keras.callbacks import *
 import tensorflow_hub as hub
 import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
-from sklearn.model_selection import train_test_split
 from tensorflow import keras
-from transformers import pipeline
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-from transformers import GPT2Tokenizer, GPT2LMHeadModel#TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-#tokenizer_gpt2.padding_side = "left" 
-tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-print('gpt2 tokenizer:', tokenizer_gpt2.unk_token, tokenizer_gpt2.bos_token, tokenizer_gpt2.eos_token)
-
-gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-gpt2.trainable = False
-gpt2.config.pad_token_id=50256
-gpt2.to(device)
-
-gpt2_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
 
 
+
+
+'''
+gpt2_nlp([sent], max_length=64, do_sample=True, top_p=0.9, top_k=0, \
+                        repetition_penalty=1.0, num_return_sequences=4, clean_up_tokenization_spaces=True)
+
+'''
 
 
 

@@ -1,25 +1,3 @@
-from transformers import AutoTokenizer, AutoModelWithLMHead
-
-tokenizer = AutoTokenizer.from_pretrained("t5-base")
-
-model = AutoModelWithLMHead.from_pretrained("t5-base")
-
-def get_sentiment(text):
-  input_ids = tokenizer.encode(text + '</s>', return_tensors='pt')
-
-  output = model.generate(input_ids=input_ids,
-               max_length=256)
-
-  dec = [tokenizer.decode(ids, clean_up_tokenization_spaces=True, skip_special_tokens=True) for ids in output]
-  label = dec[0]
-  return label
-
-get_sentiment(sent)
-
-# Output: 'negative'
-
-
-
 # finetune T5
 # !pip install transformers==2.9.0
 # !pip install pytorch_lightning==0.7.5
@@ -31,13 +9,10 @@ import json
 import time
 import logging
 import random
-import re
+import re,gc
 from itertools import chain
 from string import punctuation
 from sklearn.model_selection import train_test_split
-# import nltk
-# nltk.download('punkt')
-# from nltk.tokenize import sent_tokenize
 
 import pandas as pd
 import numpy as np
@@ -62,11 +37,20 @@ from utils.load_data import *
 
 # set_seed(42)
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','nyt','stsa'])
-parser.add_argument("--samplecnt", default=64, type=int)
-parser.add_argument("--ftepochs", default=30, type=int)
+#parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','nyt','stsa','cc'])
+#parser.add_argument("--samplecnt", default=64, type=int)
+parser.add_argument("--ftepochs", default=7, type=int)
+parser.add_argument("--ft_pattern", default='pp', type=str, choices=['pp', 'tc', 'sc'])
+parser.add_argument("--maxlen", default=512, type=int)
+parser.add_argument("--ccsample", default=0.1, type=float)
+parser.add_argument("--gpus", default=1, type=int)
+parser.add_argument("--batch_size", default=32, type=int)
+parser.add_argument("--num_workers", default=8, type=int)
+
 argsin = parser.parse_args()
 
+output_dir = 't5_{}_ft_on_ccnews_lighting'.format( argsin.ft_pattern)
+os.makedirs(output_dir, exist_ok=True)
 
 class T5FineTuner(pl.LightningModule):
   def __init__(self, hparams):
@@ -160,7 +144,9 @@ class T5FineTuner(pl.LightningModule):
 
   def train_dataloader(self):
     train_dataset = get_dataset(tokenizer=self.tokenizer, type_path='train', args=self.hparams)
-    dataloader = DataLoader(train_dataset, batch_size=self.hparams.train_batch_size, drop_last=True, shuffle=True, num_workers=16)
+    print("train_dataset completed")
+    dataloader = DataLoader(train_dataset, batch_size=self.hparams.train_batch_size, drop_last=True, shuffle=True, num_workers=argsin.num_workers)
+    print("train dataloader completed")
     t_total = (
         (len(dataloader.dataset) // (self.hparams.train_batch_size * max(1, self.hparams.n_gpu)))
         // self.hparams.gradient_accumulation_steps
@@ -174,7 +160,8 @@ class T5FineTuner(pl.LightningModule):
 
   def val_dataloader(self):
     val_dataset = get_dataset(tokenizer=self.tokenizer, type_path="val", args=self.hparams)
-    return DataLoader(val_dataset, batch_size=self.hparams.eval_batch_size, num_workers=16)
+    print("val_dataset completed")
+    return DataLoader(val_dataset, batch_size=self.hparams.eval_batch_size, num_workers=argsin.num_workers)
 
 
 
@@ -189,6 +176,11 @@ class LoggingCallback(pl.Callback):
       for key in sorted(metrics):
         if key not in ["log", "progress_bar"]:
           logger.info("{} = {}\n".format(key, str(metrics[key])))
+        if key == 'avg_val_loss':
+          output_dir_ck = output_dir+'/'+'checkpoint_loss_{}'.format(metrics[key].cpu().numpy())
+          os.makedirs(output_dir_ck, exist_ok=True)
+          model.model.save_pretrained(output_dir_ck)
+          logger.info("model save_pretrained")
 
   def on_test_end(self, trainer, pl_module):
     logger.info("***** Test results *****")
@@ -217,16 +209,16 @@ args_dict = dict(
     output_dir="", # path to save the checkpoints
     model_name_or_path='t5-base',
     tokenizer_name_or_path='t5-base',
-    max_seq_length=256,
+    max_seq_length=argsin.maxlen,
     learning_rate=3e-4,
     weight_decay=0.0,
     adam_epsilon=1e-8,
     warmup_steps=0,
-    train_batch_size=8,
-    eval_batch_size=8,
+    train_batch_size=argsin.batch_size,
+    eval_batch_size=argsin.batch_size,
     num_train_epochs=2,
     gradient_accumulation_steps=16,
-    n_gpu=1,
+    n_gpu=argsin.gpus,
     early_stop_callback=False,
     fp_16=False, # if you want to enable 16-bit training then install apex and set this to true
     opt_level='O1', # you can find out more on optimisation levels here https://nvidia.github.io/apex/amp.html#opt-levels-and-properties
@@ -234,51 +226,34 @@ args_dict = dict(
     seed=42,
 )
 
-# !wget https://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz
-# !tar -xvf aclImdb_v1.tar.gz
 
 
-#We will use 2000 samples from the train set for validation. 
-#Let's choose 1000 postive reviews and 1000 negative reviews for validation and save them in the val directory
-train_pos_files = glob.glob('aclImdb/train/pos/*.txt')
-train_neg_files = glob.glob('aclImdb/train/neg/*.txt')
-
-# !mkdir aclImdb/val aclImdb/val/pos aclImdb/val/neg
-random.shuffle(train_pos_files)
-random.shuffle(train_neg_files)
-
-val_pos_files = train_pos_files[:1000]
-val_neg_files = train_neg_files[:1000]
-
-#mkdir aclImdb/train_sub aclImdb/train_sub/pos aclImdb/train_sub/neg
-
-import shutil
-# for f in val_pos_files:
-#   shutil.move(f,  'aclImdb/val/pos')
-# for f in val_neg_files:
-#   shutil.move(f,  'aclImdb/val/neg')
-
-# for f in train_pos_files[:128]:
-#   shutil.copy(f,  'aclImdb/train_sub/pos')
-# for f in train_neg_files[:128]:
-#   shutil.copy(f,  'aclImdb/train_sub/neg')
-ds = load_data(dataset=argsin.dsn, samplecnt= argsin.samplecnt)
-ds.df_train['label_name'] = ds.df_train['label_name'].map(lambda x: x.lower())
-ds.df_test['label_name'] = ds.df_test['label_name'].map(lambda x: x.lower())
-df_train, df_valid = train_test_split(ds.df_train, test_size=0.15)
 
 
-tokenizer = T5Tokenizer.from_pretrained('t5-base')
-ids_neg = tokenizer.encode('negative </s>')
+df_cc_text2text = get_cc_text_double(argsin.ft_pattern, argsin.ccsample)
 
-ids_neg = tokenizer.encode('Business </s>')
+row = df_cc_text2text.sample(1)
+print(row['text1'].tolist()[0])
+print('\n')
+print(row['text2'].tolist()[0])
 
-label_name_ids_lens = []
-for label_name in ds.df_test['label_name'].unique():
-    print(label_name, tokenizer.encode('{} </s>'.format(label_name)))
-    label_name_ids_lens.append(len(tokenizer.encode('{} </s>'.format(label_name))))
 
-ids_pos = tokenizer.encode('positive </s>')
+df_train, df_valid = train_test_split(df_cc_text2text, test_size=0.05)
+
+print('data loaded', df_train.shape[0], df_valid.shape[0])
+
+
+#tokenizer = T5Tokenizer.from_pretrained('t5-base')
+# ids_neg = tokenizer.encode('negative </s>')
+
+# ids_neg = tokenizer.encode('Business </s>')
+
+# label_name_ids_lens = []
+# for label_name in ds.df_test['label_name'].unique():
+#     print(label_name, tokenizer.encode('{} </s>'.format(label_name)))
+#     label_name_ids_lens.append(len(tokenizer.encode('{} </s>'.format(label_name))))
+
+# ids_pos = tokenizer.encode('positive </s>')
 #len(ids_neg), len(ids_pos)
 
 
@@ -299,19 +274,13 @@ extra 1 for the </s> token
 
 class EmotionDataset(Dataset):
   def __init__(self, tokenizer, type_path,  max_len=512):
-    #self.path = os.path.join(data_dir, type_path + '.txt')
-
-    self.data_column = "content"
-    self.class_column = "label_name"
-    # self.df = pd.read_csv(self.path, sep=";", header=None, names=[self.data_column, self.class_column],
-    #                         engine="python")
 
     if type_path == 'train':
         self.df = df_train
     elif type_path == 'val':
         self.df = df_valid
-    elif type_path == 'test':
-        self.df = ds.df_test
+    # elif type_path == 'test':
+    #     self.df = ds.df_test
 
     self.max_len = max_len
     self.tokenizer = tokenizer
@@ -324,86 +293,42 @@ class EmotionDataset(Dataset):
     return len(self.inputs)
   
   def __getitem__(self, index):
-    source_ids = self.inputs[index]["input_ids"].squeeze()
-    target_ids = self.targets[index]["input_ids"].squeeze()
+    source_ids = self.inputs[index]["input_ids"]#.squeeze()
+    target_ids = self.targets[index]["input_ids"]#.squeeze()
 
-    src_mask    = self.inputs[index]["attention_mask"].squeeze()  # might need to squeeze
-    target_mask = self.targets[index]["attention_mask"].squeeze()  # might need to squeeze
-
-    return {"source_ids": source_ids, "source_mask": src_mask, "target_ids": target_ids, "target_mask": target_mask}
-  
-  def _build(self):
-    for content, label_name in zip(self.df['content'].tolist(), self.df['label_name'].tolist()):
-
-       # tokenize inputs
-      tokenized_inputs = self.tokenizer.batch_encode_plus(
-          [content+' </s>'], max_length=self.max_len, pad_to_max_length=True, return_tensors="pt"
-      )
-       # tokenize targets
-      tokenized_targets = self.tokenizer.batch_encode_plus(
-          [label_name+' </s>'], max_length=max(label_name_ids_lens), pad_to_max_length=True, return_tensors="pt"
-      )
-
-      self.inputs.append(tokenized_inputs)
-      self.targets.append(tokenized_targets)
-
-class ImdbDataset(Dataset):
-  def __init__(self, tokenizer, data_dir, type_path,  max_len=512):
-    self.pos_file_path = os.path.join(data_dir, type_path, 'pos')
-    self.neg_file_path = os.path.join(data_dir, type_path, 'neg')
-    
-    self.pos_files = glob.glob("%s/*.txt" % self.pos_file_path)
-    self.neg_files = glob.glob("%s/*.txt" % self.neg_file_path)
-    
-    self.max_len = max_len
-    self.tokenizer = tokenizer
-    self.inputs = []
-    self.targets = []
-
-    self._build()
-  
-  def __len__(self):
-    return len(self.inputs)
-  
-  def __getitem__(self, index):
-    source_ids = self.inputs[index]["input_ids"].squeeze()
-    target_ids = self.targets[index]["input_ids"].squeeze()
-
-    src_mask    = self.inputs[index]["attention_mask"].squeeze()  # might need to squeeze
-    target_mask = self.targets[index]["attention_mask"].squeeze()  # might need to squeeze
+    src_mask    = self.inputs[index]["attention_mask"]#.squeeze()  # might need to squeeze
+    target_mask = self.targets[index]["attention_mask"]#.squeeze()  # might need to squeeze
 
     return {"source_ids": source_ids, "source_mask": src_mask, "target_ids": target_ids, "target_mask": target_mask}
   
   def _build(self):
-    self._buil_examples_from_files(self.pos_files, 'positive')
-    self._buil_examples_from_files(self.neg_files, 'negative')
-  
-  def _buil_examples_from_files(self, files, sentiment):
-    REPLACE_NO_SPACE = re.compile("[.;:!\'?,\"()\[\]]")
-    REPLACE_WITH_SPACE = re.compile("(<br\s*/><br\s*/>)|(\-)|(\/)")
+    # for text1, text2 in zip(self.df['text1'].tolist(), self.df['text2'].tolist()):
+    #    # tokenize inputs
+    #   tokenized_inputs = self.tokenizer.batch_encode_plus(
+    #       [text1+' {}'.format(self.tokenizer.eos_token)], max_length=self.max_len, pad_to_max_length=True, return_tensors="pt"
+    #   )
+    #    # tokenize targets
+    #   tokenized_targets = self.tokenizer.batch_encode_plus(
+    #       [text2+' {}'.format(self.tokenizer.eos_token)], max_length=self.max_len, pad_to_max_length=True, return_tensors="pt"
+    #   )
 
-    for path in files:
-      with open(path, 'r') as f:
-        text = f.read()
-      
-      line = text.strip()
-      line = REPLACE_NO_SPACE.sub("", line) 
-      line = REPLACE_WITH_SPACE.sub("", line)
-      line = line + ' </s>'
+    #   self.inputs.append(tokenized_inputs)
+    #   self.targets.append(tokenized_targets)
 
-      target = sentiment + " </s>"
-
-       # tokenize inputs
-      tokenized_inputs = self.tokenizer.batch_encode_plus(
-          [line], max_length=self.max_len, pad_to_max_length=True, return_tensors="pt"
+    tokenized_inputs = self.tokenizer.batch_encode_plus(
+        (self.df['text1']+' {}'.format(self.tokenizer.eos_token)).tolist(), max_length=self.max_len, pad_to_max_length=True, return_tensors="pt"
       )
-       # tokenize targets
-      tokenized_targets = self.tokenizer.batch_encode_plus(
-          [target], max_length=max(label_name_ids_lens), pad_to_max_length=True, return_tensors="pt"
+    tokenized_targets = self.tokenizer.batch_encode_plus(
+        (self.df['text2']+' {}'.format(self.tokenizer.eos_token)).tolist(), max_length=self.max_len, pad_to_max_length=True, return_tensors="pt"
       )
 
-      self.inputs.append(tokenized_inputs)
-      self.targets.append(tokenized_targets)
+
+    for i in range(self.df.shape[0]):
+        self.inputs.append({'input_ids':tokenized_inputs['input_ids'][i] , \
+                        'attention_mask':tokenized_inputs['attention_mask'][i] })
+    for i in range(self.df.shape[0]):
+        self.targets.append({'input_ids':tokenized_targets['input_ids'][i] , \
+                        'attention_mask':tokenized_targets['attention_mask'][i] })
 
 
 
@@ -416,20 +341,19 @@ class ImdbDataset(Dataset):
 
 # !mkdir -p t5_imdb_sentiment
 
-
-args_dict.update({'data_dir': 'aclImdb', 'output_dir': 't5_imdb_sentiment', 'num_train_epochs': argsin.ftepochs})
+args_dict.update({'output_dir': output_dir, 'num_train_epochs': argsin.ftepochs})
 args = argparse.Namespace(**args_dict)
 
 
 
-checkpoint_callback = pl.callbacks.ModelCheckpoint(
-    filepath=args.output_dir, prefix="checkpoint", monitor="val_loss", mode="min", save_top_k=5
-)
+# checkpoint_callback = pl.callbacks.ModelCheckpoint(
+#     filepath=args.output_dir, prefix="checkpoint", monitor="val_loss", mode="min", save_top_k=3
+# )
 
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 train_params = dict(
     accumulate_grad_batches=args.gradient_accumulation_steps,
-    gpus=1,
+    gpus=argsin.gpus,
     max_epochs=args.num_train_epochs,
     early_stop_callback=True,
     precision= 16 if args.fp_16 else 32,
@@ -440,71 +364,55 @@ train_params = dict(
 )
 
 
-'''
-Define the get_dataset function to return the dataset. 
-The model calls this function to get the train and val datasets.
- We are defining a dataset function so that we won't need to modify the model code at all. 
- Redefine the function to return different dataset according to the problem. 
- While this is not the best solution for now this works
-'''
+
 def get_dataset(tokenizer, type_path, args):
   return EmotionDataset(tokenizer=tokenizer, type_path=type_path,  max_len=args.max_seq_length)
 
 #model = T5FineTuner(vars(args))
 model = T5FineTuner(args)
 trainer = pl.Trainer(**train_params)
+
+
 trainer.fit(model)
-
-# !mkdir t5_base_imdb_sentiment
-## save the model this way so next time you can load it using T5ForConditionalGeneration.from_pretrained
-
 
 
 #For inference we will use the generate method with greedy decoding with max length 2.
-import textwrap
-from tqdm.auto import tqdm
-from sklearn import metrics
+# import textwrap
+# from tqdm.auto import tqdm
+# from sklearn import metrics
 
-for se in ['train', 'test']:
-    dataset = EmotionDataset(tokenizer,  se,  max_len=256)
+# for se in ['train', 'test']:
+#     dataset = EmotionDataset(tokenizer,  se,  max_len=256)
 
-    loader = DataLoader(dataset, batch_size=32, num_workers=8)
-    model.model.eval()
-    outputs = []
-    targets = []
-    for batch in tqdm(loader):
-        outs = model.model.generate(input_ids=batch['source_ids'].cuda(), 
-                                  attention_mask=batch['source_mask'].cuda(), 
-                                  max_length=max(label_name_ids_lens))
+#     loader = DataLoader(dataset, batch_size=32, num_workers=8)
+#     model.model.eval()
+#     outputs = []
+#     targets = []
+#     for batch in tqdm(loader):
+#         outs = model.model.generate(input_ids=batch['source_ids'].cuda(), 
+#                                   attention_mask=batch['source_mask'].cuda(), 
+#                                   max_length=max(label_name_ids_lens))
 
-        pred = [tokenizer.decode(ids,clean_up_tokenization_spaces=True, skip_special_tokens=True) for ids in outs]
-        target = [tokenizer.decode(ids,clean_up_tokenization_spaces=True, skip_special_tokens=True) for ids in batch["target_ids"]]
+#         pred = [tokenizer.decode(ids,clean_up_tokenization_spaces=True, skip_special_tokens=True) for ids in outs]
+#         target = [tokenizer.decode(ids,clean_up_tokenization_spaces=True, skip_special_tokens=True) for ids in batch["target_ids"]]
 
-        outputs.extend(pred)
-        targets.extend(target)
-
-
-    for i, pred in enumerate(outputs):
-      if pred not in ds.df_test['label_name'].unique():
-        print(pred, 'detected invalid prediction')
-
-    acc = metrics.accuracy_score(targets, outputs)
-    print(se, 'acc==>', acc)
+#         outputs.extend(pred)
+#         targets.extend(target)
 
 
-# os.makedirs('t5_base_imdb_sentiment_ds__{}'.format(train_path), exist_ok=True)
-# model.model.save_pretrained('t5_base_imdb_sentiment_ds__{}'.format(train_path))
+#     for i, pred in enumerate(outputs):
+#       if pred not in ds.df_test['label_name'].unique():
+#         print(pred, 'detected invalid prediction')
 
+#     acc = metrics.accuracy_score(targets, outputs)
+#     print(se, 'acc==>', acc)
+
+
+#model.model.save_pretrained(output_dir)
 
 
 
 
-
-
-
-
-
-# emotion
 
 
 

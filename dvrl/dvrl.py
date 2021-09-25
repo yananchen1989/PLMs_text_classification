@@ -25,7 +25,7 @@ import numpy as np
 from sklearn import metrics
 import tensorflow.compat.v1 as tf
 import tqdm
-# from dvrl import dvrl_metrics
+from dvrl import dvrl_metrics
 from tensorflow.contrib import layers as contrib_layers
 
 
@@ -346,12 +346,12 @@ class Dvrl(object):
                                                                    axis=1))
       elif perf_metric == 'log_loss':
         dvrl_perf = -metrics.log_loss(self.y_valid, y_valid_hat)
-      # elif perf_metric == 'rmspe':
-      #   dvrl_perf = dvrl_metrics.rmspe(self.y_valid, y_valid_hat)
-      # elif perf_metric == 'mae':
-      #   dvrl_perf = metrics.mean_absolute_error(self.y_valid, y_valid_hat)
-      # elif perf_metric == 'mse':
-      #   dvrl_perf = metrics.mean_squared_error(self.y_valid, y_valid_hat)
+      elif perf_metric == 'rmspe':
+        dvrl_perf = dvrl_metrics.rmspe(self.y_valid, y_valid_hat)
+      elif perf_metric == 'mae':
+        dvrl_perf = metrics.mean_absolute_error(self.y_valid, y_valid_hat)
+      elif perf_metric == 'mse':
+        dvrl_perf = metrics.mean_squared_error(self.y_valid, y_valid_hat)
 
       if self.problem == 'classification':
         reward_curr = dvrl_perf - valid_perf

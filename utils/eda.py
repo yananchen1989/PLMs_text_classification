@@ -60,6 +60,17 @@ def get_only_chars(line):
 import nltk
 #nltk.download('wordnet')
 from nltk.corpus import wordnet 
+#nltk.data.path.append('./torch_ds')
+
+try:
+    wordnet.synsets('city')
+except:
+    print('wordnet not downloaded')
+    nltk.download('wordnet')
+
+assert wordnet.synsets('city')
+#nltk.download('wordnet', download_dir='./torch_ds')
+
 
 def synonym_replacement(words, n):
 	new_words = words.copy()

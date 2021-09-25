@@ -17,7 +17,7 @@ from utils.data_processors import get_task_processor
 import transformers
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-assert torch.__version__=='1.6.0' and transformers.__version__ == '2.9.0'
+#assert torch.__version__=='1.6.0' and transformers.__version__ == '2.9.0'
 
 class InputFeatures(object):
     """A single set of features of data."""

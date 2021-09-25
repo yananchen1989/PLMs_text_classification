@@ -1,18 +1,24 @@
-import sys,os,logging,glob,pickle,torch,joblib
+import sys,os,logging,glob,pickle,torch,joblib,random
 import numpy as np
 import tensorflow as tf
 import pandas as pd 
 import transformers
-#from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split
 #from sklearn.datasets import fetch_20newsgroups
 from transformers import AutoTokenizer
 
-
-tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-uncased',cache_dir="./cache")
+tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-uncased',cache_dir="./cache", local_files_only=True)
 
 def truncate(sent, max_length):
-    return tokenizer_bert.batch_decode([tokenizer_bert.encode(sent, truncation=True, max_length=max_length)], skip_special_tokens=True, clean_up_tokenization_spaces=True)[0]
+    ids = tokenizer_bert.encode(sent, truncation=True, max_length=max_length)
+    sent_ = tokenizer_bert.decode(ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+    return sent_
 
+def noisy_label(l, unique_labels):
+    unique_labels_ = [j for j in unique_labels if j!=l]
+    assert l not in unique_labels_
+    return random.sample(unique_labels_, 1)[0]
+    
 
 cap = 600
 
@@ -39,7 +45,7 @@ class load_data():
             if self.dataset == 'ag':
                 world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
                                   'Crime','Murder','Religion','Jurisdiction', 'Democracy'])
-                ixl = {1:'World', 2:"Sports", 3:"Business", 4:"Science and technology"} 
+                ixl = {1:'World', 2:"Sports", 3:"Business", 4:"science and technology"} 
             if self.dataset == 'yahoo':
                 ixl = {  1: 'Society & Culture',
                   2: 'Science & Mathematics',
@@ -87,7 +93,39 @@ class load_data():
             self.df_train['label'] = self.df_train['label'].map({'neg':0, 'pos':1})
             self.df_test['label'] = self.df_test['label'].map({'neg':0, 'pos':1})
 
+        elif self.dataset == 'uci':
+            df = pd.read_csv("./torch_ds/uci-news-aggregator.csv")  
+            df = df[['CATEGORY','TITLE']]
+            df.rename(
+                    columns={"CATEGORY": "label", "TITLE":"content"},
+                    inplace=True )
+            ld = {'e':'entertainment', 'b':'business', 't':"science and technology", 'm':"health"}
+            ixl = {'e':0, 'b':1, 't':2, 'm':3}
+            df['label_name'] = df['label'].map(lambda x: ld[x])
+            df['label'] = df['label'].map(lambda x: ixl[x])
+            self.df_train, self.df_test = train_test_split(df, test_size=0.3)
 
+        elif self.dataset == 'nyt':
+            infos = []
+            with open('./torch_ds/nyt/dataset.txt','r') as f:
+                for line in f:
+                    infos.append(line.strip())
+
+            labels = []
+            with open('./torch_ds/nyt/labels.txt','r') as f:
+                for line in f:
+                    labels.append(int(line.strip()))
+
+            df = pd.DataFrame(zip(infos, labels), columns=['content','label'])
+
+            names = []
+            with open('./torch_ds/nyt/classes.txt','r') as f:
+                for line in f:
+                    names.append(line.strip())
+            ixl = {ix:l for ix, l in enumerate(names)}
+            df['label_name'] = df['label'].map(lambda x: ixl[x])
+
+            self.df_train, self.df_test = train_test_split(df, test_size=0.3)
 
         else:
             raise KeyError("dsn illegal!")  
@@ -98,9 +136,88 @@ class load_data():
 
 
 
+'''
+nyt
+business      7639
+politics      7182
+sports        2048
+health        1656
+education     1255
+estate        1135
+arts           840
+science        349
+technology     293
+'''
 
-        
 
+
+def get_external_news(frac=0.8):
+    df_cnndm = pd.read_csv("./torch_ds/cnndm.csv") #  nrows=100000
+    df_cc = pd.read_csv("./torch_ds/cc_news.csv")
+    del df_cc['title']
+    df_external = pd.concat([df_cnndm, df_cc])
+    df_external.drop_duplicates('content', inplace=True)
+    return df_external.sample(frac=frac)
+ 
+
+from nltk.tokenize import sent_tokenize
+def para_split2(para):
+  sents = sent_tokenize(para)
+  assert len(sents) > 0 and len(para.split(' ')) >= 4
+  if len(sents)==1:
+    tokens = para.split(' ')
+    paras = [' '.join(tokens[:int(len(tokens)/2)]).strip(), ' '.join(tokens[int(len(tokens)/2):]).strip()]
+  else:
+    mid = int(len(sents) / 2)
+    paras = [' '.join(sents[:mid]).strip(), ' '.join(sents[mid:]).strip()]
+  return paras
+
+import datasets
+def get_cc_news(s=1):
+    cc_news = datasets.load_dataset('cc_news', split="train")
+    '''
+    Dataset({
+        features: ['date', 'description', 'domain', 'image_url', 'text', 'title', 'url'],
+        num_rows: 708241
+    })
+    '''
+    df = pd.DataFrame(zip(cc_news['title'], cc_news['text'], cc_news['description'] ))
+    df.columns = ['title','content','description']
+
+    df.drop_duplicates(['title','content'], inplace=True) # 708241
+    return df.sample(frac=s) #615019  
+
+def get_cnndm_news(s=1):
+    cnndm_news = datasets.load_dataset('cnn_dailymail', '3.0.0')
+    ll = []
+    for col in ['train', 'validation', 'test']:
+        df_tmp = pd.DataFrame(zip(cnndm_news[col]['article'], cnndm_news[col]['highlights']), \
+                    columns=['content', 'title'])
+        ll.append(df_tmp)
+    df_cnndm = pd.concat(ll)
+    df_cnndm.drop_duplicates(['title','content'], inplace=True) # 311971
+    #df_cnndm.to_csv('df_cnndm.csv', index=False)
+    return df_cnndm.sample(frac=s) #308870  
+
+
+def get_cc_text_double(ft_pattern, dsn, s=1):
+    if dsn == 'cc':
+        df_cc = get_cc_news(s)
+    elif dsn == 'cnndm':
+        df_cc = get_cnndm_news(s)
+    if ft_pattern == 'tc':
+        df_cc = df_cc.loc[df_cc['title']!='']
+        return df_cc.rename(columns={'title': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
+
+    # elif ft_pattern == 'sc':
+    #     df_cc = df_cc.loc[df_cc['description']!='']
+    #     return df_cc.rename(columns={'description': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
+  
+    elif ft_pattern == 'pp':
+        rr = df_cc['content'].map(lambda x: para_split2(x)).tolist()
+        df_cc['text1'] = [c[0] for c in rr]
+        df_cc['text2'] = [c[1] for c in rr]
+        return df_cc[['text1','text2']]
 
 '''
     def get_tweet(self):
@@ -114,15 +231,7 @@ class load_data():
         df = pd.DataFrame(infos, columns=['label','content'])
         df_train, df_test = train_test_split(df, test_size=0.2)
 
-    def get_uci_news(self):
-        df = pd.read_csv("../datasets_aug/uci-news-aggregator.csv")  
-        df = df[['CATEGORY','TITLE']]
-        df.rename(
-                columns={"CATEGORY": "label", "TITLE":"content"},
-                inplace=True )
-        ld = {'e':'entertainment', 'b':'business', 't':"science technology", 'm':"health"}
-        df['label'] = df['label'].map(lambda x: ld[x])
-        df_train, df_test = train_test_split(df, test_size=0.2, random_state=self.seed)
+
 
 
     # bbc 
@@ -213,28 +322,7 @@ class load_data():
         df_train = sample_stratify(df_train, self.samplecnt, self.seed)  
         return df_train, df_test, df 
     
-    def get_nyt_news(self):      
-        infos = []
-        with open('../datasets_aug/NYT-Topics/dataset.txt','r') as f:
-            for line in f:
-                infos.append(line.strip())
 
-        labels = []
-        with open('../datasets_aug/NYT-Topics/labels.txt','r') as f:
-            for line in f:
-                labels.append(int(line.strip()))
-
-        df = pd.DataFrame(zip(infos, labels), columns=['content','label'])
-
-        names = []
-        with open('../datasets_aug/NYT-Topics/classes.txt','r') as f:
-            for line in f:
-                names.append(line.strip())
-        ixl = {ix:l for ix, l in enumerate(names)}
-        df['label'] = df['label'].map(lambda x: ixl[x])
-        df_train, df_test = train_test_split(df, test_size=0.2)
-        df_train = sample_stratify(df_train, self.samplecnt, self.seed)
-        return df_train, df_test, df.sample(frac=1)  
    
 
 '''
@@ -257,31 +345,66 @@ def get_tokens_len(ds, cap3rd):
 
 
 
-def process_ds(ds, maxlen=500):
+def process_ds(ds, maxlen=256, truncate_testset=False):
     # ds.df_train['content'] = ds.df_train['content']\
     #       .map(lambda x: x.replace('<br />',' '))
     #if not transformers.__version__.startswith('2.'):
     ds.df_train['content'] = ds.df_train['content'].map(lambda x: truncate(x, maxlen))
-    #label_unique = ds.df_test.label.unique()
-    # num_classes = label_unique.shape[0]
+    if truncate_testset:
+        ds.df_test['content'] = ds.df_test['content'].map(lambda x: truncate(x, maxlen))
     proper_len = get_tokens_len(ds, 0.9)
     return ds,  proper_len
 
 
 
+base_nli ={
+    'politics':['Politics','War', 'Election','Constitution','Democracy','Conflict','Military',\
+                'Terrorism', 'Government', 'Ideology', 'fascism', 'Socialism', 'Totalitarian', 'Religion'],
+    'law':      ['Law', 'Legitimacy','Court','Crime','Murder','Jurisdiction'],
+    'science':  ['Science','Aerospace','Physics','Chemistry','Biology','Scientist','Astronomy','Universe','Big Bang'],
+    'technology':['Technology','Biotech', 'IT','Computers','Internet','Algorithm','Space','Bitcoin','artificial Intelligence','Robot'],
+    'health': ['Health','Healthcare','Medicine','Clinics','Vaccine','Wellness','Nutrition','Dental','HIV','Disease'],
+    'business': ['Business','Finance','Oil price','Supply','Inflation','Dollars','Bank','Wall Street','Bitcoin',
+                        'Federal Reserve','Accrual','Accountancy','Sluggishness','Consumerism','Trade','Quarterly earnings',\
+                         'Deposit','Revenue','Stocks','Recapitalization','Marketing','Futures'],
+    'sports': ['Sports','Athletics','Championships','Football','Olympic','Tournament','Chelsea','League','Golf',
+                            'NFL','Super bowl','World Cup'],
+    'entertainment':['Entertainment','Pop music','Film','Music','Reality show','Drama','Concert','Rock music','Opera'],
+    'education': ['Education', 'Tertiary education', 'University','Curriculum','Lecture'],
+    'arts': ['Arts','Music','Painting','Art galleries','Classical music','Art Works','Stitchery'],
+    'estate': ['Estate','Estate tax','Real estate']
+}
+'''
+for l, ll in base_nli.items():
+    print("{}:{}".format(l, ','.join(ll)))
+
+'''
+
 
 expand_label_nli = {}
-expand_label_nli['World'] = ['Politics','War','Military','Terrorism','Election','Finance','government', 'ideology',\
-                            'legitimacy','socialism','totalitarian','constitution','court','fascism',
-                                  'Crime','Murder','Religion','Jurisdiction', 'Democracy']
-expand_label_nli['Science and technology'] = ['science','technology','IT','Computers','Internet',\
-                                    'algorithm','Space technology','aerospace','boitech','physics','chemistry',\
-                                    'biology','scientist','astronomy','universe']
-expand_label_nli['Business'] = ['business','finance','oil price','supply','inflation','dollors','bank','Wall Street',\
-                        'Federal Reserve','accrual','accountancy','sluggishness','consumers','trade','quarterly earnings',\
-                         'deposit','revenue','stocks','recapitalization','marketing']
-expand_label_nli['Sports'] = ['sports','athletics','Championships','Football','Olympic','tournament','Chelsea','league','Golf',\
-                            'NFL','super bowl','World Cup']
+
+# ag
+expand_label_nli['World'] = base_nli['politics'] + base_nli['law']
+expand_label_nli['Business'] = base_nli['business']
+expand_label_nli['Sports'] = base_nli['sports']
+
+# uci
+expand_label_nli['entertainment'] = base_nli['entertainment']
+expand_label_nli['business'] = base_nli['business']
+expand_label_nli['science and technology'] = base_nli['science'] + base_nli['technology']
+expand_label_nli['health'] = base_nli['health']
+# nyt
+expand_label_nli['education'] = base_nli['education']
+expand_label_nli['arts'] = base_nli['arts']
+expand_label_nli['politics'] = base_nli['politics']
+expand_label_nli['sports'] = base_nli['sports']
+expand_label_nli['estate'] = base_nli['estate']
+expand_label_nli['science'] = base_nli['science'] 
+expand_label_nli['technology'] = base_nli['technology']
+
+
+
+
 
 
 

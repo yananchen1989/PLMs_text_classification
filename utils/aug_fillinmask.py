@@ -93,10 +93,17 @@ class fillInmask():
 
 
 
-'''
-nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased')
-content_mask = content.replace('White House', nlp.tokenizer.mask_token, 1)
-nlp(content_mask)
+fillin_nlp = pipeline("fill-mask" , model = 'google/bigbird-roberta-base')
+fillin_nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased')
+
+content = 'Mitsubishi to have second-largest stake after GM -report TOKYO (CBS.MW) - Shares of Japan #39;s Isuzu Motors Ltd. rose Thursday after a published report that trading house Mitsubishi Corp.'
+
+content = ds.df_train.sample(1).content.tolist()[0]
+content_mask = content.replace('Karen Gillan', fillin_nlp.tokenizer.mask_token, 1)
+fillin_nlp(content_mask)
+
+
+
 
 [{'sequence': 'bush campaign trail stops at george washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
   'score': 0.21938802301883698,
@@ -118,7 +125,7 @@ nlp(content_mask)
   'score': 0.04831065610051155,
   'token': 9424,
   'token_str': 'capitol'}]
-'''
+
 
 
 

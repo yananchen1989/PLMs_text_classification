@@ -68,13 +68,15 @@ print(results["rouge1"].mid.fmeasure)
 
 y_true = np.random.randint(0, 2, size=(1, 3)).astype(np.float64)
 y_pred = np.random.random(size=(1, 3))
-p = np.array([[0.10, 0.40, 0.50]])
-q = np.array([[0.80, 0.15, 0.05]])
+p = np.array([[0.99, 0.005, 0.005]])
+q = np.array([[0.005, 0.99, 0.005]])
 
+p = np.array([1] + 15*[0])
+q = np.array(15*[0] + [1])
 m = (p+q)/2
 loss_pm = tf.keras.losses.kullback_leibler_divergence(p, m)
 loss_qm = tf.keras.losses.kullback_leibler_divergence(q, m)
-jsd = (loss_pm.numpy()[0] + loss_qm.numpy()[0])/2
+jsd = (loss_pm.numpy() + loss_qm.numpy())/2
 print(jsd)
 
 
