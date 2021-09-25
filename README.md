@@ -10,7 +10,7 @@ those continuation texts as augmented sampled for text classification augmentati
 
 ## baseline
 
-EDA, back-translation, CBERT
+EDA, back-translation, CBERT, CGPT
 
 ## base classifier
 
