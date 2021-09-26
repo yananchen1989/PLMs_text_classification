@@ -18,13 +18,14 @@ yahoo_news_test = datasets.load_dataset('yahoo_answers_topics', split="test")
 news_train = datasets.load_dataset('newspop')
 
 import datasets
-cc_news = datasets.load_dataset('cc_news', split="train")
 
 cnndm_news = datasets.load_dataset('cnn_dailymail', '3.0.0')
 
-df = pd.DataFrame(zip(cc_news['title'], cc_news['text'] ))
-df.columns = ['title','content']
-df.to_csv('cc_news.csv', index=False)
+ll = []
+for col in ['train', 'validation', 'test']:
+    df_tmp = pd.DataFrame(zip(cnndm_news[col]['article'], cnndm_news[col]['highlights']), \
+                columns=['content', 'title'])
+ll.append(df_tmp)
 
 
 

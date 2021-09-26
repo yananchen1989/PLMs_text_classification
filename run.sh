@@ -9,46 +9,89 @@
 # nohup python -u bert_pair_nsp.py --dsn yahoo --max_length 64 --gpu 1 > pair.yahoo.log &
 
 
-CUDA_VISIBLE_DEVICES=0 nohup  python -u bert_pair_nsp.py --dsn ag --ft 0  --gpu 0 > pair.ppo.ag.ft0.log &
-CUDA_VISIBLE_DEVICES=1 nohup  python -u bert_pair_nsp.py --dsn ag --ft 1  --gpu 1 > pair.ppo.ag.ft1.log &
+# CUDA_VISIBLE_DEVICES=0 nohup  python -u bert_pair_nsp.py --dsn ag --ft 0  --gpu 0 > pair.ppo.ag.ft0.log &
+# CUDA_VISIBLE_DEVICES=1 nohup  python -u bert_pair_nsp.py --dsn ag --ft 1  --gpu 1 > pair.ppo.ag.ft1.log &
 
 
 
-# dev 
-
-
-nohup python -u aug_ppo_task.py --dsn ag --samplecnt 64  --boostsample_ppo 0  --ppo_batchsize 32 \
-	           --load_bert 1 --noeval 1   \
-	          --epochs 20  --init_kl_coef 0 --cliprange 0.2   \
-	            --gpt_ft 1 --ref_ft 1 --gpu 0 > log_fl0 &
-
-
-nohup python -u aug_ppo_task.py --dsn ag --samplecnt 64  --boostsample_ppo 0  --ppo_batchsize 32 \
-	           --load_bert 1 --noeval 1   \
-	          --epochs 20  --init_kl_coef 0.1 --cliprange 0.2   \
-	            --gpt_ft 1 --ref_ft 1 --gpu 1 > log_fl1 &
-
-
-
-# augf
+abundance=3 #parameter B 
+max_aug_times=1 # parameter R
+samplecnt=${2} # simulate a low-data regime, where 32 samples per category are selected as anchor data
 while true
 do
-python -u augf.py --dsn ag --samplecnt ${1} --aug eda --gpu ${2}
-python -u augf.py --dsn ag --samplecnt ${1} --aug bt --gpu {2}
-python -u augf.py --dsn ag --samplecnt ${1} --aug generate --nli_check 1 --gpu ${2}
-python -u augf.py --dsn ag --samplecnt ${1} --aug generate --nli_check 0 --gpu ${2}
+	seed=$RANDOM
+	#seed=$(date +"%T")
+	for dsn in ag uci
+	do
+		# baselines: eda bt
+		# for aug in eda bt 
+		# do
+		# 	python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug ${aug} \
+		# 	    --max_aug_times ${max_aug_times} --gpu ${1}  \
+		# 	   > ${dsn}.${aug}.${samplecnt}.gpu${1}.${seed}.log
+		# done
+
+		# baselines: cbert
+		# for aug in cbert
+		# do
+		# 	envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug ${aug} \
+		# 	      --max_aug_times ${max_aug_times} --gpu ${1} \
+		# 	 > ${dsn}.${aug}.${samplecnt}.gpu${1}.${seed}.log
+		# done
+
+		# no finetune
+		for genm in gpt t5 #ctrl
+		do
+			for genft in no 
+			do
+				for filter in nli
+				#for filter in no cls nli both
+				do
+				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance} --gpu ${1}  \
+				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.gpu${1}.${seed}.log
+				done
+			done
+		done
+
+        # internal finetune
+		for genm in gpt 
+		do
+			for genft in lambda entire 
+			do
+				for filter in nli
+				#for filter in no cls nli both
+				do
+				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance} --gpu ${1}  \
+				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.gpu${1}.${seed}.log
+				done
+			done
+		done       
+
+		# external finetune
+		for genm in t5 gpt
+		do
+			for genft in tc pp
+			do
+				for filter in nli
+				do
+				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance} --gpu ${1}  \
+				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.gpu${1}.${seed}.log
+				done 
+			done
+		done	
+	done
 done
 
 
 
 
-nohup sh ttt.sh 32 former 0 > 32.former.log &
-nohup sh ttt.sh 32 albert 0 > 32.albert.log &
 
 
-nohup sh ttt.sh 64 former 0 > 64.former.log &
-nohup sh ttt.sh 64 albert 0 > 64.albert.log &
-
+# nohup bash run.sh 0 1 &
+# nohup bash run.sh 1 1 &
 
 
 
