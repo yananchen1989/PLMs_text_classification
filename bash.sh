@@ -1,29 +1,4 @@
-
-
-pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
-
-nohup bash run.sh 0 128 & 
-nohup bash run.sh 1 128 & 
-
-
-
-# enter tensorflow 1.4
-
-for i in {1..10}
-do
-	seed=$RANDOM
-	for dsn in blog adult
-	do
-		python main_data_valuation.py --inner_iterations 100 --batch_size 256 --iterations  1000 \
-	       --train_no 512 --valid_no 64 --dsn ${dsn} > dvrl.${dsn}.${seed}.log 
-	done
-done
-
-
-
-python main_data_valuation.py --inner_iterations 50 --batch_size 256 --iterations  1000 \
-			--hidden_dim 768 --comb_dim 512 \
-        --dsn stsa --norm 0  --perf_metric auc
+conda config --set auto_activate_base true
 
 
 
@@ -32,31 +7,62 @@ python main_data_valuation.py --inner_iterations 50 --batch_size 256 --iteration
 
 
 
+
+
+##### dvrl
+
+
+
+python -u run_dvrl.py --inner_iterations 25 --samplecnt 128 --samplecnt_bad 128 --dsn ag
+
+ps aux|grep ttt|grep -v grep | awk '{print $2}'|xargs kill -9
+
+
+tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.py
+
+
+##### augf
+
+
+python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate \
+				      --genft no --filter nli --genm t5 --abundance 2
+
+
+
+
+
+
+
+
+cd /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation 
 cp *.py /Users/yanan/Desktop/thesis/my_augmentation/
 cp -r * /Users/yanan/Desktop/thesis/my_augmentation/
 
 
+git add .;git commit -m "syn from mi repo";git push
 
 
-for gpu in 0 1
+# 解压
+
+
+
+unzip -o -d /home/sunny myfile.zip
+
+
+
+# 压缩
+
+for file in torch_ds resource cache cache_cbert
 do
-nohup python -u aug_ppo_task.py --dsn ag --samplecnt 32   --ppo_batchsize 32 \
-	           --load_bert 1 --noeval 1  --ppo_epoch 2000 \
-	           --add_external_ft ${gpu}   --add_external_ppo 1 --external_frac 0.1 \
-	            --init_kl_coef 0.1   \
-	            --gpt_ft 1 --ref_ft 1 --gpu ${gpu} > log_ft${gpu}_ppo1 &
+	#tar -zcvf ${file}.tar.gz ${file}
+	mkdir ${file};tar -xvzf ${file}.tar.gz  -C ${file}
 done
 
 
+zip -r myfile.zip ./myfile
 
 
-nohup python -u aug_ppo_nli.py --dsn uci --samplecnt 32 --steps 1000  --ref_ft 1 --gpt_ft 0 --gpu 1 \
-   > ppo.stsa.64.ft10.log & 
-
-
-nohup python -u aug_ppo_nli.py --dsn uci --samplecnt 32 --steps 1000  \
-        --ref_ft 0 --gpt_ft 0 --init_kl_coef 0.1 --gpu 1 \
-   > ppo.stsa.64.ft00.kl0p1.log & 
+scp resource.tar.gz root@sdu:/home/yanan/topic_classification_augmentation/
 
 
 
@@ -64,16 +70,23 @@ nohup python -u aug_ppo_nli.py --dsn uci --samplecnt 32 --steps 1000  \
 
 
 
+
+
+
+
+
+
+
+
+
+
+############## fine-tune for gpt & t5
 nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 0.5 --ft_pattern tc --gpu 1  \
  > ft.gpt2.tc.log &
 
 nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 0.5 --ft_pattern pp  --gpu 1  \
  > ft.gpt2.pp.log &
 
-
-
-python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 --aug generate \
-				      --genft pp --filter nsp --genm t5 --abundance 1 --gpu 1
 
 
 
@@ -90,17 +103,4 @@ CUDA_VISIBLE_DEVICES=0 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern tc -
 
 
 
-
-#python -u ft.py --genm t5 --num_train_epochs 7 --ccsample 1 --ft_pattern pp --maxlen 512 --gpu 0
-
-
-python -u augf.py --dsn ag --samplecnt 64 --max_aug_times 1 \
-					--aug generate \
-			      	--genft tc --filter enc --genm gpt --abundance 3 --gpu 0
-
-
-
-python -u augf.py --dsn uci --samplecnt 64 --max_aug_times 1 \
-					--aug generate \
-			      	--genft tc --filter enc --genm gpt --abundance 3 --gpu 0
 

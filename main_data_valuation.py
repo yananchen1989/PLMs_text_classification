@@ -1,19 +1,39 @@
+# coding=utf-8
+# Copyright 2021 The Google Research Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Main experiment for data valuation.
+
+Main experiment of a data valuation application
+using "Data Valuation using Reinforcement Learning (DVRL)"
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import argparse,os
-os.environ['CUDA_VISIBLE_DEVICES'] = str(1)
+import argparse
+
 #import lightgbm
 from sklearn import metrics
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from tensorflow.compat.v1 import keras
 
-from dvrl import dvrl_v2
+from dvrl import dvrl
 #from dvrl.dvrl_metrics import *
 
-gpus = tf.config.list_physical_devices('GPU')
+gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
   try:
     for gpu in gpus:
@@ -23,8 +43,6 @@ if gpus:
   except RuntimeError as e:
     print(e)
 #assert gpus
-
-assert tf.__version__.startswith('2.')
 
 # Inputs for the main function
 parser = argparse.ArgumentParser()
@@ -39,7 +57,7 @@ parser.add_argument( '--layer_number', help='number of network layers', default=
 parser.add_argument('--train_no', default=1000, type=int)
 parser.add_argument('--valid_no', default=400, type=int)
 
-parser.add_argument('--perf_metric', default='accuracy', type=str)
+parser.add_argument('--perf_metric', default='auc', type=str)
 
 parser.add_argument( '--iterations',  help='number of iterations',  default=2000,  type=int)
 parser.add_argument(
@@ -133,7 +151,7 @@ print('Finished data preprocess.')
 
 # Run DVRL
 # Resets the graph
-tf.compat.v1.reset_default_graph()
+tf.reset_default_graph()
 keras.backend.clear_session()
 
 # Here, we assume a classification problem and we assume a predictor model
@@ -153,7 +171,7 @@ pred_model.compile(optimizer='adam', loss='categorical_crossentropy',
 flags = {'sgd': True, 'pretrain': False}
 
 # Initializes DVRL
-dvrl_class = dvrl_v2.Dvrl(x_train, y_train, x_valid, y_valid,
+dvrl_class = dvrl.Dvrl(x_train, y_train, x_valid, y_valid,
                      problem, pred_model, parameters,
                      args.checkpoint_file_name, flags)
 

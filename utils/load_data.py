@@ -149,15 +149,6 @@ science        349
 technology     293
 '''
 
-
-
-def get_external_news(frac=0.8):
-    df_cnndm = pd.read_csv("./torch_ds/cnndm.csv") #  nrows=100000
-    df_cc = pd.read_csv("./torch_ds/cc_news.csv")
-    del df_cc['title']
-    df_external = pd.concat([df_cnndm, df_cc])
-    df_external.drop_duplicates('content', inplace=True)
-    return df_external.sample(frac=frac)
  
 
 from nltk.tokenize import sent_tokenize
@@ -174,7 +165,7 @@ def para_split2(para):
 
 import datasets
 def get_cc_news(s=1):
-    cc_news = datasets.load_dataset('cc_news', split="train")
+    cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='./torch_ds')
     '''
     Dataset({
         features: ['date', 'description', 'domain', 'image_url', 'text', 'title', 'url'],
@@ -188,7 +179,7 @@ def get_cc_news(s=1):
     return df.sample(frac=s) #615019  
 
 def get_cnndm_news(s=1):
-    cnndm_news = datasets.load_dataset('cnn_dailymail', '3.0.0')
+    cnndm_news = datasets.load_dataset('cnn_dailymail', '3.0.0', cache_dir='./torch_ds')
     ll = []
     for col in ['train', 'validation', 'test']:
         df_tmp = pd.DataFrame(zip(cnndm_news[col]['article'], cnndm_news[col]['highlights']), \

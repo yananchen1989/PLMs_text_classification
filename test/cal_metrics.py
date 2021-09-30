@@ -10,27 +10,27 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 import pandas as pd 
 infos = []
-with open('logball','r') as f:
-    for line in f:
-        line = line.strip().split('summary===>')[-1] 
-        tokens = line.strip().split(' ') 
-        dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens}
-        if 'nli_check' in dic.keys():
-            if dic['nli_check'] == '0':
-                dic.update({'filter':'no'})
-            elif dic['nli_check'] == '1':
-                dic.update({'filter':'nli'})
-        if dic.get('genft', '*') == '0':
+for file in ['logb_','logb']:
+    with open(file,'r') as f:
+        for line in f:
+            line = line.strip().split('summary===>')[-1] 
+            tokens = line.strip().split(' ') 
+            dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens}
+            if 'nli_check' in dic.keys():
+                if dic['nli_check'] == '0':
+                    dic.update({'filter':'no'})
+                elif dic['nli_check'] == '1':
+                    dic.update({'filter':'nli'})
 
-        if dic.get('genft', '*') not in ['no','pp','tc','entire', 'lambda']:
-            continue
+            if dic.get('genft', '*') not in ['no','pp','tc','entire', 'lambda']:
+                continue
 
-        if int(dic['samplecnt'])==32 and  dic['model']=='albert' and  int(dic['max_aug_times'])==1 \
-            and dic['aug']=='generate':
-            infos.append((dic['dsn'], dic.get('genm','*'), dic.get('genft', '*'), \
-            dic.get('filter', '*'), float(dic['acc_aug'])))
-            # infos.append((dic['dsn'], dic.get('aug','*'), \
-            # float(dic['acc_base']), float(dic['acc_aug'])))
+            if int(dic['samplecnt'])==128 and dic['model']=='albert' and  int(dic['max_aug_times'])==1 \
+                and dic['aug']=='generate':
+                infos.append((dic['dsn'], dic.get('genm','*'), dic.get('genft', '*'), \
+                dic.get('filter', '*'), float(dic['acc_aug'])))
+                # infos.append((dic['dsn'], dic.get('aug','*'), \
+                # float(dic['acc_base']), float(dic['acc_aug'])))
 df = pd.DataFrame(infos, columns=['dsn','genm','genft', 'filter','acc_aug'])
 #df = pd.DataFrame(infos, columns=['dsn','aug','acc_base','acc_aug'])
 
@@ -47,7 +47,7 @@ for dsn in ['ag', 'uci', 'nyt']:
 
 
 # no finetune
-for dsn in ['ag', 'uci', 'nyt']:
+for dsn in ['ag', 'uci']:
     for genm in ['t5', 'gpt', 'ctrl']:
         for genft in ['no']:
             for fil in ['no','nli']: 
@@ -68,21 +68,27 @@ for dsn in ['ag', 'uci', 'nyt']:
 
 #external finetune
 for dsn in ['ag', 'uci', 'nyt']:
-    for genm in ['t5', 'gpt']:
-        for genft in ['tc', 'pp']:
+    for genm in ['t5', 'gpt', 'ctrl']:
+        for genft in ['no','pp','tc','entire', 'lambda']:
             for fil in ['no','nli']: 
                 dfi = df.loc[(df['dsn']==dsn) & (df['genm']==genm) & (df['genft']==genft) & (df['filter']==fil)]
                 print(dsn, genm, genft, fil, "{}({})".format(round(dfi['acc_aug'].mean()*100,2) , dfi.shape[0] ) )
     print('\n')
 
-
-
-
-
-
-ds = load_data(dataset='ag', samplecnt= -1)
-enc = encoder('dan','cpu')
-
+################################## get acc no aug ######################
+import GPUtil
+DEVICE_ID_LIST = GPUtil.getFirstAvailable()
+DEVICE_ID = DEVICE_ID_LIST[0] # grab first element from list
+from utils.load_data import * 
+from utils.transblock import * 
+print("use gpu id==>", DEVICE_ID)
+for _ in range(5):
+    for dsn in ['ag', 'uci','nyt']:
+        print(dsn)
+        ds = load_data(dataset=dsn, samplecnt= 256)
+        acc_noaug, _ = do_train_test(ds.df_train, ds.df_test, 100, 10, 0, \
+                   3, 256, 'max', 'albert')
+        print(acc_noaug)
 
 
 

@@ -1,4 +1,4 @@
-python -c "import tensorflow as tf;print(tf.__version__);gpus = tf.config.experimental.list_physical_devices('GPU');assert gpus"
+python -c "import tensorflow as tf;print(tf.__version__);gpus = tf.config.list_physical_devices('GPU');assert gpus"
 python -c "import torch;print(torch.__version__);device = torch.device('cuda' if torch.cuda.is_available() else 'cpu');assert device.type=='cuda'"
 python -c "import transformers;print(transformers.__version__)"
 #python -c "import flair;print(flair.__version__)"

@@ -171,7 +171,51 @@ tokens = tokenizer(text_list)
 
 
 
+# https://github.com/anderskm/gputil
+import GPUtil
+GPUtil.showUtilization()
+
+deviceIDs = GPUtil.getAvailable(order = 'memory', limit = len(gpus), maxLoad = 1, maxMemory = 0.9, includeNan=False, excludeID=[], excludeUUID=[])
+
+# Get the first available GPU
+DEVICE_ID_LIST = GPUtil.getFirstAvailable()
+DEVICE_ID = DEVICE_ID_LIST[0] # grab first element from list
+
+# Set CUDA_VISIBLE_DEVICES to mask out all other GPUs than the first available device id
+os.environ["CUDA_VISIBLE_DEVICES"] = str(DEVICE_ID)
+
+Gpus = GPUtil.getGPUs()
+for gpu in Gpus:
+    print('gpu.id:', gpu.id)
+    print('GPU总量：', gpu.memoryTotal)
+    print('GPU使用量：', gpu.memoryUsed)
+    print('gpu使用占比:', gpu.memoryUtil * 100)
+
+
+
+while True:
+    memoryUtil = min([gpu.memoryUtil for gpu in Gpus])
+    if memoryUtil < 0.3:
+        break
+    else:
+        time.sleep(60)
 
 
 
 
+# log 
+#日志
+import datetime
+def beijing(sec, what):
+    beijing_time = datetime.datetime.now() + datetime.timedelta(hours=8)
+    return beijing_time.timetuple()
+logging.Formatter.converter = beijing
+
+
+logging.basicConfig(
+    filename='log_test',
+    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO,
+)
+logger = logging.getLogger()

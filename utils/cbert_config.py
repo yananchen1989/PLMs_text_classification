@@ -186,10 +186,10 @@ def compute_dev_loss(model, dev_dataloader):
 
 # Prepare optimizer
 model = BertForMaskedLM.from_pretrained('bert-base-uncased',
-                                                cache_dir='./CACHE', local_files_only=True)
+                                                cache_dir='./cache_cbert', local_files_only=True)
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased',
                                                   do_lower_case=True,
-                                                  cache_dir='./CACHE')
+                                                  cache_dir='./cache_cbert')
 
 
 #t_total = num_train_steps

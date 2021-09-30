@@ -40,7 +40,7 @@ parser = argparse.ArgumentParser()
 #parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','nyt','stsa','cc'])
 #parser.add_argument("--samplecnt", default=64, type=int)
 parser.add_argument("--ftepochs", default=7, type=int)
-parser.add_argument("--ft_pattern", default='pp', type=str, choices=['pp', 'tc', 'sc'])
+parser.add_argument("--ft_pattern", default='pp', type=str, choices=['pp', 'tc', 'ep'])
 parser.add_argument("--maxlen", default=512, type=int)
 parser.add_argument("--ccsample", default=0.1, type=float)
 parser.add_argument("--gpus", default=1, type=int)
@@ -49,7 +49,7 @@ parser.add_argument("--num_workers", default=8, type=int)
 
 argsin = parser.parse_args()
 
-output_dir = 't5_{}_ft_on_ccnews_lighting'.format( argsin.ft_pattern)
+output_dir = 'ft_model_t5_{}'.format( argsin.ft_pattern) 
 os.makedirs(output_dir, exist_ok=True)
 
 class T5FineTuner(pl.LightningModule):

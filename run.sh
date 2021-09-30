@@ -16,72 +16,68 @@
 
 abundance=3 #parameter B 
 max_aug_times=1 # parameter R
-samplecnt=${2} # simulate a low-data regime, where 32 samples per category are selected as anchor data
+samplecnt=128 # simulate a low-data regime, where 32 samples per category are selected as anchor data
 while true
 do
 	seed=$RANDOM
 	#seed=$(date +"%T")
-	for dsn in ag uci
+	for dsn in ag uci nyt
 	do
-		# baselines: eda bt
 		# for aug in eda bt 
 		# do
 		# 	python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug ${aug} \
-		# 	    --max_aug_times ${max_aug_times} --gpu ${1}  \
-		# 	   > ${dsn}.${aug}.${samplecnt}.gpu${1}.${seed}.log
+		# 	    --max_aug_times ${max_aug_times}  \
+		# 	   > ${dsn}.${aug}.${samplecnt}.${seed}.log
 		# done
 
-		# baselines: cbert
 		# for aug in cbert
 		# do
 		# 	envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug ${aug} \
-		# 	      --max_aug_times ${max_aug_times} --gpu ${1} \
-		# 	 > ${dsn}.${aug}.${samplecnt}.gpu${1}.${seed}.log
+		# 	      --max_aug_times ${max_aug_times} \
+		# 	 > ${dsn}.${aug}.${samplecnt}.${seed}.log
 		# done
 
-		# no finetune
+		###### no finetune
 		for genm in gpt t5 #ctrl
 		do
 			for genft in no 
 			do
-				for filter in nli
-				#for filter in no cls nli both
+				for filter in nli cls nsp enc no 
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance} --gpu ${1}  \
-				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.gpu${1}.${seed}.log
+				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}   \
+				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
 				done
 			done
 		done
 
-        # internal finetune
+        ### internal finetune
 		for genm in gpt 
 		do
 			for genft in lambda entire 
 			do
-				for filter in nli
-				#for filter in no cls nli both
+				for filter in nli cls nsp enc no
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance} --gpu ${1}  \
-				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.gpu${1}.${seed}.log
+				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}   \
+				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
 				done
 			done
 		done       
 
-		# external finetune
+		###### external finetune
 		for genm in t5 gpt
 		do
 			for genft in tc pp
 			do
-				for filter in nli
+				for filter in nli cls nsp enc no
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance} --gpu ${1}  \
-				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.gpu${1}.${seed}.log
+				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}   \
+				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
 				done 
 			done
-		done	
+		done
 	done
 done
 
@@ -90,8 +86,8 @@ done
 
 
 
-# nohup bash run.sh 0 1 &
-# nohup bash run.sh 1 1 &
+# nohup bash run.sh  &
 
-
+# test
+# python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate  --genft lambda --filter nli --genm gpt --abundance 2
 

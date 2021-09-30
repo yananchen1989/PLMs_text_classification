@@ -197,7 +197,7 @@ def get_keras_data(df_train, df_test):
 
 
 def do_train_test(df_train, df_test, epochs=50, freq=10, verbose=1, \
-               basetry=3, samplecnt=32, basemode='max', model_name='albert', gpu=0):
+               basetry=3, samplecnt=32, basemode='max', model_name='albert'):
         
     if samplecnt <= 32:
         batch_size = 8
@@ -210,8 +210,8 @@ def do_train_test(df_train, df_test, epochs=50, freq=10, verbose=1, \
     best_val_accs = []
     models = []
     for ii in range(basetry):
-        #with tf.distribute.MirroredStrategy().scope():
-        with tf.device('/GPU:{}'.format(gpu)):
+        with tf.distribute.MirroredStrategy().scope():
+        #with tf.device('/GPU:{}'.format(gpu)):
             if model_name == 'albert':
                 model = get_model_bert(df_test.label.unique().shape[0])
                 
@@ -307,7 +307,7 @@ def get_model_nsp(max_length):
     token_type_ids = tf.keras.layers.Input(
         shape=(max_length,), dtype=tf.int32, name="token_type_ids"
     )
-    bert_layer = TFBertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache')
+    bert_layer = TFBertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
 
     logits = bert_layer(input_ids, token_type_ids=token_type_ids)[0]
     out = tf.keras.activations.softmax(logits)

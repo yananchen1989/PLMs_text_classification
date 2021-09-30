@@ -1,30 +1,35 @@
 
-target_path = '/root/topic_classification_augmentation/TransformersDataAugmentation/src/utils/datasets'
-
-for dsn in ['ag','yahoo','dbpedia']:
-    ds = load_data(dataset=dsn, samplecnt=-1)
-
-    df_train, df_dev = train_test_split(ds.df_train, test_size=0.3)
-
-    df_train['content'] = df_train['content'].map(lambda x: x.replace('\t',' ').replace('\n',' '))
-    df_dev['content'] = df_dev['content'].map(lambda x: x.replace('\t',' ').replace('\n',' '))
-    ds.df_test['content'] = ds.df_test['content'].map(lambda x: x.replace('\t',' ').replace('\n',' '))
-
-
-    df_train[['label','content']].to_csv(target_path+'/{}/train.tsv'.format(dsn), sep='\t', header=None, index=False)
-    ds.df_test[['label','content']].to_csv(target_path+'/{}/test.tsv'.format(dsn), sep='\t', header=None, index=False)
-    df_dev[['label','content']].to_csv(target_path+'/{}/dev.tsv'.format(dsn), sep='\t', header=None, index=False)
 
 
 
+sent = "Federal jury orders tech giant Samsung to pay"
+
+sent1 = 'FDA gives green light to migraine prevention tool'
+
+from transformers import GPT2Tokenizer, GPT2LMHeadModel#TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+tokenizer_gpt2.sep_token = '<|sep|>'
+#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+print(tokenizer_gpt2)
+
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2.trainable = False
+gpt2.config.pad_token_id=50256
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
+
+ds.df_train.sample(10)['content'].tolist()
+
+results_trunk = gen_nlp([sent], max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1.0, \
+                repetition_penalty=1.0, num_return_sequences=4, clean_up_tokenization_spaces=True, skip_special_tokens=True)
 
 
 
-cc_news = datasets.load_dataset('cc_news', split="train")
-dfcc = pd.DataFrame(cc_news['text'], columns=['content'])
-dfcnndm = pd.read_csv("../datasets_aug/cnn_dailymail_stories.csv")
-#dfcc = pd.concat([dfcc, dfcnndm])
-df_batch = dfcnndm.sample(32)
+
+
+
+
 
 
 ds = load_data(dataset='dbpedia', samplecnt=1000)
@@ -72,24 +77,6 @@ model.fit(
 
 
 
-df_train = pd.read_csv('mnnbenchdata_train.csv')
-df_test = pd.read_csv('mnnbenchdata_test.csv')
-
-input_embed = keras.Input(shape=(df_train.shape[1], ))
-outputs = layers.Dense(14, activation="softmax")(input_embed)
-model = keras.Model(inputs=input_embed, outputs=outputs)
-model.compile('adam', 'sparse_categorical_crossentropy', metrics=["acc"])
-
-feat_columns = [c for c in df_train.columns if c != 'label']
-model.fit(
-        df_train[feat_columns].values, df_train['label'].values, batch_size=32, epochs=50, \
-        validation_data=(df_test[feat_columns].values, df_test['label'].values), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-
-
-
-
 
 sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
 
@@ -104,45 +91,38 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 
 
-# import transformations, contraints, and the Augmenter
-from textattack.transformations import WordSwapRandomCharacterDeletion
-from textattack.transformations import WordSwapQWERTY
-from textattack.transformations import CompositeTransformation
+import glob 
+import pandas as pd
 
-from textattack.constraints.pre_transformation import RepeatModification
-from textattack.constraints.pre_transformation import StopwordModification
+infos = []
+files = glob.glob("dvrl.v2.*.log")
+for file in files:
+    with open(file, 'r') as f:
+        for line in f: 
+            if 'summary' in line:
+                tokens = line.strip().split(' ')
+                dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens if ':' in ii }
+                infos.append((dic['dsn'], int(dic['inner_iterations']), int(dic['samplecnt']), \
+                    int(dic['samplecnt_bad']), \
+                    float(tokens[-5]), float(tokens[-3]), float(tokens[-1])))
+                
 
-from textattack.augmentation import Augmenter
-
-# Set up transformation using CompositeTransformation()
-transformation = CompositeTransformation([WordSwapRandomCharacterDeletion(), WordSwapQWERTY()])
-# Set up constraints
-constraints = [RepeatModification(), StopwordModification()]
-# Create augmenter with specified parameters
-augmenter = Augmenter(transformation=transformation, constraints=constraints, pct_words_to_swap=0.5, transformations_per_example=10)
-
-# Augment!
-augmenter.augment(sent)
-
+df = pd.DataFrame(infos, columns=['dsn','inner_iterations','samplecnt','samplecnt_bad', \
+                'auc','mean_dve_out','std_dve_out'])
 
 
-# import the CheckListAugmenter
-from textattack.augmentation import CheckListAugmenter
-# Alter default values if desired
-augmenter = CheckListAugmenter(pct_words_to_swap=0.2, transformations_per_example=5)
-s = "I'd love to go to Japan but the tickets are 500 dollars"
-# Augment
-augmenter.augment(sent)
-
-
-
-from textattack.augmentation import WordNetAugmenter
-augmenter = WordNetAugmenter(pct_words_to_swap=0.2, transformations_per_example=5)
-s = "I'd love to go to Japan but the tickets are 500 dollars"
-augmenter.augment(s)
+for dsn in ['ag','stsa']:
+    for inner_iterations in [25, 50, 75, 100, 120]:
+        for samplecnt_bad in [32, 64, 128 ]:
+            dfi = df.loc[(df['dsn']==dsn) & (df['inner_iterations']==inner_iterations) \
+                     & (df['samplecnt']==128) & (df['samplecnt_bad']==samplecnt_bad)]
+            if dfi.shape[0] > 0:
+                print(dsn, inner_iterations,  samplecnt_bad, dfi.shape[0], dfi['auc'].mean(),
+                    dfi.loc[dfi['std_dve_out']> 0.1].shape[0]/dfi.shape[0] ) 
+    print()
 
 
 
 
-
-
+import requests
+requests.get('https://huggingface.co/bert-base-uncased/resolve/main/config.json')

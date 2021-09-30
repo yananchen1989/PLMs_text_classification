@@ -2,19 +2,22 @@ import pandas as pd
 import tensorflow as tf
 #from load_data import * 
 import tensorflow_hub as hub
-import tensorflow_text as text
-import random,gc,csv
-from sklearn.metrics.pairwise import cosine_similarity
+import tensorflow_text
+#import random,gc,csv
+#from sklearn.metrics.pairwise import cosine_similarity
 
-from torch.nn import functional as F
-import torch
+# from torch.nn import functional as F
+# import torch
 
 class encoder():
-    def __init__(self, m, device):
+    def __init__(self, m):
         self.m = m
-        self.device = device
+        #self.device = device
         print('loading m:', self.m)
         text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
+        #with tf.device('/GPU:{}'.format(1)):
+        #with tf.device('/cpu:0'):
+        #with tf.distribute.MirroredStrategy().scope():
         if self.m == 'dan':
             # https://tfhub.dev/google/universal-sentence-encoder/4
             # https://tfhub.dev/google/universal-sentence-encoder-lite/2
@@ -25,18 +28,18 @@ class encoder():
             encoder = hub.KerasLayer("./resource/universal-sentence-encoder-cmlm_en-{}_1".format(self.m.split('-')[-1]))
             preprocessor = hub.KerasLayer("./resource/bert_en_uncased_preprocess_3")
             embed = encoder(preprocessor(text_input))["default"] # base:768 large:1024
-        else:
-            from sentence_transformers import SentenceTransformer
-            self.model = SentenceTransformer(self.m, device=self.device, cache_folder='./sentberts')
+        # else:
+        #     from sentence_transformers import SentenceTransformer
+        #     self.model = SentenceTransformer(self.m, device=self.device, cache_folder='./sentberts')
 
-        if self.m in ['dan'] or self.m.startswith('cmlm'):
-            self.model = tf.keras.Model(inputs=text_input, outputs=embed)
+        #if self.m in ['dan'] or self.m.startswith('cmlm'):
+        self.model = tf.keras.Model(inputs=text_input, outputs=embed)
 
     def infer(self, sents, batch_size=32):
-        if self.m in ['dan'] or self.m.startswith('cmlm'):
-            embeds = self.model.predict(sents, batch_size=batch_size, verbose=0)
-        else:
-            embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=False)
+        #if self.m in ['dan'] or self.m.startswith('cmlm'):
+        embeds = self.model.predict(sents, batch_size=batch_size, verbose=0)
+        #else:
+        #    embeds = self.model.encode(sents, batch_size=batch_size,  show_progress_bar=False)
         return embeds
 
 

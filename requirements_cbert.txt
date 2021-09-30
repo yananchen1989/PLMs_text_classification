@@ -1,0 +1,4 @@
+torch==1.6
+fairseq==0.9
+transformers==2.9
+datasets==1.12.0
