@@ -34,7 +34,7 @@ parameters['layer_number'] = 5
 parameters['learning_rate'] = 0.01
 parameters['batch_size'] = 256
 parameters['batch_size_predictor'] = 256
-checkpoint_file_name = './tmp_{}/model.ckpt'.format(args.seed)
+checkpoint_file_name = './dvrl_tmp/tmp_{}/model.ckpt'.format(args.seed)
 
 df_train_valid_noise = pd.read_csv("./dvrl_np_array/df_train_valid_noise_{}_{}.csv".format(args.dsn, args.seed))
 

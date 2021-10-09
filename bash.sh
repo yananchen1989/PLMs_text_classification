@@ -35,7 +35,6 @@ cp -r /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/* ./
 
 git add .;git commit -m "syn from mi repo";git push
 
-git pull git@github.com:yananchen1989/topic_classification_augmentation.git
 
 
 

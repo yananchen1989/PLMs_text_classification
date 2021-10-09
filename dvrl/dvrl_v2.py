@@ -132,20 +132,20 @@ class Dvrl(object):
 
     # With randomly initialized predictor
     if (not self.flag_pretrain) & self.flag_sgd:
-      if not os.path.exists('tmp_{}'.format(self.seed)):
-        os.makedirs('tmp_{}'.format(self.seed))
+      if not os.path.exists('./dvrl_tmp/tmp_{}'.format(self.seed)):
+        os.makedirs('./dvrl_tmp/tmp_{}'.format(self.seed))
       print('fit pred_model on ==> x_train')
       pred_model.fit(self.x_train, self.y_train_onehot,
                      batch_size=len(self.x_train), epochs=0)
       # Saves initial randomization
-      pred_model.save_weights('tmp_{}/pred_model.h5'.format(self.seed))
+      pred_model.save_weights('./dvrl_tmp/tmp_{}/pred_model.h5'.format(self.seed))
       # With pre-trained model, pre-trained model should be saved as
       # 'tmp/pred_model.h5'
 
     # Baseline model
     if self.flag_sgd:
       self.ori_model = copy.copy(self.pred_model)
-      self.ori_model.load_weights('tmp_{}/pred_model.h5'.format(self.seed))
+      self.ori_model.load_weights('./dvrl_tmp/tmp_{}/pred_model.h5'.format(self.seed))
 
       # Trains the model
       print('fit ori_model on ==> x_train')
@@ -160,7 +160,7 @@ class Dvrl(object):
     # Valid baseline model
     if 'summary' in dir(self.pred_model):
       self.val_model = copy.copy(self.pred_model)
-      self.val_model.load_weights('tmp_{}/pred_model.h5'.format(self.seed))
+      self.val_model.load_weights('./dvrl_tmp/tmp_{}/pred_model.h5'.format(self.seed))
       print('fit val_model on ==> x_valid')
       # Trains the model
       self.val_model.fit(self.x_valid, self.y_valid_onehot,
@@ -336,7 +336,7 @@ class Dvrl(object):
       if 'summary' in dir(self.pred_model):
 
         new_model = self.pred_model
-        new_model.load_weights('tmp_{}/pred_model.h5'.format(self.seed))
+        new_model.load_weights('./dvrl_tmp/tmp_{}/pred_model.h5'.format(self.seed))
 
         # Train the model
         new_model.fit(x_batch, y_batch_onehot,
@@ -405,7 +405,7 @@ class Dvrl(object):
     # Trains final model
     # If the final model is neural network
     if 'summary' in dir(self.pred_model):
-      self.final_model.load_weights('tmp_{}/pred_model.h5'.format(self.seed))
+      self.final_model.load_weights('./dvrl_tmp/tmp_{}/pred_model.h5'.format(self.seed))
       # Train the model
       print('fit final_model on ==> x_train')
       self.final_model.fit(self.x_train, self.y_train_onehot,
