@@ -150,7 +150,8 @@ technology     293
 '''
 
  
-
+import nltk 
+nltk.data.path.append('./nltk_data')
 from nltk.tokenize import sent_tokenize
 def para_split2(para):
   sents = sent_tokenize(para)

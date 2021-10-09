@@ -15,8 +15,8 @@
 
 
 abundance=3 #parameter B 
-max_aug_times=1 # parameter R
-samplecnt=128 # simulate a low-data regime, where 32 samples per category are selected as anchor data
+max_aug_times=${1} # parameter R
+samplecnt=${2} # simulate a low-data regime, where 32 samples per category are selected as anchor data
 while true
 do
 	seed=$RANDOM
@@ -42,7 +42,7 @@ do
 		do
 			for genft in no tc pp
 			do
-				for filter in nli cls nsp enc dvrl no 
+				for filter in nli cls nsp enc both no 
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}  --testbed 1 \

@@ -60,7 +60,7 @@ def get_only_chars(line):
 import nltk
 #nltk.download('wordnet')
 from nltk.corpus import wordnet 
-#nltk.data.path.append('./torch_ds')
+nltk.data.path.append('./nltk_data')
 
 try:
     wordnet.synsets('city')

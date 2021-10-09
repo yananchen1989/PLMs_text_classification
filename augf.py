@@ -22,7 +22,7 @@ parser.add_argument("--testbed", default=0, type=int)
 parser.add_argument("--dpp", default=0, type=int)
 parser.add_argument("--threads", default=64, type=int)
 
-parser.add_argument("--filter", default='nli', type=str, choices=['nli','cls','no','enc','nsp','dvrl'])
+parser.add_argument("--filter", default='nli', type=str, choices=['nli','cls','no','enc','nsp','dvrl','both'])
 
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
@@ -348,6 +348,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             assert len(results) == ds.df_train.shape[0]
 
             buffer = []
+            buffer_both = []
             for ii in range(ds.df_train.shape[0]):
                 for s in results[ii]:
                     generated_text = s['generated_text']
@@ -356,46 +357,49 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     label = labels[ii]
                     label_name = label_names[ii]
                     assert label_name in ds.df_test['label_name'].unique()
-                    if args.filter == 'nli':
+                    if args.filter in ['nli', 'both']:
                         nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
                         if nli_check:
                             buffer.append((generated_text, label, label_name, nli_score))
 
-                    elif args.filter == 'cls':  
+                    if args.filter in [ 'cls', 'both']:  
                         cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
-                        if cls_check and generated_text:
+                        if cls_check:
                             buffer.append((generated_text, label, label_name, cls_score))              
-
-                    # elif args.filter == 'both': 
-                    #     nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
-                    #     cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
-                    #     if nli_check and cls_check:
-                    #         buffer.append((generated_text, label, label_name, nli_score * cls_score ))
                             
-                    elif args.filter == 'enc':
+                    if args.filter in [ 'enc', 'both']:
                         content_ori = ds.df_train['content'].tolist()[ii]
                         gen_enc = enc.infer([generated_text])
                         ori_enc = enc.infer([content_ori])
                         enc_score = cosine_similarity(gen_enc, ori_enc)[0][0]
-                        #print('enc_score:', enc_score)
-                        buffer.append((generated_text, label, label_name, enc_score))
+                        if enc_score >= 0.7 :
+                            buffer.append((generated_text, label, label_name, enc_score))
 
-                    elif args.filter == 'nsp':
+                    if args.filter in ['nsp', 'both']:
                         content_ori = ds.df_train['content'].tolist()[ii]
                         pairs = [[content_ori, generated_text]]
                         pairs_ids = get_ids(pairs, min(512, dsn_maxlen[args.dsn]*2), tokenizer_bert )
                         preds = model_cls_pair.predict(pairs_ids, batch_size=32)
                         nsp_score = preds[0][0]
-                        if nsp_score > 0.9:
+                        if nsp_score >= 0.9:
                             buffer.append((generated_text, label, label_name, nsp_score))  
 
-                    else:
+                    if args.filter == 'both': 
+                        if nli_check and cls_check and enc_score>=0.7 and nsp_score >= 0.9:
+                            buffer_both.append((generated_text, label, label_name, \
+                                nli_score * cls_score * enc_score * nsp_score ))
+
+                    if args.filter in ['no']:
                         buffer.append((generated_text, label, label_name, 0))
 
 
             print('itr:', itr , 'filter ratio:', len(buffer) / (ds.df_train.shape[0]*args.num_return_sequences) )
 
-            samples_syn_all.extend(buffer)
+            if args.filter == 'both':
+                samples_syn_all.extend(buffer_both)
+            else:
+                samples_syn_all.extend(buffer)
+
             df_syn_tmp = pd.DataFrame(samples_syn_all, columns=['content','label','label_name','score'])
             print(df_syn_tmp['label_name'].value_counts())
 
