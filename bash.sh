@@ -23,23 +23,27 @@ python -u augf.py --dsn uci --samplecnt 16 --max_aug_times 1 --aug generate  \
 
 
 scp * root@sdu:/home/yanan/topic_classification_augmentation/
+scp -r * root@sdu:/home/yanan/topic_classification_augmentation/
 
 
-
-cd /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation 
-cp *.py /Users/yanan/Desktop/thesis/my_augmentation/
-cp *.txt /Users/yanan/Desktop/thesis/my_augmentation/
-cp *.sh /Users/yanan/Desktop/thesis/my_augmentation/
-cp -r * /Users/yanan/Desktop/thesis/my_augmentation/
+cd /Users/yanan/Desktop/thesis/my_augmentation/
+cp /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/*.py ./
+cp /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/*.txt ./
+cp /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/*.sh ./
+cp -r /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/* ./
 
 
 git add .;git commit -m "syn from mi repo";git push
 
+git pull git@github.com:yananchen1989/topic_classification_augmentation.git
+
+
+
+
+
+
 
 # 解压
-
-
-
 unzip -o -d /home/sunny myfile.zip
 
 
@@ -57,8 +61,6 @@ zip -r myfile.zip ./myfile
 
 
 scp resource.tar.gz root@sdu:/home/yanan/topic_classification_augmentation/
-
-
 
 
 
