@@ -366,11 +366,11 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         if cls_check and generated_text:
                             buffer.append((generated_text, label, label_name, cls_score))              
 
-                    elif args.filter == 'both': 
-                        nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
-                        cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
-                        if nli_check and cls_check:
-                            buffer.append((generated_text, label, label_name, nli_score * cls_score ))
+                    # elif args.filter == 'both': 
+                    #     nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
+                    #     cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
+                    #     if nli_check and cls_check:
+                    #         buffer.append((generated_text, label, label_name, nli_score * cls_score ))
                             
                     elif args.filter == 'enc':
                         content_ori = ds.df_train['content'].tolist()[ii]

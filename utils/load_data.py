@@ -179,7 +179,7 @@ def get_cc_news(s=1):
 
     #df.to_csv("./torch_ds/df_cc_news.csv", index=False)
 
-    df = pd.read_csv("./torch_ds/df_cc_news.csv")
+    df = pd.read_csv("./torch_ds/df_cc_news.csv", lineterminator='\n')
     return df.sample(frac=s) #615019  
 
 def get_cnndm_news(s=1):
@@ -193,7 +193,7 @@ def get_cnndm_news(s=1):
     # df_cnndm.drop_duplicates(['title','content'], inplace=True) # 311971
     # df_cnndm.to_csv('./torch_ds/df_cnndm_news.csv', index=False)
 
-    df = pd.read_csv("./torch_ds/df_cnndm_news.csv")
+    df = pd.read_csv("./torch_ds/df_cnndm_news.csv", lineterminator='\n')
 
     return df.sample(frac=s) #308870  
 

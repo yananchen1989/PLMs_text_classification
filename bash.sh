@@ -19,18 +19,18 @@ python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate  \
 
 
 python -u augf.py --dsn uci --samplecnt 16 --max_aug_times 1 --aug generate  \
-	 --genft no --filter nli --genm t5 --abundance 2 --testbed 1
+	 --genft no --filter dvrl --genm t5 --abundance 2 --testbed 0
 
 
 scp * root@sdu:/home/yanan/topic_classification_augmentation/
 scp -r * root@sdu:/home/yanan/topic_classification_augmentation/
 
 
-cd /Users/yanan/Desktop/thesis/my_augmentation/
-cp /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/*.py ./
-cp /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/*.txt ./
-cp /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/*.sh ./
-cp -r /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/* ./
+# cd /Users/yanan/Desktop/thesis/my_augmentation/
+# cp /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/*.py ./
+# cp /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/*.txt ./
+# cp /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/*.sh ./
+# cp -r /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation/* ./
 
 
 git add .;git commit -m "syn from mi repo";git push
