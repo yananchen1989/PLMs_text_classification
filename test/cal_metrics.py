@@ -10,7 +10,7 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 import pandas as pd 
 infos = []
-for file in ['logb_','logb']:
+for file in ['logb']:
     with open(file,'r') as f:
         for line in f:
             line = line.strip().split('summary===>')[-1] 
@@ -28,10 +28,10 @@ for file in ['logb_','logb']:
             if int(dic['samplecnt'])==128 and dic['model']=='albert' and  int(dic['max_aug_times'])==1 \
                 and dic['aug']=='generate':
                 infos.append((dic['dsn'], dic.get('genm','*'), dic.get('genft', '*'), \
-                dic.get('filter', '*'), float(dic['acc_aug'])))
+                dic.get('filter', '*'), int(dic.get('threads', 0)), float(dic['acc_aug'])))
                 # infos.append((dic['dsn'], dic.get('aug','*'), \
                 # float(dic['acc_base']), float(dic['acc_aug'])))
-df = pd.DataFrame(infos, columns=['dsn','genm','genft', 'filter','acc_aug'])
+df = pd.DataFrame(infos, columns=['dsn','genm','genft', 'filter', 'threads', 'acc_aug'])
 #df = pd.DataFrame(infos, columns=['dsn','aug','acc_base','acc_aug'])
 
 
@@ -45,12 +45,13 @@ for dsn in ['ag', 'uci', 'nyt']:
         print(dsn, aug, "{}({})".format(round(dfi['acc_aug'].mean()*100,2), dfi.shape[0])   )
     print()
 
+filters = ['no','nli', 'nsp', 'enc','cls','dvrl']
 
 # no finetune
-for dsn in ['ag', 'uci']:
-    for genm in ['t5', 'gpt', 'ctrl']:
+for dsn in ['ag', 'uci', 'nyt']:
+    for genm in ['t5', 'gpt']:
         for genft in ['no']:
-            for fil in ['no','nli']: 
+            for fil in filters: 
                 dfi = df.loc[(df['dsn']==dsn) & (df['genm']==genm) & (df['genft']==genft) & (df['filter']==fil)]
                 print(dsn, genm, genft, fil, "{}({})".format(round(dfi['acc_aug'].mean()*100,2) , dfi.shape[0] ) )
     print('\n')
@@ -59,7 +60,7 @@ for dsn in ['ag', 'uci']:
 for dsn in ['ag', 'uci', 'nyt']:
     for genm in [ 'gpt']:
         for genft in ['lambda', 'entire']:
-            for fil in ['no','nli']: 
+            for fil in filters: 
                 dfi = df.loc[(df['dsn']==dsn) & (df['genm']==genm) & (df['genft']==genft) & (df['filter']==fil)]
                 print(dsn, genm, genft, fil, "{}({})".format(round(dfi['acc_aug'].mean()*100,2) , dfi.shape[0] ) )
     print('\n')
@@ -68,54 +69,13 @@ for dsn in ['ag', 'uci', 'nyt']:
 
 #external finetune
 for dsn in ['ag', 'uci', 'nyt']:
-    for genm in ['t5', 'gpt', 'ctrl']:
-        for genft in ['no','pp','tc','entire', 'lambda']:
-            for fil in ['no','nli']: 
+    for genm in ['t5', 'gpt']:
+        for genft in ['pp','tc']:
+            for fil in filters: 
                 dfi = df.loc[(df['dsn']==dsn) & (df['genm']==genm) & (df['genft']==genft) & (df['filter']==fil)]
                 print(dsn, genm, genft, fil, "{}({})".format(round(dfi['acc_aug'].mean()*100,2) , dfi.shape[0] ) )
     print('\n')
 
-################################## get acc no aug ######################
-import GPUtil
-DEVICE_ID_LIST = GPUtil.getFirstAvailable()
-DEVICE_ID = DEVICE_ID_LIST[0] # grab first element from list
-from utils.load_data import * 
-from utils.transblock import * 
-print("use gpu id==>", DEVICE_ID)
-for _ in range(5):
-    for dsn in ['ag', 'uci','nyt']:
-        print(dsn)
-        ds = load_data(dataset=dsn, samplecnt= 256)
-        acc_noaug, _ = do_train_test(ds.df_train, ds.df_test, 100, 10, 0, \
-                   3, 256, 'max', 'albert')
-        print(acc_noaug)
-
-
-
-
-for ix, row in ds.df_train.sample(frac=1).iterrows():
-
-    contents_trunk_ = gen_nlp(row['content'], max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-        repetition_penalty=1.0, num_return_sequences=8, clean_up_tokenization_spaces=True) 
-
-    pairs = [[row['content'], ii['generated_text']] for ii in contents_trunk_]
-    #pairs = [["This is {} News".format(row['label_name']), ii['generated_text']] for ii in contents_trunk_]
-    pairs_ids = get_ids(pairs,  512)
-    print(pairs_ids)
-    content_syn = [ii['generated_text'] for ii in contents_trunk_]
-
-    preds = model_cls_pair.predict(pairs_ids, batch_size=64)
-    if preds[:,0].min() < 0.3:    
-        scores = preds[:,0]
-        df_nsp = pd.DataFrame(zip(content_syn, list(scores)), columns=['content','nsp_score'])
-        df_nsp.sort_values(by=['nsp_score'], ascending=False, inplace=True)
-        print(row['label_name'])
-        print(df_nsp)
-
-
-        print(df_nsp['nsp_score'].tolist()[-1])
-        print(df_nsp['content'].tolist()[-1]) 
-        break 
 
 
 

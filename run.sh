@@ -21,7 +21,7 @@ while true
 do
 	seed=$RANDOM
 	#seed=$(date +"%T")
-	for dsn in ag uci nyt
+	for dsn in ag uci #nyt
 	do
 		# for aug in eda bt 
 		# do
@@ -40,44 +40,44 @@ do
 		###### no finetune
 		for genm in gpt t5 #ctrl
 		do
-			for genft in no 
+			for genft in no tc pp
 			do
-				for filter in nli cls nsp enc no 
+				for filter in nli cls nsp enc dvrl no 
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}   \
+				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}  --testbed 1 \
 				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
 				done
 			done
 		done
 
         ### internal finetune
-		for genm in gpt 
-		do
-			for genft in lambda entire 
-			do
-				for filter in nli cls nsp enc no
-				do
-				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}   \
-				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
-				done
-			done
-		done       
+		# for genm in gpt 
+		# do
+		# 	for genft in lambda entire 
+		# 	do
+		# 		for filter in nli cls nsp enc dvrl no
+		# 		do
+		# 		python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+		# 		      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}   \
+		# 		      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
+		# 		done
+		# 	done
+		# done       
 
 		###### external finetune
-		for genm in t5 gpt
-		do
-			for genft in tc pp
-			do
-				for filter in nli cls nsp enc no
-				do
-				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}   \
-				      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
-				done 
-			done
-		done
+		# for genm in t5 gpt
+		# do
+		# 	for genft in tc pp
+		# 	do
+		# 		for filter in nli cls nsp enc dvrl no
+		# 		do
+		# 		python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+		# 		      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}   \
+		# 		      > ${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
+		# 		done 
+		# 	done
+		# done
 	done
 done
 

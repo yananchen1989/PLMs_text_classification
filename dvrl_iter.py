@@ -4,6 +4,7 @@ import numpy as np
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 import pandas as pd 
+from utils.load_data import * 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dsn', default='ag', type=str)
 parser.add_argument( '--ite', default=1, type=int)
@@ -35,17 +36,25 @@ checkpoint_file_name = './tmp_{}/model.ckpt'.format(args.seed)
 
 df_train_valid_noise = pd.read_csv("./dvrl_np_array/df_train_valid_noise_{}_{}.csv".format(args.dsn, args.seed))
 
-df_train, df_valid = train_test_split(df_train_valid_noise.loc[df_train_valid_noise['groudtruth']==1], test_size=0.6)
+df_syn = df_train_valid_noise.loc[df_train_valid_noise['groudtruth'].isin([9])]
 
-df_syn_noise = df_train_valid_noise.loc[df_train_valid_noise['groudtruth'].isin([0,-1])]
+df_train, df_valid = train_test_split(df_train_valid_noise.loc[df_train_valid_noise['groudtruth']==1], test_size=0.5)
 
-df_train_syn_noise = pd.concat([df_train, df_syn_noise]).sample(frac=1)
+df_train_1, df_train_0 = train_test_split(df_train, test_size=0.5)
+
+df_train_0['label'] = df_train_0['label'].map(lambda x: noisy_label(x, df_train_valid_noise['label'].unique() )  )
+df_train_0['groudtruth'] = 0
+
+
+df_train_syn_noise = pd.concat([df_train_1, df_train_0, df_syn]).sample(frac=1)
 assert df_train_syn_noise['groudtruth'].unique().shape[0] == 3
 
-embed_shape = len([i for i in df_train_syn_noise.columns if i.startswith('embed_')])
 
-x_train = df_train_syn_noise[['embed_{}'.format(ii) for ii in range(embed_shape)]].values 
-x_valid = df_valid[['embed_{}'.format(ii) for ii in range(embed_shape)]].values
+embed_shape = len([i for i in df_train_syn_noise.columns if i.startswith('embed_')])
+embed_cols = ['embed_{}'.format(ii) for ii in range(embed_shape)]
+
+x_train = df_train_syn_noise[embed_cols].values 
+x_valid = df_valid[embed_cols].values
 
 y_train, y_valid = df_train_syn_noise['label'].values, df_valid['label'].values
 print("embeding inferred ite:{}".format(args.ite))
@@ -78,12 +87,12 @@ print('ite:{} Finished dvrl training.'.format(args.ite))
 # Outputs
 # Data valuation
 dve_out = dvrl_class.data_valuator(x_train, y_train)
-df_train_noise['dve_out'] = dve_out
+df_train_syn_noise['dve_out'] = dve_out
 print('ite:{} Finished data valuation.'.format(args.ite))
 
 df_train_noise = df_train_syn_noise.loc[df_train_syn_noise['groudtruth'].isin([0,1])]
 
-fpr, tpr, thresholds = metrics.roc_curve(df_train_noise['groudtruth'].values,  df_train_noise['dve_out'].values,, pos_label=1)
+fpr, tpr, thresholds = metrics.roc_curve(df_train_noise['groudtruth'].values,  df_train_noise['dve_out'].values, pos_label=1)
 auc = metrics.auc(fpr, tpr)
 mean_dve_out = np.array(dve_out).mean()
 std_dve_out = np.array(dve_out).std()

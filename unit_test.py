@@ -111,7 +111,7 @@ df = pd.DataFrame(infos, columns=['dsn','inner_iterations','samplecnt','samplecn
                 'auc','mean_dve_out','std_dve_out'])
 
 
-for dsn in ['ag','stsa']:
+for dsn in ['ag','stsa','uci']:
     for inner_iterations in [25, 50, 75, 100, 120]:
         for samplecnt_bad in [32, 64, 128 ]:
             dfi = df.loc[(df['dsn']==dsn) & (df['inner_iterations']==inner_iterations) \
@@ -122,6 +122,10 @@ for dsn in ['ag','stsa']:
     print()
 
 
+
+
+dfi = df.loc[(df['dsn']=='uci') & (df['inner_iterations']==100) \
+                     & (df['samplecnt']==128) & (df['samplecnt_bad']==64)]
 
 
 import requests

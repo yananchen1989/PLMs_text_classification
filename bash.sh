@@ -25,8 +25,7 @@ tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.p
 
 
 python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate \
-				      --genft no --filter nli --genm t5 --abundance 2
-
+				      --genft no --filter dvrl --genm gpt --abundance 2
 
 
 

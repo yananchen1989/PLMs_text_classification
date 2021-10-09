@@ -20,6 +20,7 @@ parser.add_argument("--freq", default=10, type=int)
 parser.add_argument("--testbed", default=0, type=int)
 
 parser.add_argument("--dpp", default=0, type=int)
+parser.add_argument("--threads", default=64, type=int)
 
 parser.add_argument("--filter", default='nli', type=str, choices=['nli','cls','no','enc','nsp','dvrl'])
 
@@ -30,8 +31,6 @@ parser.add_argument("--ft_model_path", default="", type=str)
 parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--basetry", default=3, type=int)
 parser.add_argument("--num_return_sequences", default=8, type=int)
-
-parser.add_argument("--dvrl_iter", default=12, type=int)
 
 parser.add_argument("--gpu", default=0, type=int)
 parser.add_argument("--encm", default='dan', type=str, \
@@ -93,14 +92,11 @@ print(ds.df_train.sample(8))
 print('proper_len==>', proper_len)
 ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+seed = random.sample(list(range(10000)), 1)[0]
 
 if args.testbed or args.filter == 'cls':
-    if args.filter == 'cls':
-        basetry = 1 
-    else:
-        basetry = args.basetry
     acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
-               basetry, args.samplecnt, args.basemode, args.model)
+               args.basetry, args.samplecnt, args.basemode, args.model)
 else:
     acc_noaug = -1
 
@@ -125,7 +121,6 @@ if args.aug == 'generate':
             if not os.path.exists('ft_tmp'):
                 os.makedirs('ft_tmp')
 
-            seed = random.sample(list(range(10000)), 1)[0]
             train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, seed)
             validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, seed)
 
@@ -215,6 +210,11 @@ if args.aug == 'generate':
     if args.filter in ['enc','dvrl']:
         enc = encoder('cmlm-large')
 
+    if args.filter in ['dvrl']:
+        if not os.path.exists('dvrl_np_array'):
+            os.makedirs('dvrl_np_array')
+        from threading import Thread
+
     print('filter==> {} model loaded'.format(args.filter))
 
 
@@ -256,7 +256,8 @@ if args.aug == 'cgpt':
 #     else:
 #         return 0, result['scores'][0]
 
-
+def run_dvrl_thread(dsn, ii, seed):
+    os.system('python dvrl_iter.py --dsn {} --seed {} --ite {}'.format(dsn, seed, ii))
 
 def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev):
     assert label_name and  labels_candidates
@@ -287,7 +288,7 @@ def bertcls_classify(generated_text, label_name):
     else:
         return 0, float(pred[0].max())
 
-def synthesize(ds, proper_len, syn_df_ll):
+def synthesize(ds, proper_len, syn_df_ll, seed):
     labels = ds.df_train['label'].tolist()
     if args.genm == 'gpt':
         if args.genft == 'lambda':
@@ -399,10 +400,49 @@ def synthesize(ds, proper_len, syn_df_ll):
             print(df_syn_tmp['label_name'].value_counts())
 
             if df_syn_tmp['label_name'].value_counts().values.min() >= args.samplecnt * args.abundance:
+                
                 if args.filter == 'dvrl':
                     # use dvrl to calculate score
-                    df_syn_tmp = dvrl_scoring(df_syn_tmp, ds.df_train, enc, args.dvrl_iter)
+                    #df_syn_tmp = dvrl_scoring(df_syn_tmp, ds.df_train, enc, args.dvrl_iter)
+                    ds.df_train['groudtruth'] = 1
+                    df_syn_tmp['groudtruth'] = 9
+                    del df_syn_tmp['score']
+                    df_train_valid_noise = pd.concat([ds.df_train,  df_syn_tmp])
 
+                    embeds = enc.infer(df_train_valid_noise['content'].values)
+                    for ii in range(embeds.shape[1]):
+                        df_train_valid_noise['embed_{}'.format(ii)] = embeds[:, ii]
+                    df_train_valid_noise.to_csv("./dvrl_np_array/df_train_valid_noise_{}_{}.csv".format(args.dsn, seed), index=False)
+
+                    threads = []
+                    for ii in range(args.threads):
+                        t = Thread(target=run_dvrl_thread, args=(args.dsn, ii, seed))
+                        t.start()
+                        threads.append(t)
+
+                    # join all threads
+                    for t in threads:
+                        t.join()
+                    print("dvrl after join")
+
+                    df_train_noise_files = glob.glob("./dvrl_np_array/df_train_noise_{}_{}_*.csv".format(args.dsn, seed))
+                    print("valid output==>", len(df_train_noise_files), df_train_noise_files)
+
+                    ll = []
+                    for file in df_train_noise_files:
+                        dfi = pd.read_csv(file)
+                        auc = float(file.split('_')[-1].replace('.csv','')) 
+                        if auc >= 0.8:
+                            ll.append(dfi)
+                            print(file, auc, dfi.shape[0], dfi['content'].unique().shape[0])
+
+                    assert len(ll) >= 4
+                    df_train_syn = pd.concat(ll)
+                    df_syn = df_train_syn.loc[df_train_syn['groudtruth']==9]
+
+                    df_syn_agg = df_syn.groupby(['content', 'label', 'label_name'])['dve_out'].mean().reset_index()
+                    df_syn_tmp = df_syn_agg.rename(columns={"dve_out": "score"} )
+                    
                 df_syn_filter_ll = []
                 for label_name in df_syn_tmp['label_name'].unique():
                     df_syn_tmp_l = df_syn_tmp.loc[df_syn_tmp['label_name']==label_name].copy()
@@ -514,7 +554,6 @@ def synthesize(ds, proper_len, syn_df_ll):
         train_examples_ft = processor_ft.get_train_examples()
         dev_examples = processor.get_dev_examples()   
 
-        seed = int(time.time())
         cbertgpt_batct_size = 8
 
         if args.aug == 'cgpt':
@@ -711,7 +750,7 @@ print("augmentating...")
 
 syn_df_ll = []
 for _ in range(args.max_aug_times):
-    df_synthesize = synthesize(ds, proper_len, syn_df_ll)
+    df_synthesize = synthesize(ds, proper_len, syn_df_ll, seed)
     syn_df_ll.append(df_synthesize)
 
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
