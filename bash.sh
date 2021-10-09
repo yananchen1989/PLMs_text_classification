@@ -5,16 +5,6 @@ conda config --set auto_activate_base true
 
 
 
-
-
-
-
-##### dvrl
-
-
-
-python -u run_dvrl.py --inner_iterations 25 --samplecnt 128 --samplecnt_bad 128 --dsn ag
-
 ps aux|grep ttt|grep -v grep | awk '{print $2}'|xargs kill -9
 
 
@@ -70,7 +60,8 @@ scp resource.tar.gz root@sdu:/home/yanan/topic_classification_augmentation/
 
 
 
-
+CUDA_VISIBLE_DEVICES=6 ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
+   --maxlen 512 --ccsample 0.4 --ftepochs 7 --batch_size 8
 
 
 
@@ -81,10 +72,10 @@ scp resource.tar.gz root@sdu:/home/yanan/topic_classification_augmentation/
 
 
 ############## fine-tune for gpt & t5
-nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 0.5 --ft_pattern tc --gpu 1  \
+nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern tc --gpu 6  \
  > ft.gpt2.tc.log &
 
-nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 0.5 --ft_pattern pp  --gpu 1  \
+nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern pp  --gpu 7  \
  > ft.gpt2.pp.log &
 
 
@@ -93,7 +84,7 @@ nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 0.5 --ft_
 
 
 # ft t5
-CUDA_VISIBLE_DEVICES=1 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
+CUDA_VISIBLE_DEVICES=6 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
    --maxlen 512 --ccsample 0.4 --ftepochs 7 --batch_size 8 > ft.t5.pp.log & 
 
 CUDA_VISIBLE_DEVICES=0 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern tc --num_workers 1 \
