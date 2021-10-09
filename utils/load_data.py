@@ -163,39 +163,47 @@ def para_split2(para):
     paras = [' '.join(sents[:mid]).strip(), ' '.join(sents[mid:]).strip()]
   return paras
 
-import datasets
+#import datasets
 def get_cc_news(s=1):
-    cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='./torch_ds')
+    #cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='./torch_ds')
     '''
     Dataset({
         features: ['date', 'description', 'domain', 'image_url', 'text', 'title', 'url'],
         num_rows: 708241
     })
     '''
-    df = pd.DataFrame(zip(cc_news['title'], cc_news['text'], cc_news['description'] ))
-    df.columns = ['title','content','description']
+    #df = pd.DataFrame(zip(cc_news['title'], cc_news['text'], cc_news['description'] ))
+    #df.columns = ['title','content','description']
 
-    df.drop_duplicates(['title','content'], inplace=True) # 708241
+    #df.drop_duplicates(['title','content'], inplace=True) # 708241
+
+    #df.to_csv("./torch_ds/df_cc_news.csv", index=False)
+
+    df = pd.read_csv("./torch_ds/df_cc_news.csv")
     return df.sample(frac=s) #615019  
 
 def get_cnndm_news(s=1):
-    cnndm_news = datasets.load_dataset('cnn_dailymail', '3.0.0', cache_dir='./torch_ds')
-    ll = []
-    for col in ['train', 'validation', 'test']:
-        df_tmp = pd.DataFrame(zip(cnndm_news[col]['article'], cnndm_news[col]['highlights']), \
-                    columns=['content', 'title'])
-        ll.append(df_tmp)
-    df_cnndm = pd.concat(ll)
-    df_cnndm.drop_duplicates(['title','content'], inplace=True) # 311971
-    #df_cnndm.to_csv('df_cnndm.csv', index=False)
-    return df_cnndm.sample(frac=s) #308870  
+    # cnndm_news = datasets.load_dataset('cnn_dailymail', '3.0.0', cache_dir='./torch_ds')
+    # ll = []
+    # for col in ['train', 'validation', 'test']:
+    #     df_tmp = pd.DataFrame(zip(cnndm_news[col]['article'], cnndm_news[col]['highlights']), \
+    #                 columns=['content', 'title'])
+    #     ll.append(df_tmp)
+    # df_cnndm = pd.concat(ll)
+    # df_cnndm.drop_duplicates(['title','content'], inplace=True) # 311971
+    # df_cnndm.to_csv('./torch_ds/df_cnndm_news.csv', index=False)
+
+    df = pd.read_csv("./torch_ds/df_cnndm_news.csv")
+
+    return df.sample(frac=s) #308870  
 
 
-def get_cc_text_double(ft_pattern, dsn, s=1):
-    if dsn == 'cc':
+def get_cc_text_double(ft_pattern, s=1):
+    if ft_pattern in ['pp', 'tc']:
         df_cc = get_cc_news(s)
-    elif dsn == 'cnndm':
+    elif ft_pattern == 'cnndm':
         df_cc = get_cnndm_news(s)
+        
     if ft_pattern == 'tc':
         df_cc = df_cc.loc[df_cc['title']!='']
         return df_cc.rename(columns={'title': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]

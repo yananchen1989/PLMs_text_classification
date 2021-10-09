@@ -36,6 +36,7 @@ df = pd.DataFrame(infos, columns=['dsn','genm','genft', 'filter', 'threads', 'ac
 
 
 
+
 # baselines 
 for dsn in ['ag', 'uci', 'nyt']:
     acc_base = df.loc[df['dsn']==dsn]['acc_base'].mean()
@@ -49,7 +50,7 @@ filters = ['no','nli', 'nsp', 'enc','cls','dvrl']
 
 # no finetune
 for dsn in ['ag', 'uci', 'nyt']:
-    for genm in ['t5', 'gpt']:
+    for genm in ['gpt', 't5']:
         for genft in ['no']:
             for fil in filters: 
                 dfi = df.loc[(df['dsn']==dsn) & (df['genm']==genm) & (df['genft']==genft) & (df['filter']==fil)]
@@ -69,8 +70,8 @@ for dsn in ['ag', 'uci', 'nyt']:
 
 #external finetune
 for dsn in ['ag', 'uci', 'nyt']:
-    for genm in ['t5', 'gpt']:
-        for genft in ['pp','tc']:
+    for genm in [ 'gpt', 't5']:
+        for genft in ['tc', 'pp']:
             for fil in filters: 
                 dfi = df.loc[(df['dsn']==dsn) & (df['genm']==genm) & (df['genft']==genft) & (df['filter']==fil)]
                 print(dsn, genm, genft, fil, "{}({})".format(round(dfi['acc_aug'].mean()*100,2) , dfi.shape[0] ) )
@@ -82,9 +83,17 @@ for dsn in ['ag', 'uci', 'nyt']:
 
 
 
+import glob 
+files = glob.glob("ag.generate.128.genm_*.genft_*.filter_dvrl.*.log")
 
-
-
+for file in files:
+    with open(file, 'r') as f:
+        for line in f:
+            if 'valid output==>' in line:
+                print(line)
+            if 'summary' in line:
+                print(line.split(' ')[-2].split(':')[-1]) 
+    print('\n')
 
 
 
