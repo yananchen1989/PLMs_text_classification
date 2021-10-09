@@ -10,3 +10,5 @@ nltk>=3.5
 datasets==1.11.0
 accelerate>=0.3.0
 gputil==1.4.0
+sentencepiece==0.1.96
+pytorch_lightning==0.7.5

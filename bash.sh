@@ -24,17 +24,18 @@ tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.p
 ##### augf
 
 
-python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate \
-				      --genft no --filter dvrl --genm gpt --abundance 2
+python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate  \
+	 --genft no --filter nli --genm gpt --abundance 2 --testbed 1
 
 
-
-
-
+python -u augf.py --dsn uci --samplecnt 16 --max_aug_times 1 --aug generate  \
+	 --genft no --filter nli --genm t5 --abundance 2 --testbed 1
 
 
 cd /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation 
 cp *.py /Users/yanan/Desktop/thesis/my_augmentation/
+cp *.txt /Users/yanan/Desktop/thesis/my_augmentation/
+cp *.sh /Users/yanan/Desktop/thesis/my_augmentation/
 cp -r * /Users/yanan/Desktop/thesis/my_augmentation/
 
 
@@ -54,7 +55,7 @@ unzip -o -d /home/sunny myfile.zip
 for file in torch_ds resource cache cache_cbert
 do
 	#tar -zcvf ${file}.tar.gz ${file}
-	mkdir ${file};tar -xvzf ${file}.tar.gz  -C ${file}
+	tar -xvzf ${file}.tar.gz  -C ${file}
 done
 
 
