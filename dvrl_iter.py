@@ -4,6 +4,8 @@ import numpy as np
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 import pandas as pd 
+os.environ['CUDA_VISIBLE_DEVICES'] = ''
+
 from utils.load_data import * 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dsn', default='ag', type=str)

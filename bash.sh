@@ -22,6 +22,10 @@ python -u augf.py --dsn uci --samplecnt 16 --max_aug_times 1 --aug generate  \
 	 --genft no --filter nli --genm t5 --abundance 2 --testbed 1
 
 
+scp * root@sdu:/home/yanan/topic_classification_augmentation/
+
+
+
 cd /Users/yanan/Desktop/xiaomi/sms-ml-py/my_augmentation 
 cp *.py /Users/yanan/Desktop/thesis/my_augmentation/
 cp *.txt /Users/yanan/Desktop/thesis/my_augmentation/
