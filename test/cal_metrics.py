@@ -25,14 +25,13 @@ for file in ['logb']:
             if dic.get('genft', '*') not in ['no','pp','tc','entire', 'lambda']:
                 continue
 
-            if int(dic['samplecnt'])==128 and dic['model']=='albert' and  int(dic['max_aug_times'])==1 \
-                and dic['aug']=='generate':
+            if int(dic['samplecnt'])==128 and dic['model']=='albert' and  int(dic['max_aug_times'])==3 \
+                and dic['aug']=='generate' and int(dic['testbed']) == 1:
                 infos.append((dic['dsn'], dic.get('genm','*'), dic.get('genft', '*'), \
-                dic.get('filter', '*'), int(dic.get('threads', 0)), float(dic['acc_aug'])))
+                dic.get('filter', '*'), int(dic.get('threads', 0)), float(dic['acc_aug']), float(dic['gain'].replace('"','')) ))
                 # infos.append((dic['dsn'], dic.get('aug','*'), \
                 # float(dic['acc_base']), float(dic['acc_aug'])))
-df = pd.DataFrame(infos, columns=['dsn','genm','genft', 'filter', 'threads', 'acc_aug'])
-#df = pd.DataFrame(infos, columns=['dsn','aug','acc_base','acc_aug'])
+df = pd.DataFrame(infos, columns=['dsn','genm','genft', 'filter', 'threads', 'acc_aug', 'gain'])
 
 
 

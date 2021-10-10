@@ -40,9 +40,9 @@ do
 		###### no finetune
 		for genm in gpt t5 #ctrl
 		do
-			for genft in no tc pp
+			for genft in no #tc pp
 			do
-				for filter in nli cls nsp enc both no 
+				for filter in both #nli cls nsp enc both no 
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}  --testbed 1 \
@@ -86,8 +86,7 @@ done
 
 
 
-# nohup bash run.sh  &
+# nohup bash run.sh 1 128 &
+# nohup bash run.sh 3 128 &
 
-# test
-# python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate  --genft lambda --filter nli --genm gpt --abundance 2
 

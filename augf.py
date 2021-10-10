@@ -197,17 +197,17 @@ if args.aug == 'generate':
     dsn_maxlen = {'uci':50, 'ag':160, 'nyt':300}
 
     ####################### filter setting ######################
-    if args.filter in ['nli']: 
+    if args.filter in ['nli', 'both']: 
         #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=deviceIDs[1]) #  1.8.1+cu102
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
         model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=deviceIDs[1])
 
-    if args.filter in ['nsp']:
+    if args.filter in ['nsp', 'both']:
         model_cls_pair  = get_model_nsp(min(512, dsn_maxlen[args.dsn]*2))
     
-    if args.filter in ['enc','dvrl']:
+    if args.filter in ['enc','dvrl', 'both']:
         enc = encoder('cmlm-large')
 
     if args.filter in ['dvrl']:
@@ -393,12 +393,14 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         buffer.append((generated_text, label, label_name, 0))
 
 
-            print('itr:', itr , 'filter ratio:', len(buffer) / (ds.df_train.shape[0]*args.num_return_sequences) )
-
             if args.filter == 'both':
                 samples_syn_all.extend(buffer_both)
+                print('itr:', itr , 'filter ratio:', len(buffer_both) / (ds.df_train.shape[0]*args.num_return_sequences) )
+
             else:
                 samples_syn_all.extend(buffer)
+                print('itr:', itr , 'filter ratio:', len(buffer) / (ds.df_train.shape[0]*args.num_return_sequences) )
+
 
             df_syn_tmp = pd.DataFrame(samples_syn_all, columns=['content','label','label_name','score'])
             print(df_syn_tmp['label_name'].value_counts())
