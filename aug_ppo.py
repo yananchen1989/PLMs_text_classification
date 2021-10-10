@@ -46,7 +46,7 @@ parser.add_argument("--internal_cnt", default=0, type=int)
 parser.add_argument("--init_kl_coef", default=0.2, type=float) 
 parser.add_argument("--cliprange", default=0.2, type=float) 
 parser.add_argument("--cliprange_value", default=0.2, type=float) 
-parser.add_argument("--temperature", default=1.0, type=float) 
+parser.add_argument("--temperature", default=1.2, type=float) 
 parser.add_argument("--min_tokens_to_keep", default=1, type=int) 
 parser.add_argument("--maxlen", default=64, type=int) 
 parser.add_argument("--ft_pattern", default='no', type=str, choices=['pp', 'tc', 'no'])
@@ -219,7 +219,8 @@ for epoch in range(args.ppo_epoch):
     for ix, row in ds.df_train.reset_index().iterrows():
         query = "[{}]".format(row['label']) + row['content']
         query_tensor = gpt2_tokenizer.encode(query, return_tensors="pt").to(device_0)
-        response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor, txt_len=args.maxlen)
+        response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor, \
+                            txt_len=args.maxlen, temperature=args.temperature)
         response = gpt2_tokenizer.decode(response_tensor[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
 
         # get reward from another component
@@ -245,7 +246,7 @@ for epoch in range(args.ppo_epoch):
 
 '''
 
-nohup python -u aug_ppo.py --dsn ag --maxlen 64 --init_kl_coef 0.1 > 
+nohup python -u aug_ppo.py --dsn ag --maxlen 64 --init_kl_coef 0.2 > ppo.ag.64.kl2.log & 
 
 '''
 
