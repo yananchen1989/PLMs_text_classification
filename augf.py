@@ -22,7 +22,8 @@ parser.add_argument("--testbed", default=0, type=int)
 parser.add_argument("--dpp", default=0, type=int)
 parser.add_argument("--threads", default=64, type=int)
 
-parser.add_argument("--filter", default='nli', type=str, choices=['nli','cls','no','enc','nsp','dvrl','both'])
+parser.add_argument("--filter",  type=str, choices=['nli','cls','no','enc','nsp','dvrl','both'])
+# 
 
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
@@ -94,7 +95,7 @@ ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates(
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 seed = random.sample(list(range(10000)), 1)[0]
 
-if args.testbed or args.filter == 'cls':
+if args.testbed:
     acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
                args.basetry, args.samplecnt, args.basemode, args.model)
 else:
@@ -385,7 +386,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                             buffer.append((generated_text, label, label_name, nsp_score))  
 
                     if args.filter == 'both': 
-                        if nli_check and cls_check and enc_score>=0.7 and nsp_score >= 0.9:
+                        if nli_check and cls_check and enc_score>=0.3 and nsp_score >= 0.9:
                             buffer_both.append((generated_text, label, label_name, \
                                 nli_score * cls_score * enc_score * nsp_score ))
 

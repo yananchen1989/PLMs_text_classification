@@ -235,6 +235,10 @@ for epoch in range(args.ppo_epoch):
         rewards_epoch.append(reward.cpu().numpy()[0])
         if ix % 100 == 0 :
             print(np.array(memory).mean())
+        if ix % 5 == 0:
+            print('ori==>', row['content'])
+            print('syn==>', response)
+            print('\n')
     print("epoch:", epoch, np.array(rewards_epoch).mean())
     rewards_epoch = []
 
