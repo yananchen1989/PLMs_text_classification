@@ -9,23 +9,23 @@ from transformers import GPT2Tokenizer
 gpt2_tokenizer = GPT2Tokenizer.from_pretrained('gpt2', cache_dir='./cache', local_files_only=True)
 gpt2_tokenizer.pad_token = gpt2_tokenizer.eos_token 
 
-def get_ppo_trainer(ft_pattern, device, params):
-    if ft_pattern in ['tc', 'pp']:
-        gpt2_tokenizer.sep_token = '<|sep|>'
-        gpt2_model_ref_trl = GPT2HeadWithValueModel.from_pretrained('gpt2_{}_ft_on_ccnews'.format(ft_pattern))
-        gpt2_model_trl = GPT2HeadWithValueModel.from_pretrained('gpt2_{}_ft_on_ccnews'.format(ft_pattern))
+def get_ppo_trainer(ft_path, device, params):
+    # if ft_pattern in ['tc', 'pp']:
+    #     gpt2_tokenizer.sep_token = '<|sep|>'
+    #     gpt2_model_ref_trl = GPT2HeadWithValueModel.from_pretrained('gpt2_{}_ft_on_ccnews'.format(ft_pattern))
+    #     gpt2_model_trl = GPT2HeadWithValueModel.from_pretrained('gpt2_{}_ft_on_ccnews'.format(ft_pattern))
         
-    elif ft_pattern in ['no']:
-        gpt2_tokenizer.sep_token = ''
-        gpt2_model_ref_trl = GPT2HeadWithValueModel.from_pretrained('gpt2')
-        gpt2_model_trl = GPT2HeadWithValueModel.from_pretrained('gpt2')
+    #elif ft_pattern in ['no']:
+    gpt2_tokenizer.sep_token = ''
+    gpt2_model_ref_trl = GPT2HeadWithValueModel.from_pretrained(ft_path)
+    gpt2_model_trl = GPT2HeadWithValueModel.from_pretrained(ft_path)
     config = {
         # "lm_name": "lvwerra/gpt2-imdb",
         # "ref_lm_name": "lvwerra/gpt2-imdb",
          "cls_model_name": "lvwerra/bert-imdb",
         #"tk_name": "gpt2",
         #"steps": 25600,
-        "forward_batch_size": 16,
+        "forward_batch_size": params['forward_batch_size'],
         "ppo_epochs": 4,   
         #"txt_in_len": 5,
         #"txt_out_len": 15,
@@ -37,7 +37,7 @@ def get_ppo_trainer(ft_pattern, device, params):
         "gamma":1,
         "lam":0.95,
         "cliprange": params['cliprange'],
-        "cliprange_value":params['cliprange_value'],
+        "cliprange_value": params['cliprange_value'],
         "vf_coef":.1, 
     }
     gpt2_model_ref_trl.to(device)
@@ -61,21 +61,22 @@ def reponse(df_batch, gpt2_model_trl, maxlen, gpt2_tokenizer, device, params):
     return df_batch, query_tensors, response_tensors
 
 
-def reponse_(df_batch, gpt2_model_trl, maxlen, gpt2_tokenizer, device, params):
+def reponse_single(df_batch, gpt2_model_trl, maxlen, gpt2_tokenizer, device, params):
     responses = []
     query_tensors_ll, response_tensors_ll = [], []
     query_token_lens = []
     for query in df_batch['query'].tolist():
-        query_tensor = gpt2_tokenizer([query+ ' {}'.format(gpt2_tokenizer.sep_token) ], return_tensors="pt", \
-                                pad_to_max_length =True, \
-                                truncation=True, padding=True, max_length=maxlen)['input_ids'].to(device)
-
-        response_tensor = respond_to_batch(gpt2_model_trl, query_tensor,
-                                      txt_len = maxlen, top_p=0.9,  \
-                                      temperature = params['temperature'], \
-                                      min_tokens_to_keep= params['min_tokens_to_keep'])
+        # query_tensor = gpt2_tokenizer.encode([query+ ' {}'.format(gpt2_tokenizer.sep_token) ], return_tensors="pt", \
+        #                         pad_to_max_length =True, \
+        #                         truncation=True, padding=True, max_length=maxlen)['input_ids'].to(device)
+        query_tensor = gpt2_tokenizer.encode(query_txt, return_tensors="pt").to(device)
+        # response_tensor = respond_to_batch(gpt2_model_trl, query_tensor,
+        #                               txt_len = maxlen, top_p=0.9,  \
+        #                               temperature = params['temperature'], \
+        #                               min_tokens_to_keep= params['min_tokens_to_keep'])
+        response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor)
         response = gpt2_tokenizer.decode(response_tensor[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip()
-        
+
         # print(query_tensor.shape[1], response_tensor.shape[1] )
         # print("query==>", query)
         # print("response==>", response, '\n')

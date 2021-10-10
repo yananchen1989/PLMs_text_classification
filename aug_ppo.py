@@ -22,17 +22,11 @@ parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--basetry", default=3, type=int)
 parser.add_argument("--batch_size", default=32, type=int)
 parser.add_argument("--freq", default=20, type=int)
-parser.add_argument("--boostmodel", default=1, type=int) # tune
-parser.add_argument("--boostsample_ppo", default=0, type=int)# tune
-parser.add_argument("--use_ent", default=0, type=int) # tune
-parser.add_argument("--boostsample_ft", default=0, type=int)# tune
-#parser.add_argument("--txt_in_len", default=5, type=int)
-#parser.add_argument("--txt_out_len", default=64, type=int)
-parser.add_argument("--ppo_batchsize", default=32, type=int)
+
+parser.add_argument("--ppo_batchsize", default=1, type=int)
+parser.add_argument("--forward_batch_size", default=1, type=int)
 parser.add_argument("--load_bert", default=1, type=int)
-parser.add_argument("--returnmodel", default=1, type=int)
-parser.add_argument("--noeval", default=0, type=int)
-#parser.add_argument("--txtin", default="mean", type=str)
+
 
 parser.add_argument("--external_frac", default=0.9, type=float)
 parser.add_argument("--external_thres", default=0.9, type=float)
@@ -95,10 +89,6 @@ ixl_rev = {ii[1]:ii[0] for ii in ixl.items()}
 # ds.df_test['label_name'] = ds.df_test['label'].map(lambda x: {0:'negative',1:'positive'}.get(x))
 print('ixl==>', ixl)
 num_classes = len(ixl)
-
-ds, proper_len = process_ds(ds, 256)
-print(ds.df_train.sample(10))
-print('proper_len:', proper_len)
 
 
 ppo_trainer, gpt2_model_trl, gpt2_model_ref_trl = get_ppo_trainer(args.ft_pattern, device, vars(args))

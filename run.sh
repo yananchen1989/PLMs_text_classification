@@ -42,7 +42,7 @@ do
 		do
 			for genft in no #tc pp
 			do
-				for filter in both #nli cls nsp enc both no 
+				for filter in both #nli cls nsp enc no 
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}  --testbed 1 \

@@ -24,6 +24,7 @@ parser.add_argument("--temperature", default=1.0, type=float)
 parser.add_argument("--min_tokens_to_keep", default=1, type=int) 
 parser.add_argument("--fbs", default=16, type=int)
 parser.add_argument("--ppo_batchsize", default=32, type=int)
+parser.add_argument("--forward_batch_size", default=32, type=int)
 parser.add_argument("--init_kl_coef", default=0.2, type=float) 
 parser.add_argument("--cliprange", default=0.2, type=float) 
 parser.add_argument("--cliprange_value", default=0.2, type=float) 
@@ -122,7 +123,7 @@ for epoch in range(args.epoch):
 
         torch.cuda.empty_cache()   
 
-        df_batch, query_tensors, response_tensors = reponse_(df_batch, gpt2_model_trl, maxlen)
+        df_batch, query_tensors, response_tensors = reponse_single(df_batch, gpt2_model_trl, maxlen)
 
         prompts = tf.convert_to_tensor(df_batch['content'].values)
         labels = tf.convert_to_tensor(df_batch['label'].values)
@@ -172,7 +173,7 @@ for epoch in range(args.epoch):
     acc_half = accuracy_score(ds.df_test['label'].values, preds_accum.argmax(axis=1))  
 
     df_test_batch = ds.df_test.sample(256)
-    df_test_batch, _, _  = reponse_(df_test_batch, gpt2_model_trl, maxlen)
+    df_test_batch, _, _  = reponse_single(df_test_batch, gpt2_model_trl, maxlen)
     preds = model_gan.predict(df_test_batch['content'].values, batch_size=32)
     preds_syn = model_gan.predict(df_test_batch['response'].values, batch_size=32)
 
