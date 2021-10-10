@@ -237,7 +237,7 @@ for epoch in range(args.ppo_epoch):
         if ix % 100 == 0 :
             print('iter_reward:', np.array(memory).mean())
         if ix % 10 == 0:
-            print('label==>', row['label_name'])
+            print('label==>', row['label_name'], 'reward:', round(reward.cpu().numpy()[0],4) )
             print('ori==>', row['content'])
             print('syn==>', response)
             print('\n')
@@ -246,7 +246,7 @@ for epoch in range(args.ppo_epoch):
 
 '''
 
-nohup python -u aug_ppo.py --dsn ag --maxlen 64 --init_kl_coef 0.2 > ppo.ag.64.kl2.log & 
+nohup python -u aug_ppo.py --dsn ag --maxlen 20 --init_kl_coef 0.1 --temperature 1.0 > ppo.ag.64.kl1.log & 
 
 '''
 

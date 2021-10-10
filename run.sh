@@ -42,10 +42,10 @@ do
 		do
 			for genft in no #tc pp
 			do
-				for filter in both #nli cls nsp enc no 
+				for filter in nli,cls,nsp,enc #nli cls nsp enc no 
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft} --filter ${filter} --genm ${genm} --abundance ${abundance}  --testbed 1 \
+				      --genft ${genft}  --genm ${genm} --filter ${filter} --abundance ${abundance}  --testbed 1 \
 				      > ./log_arxiv/${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
 				done
 			done
