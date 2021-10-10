@@ -217,7 +217,7 @@ rewards_epoch = []
 for epoch in range(args.ppo_epoch):
     ds.df_train = ds.df_train.sample(frac=1)
     for ix, row in ds.df_train.reset_index().iterrows():
-        query = "[{}]".format(row['label']) + row['content']
+        query = "[{}]".format(row['label']) + truncate(row['content'], 5)
         query_tensor = gpt2_tokenizer.encode(query, return_tensors="pt").to(device_0)
         response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor, \
                             txt_len=args.maxlen, temperature=args.temperature)
