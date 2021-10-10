@@ -93,9 +93,9 @@ num_classes = len(ixl)
 ppo_trainer, gpt2_model_trl, gpt2_model_ref_trl = get_ppo_trainer('gpt2', device_0, vars(args))
 
 if args.load_bert:
-    with tf.distribute.MirroredStrategy().scope():
-        model = get_model_bert(ds.df_test.label.unique().shape[0])
-        model.load_weights("./cls/model_full_{}.h5".format(args.dsn) )
+    
+    model = get_model_bert(ds.df_test.label.unique().shape[0])
+    model.load_weights("./cls/model_full_{}.h5".format(args.dsn) )
     best_val_acc_noaug = -1
 else:
     best_val_acc_noaug, model = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
@@ -159,8 +159,8 @@ else:
 #     rewards = pos_logit_to_reward(pos_logits, task_list)
 #     return rewards.reshape(-1)
 
-# scce = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
-# even_loss = scce([[0]], [[1/num_classes]*num_classes ]).numpy()[0].item()
+scce = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
+even_loss = scce([[0]], [[1/num_classes]*num_classes ]).numpy()[0].item()
 
 # def get_rewards_topics(df, model, spec_col):
 
@@ -198,146 +198,147 @@ else:
 # print('tokens_cnt ==>', ds.df_train['tokens_cnt'].min(), ds.df_train['tokens_cnt'].max(), ds.df_train['tokens_cnt'].mean())
 #  # 32 0.77867
  # -1 1.17
-if args.dsn == 'uci':
-    maxlen = 32 
-elif args.dsn == 'ag':
-    maxlen = 128
+# if args.dsn == 'uci':
+#     maxlen = 32 
+# elif args.dsn == 'ag':
+#     maxlen = 128
 
 
 
-from transformers import pipeline
-nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=deviceIDs[1])
+# from transformers import pipeline
+# nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=deviceIDs[1])
 
 
 #. ppo training
 
-for epoch in range(args.ppo_epoch):
-    print('\n')
-    print('<<<epoch {} begin>>>>'.format(epoch))
-    #syn_df_ll = []
+from collections import deque
+memory = deque(maxlen=100)
 
-    ds.df_train = ds.df_train.sample(frac=1)
-    ix = 0
-    while ix < ds.df_train.shape[0]:
-        torch.cuda.empty_cache()    
+for ix, row in ds.df_train.reset_index().iterrows():
+    query = "[{}]".format(row['label']) + row['content']
+    query_tensor = gpt2_tokenizer.encode(query, return_tensors="pt").to(device_0)
+    response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor)
+    response = gpt2_tokenizer.decode(response_tensor[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip()
 
-        #game_data = dict()
-        #### get a batch from the dataset
-        #df_batch = ds.df_train.sample(config['batch_size']) 
-        df_batch = ds.df_train[ix:ix+args.ppo_batchsize].copy()
 
-        df_batch['query'] = '[' + df_batch['label_name'].astype(str) + ']' \
-         + df_batch['content'].map(lambda x: ' '.join(x.split(' ')[:4] )) + '{}'.format(gpt2_tokenizer.sep_token)
+    # get reward from another component
+    preds_test = model.predict([response], steps=1) # (128, 4)
 
-        contents_tokens_lens = [ii.shape[1] for ii in df_batch['query'].map(lambda x: gpt2_tokenizer.encode(x, return_tensors="pt")).tolist()]    
+    loss = scce(row['label'], preds_test).numpy()
 
-        maxlen_query = min(contents_tokens_lens)
+    reward = torch.tensor([even_loss - loss[0]]).to(device_0)
 
-        #df_batch, query_tensors, response_tensors = reponse_(df_batch, gpt2_model_trl, maxlen, \
-         #               gpt2_tokenizer, device, vars(args))
-        df_batch, query_tensors, response_tensors = reponse(df_batch, gpt2_model_trl, \
-                        maxlen_query, gpt2_tokenizer, device, vars(args))
+    train_stats = ppo_trainer.step(query_tensor, response_tensor, reward)
+    #print(ix,  'pred:', preds_test.argmax(), 'label', row['label'], 'reward:', round(reward.cpu().numpy()[0],4))
+    memory.append(reward.cpu().numpy()[0])
 
-        rewards = []
-        for _, row in df_batch.iterrows():
-            result = nli_nlp(row['response'],  list(ds.df_test['label_name'].unique()), \
-                       multi_label=True, hypothesis_template="This text is about {}.")
-            if  result['labels'][0] != row['label_name']:
-                reward = -1 
-            else:
-                reward = result['scores'][0]
-            rewards.append(reward)
+    if ix % 50 == 0 :
+        print(np.array(memory).mean())
 
-        #rewards
-        #rewards = get_rewards_topics(df_batch, model, 'response')   
-        df_batch['reward'] = rewards
 
-        df_batch['label_name'].value_counts()
+# for epoch in range(args.ppo_epoch):
+#     print('\n')
+#     print('<<<epoch {} begin>>>>'.format(epoch))
+#     #syn_df_ll = []
 
-        for cate in ds.df_test['label_name'].unique():
-            print(cate, df_batch.loc[df_batch['label_name']==cate]['reward'].mean())
+#     ds.df_train = ds.df_train.sample(frac=1)
+#     ix = 0
+#     while ix < ds.df_train.shape[0]:
+#         torch.cuda.empty_cache()    
 
-        # train ppo               
-        stats = ppo_trainer.step(query_tensors, response_tensors, torch.tensor(rewards).to(device))
+#         #game_data = dict()
+#         #### get a batch from the dataset
+#         #df_batch = ds.df_train.sample(config['batch_size']) 
+#         df_batch = ds.df_train[ix:ix+args.ppo_batchsize].copy()
 
-        #syn_df_ll.append(df_batch)
-        print('ix:', ix, 'of', ds.df_train.shape[0], 'epoch', epoch, \
-                 'rewards ==>', df_batch['reward'].mean(), '\n')
-        ix += args.ppo_batchsize
+#         df_batch['query'] = '[' + df_batch['label_name'].astype(str) + ']' \
+#          + df_batch['content'].map(lambda x: ' '.join(x.split(' ')[:4] )) + '{}'.format(gpt2_tokenizer.sep_token)
+
+#         contents_tokens_lens = [ii.shape[1] for ii in df_batch['query'].map(lambda x: gpt2_tokenizer.encode(x, return_tensors="pt")).tolist()]    
+
+#         maxlen_query = min(contents_tokens_lens)
+
+#         #df_batch, query_tensors, response_tensors = reponse_(df_batch, gpt2_model_trl, maxlen, \
+#          #               gpt2_tokenizer, device, vars(args))
+#         df_batch, query_tensors, response_tensors = reponse(df_batch, gpt2_model_trl, \
+#                         maxlen_query, gpt2_tokenizer, device, vars(args))
+
+#         rewards = []
+#         for _, row in df_batch.iterrows():
+#             result = nli_nlp(row['response'],  list(ds.df_test['label_name'].unique()), \
+#                        multi_label=True, hypothesis_template="This text is about {}.")
+#             if  result['labels'][0] != row['label_name']:
+#                 reward = -1 
+#             else:
+#                 reward = result['scores'][0]
+#             rewards.append(reward)
+
+#         #rewards
+#         #rewards = get_rewards_topics(df_batch, model, 'response')   
+#         df_batch['reward'] = rewards
+
+#         df_batch['label_name'].value_counts()
+
+#         for cate in ds.df_test['label_name'].unique():
+#             print(cate, df_batch.loc[df_batch['label_name']==cate]['reward'].mean())
+
+#         # train ppo               
+#         stats = ppo_trainer.step(query_tensors, response_tensors, torch.tensor(rewards).to(device))
+
+#         #syn_df_ll.append(df_batch)
+#         print('ix:', ix, 'of', ds.df_train.shape[0], 'epoch', epoch, \
+#                  'rewards ==>', df_batch['reward'].mean(), '\n')
+#         ix += args.ppo_batchsize
     
-    for ix, row in df_batch.sample(5).iterrows():
-        print(row['label_name'])
-        print("ori==>", row['content'])
-        print("syn==>", row['response'])
-        print()
+#     for ix, row in df_batch.sample(5).iterrows():
+#         print(row['label_name'])
+#         print("ori==>", row['content'])
+#         print("syn==>", row['response'])
+#         print()
 
-    # df_syn_epoch = pd.concat(syn_df_ll)
+#     # df_syn_epoch = pd.concat(syn_df_ll)
 
-    # df_syn_epoch_use = df_syn_epoch.loc[df_syn_epoch['reward']>=even_loss*args.above]
+#     # df_syn_epoch_use = df_syn_epoch.loc[df_syn_epoch['reward']>=even_loss*args.above]
 
-    # above_ratio_0p9 = df_syn_epoch_use.shape[0] / df_syn_epoch.shape[0]
-    # print('above_ratio_0p9 value counts:')
-    # print(df_syn_epoch_use['label'].value_counts() )
+#     # above_ratio_0p9 = df_syn_epoch_use.shape[0] / df_syn_epoch.shape[0]
+#     # print('above_ratio_0p9 value counts:')
+#     # print(df_syn_epoch_use['label'].value_counts() )
 
-    # min_cnt = df_syn_epoch_use['label'].value_counts().min()
-    # if min_cnt > 0:
-    #     df_syn_epoch_use_sample_ll = [df_syn_epoch_use.loc[df_syn_epoch_use['label']==label].sample(min_cnt, weights='reward') for label in df_syn_epoch_use['label'].unique()]
-    #     df_syn_epoch_use_sample = pd.concat(df_syn_epoch_use_sample_ll).sample(frac=1)
-    #     df_syn_aug_ll.append(df_syn_epoch_use_sample)
+#     # min_cnt = df_syn_epoch_use['label'].value_counts().min()
+#     # if min_cnt > 0:
+#     #     df_syn_epoch_use_sample_ll = [df_syn_epoch_use.loc[df_syn_epoch_use['label']==label].sample(min_cnt, weights='reward') for label in df_syn_epoch_use['label'].unique()]
+#     #     df_syn_epoch_use_sample = pd.concat(df_syn_epoch_use_sample_ll).sample(frac=1)
+#     #     df_syn_aug_ll.append(df_syn_epoch_use_sample)
 
-    # print('summary== epoch:{}  reward:{} cosd:{} above_0p9:{} above_0p9_min:{} current_aug_samples::{} above:{}'.format(epoch, \
-    #     round(df_syn_epoch['reward'].mean().item(), 4), \
-    #     round(df_syn_epoch['cosine_distance'].mean().item(), 4), \
-    #     round(above_ratio_0p9, 4), \
-    #     round(df_syn_epoch_use_sample.shape[0] / df_syn_epoch.shape[0], 4),\
-    #     pd.concat(df_syn_aug_ll).shape[0] , args.above ))
+#     # print('summary== epoch:{}  reward:{} cosd:{} above_0p9:{} above_0p9_min:{} current_aug_samples::{} above:{}'.format(epoch, \
+#     #     round(df_syn_epoch['reward'].mean().item(), 4), \
+#     #     round(df_syn_epoch['cosine_distance'].mean().item(), 4), \
+#     #     round(above_ratio_0p9, 4), \
+#     #     round(df_syn_epoch_use_sample.shape[0] / df_syn_epoch.shape[0], 4),\
+#     #     pd.concat(df_syn_aug_ll).shape[0] , args.above ))
 
-    # print('summary== groupby==>')
-    # for label in df_syn_epoch['label'].unique():
-    #     print(ixl_rev[label], df_syn_epoch.loc[df_syn_epoch['label']==label]['reward'].mean())
-
-
-    # print('<==demostration==>')
-    # for l in df_syn_epoch.label.unique():
-    #     df_syn_epoch_01 = df_syn_epoch.loc[df_syn_epoch['label']==l].sample(4)
-    #     for ix, row in df_syn_epoch_01.iterrows():
-    #         print('\nlabel:', row['label'], row['label_name'],  \
-    #          'reward:', round(row['reward'],4), 'cos_distance:', round(row['cosine_distance'],4),'\n', \
-    #           'syn==>', row['responses'].replace('\n',' '), '\n', \
-    #           'ori==>', row['content'].replace('\n',' '))
-
-    # if epoch % 5 == 0:
-    #     os.makedirs('finetune_gpt2_ppo', exist_ok=True)
-    #     model_output_path_ppo = "./finetune_gpt2_ppo/{}_{}_{}".format(args.dsn, args.samplecnt, seed) 
-    #     os.makedirs(model_output_path_ppo, exist_ok=True)
-    #     gpt2_model_trl.save_pretrained(model_output_path_ppo)
+#     # print('summary== groupby==>')
+#     # for label in df_syn_epoch['label'].unique():
+#     #     print(ixl_rev[label], df_syn_epoch.loc[df_syn_epoch['label']==label]['reward'].mean())
 
 
+#     # print('<==demostration==>')
+#     # for l in df_syn_epoch.label.unique():
+#     #     df_syn_epoch_01 = df_syn_epoch.loc[df_syn_epoch['label']==l].sample(4)
+#     #     for ix, row in df_syn_epoch_01.iterrows():
+#     #         print('\nlabel:', row['label'], row['label_name'],  \
+#     #          'reward:', round(row['reward'],4), 'cos_distance:', round(row['cosine_distance'],4),'\n', \
+#     #           'syn==>', row['responses'].replace('\n',' '), '\n', \
+#     #           'ori==>', row['content'].replace('\n',' '))
+
+#     # if epoch % 5 == 0:
+#     #     os.makedirs('finetune_gpt2_ppo', exist_ok=True)
+#     #     model_output_path_ppo = "./finetune_gpt2_ppo/{}_{}_{}".format(args.dsn, args.samplecnt, seed) 
+#     #     os.makedirs(model_output_path_ppo, exist_ok=True)
+#     #     gpt2_model_trl.save_pretrained(model_output_path_ppo)
 
 
 
-# if not args.noeval:
-#     df_train_aug = pd.concat([ds.df_train, df_syn_epoch] )
-#     aug_ratio = df_syn_epoch.shape[0] / ds.df_train.shape[0]
-#     acc_aug, model_aug = do_train_test(df_train_aug, ds.df_test, args.epochs, args.freq, args.verbose, \
-#                                         args.basetry, args.samplecnt, args.basemode, args.model)
-
-#     gain = (acc_aug - best_val_acc_noaug) / best_val_acc_noaug
-#     gains.append(gain)
-#     print('summary ==> base_acc:', best_val_acc_noaug, 'aug_acc:', acc_aug,\
-#      'epoch:', epoch, 'cur_gain:', max(gains), 'gains==>', gains)
-
-
-
-
-
-'''
-
-python -u aug_ppo.py --dsn uci --ft_pattern tc --ppo_batchsize 32 
-
-python -u aug_ppo.py --dsn uci --ft_pattern no --ppo_batchsize 32 --init_kl_coef 0.01 --ppo_batchsize 64
-
-'''
 
 
 
