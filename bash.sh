@@ -1,6 +1,6 @@
 conda config --set auto_activate_base true
 
-
+###
 
 
 
@@ -64,13 +64,12 @@ scp resource.tar.gz root@sdu:/home/yanan/topic_classification_augmentation/
 
 
 
-
 CUDA_VISIBLE_DEVICES=6 ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
    --maxlen 512 --ccsample 0.4 --ftepochs 7 --batch_size 8
 
 
 
-
+python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern tc --gpu 6 
 
 
 
