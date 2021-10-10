@@ -11,10 +11,8 @@ from utils.cbert_cgpt_config import *
 from sklearn.metrics.pairwise import cosine_distances
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="uci", type=str)
+parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--samplecnt", default=128, type=int)
-parser.add_argument("--gpu", default=0, type=int)
-parser.add_argument("--num_train_epochs_ft", default=1, type=int)
 parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--verbose", default=0, type=int)
 parser.add_argument("--basemode", default="max", type=str) 
