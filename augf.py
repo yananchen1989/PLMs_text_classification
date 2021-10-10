@@ -22,8 +22,8 @@ parser.add_argument("--testbed", default=0, type=int)
 parser.add_argument("--dpp", default=0, type=int)
 parser.add_argument("--threads", default=64, type=int)
 
-parser.add_argument("--filter",  type=str, choices=['nli','cls','no','enc','nsp','dvrl','both'])
-# 
+parser.add_argument("--filter", default="nli,cls,enc,nsp", type=str)
+# choices=['nli','cls','no','enc','nsp','dvrl','both']
 
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
@@ -41,6 +41,7 @@ parser.add_argument("--encm", default='dan', type=str, \
 
 args = parser.parse_args()
 print('args==>', args)
+filter_list = args.filter.split(',')
 
 import numpy as np
 import tensorflow as tf
@@ -198,20 +199,20 @@ if args.aug == 'generate':
     dsn_maxlen = {'uci':50, 'ag':160, 'nyt':300}
 
     ####################### filter setting ######################
-    if args.filter in ['nli', 'both']: 
+    if 'nli' in filter_list: 
         #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=deviceIDs[1]) #  1.8.1+cu102
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
         model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=deviceIDs[1])
 
-    if args.filter in ['nsp', 'both']:
+    if 'nsp' in filter_list:
         model_cls_pair  = get_model_nsp(min(512, dsn_maxlen[args.dsn]*2))
     
-    if args.filter in ['enc','dvrl', 'both']:
+    if 'enc' in  filter_list or 'dvrl' in filter_list:
         enc = encoder('cmlm-large')
 
-    if args.filter in ['dvrl']:
+    if 'dvrl' in filter_list:
         if not os.path.exists('dvrl_np_array'):
             os.makedirs('dvrl_np_array')
         from threading import Thread
@@ -349,7 +350,6 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             assert len(results) == ds.df_train.shape[0]
 
             buffer = []
-            buffer_both = []
             for ii in range(ds.df_train.shape[0]):
                 for s in results[ii]:
                     generated_text = s['generated_text']
@@ -358,49 +358,44 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     label = labels[ii]
                     label_name = label_names[ii]
                     assert label_name in ds.df_test['label_name'].unique()
-                    if args.filter in ['nli', 'both']:
-                        nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
-                        if nli_check:
-                            buffer.append((generated_text, label, label_name, nli_score))
 
-                    if args.filter in [ 'cls', 'both']:  
+                    if 'nli' in filter_list:
+                        nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
+                        #if nli_check:
+                            #buffer.append((generated_text, label, label_name, nli_score))
+
+                    if 'cls' in filter_list:  
                         cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
-                        if cls_check:
-                            buffer.append((generated_text, label, label_name, cls_score))              
+                        #if cls_check:
+                        #    buffer.append((generated_text, label, label_name, cls_score))              
                             
-                    if args.filter in [ 'enc', 'both']:
+                    if 'enc' in filter_list: 
                         content_ori = ds.df_train['content'].tolist()[ii]
                         gen_enc = enc.infer([generated_text])
                         ori_enc = enc.infer([content_ori])
                         enc_score = cosine_similarity(gen_enc, ori_enc)[0][0]
-                        if enc_score >= 0.7 :
-                            buffer.append((generated_text, label, label_name, enc_score))
+                        #if enc_score >= 0.1 :
+                        #    buffer.append((generated_text, label, label_name, enc_score))
 
-                    if args.filter in ['nsp', 'both']:
+                    if 'nsp' in filter_list:
                         content_ori = ds.df_train['content'].tolist()[ii]
                         pairs = [[content_ori, generated_text]]
                         pairs_ids = get_ids(pairs, min(512, dsn_maxlen[args.dsn]*2), tokenizer_bert )
                         preds = model_cls_pair.predict(pairs_ids, batch_size=32)
                         nsp_score = preds[0][0]
-                        if nsp_score >= 0.9:
-                            buffer.append((generated_text, label, label_name, nsp_score))  
+                        #if nsp_score >= 0.9:
+                        #    buffer.append((generated_text, label, label_name, nsp_score))  
 
-                    if args.filter == 'both': 
-                        if nli_check and cls_check and enc_score>=0.3 and nsp_score >= 0.9:
-                            buffer_both.append((generated_text, label, label_name, \
-                                nli_score * cls_score * enc_score * nsp_score ))
+
+                    if nli_check and cls_check and enc_score>=0.3 and nsp_score >= 0.9:
+                        buffer.append((generated_text, label, label_name, \
+                            nli_score * cls_score * enc_score * nsp_score ))
 
                     if args.filter in ['no']:
                         buffer.append((generated_text, label, label_name, 0))
 
-
-            if args.filter == 'both':
-                samples_syn_all.extend(buffer_both)
-                print('itr:', itr , 'filter ratio:', len(buffer_both) / (ds.df_train.shape[0]*args.num_return_sequences) )
-
-            else:
-                samples_syn_all.extend(buffer)
-                print('itr:', itr , 'filter ratio:', len(buffer) / (ds.df_train.shape[0]*args.num_return_sequences) )
+            samples_syn_all.extend(buffer)
+            print('gen_itr:', itr , 'filter_ratio:', len(buffer) / (ds.df_train.shape[0]*args.num_return_sequences) )
 
 
             df_syn_tmp = pd.DataFrame(samples_syn_all, columns=['content','label','label_name','score'])
