@@ -219,7 +219,7 @@ for epoch in range(args.ppo_epoch):
     for ix, row in ds.df_train.reset_index().iterrows():
         query = "[{}]".format(row['label']) + row['content']
         query_tensor = gpt2_tokenizer.encode(query, return_tensors="pt").to(device_0)
-        response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor)
+        response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor, txt_len=64)
         response = gpt2_tokenizer.decode(response_tensor[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip()
 
         # get reward from another component

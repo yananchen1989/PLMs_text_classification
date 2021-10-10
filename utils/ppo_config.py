@@ -63,7 +63,7 @@ def reponse_single(df_batch, gpt2_model_trl, maxlen, gpt2_tokenizer, device, par
         # query_tensor = gpt2_tokenizer.encode([query+ ' {}'.format(gpt2_tokenizer.sep_token) ], return_tensors="pt", \
         #                         pad_to_max_length =True, \
         #                         truncation=True, padding=True, max_length=maxlen)['input_ids'].to(device)
-        query_tensor = gpt2_tokenizer.encode(query_txt, return_tensors="pt").to(device)
+        query_tensor = gpt2_tokenizer.encode(query, return_tensors="pt").to(device)
         # response_tensor = respond_to_batch(gpt2_model_trl, query_tensor,
         #                               txt_len = maxlen, top_p=0.9,  \
         #                               temperature = params['temperature'], \
