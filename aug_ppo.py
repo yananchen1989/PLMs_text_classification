@@ -213,27 +213,28 @@ even_loss = scce([[0]], [[1/num_classes]*num_classes ]).numpy()[0].item()
 
 from collections import deque
 memory = deque(maxlen=100)
+for epoch in range(args.ppo_epoch):
+    ds.df_train = ds.df_train.sample(frac=1)
+    for ix, row in ds.df_train.reset_index().iterrows():
+        query = "[{}]".format(row['label']) + row['content']
+        query_tensor = gpt2_tokenizer.encode(query, return_tensors="pt").to(device_0)
+        response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor)
+        response = gpt2_tokenizer.decode(response_tensor[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip()
 
-for ix, row in ds.df_train.reset_index().iterrows():
-    query = "[{}]".format(row['label']) + row['content']
-    query_tensor = gpt2_tokenizer.encode(query, return_tensors="pt").to(device_0)
-    response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor)
-    response = gpt2_tokenizer.decode(response_tensor[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip()
 
+        # get reward from another component
+        preds_test = model.predict([response], steps=1) # (128, 4)
 
-    # get reward from another component
-    preds_test = model.predict([response], steps=1) # (128, 4)
+        loss = scce(row['label'], preds_test).numpy()
 
-    loss = scce(row['label'], preds_test).numpy()
+        reward = torch.tensor([even_loss - loss[0]]).to(device_0)
 
-    reward = torch.tensor([even_loss - loss[0]]).to(device_0)
+        train_stats = ppo_trainer.step(query_tensor, response_tensor, reward)
+        #print(ix,  'pred:', preds_test.argmax(), 'label', row['label'], 'reward:', round(reward.cpu().numpy()[0],4))
+        memory.append(reward.cpu().numpy()[0])
 
-    train_stats = ppo_trainer.step(query_tensor, response_tensor, reward)
-    #print(ix,  'pred:', preds_test.argmax(), 'label', row['label'], 'reward:', round(reward.cpu().numpy()[0],4))
-    memory.append(reward.cpu().numpy()[0])
-
-    if ix % 50 == 0 :
-        print(np.array(memory).mean())
+        if ix % 50 == 0 :
+            print(np.array(memory).mean())
 
 
 # for epoch in range(args.ppo_epoch):
