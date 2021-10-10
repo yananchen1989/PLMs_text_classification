@@ -9,8 +9,8 @@ from transformers import GPT2Tokenizer
 gpt2_tokenizer = GPT2Tokenizer.from_pretrained('gpt2', cache_dir='./cache', local_files_only=True)
 gpt2_tokenizer.pad_token = gpt2_tokenizer.eos_token 
 
-def get_ppo_trainer(ft_path, device, params):
-    gpt2_tokenizer.sep_token = ''
+def get_ppo_trainer(ft_path, device, params, sep_token=''):
+    gpt2_tokenizer.sep_token = sep_token
     gpt2_model_ref_trl = GPT2HeadWithValueModel.from_pretrained(ft_path)
     gpt2_model_trl = GPT2HeadWithValueModel.from_pretrained(ft_path)
     config = {

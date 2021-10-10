@@ -14,8 +14,8 @@ tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.p
 ##### augf
 
 
-python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate  \
-	 --genft no --filter both --genm gpt --abundance 2 --testbed 0
+nohup python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 --aug generate  \
+	 --genft no --filter both --genm gpt --abundance 2 --testbed 1 --basetry 1 --epochs 60 --freq 30 > ttt.log & 
 
 
 python -u augf.py --dsn uci --samplecnt 16 --max_aug_times 1 --aug generate  \

@@ -90,7 +90,7 @@ print('ixl==>', ixl)
 num_classes = len(ixl)
 
 
-ppo_trainer, gpt2_model_trl, gpt2_model_ref_trl = get_ppo_trainer('gpt2', device_0, vars(args))
+ppo_trainer, gpt2_model_trl, gpt2_model_ref_trl = get_ppo_trainer('ft_model_gpt_pp', device_0, vars(args), '<|sep|>')
 
 if args.load_bert:
     
