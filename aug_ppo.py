@@ -217,10 +217,10 @@ rewards_epoch = []
 for epoch in range(args.ppo_epoch):
     ds.df_train = ds.df_train.sample(frac=1)
     for ix, row in ds.df_train.reset_index().iterrows():
-        query = "[{}]".format(row['label']) + truncate(row['content'], 5)
+        query = "[{}]".format(row['label']) + row['content'] #truncate(row['content'], 12)
         query_tensor = gpt2_tokenizer.encode(query, return_tensors="pt").to(device_0)
         response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor, \
-                            txt_len=args.maxlen, temperature=args.temperature)
+                            txt_len=args.maxlen, temperature=args.temperature, top_p=0.9)
         response = gpt2_tokenizer.decode(response_tensor[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
 
         # get reward from another component
@@ -246,7 +246,7 @@ for epoch in range(args.ppo_epoch):
 
 '''
 
-nohup python -u aug_ppo.py --dsn ag --maxlen 20 --init_kl_coef 0.1 --temperature 1.0 > ppo.ag.64.kl1.log & 
+nohup python -u aug_ppo.py --dsn ag --maxlen 64 --init_kl_coef 0.1 --temperature 1.0 > ppo.log & 
 
 '''
 
