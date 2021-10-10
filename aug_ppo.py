@@ -68,8 +68,9 @@ if gpus:
   except RuntimeError as e:
     print(e)
 #assert gpus
-device = torch.device("cuda:{}".format(deviceIDs[0]) if torch.cuda.is_available() else "cpu")
-assert device.type=='cuda'
+device_0 = torch.device("cuda:{}".format(deviceIDs[0]) if torch.cuda.is_available() else "cpu")
+device_1 = torch.device("cuda:{}".format(deviceIDs[1]) if torch.cuda.is_available() else "cpu")
+assert device_0.type=='cuda'
 
 from utils.load_data import * 
 from utils.transblock import * 
@@ -89,17 +90,18 @@ print('ixl==>', ixl)
 num_classes = len(ixl)
 
 
-ppo_trainer, gpt2_model_trl, gpt2_model_ref_trl = get_ppo_trainer(args.ft_pattern, device, vars(args))
-# if args.load_bert:
-#     with tf.distribute.MirroredStrategy().scope():
-#         model = get_model_bert(ds.df_test.label.unique().shape[0])
-#         model.load_weights("./cls/model_full_{}.h5".format(args.dsn) )
-#     best_val_acc_noaug = -1
-# else:
-#     best_val_acc_noaug, model = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
-#                                             args.basetry, args.samplecnt, args.basemode, args.model)
-#     print('best_val_acc_noaug:', best_val_acc_noaug)
-#     assert best_val_acc_noaug > 0.6
+ppo_trainer, gpt2_model_trl, gpt2_model_ref_trl = get_ppo_trainer('gpt2', device_0, vars(args))
+
+if args.load_bert:
+    with tf.distribute.MirroredStrategy().scope():
+        model = get_model_bert(ds.df_test.label.unique().shape[0])
+        model.load_weights("./cls/model_full_{}.h5".format(args.dsn) )
+    best_val_acc_noaug = -1
+else:
+    best_val_acc_noaug, model = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
+                                            args.basetry, args.samplecnt, args.basemode, args.model)
+    print('best_val_acc_noaug:', best_val_acc_noaug)
+    assert best_val_acc_noaug > 0.6
 
 
 # def get_external_news_purified(model, cols, thres, external_frac):
@@ -205,10 +207,6 @@ elif args.dsn == 'ag':
 
 from transformers import pipeline
 nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=deviceIDs[1])
-
-
-model = get_model_bert(ds.df_test['label'].unique().shape[0], 'albert')
-model.load_weights("model_{}_full/".format(args.dsn) )
 
 
 #. ppo training
