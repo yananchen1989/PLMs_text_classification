@@ -234,13 +234,22 @@ for epoch in range(args.ppo_epoch):
         memory.append(reward.cpu().numpy()[0])
         rewards_epoch.append(reward.cpu().numpy()[0])
         if ix % 100 == 0 :
-            print(np.array(memory).mean())
-        if ix % 5 == 0:
+            print('iter_reward:', np.array(memory).mean())
+        if ix % 10 == 0:
+            print('label==>', row['label_name'])
             print('ori==>', row['content'])
             print('syn==>', response)
             print('\n')
     print("epoch:", epoch, np.array(rewards_epoch).mean())
     rewards_epoch = []
+
+'''
+
+nohup python -u aug_ppo.py --dsn ag --maxlen 64 --init_kl_coef 0.1 > 
+
+'''
+
+
 
 # for epoch in range(args.ppo_epoch):
 #     print('\n')
