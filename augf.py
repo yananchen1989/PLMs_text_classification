@@ -108,8 +108,11 @@ seed = random.sample(list(range(10000)), 1)[0]
 if args.testbed:
     acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
                args.basetry, args.samplecnt, args.basemode, args.model)
+    model_cls.save_weights("model_cls.h5")
 else:
     acc_noaug = -1
+
+
 
 if args.aug == 'eda':
     from utils.eda import *
@@ -291,13 +294,20 @@ def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev):
     else:
         return 0, score
 
+
 def bertcls_classify(generated_text, label_name):
     pred = model_cls.predict([generated_text], batch_size=1, verbose=0)  
-    pred_name = ds.df_train.loc[ds.df_train['label']==pred[0].argmax()]['label_name'].unique()[0]
-    if pred_name == label_name:
-        return 1, float(pred[0].max())
+
+    pred_label_name = ixl[pred[0].argmax()]
+    pred_label_score = float(pred[0].max())
+
+    ori_label_score = float(pred[0][ixl_rev[label_name]])
+
+    if pred_label_name == label_name and pred_label_score >= 0.8:
+        assert ori_label_score == pred_label_score
+        return 1, ori_label_score
     else:
-        return 0, float(pred[0].max())
+        return 0, ori_label_score
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
     labels = ds.df_train['label'].tolist()
@@ -387,8 +397,12 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                             gen_enc = enc.infer([generated_text])
                             ori_enc = enc.infer([content_ori])
                             enc_score = cosine_similarity(gen_enc, ori_enc)[0][0]
+                            if enc_score >= 0.5:
+                                enc_check = 1
+                            else:
+                                enc_check = 0
                         else:
-                            enc_score = 1
+                            enc_check, enc_score = 1, 1
 
                         if 'nsp' in filter_list:
                             content_ori = ds.df_train['content'].tolist()[ii]
@@ -396,15 +410,20 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                             pairs_ids = get_ids(pairs, min(512, dsn_maxlen[args.dsn]*2), tokenizer_bert )
                             preds = model_cls_pair.predict(pairs_ids, batch_size=32)
                             nsp_score = preds[0][0]
+                            if nsp_score >= 0.9:
+                                nsp_check = 1 
+                            else:
+                                nsp_check = 0
                         else:
-                            nsp_score = 1  
+                            nsp_check, nsp_score = 1, 1
 
-                        if nli_check and cls_check and enc_score >= 0.5 and nsp_score >= 0.9:
+                        if nli_check and cls_check and enc_check and nsp_check:
                             buffer.append((generated_text, label, label_name, \
                                             nli_score * cls_score * enc_score * nsp_score ))
                         print("filtering {}==>".format(ii), generated_text.replace('\n',' '), \
                             'label==>', label_name, \
-                            'judge==>{}-{}___{}-{}-{}-{}'.format(nli_check, cls_check, nli_score, cls_score, enc_score, nsp_score) )
+                            'judge==>nli{}-cls{}-enc{}-nsp{}____{}-{}-{}-{}'\
+                            .format(nli_check, cls_check, enc_check, nsp_check, nli_score, cls_score, enc_score, nsp_score) )
 
 
             samples_syn_all.extend(buffer)
