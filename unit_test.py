@@ -1,5 +1,11 @@
 
+sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
 
+content = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
+
+content = '''
+They are fed up with slow speeds, high prices and the level of customer service they receive. 17% of readers have switched suppliers and a further 16% are considering changing in the near future. It is particularly bad news for BT, the UK's biggest internet supplier, with almost three times as many people trying to leave as joining.
+'''
 
 
 sent = "Federal jury orders tech giant Samsung to pay"
@@ -78,34 +84,53 @@ model.fit(
 
 
 
-sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
-
-content = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
-
-content = '''
-They are fed up with slow speeds, high prices and the level of customer service they receive. 17% of readers have switched suppliers and a further 16% are considering changing in the near future. It is particularly bad news for BT, the UK's biggest internet supplier, with almost three times as many people trying to leave as joining.
-'''
 
 
 
 
 
-ds = load_data(dataset='ag', samplecnt= 32)
+from openprompt.data_utils import InputExample
+classes = [ # There are two classes in Sentiment Analysis, one for negative and one for positive
+    "negative",
+    "positive"
+]
+dataset = [ # For simplicity, there's only two examples
+    # text_a is the input text of the data, some other datasets may have multiple input sentences in one example.
+    InputExample(
+        guid = 0,
+        text_a = "Albert Einstein was one of the greatest intellects of his time.",
+    ),
+    InputExample(
+        guid = 1,
+        text_a = "The film was badly made.",
+    ),
+]
+
+from openprompt.plms import get_model_class
+model_class = get_model_class(plm_type = "bert")
+model_path = "bert-base-cased"
+bertConfig = model_class.config.from_pretrained(model_path)
+bertTokenizer = model_class.tokenizer.from_pretrained(model_path)
+bertModel = model_class.model.from_pretrained(model_path)
+
+from openprompt.prompts import ManualTemplate
+promptTemplate = ManualTemplate(
+    text = ["<text_a>", "It", "was", "<mask>"],
+    tokenizer = bertTokenizer,
+)
 
 
-best_val_accs = []
-models = []
-from threading import Thread
-threads = []
-for ii in range(3):
-    t = Thread(target=do_train_test_, args=(ds.df_train, ds.df_test, 100, 20, 0, 2, 64))
-    t.start()
-    threads.append(t)
 
-# join all threads
-for t in threads:
-    t.join()
-print("dvrl after join")
+
+
+
+
+
+
+
+
+
+
 
 
 
