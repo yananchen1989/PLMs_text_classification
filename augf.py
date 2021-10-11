@@ -416,8 +416,10 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             if df_syn_tmp['label_name'].value_counts().values.min() >= args.samplecnt * args.abundance:
                 
                 if 'dvrl' in filter_list:
+                    # trim to balance the samples
+                    df_syn_tmp = sample_stratify(df_syn_tmp, args.samplecnt * args.abundance)
+
                     # use dvrl to calculate score
-                    #df_syn_tmp = dvrl_scoring(df_syn_tmp, ds.df_train, enc, args.dvrl_iter)
                     ds.df_train['groudtruth'] = 1
                     df_syn_tmp['groudtruth'] = 9
                     del df_syn_tmp['score']
@@ -456,7 +458,9 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
                     df_syn_agg = df_syn.groupby(['content', 'label', 'label_name'])['dve_out'].mean().reset_index()
                     df_syn_tmp = df_syn_agg.rename(columns={"dve_out": "score"} )
-                    
+                
+
+                # get final syn samples
                 df_syn_filter_ll = []
                 for label_name in df_syn_tmp['label_name'].unique():
                     df_syn_tmp_l = df_syn_tmp.loc[df_syn_tmp['label_name']==label_name].copy()
