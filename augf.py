@@ -97,7 +97,7 @@ ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplica
 seed = random.sample(list(range(10000)), 1)[0]
 
 if args.testbed:
-    acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
+    acc_noaug, model_cls = do_train_test_thread(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
                args.basetry, args.samplecnt, args.basemode, args.model)
 else:
     acc_noaug = -1
