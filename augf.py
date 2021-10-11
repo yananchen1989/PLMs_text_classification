@@ -368,39 +368,43 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     label_name = label_names[ii]
                     assert label_name in ds.df_test['label_name'].unique()
 
-                    if 'nli' in filter_list:
-                        nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
-                        #if nli_check:
-                            #buffer.append((generated_text, label, label_name, nli_score))
 
-                    if 'cls' in filter_list:  
-                        cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
-                        #if cls_check:
-                        #    buffer.append((generated_text, label, label_name, cls_score))              
-                            
-                    if 'enc' in filter_list: 
-                        content_ori = ds.df_train['content'].tolist()[ii]
-                        gen_enc = enc.infer([generated_text])
-                        ori_enc = enc.infer([content_ori])
-                        enc_score = cosine_similarity(gen_enc, ori_enc)[0][0]
-                        #if enc_score >= 0.1 :
-                        #    buffer.append((generated_text, label, label_name, enc_score))
-
-                    if 'nsp' in filter_list:
-                        content_ori = ds.df_train['content'].tolist()[ii]
-                        pairs = [[content_ori, generated_text]]
-                        pairs_ids = get_ids(pairs, min(512, dsn_maxlen[args.dsn]*2), tokenizer_bert )
-                        preds = model_cls_pair.predict(pairs_ids, batch_size=32)
-                        nsp_score = preds[0][0]
-                        #if nsp_score >= 0.9:
-                        #    buffer.append((generated_text, label, label_name, nsp_score))  
-
-                    if nli_check and cls_check and enc_score>=0.5 and nsp_score >= 0.9:
-                        buffer.append((generated_text, label, label_name, \
-                            nli_score * cls_score * enc_score * nsp_score ))
-
-                    if args.filter in ['no']:
+                    if 'no' in filter_list:
                         buffer.append((generated_text, label, label_name, 0))
+                    else:                    
+                        if 'nli' in filter_list:
+                            nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
+                            #if nli_check:
+                                #buffer.append((generated_text, label, label_name, nli_score))
+
+                        if 'cls' in filter_list:  
+                            cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
+                            #if cls_check:
+                            #    buffer.append((generated_text, label, label_name, cls_score))              
+                                
+                        if 'enc' in filter_list: 
+                            content_ori = ds.df_train['content'].tolist()[ii]
+                            gen_enc = enc.infer([generated_text])
+                            ori_enc = enc.infer([content_ori])
+                            enc_score = cosine_similarity(gen_enc, ori_enc)[0][0]
+                            #if enc_score >= 0.1 :
+                            #    buffer.append((generated_text, label, label_name, enc_score))
+
+                        if 'nsp' in filter_list:
+                            content_ori = ds.df_train['content'].tolist()[ii]
+                            pairs = [[content_ori, generated_text]]
+                            pairs_ids = get_ids(pairs, min(512, dsn_maxlen[args.dsn]*2), tokenizer_bert )
+                            preds = model_cls_pair.predict(pairs_ids, batch_size=32)
+                            nsp_score = preds[0][0]
+                            #if nsp_score >= 0.9:
+                            #    buffer.append((generated_text, label, label_name, nsp_score))  
+
+                        if nli_check and cls_check and enc_score >= 0.5 and nsp_score >= 0.9:
+                            buffer.append((generated_text, label, label_name, \
+                                            nli_score * cls_score * enc_score * nsp_score ))
+                            print("filtering==>", generated_text, label_name, \
+                                        nli_score, cls_score, enc_score, nsp_score)
+
 
             samples_syn_all.extend(buffer)
             print('gen_itr:', itr , 'filter_ratio:', len(buffer) / (ds.df_train.shape[0]*args.num_return_sequences) )
