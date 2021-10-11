@@ -374,21 +374,21 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     else:                    
                         if 'nli' in filter_list:
                             nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
-                            #if nli_check:
-                                #buffer.append((generated_text, label, label_name, nli_score))
+                        else:
+                            nli_check, nli_score = 1, 1
 
                         if 'cls' in filter_list:  
                             cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
-                            #if cls_check:
-                            #    buffer.append((generated_text, label, label_name, cls_score))              
+                        else:
+                            cls_check, cls_score = 1, 1            
                                 
                         if 'enc' in filter_list: 
                             content_ori = ds.df_train['content'].tolist()[ii]
                             gen_enc = enc.infer([generated_text])
                             ori_enc = enc.infer([content_ori])
                             enc_score = cosine_similarity(gen_enc, ori_enc)[0][0]
-                            #if enc_score >= 0.1 :
-                            #    buffer.append((generated_text, label, label_name, enc_score))
+                        else:
+                            enc_score = 1
 
                         if 'nsp' in filter_list:
                             content_ori = ds.df_train['content'].tolist()[ii]
@@ -396,8 +396,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                             pairs_ids = get_ids(pairs, min(512, dsn_maxlen[args.dsn]*2), tokenizer_bert )
                             preds = model_cls_pair.predict(pairs_ids, batch_size=32)
                             nsp_score = preds[0][0]
-                            #if nsp_score >= 0.9:
-                            #    buffer.append((generated_text, label, label_name, nsp_score))  
+                        else:
+                            nsp_score = 1  
 
                         if nli_check and cls_check and enc_score >= 0.5 and nsp_score >= 0.9:
                             buffer.append((generated_text, label, label_name, \

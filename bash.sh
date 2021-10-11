@@ -18,6 +18,8 @@ nohup python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 --aug generate
 	 --genft no --filter nli,cls,nsp,enc,dvrl --genm gpt --abundance 3 --basetry 1 --epochs 60 --freq 30 > augf.log & 
 
 
+nohup python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 --aug generate  \
+	 --genft no --filter nli,dvrl --genm gpt --abundance 3 --basetry 1 --epochs 60 --freq 30 > augf.log & 
 
 
 
