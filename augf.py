@@ -1,5 +1,8 @@
 import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,time,operator,traceback
 from sklearn import metrics
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="eda", type=str)
 parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','nyt'])
@@ -60,6 +63,8 @@ import nltk
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
 #nltk.download('wordnet')
 gpus = tf.config.list_physical_devices('GPU')
+
+#tf.data.Options().experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
 
 import GPUtil
 GPUtil.showUtilization()
