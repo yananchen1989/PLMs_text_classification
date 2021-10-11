@@ -404,7 +404,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                                             nli_score * cls_score * enc_score * nsp_score ))
                         print("filtering {}==>".format(ii), generated_text.replace('\n',' '), \
                             'label==>', label_name, \
-                            'judge==>{}-{}-{}-{}-{}-{}'.format(nli_check, cls_check, nli_score, cls_score, enc_score, nsp_score) )
+                            'judge==>{}-{}___{}-{}-{}-{}'.format(nli_check, cls_check, nli_score, cls_score, enc_score, nsp_score) )
 
 
             samples_syn_all.extend(buffer)
