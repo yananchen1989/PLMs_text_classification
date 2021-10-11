@@ -90,42 +90,26 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 
 
-
-import glob 
-import pandas as pd
-
-infos = []
-files = glob.glob("dvrl.v2.*.log")
-for file in files:
-    with open(file, 'r') as f:
-        for line in f: 
-            if 'summary' in line:
-                tokens = line.strip().split(' ')
-                dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens if ':' in ii }
-                infos.append((dic['dsn'], int(dic['inner_iterations']), int(dic['samplecnt']), \
-                    int(dic['samplecnt_bad']), \
-                    float(tokens[-5]), float(tokens[-3]), float(tokens[-1])))
-                
-
-df = pd.DataFrame(infos, columns=['dsn','inner_iterations','samplecnt','samplecnt_bad', \
-                'auc','mean_dve_out','std_dve_out'])
+ds = load_data(dataset='ag', samplecnt= 32)
 
 
-for dsn in ['ag','stsa','uci']:
-    for inner_iterations in [25, 50, 75, 100, 120]:
-        for samplecnt_bad in [32, 64, 128 ]:
-            dfi = df.loc[(df['dsn']==dsn) & (df['inner_iterations']==inner_iterations) \
-                     & (df['samplecnt']==128) & (df['samplecnt_bad']==samplecnt_bad)]
-            if dfi.shape[0] > 0:
-                print(dsn, inner_iterations,  samplecnt_bad, dfi.shape[0], dfi['auc'].mean(),
-                    dfi.loc[dfi['std_dve_out']> 0.1].shape[0]/dfi.shape[0] ) 
-    print()
+best_val_accs = []
+models = []
+from threading import Thread
+threads = []
+for ii in range(3):
+    t = Thread(target=do_train_test_, args=(ds.df_train, ds.df_test, 100, 20, 0, 2, 64))
+    t.start()
+    threads.append(t)
+
+# join all threads
+for t in threads:
+    t.join()
+print("dvrl after join")
 
 
 
 
-dfi = df.loc[(df['dsn']=='uci') & (df['inner_iterations']==100) \
-                     & (df['samplecnt']==128) & (df['samplecnt_bad']==64)]
 
 
 import requests

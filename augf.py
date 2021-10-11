@@ -386,8 +386,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         #if nsp_score >= 0.9:
                         #    buffer.append((generated_text, label, label_name, nsp_score))  
 
-
-                    if nli_check and cls_check and enc_score>=0.3 and nsp_score >= 0.9:
+                    if nli_check and cls_check and enc_score>=0.5 and nsp_score >= 0.9:
                         buffer.append((generated_text, label, label_name, \
                             nli_score * cls_score * enc_score * nsp_score ))
 
@@ -403,7 +402,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
             if df_syn_tmp['label_name'].value_counts().values.min() >= args.samplecnt * args.abundance:
                 
-                if args.filter == 'dvrl':
+                if 'dvrl' in filter_list:
                     # use dvrl to calculate score
                     #df_syn_tmp = dvrl_scoring(df_syn_tmp, ds.df_train, enc, args.dvrl_iter)
                     ds.df_train['groudtruth'] = 1

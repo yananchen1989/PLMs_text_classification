@@ -8,6 +8,7 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 import numpy as np 
+import random
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print('======>',gpus,'<=======')
 if gpus:
@@ -106,7 +107,7 @@ def get_model_bert(num_classes):
 
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 
-    encoder = hub.KerasLayer("./resource/albert_en_base_2", trainable=True)
+    encoder = hub.KerasLayer("./resource/albert_en_base_2", trainable=True, name=str(random.sample(list(range(10000)), 1)[0]))
 
     encoder_inputs = preprocessor_layer(text_input)
     outputs = encoder(encoder_inputs)
@@ -245,6 +246,68 @@ def do_train_test(df_train, df_test, epochs=50, freq=10, verbose=1, \
     elif basemode == 'max':
         return round(np.array(best_val_accs).max(), 4), best_model
 
+
+def fit_within_thread(x_train, y_train, batch_size, epochs, x_test, y_test, df_test, best_val_accs, models):
+    history = model.fit(
+        x_train, y_train, batch_size=batch_size, epochs=epochs, \
+        validation_data=(x_test, y_test), verbose=0, validation_batch_size=64, validation_freq=10
+    )
+    if df_test.label.unique().shape[0] == 2:
+        val_acc = 'val_binary_accuracy'   
+    else:
+        val_acc = 'val_acc'
+
+    best_val_accs.append(max(history.history[val_acc]))
+    models.append(model)
+
+def do_train_test_thread(df_train, df_test, epochs=50, freq=10, verbose=1, \
+               basetry=3, samplecnt=32, basemode='max', model_name='albert'):
+        
+    if samplecnt <= 32:
+        batch_size = 8
+    elif samplecnt == 64:
+        batch_size = 16
+    else:
+        batch_size = 32
+
+    (x_train, y_train),  (x_test, y_test)= get_keras_data(df_train, df_test)
+
+    with tf.distribute.MirroredStrategy().scope():
+    #with tf.device('/GPU:{}'.format(gpu)):
+        if model_name == 'albert':
+            model = get_model_bert(df_test.label.unique().shape[0])
+            
+        elif model_name == 'former':
+            model = get_model_former(df_test.label.unique().shape[0])
+            
+        elif model_name == 'cnn':
+            model = get_model_cnn(df_test.label.unique().shape[0])
+            
+        else:
+            raise KeyError("input model illegal!")
+    best_val_accs = []
+    models = []
+
+    from threading import Thread
+    threads = []
+    for ii in range(basetry):
+        t = Thread(target=fit_within_thread, args=(x_train, y_train, batch_size, epochs, x_test, y_test, df_test,\
+                                                best_val_accs, models))
+        t.start()
+        threads.append(t)
+
+    # join all threads
+    for t in threads:
+        t.join()
+    print("do_train_test joined")
+    best_model = models[np.array(best_val_accs).argmax()]
+    if basemode == 'mean':
+        return round(np.array(best_val_accs).mean(), 4), best_model
+    elif basemode == 'max':
+        return round(np.array(best_val_accs).max(), 4), best_model    
+
+
+        
 # from utils.load_data import * 
 
 # enc = encoder('cmlm-large','cpu')
