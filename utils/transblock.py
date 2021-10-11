@@ -300,6 +300,9 @@ def do_train_test_thread(df_train, df_test, epochs=50, freq=10, verbose=1, \
     for t in threads:
         t.join()
     print("do_train_test joined")
+    print('do_train_test iters==>', best_val_accs)
+    assert len(best_val_accs) == basetry and len(models) == basetry
+    
     best_model = models[np.array(best_val_accs).argmax()]
     if basemode == 'mean':
         return round(np.array(best_val_accs).mean(), 4), best_model
@@ -307,7 +310,7 @@ def do_train_test_thread(df_train, df_test, epochs=50, freq=10, verbose=1, \
         return round(np.array(best_val_accs).max(), 4), best_model    
 
 
-        
+
 # from utils.load_data import * 
 
 # enc = encoder('cmlm-large','cpu')
