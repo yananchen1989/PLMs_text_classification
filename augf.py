@@ -5,7 +5,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 import GPUtil
 GPUtil.showUtilization()
-deviceIDs = GPUtil.getAvailable(order = 'memory', limit = 8, maxLoad = 1, maxMemory = 0.8, includeNan=False, excludeID=[], excludeUUID=[])
+deviceIDs = GPUtil.getAvailable(order = 'memory', limit = 4, maxLoad = 1, maxMemory = 0.8, includeNan=False, excludeID=[], excludeUUID=[])
 print("deviceIDs ==> ", deviceIDs)
 assert len(deviceIDs) >= 2
 
