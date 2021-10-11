@@ -108,7 +108,7 @@ seed = random.sample(list(range(10000)), 1)[0]
 if args.testbed:
     acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
                args.basetry, args.samplecnt, args.basemode, args.model)
-    model_cls.save_weights("model_cls.h5")
+    #model_cls.save_weights("model_cls.h5")
 else:
     acc_noaug = -1
 
@@ -372,7 +372,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             for ii in range(ds.df_train.shape[0]):
                 for s in results[ii]:
                     generated_text = s['generated_text']
-                    if not generated_text:
+                    if not generated_text or len(tokenizer_bert.encode(generated_text))<= 20 :
                         continue
                     label = labels[ii]
                     label_name = label_names[ii]
@@ -420,10 +420,10 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         if nli_check and cls_check and enc_check and nsp_check:
                             buffer.append((generated_text, label, label_name, \
                                             nli_score * cls_score * enc_score * nsp_score ))
-                        print("filtering {}==>".format(ii), generated_text.replace('\n',' '), \
-                            'label==>', label_name, \
+                        print("\nfiltering {}==>".format(ii), generated_text.replace('\n',' '), '\n', \
+                            'label==>', label_name, '\n', \
                             'judge==>nli{}-cls{}-enc{}-nsp{}____{}-{}-{}-{}'\
-                            .format(nli_check, cls_check, enc_check, nsp_check, nli_score, cls_score, enc_score, nsp_score) )
+                            .format(nli_check, cls_check, enc_check, nsp_check, nli_score, cls_score, enc_score, nsp_score),'\n' )
 
 
             samples_syn_all.extend(buffer)
