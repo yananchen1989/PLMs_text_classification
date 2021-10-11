@@ -247,7 +247,7 @@ def do_train_test(df_train, df_test, epochs=50, freq=10, verbose=1, \
         return round(np.array(best_val_accs).max(), 4), best_model
 
 
-def fit_within_thread(model, x_train, y_train, batch_size, epochs, x_test, y_test, df_test, best_val_accs, models):
+def fit_within_thread(model, x_train, y_train, batch_size, epochs, x_test, y_test, df_test):
     history = model.fit(
         x_train, y_train, batch_size=batch_size, epochs=epochs, \
         validation_data=(x_test, y_test), verbose=0, validation_batch_size=64, validation_freq=10
@@ -291,8 +291,7 @@ def do_train_test_thread(df_train, df_test, epochs=50, freq=10, verbose=1, \
     from threading import Thread
     threads = []
     for ii in range(basetry):
-        t = Thread(target=fit_within_thread, args=(model, x_train, y_train, batch_size, epochs, x_test, y_test, df_test,\
-                                                best_val_accs, models))
+        t = Thread(target=fit_within_thread, args=(model, x_train, y_train, batch_size, epochs, x_test, y_test, df_test))
         t.start()
         threads.append(t)
 
