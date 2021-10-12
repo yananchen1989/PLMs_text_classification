@@ -339,7 +339,6 @@ def nsp_classify(ds, generated_text, label_name):
         nsp_check, nsp_score = 1, result[pred_label]
     else:
         nsp_check, nsp_score = 0, result[pred_label]
-    print(result, '===>', nsp_check)
     return nsp_check, nsp_score
 
 def bertcls_classify(generated_text, label_name):
