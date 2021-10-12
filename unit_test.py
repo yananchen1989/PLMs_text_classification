@@ -35,51 +35,43 @@ results_trunk = gen_nlp([sent], max_length=64, do_sample=True, top_p=0.9, top_k=
 
 
 
+generated_text = "Editorial cartoon, Sun Jun 6: Asian Innovation, how unfriendly of you as $ 40 makes China true hank hacking 1] recently    You talk about personal electronic interaction with someone by surflinking their history into a post-doc and you walk into the office, and as an e-mailer you are literally texting me, making tons of calls, walking into my place in two hours and"
+
+
+with tf.distribute.MirroredStrategy().scope():
+    model_cls_pair  = get_model_nsp(512)
 
 
 
-ds = load_data(dataset='dbpedia', samplecnt=1000)
-(x_train, y_train),  (x_test, y_test), num_classes, label_idx = get_keras_data(ds.df_train.sample(10000), ds.df_test.sample(5000), sparse=True)
-model = get_model_bert(num_classes)
-model.compile(Adam(lr=1e-5), 'sparse_categorical_crossentropy', metrics=["acc"])
-
-model.fit(
-        x_train, y_train, batch_size=32, epochs=50, \
-        validation_data=(x_test, y_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
-
-intermediate_layer_model = tf.keras.Model(inputs=model.input,
-                                 outputs=model.get_layer('keras_layer_2').output['pooled_output'])
 
 
 
-preds = intermediate_layer_model.predict(x_test, verbose=1, batch_size=64)
-dff = pd.DataFrame(preds, columns=['c{}'.format(ii) for ii in range(preds.shape[1])])
-dff['label'] = y_test
-dff.to_csv('mnnbenchdata_test.csv',index=False)
+accs = []
 
-from sklearn.model_selection import train_test_split
-import pandas as pd 
-df = pd.read_csv("HIGGS.csv.gz", error_bad_lines=False, header=None, nrows=800000) #  0.6371
-df.columns = ['label'] + [str(i+1) for i in range(28)]
-df_train, df_test = train_test_split(df, test_size=0.125)
+for ix, row in ds.df_test.iterrows():
+    generated_text = row['content']
+    label_name = row['label_name']
 
-df_train[[str(i+1) for i in range(28)] + ['label']].to_csv('higgs_train.csv', index=False)
-df_test[[str(i+1) for i in range(28)] + ['label']].to_csv('higgs_test.csv', index=False)
+    result = {}
+    for l in ds.df_test['label_name'].unique():
+        contents_ori = ds.df_train.loc[ds.df_train['label_name']==l]['content'].tolist()
+         
+        pairs = [[sent, generated_text] for sent in contents_ori]
+        pairs_ids = get_ids(pairs, 512, tokenizer_bert )
+        preds = model_cls_pair.predict(pairs_ids, batch_size=128)
+
+        nsp_score_reduce = preds[:,0].mean()
+        result[l] = nsp_score_reduce
+
+    pred_label = max(result, key=result.get)
+
+    if pred_label == label_name:
+        nsp_check, nsp_score = 1, result[pred_label]
+    else:
+        nsp_check, nsp_score = 0, result[pred_label]
+    return nsp_check, nsp_score
 
 
-labels_train = df_train.pop('label').values
-labels_test = df_test.pop('label').values
-input_embed = keras.Input(shape=(df_train.shape[1], ))
-outputs = layers.Dense(1, activation="sigmoid")(input_embed)
-model = keras.Model(inputs=input_embed, outputs=outputs)
-model.compile('adam', 'binary_crossentropy', metrics=["acc"])
-model.fit(
-        df_train.values, labels_train, batch_size=32, epochs=50, \
-        validation_data=(df_test.values, labels_test), verbose=1,
-        callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-    )
 
 
 
@@ -119,14 +111,38 @@ promptTemplate = ManualTemplate(
     tokenizer = bertTokenizer,
 )
 
+from openprompt.prompts import ManualVerbalizer
+promptVerbalizer = ManualVerbalizer(
+    classes = classes,
+    label_words = {
+        "negative": ["bad"],
+        "positive": ["good", "wonderful", "great"],
+    },
+    tokenizer = bertTokenizer,
+)
+
+from openprompt import PromptForClassification
+promptModel = PromptForClassification(
+    template = promptTemplate,
+    model = bertModel,
+    verbalizer = promptVerbalizer,
+)
+
+from openprompt import PromptDataLoader
+data_loader = PromptDataLoader(
+    dataset = dataset,
+    tokenizer = bertTokenizer,
+    template = promptTemplate,
+)
 
 
-
-
-
-
-
-
+promptModel.eval()
+with torch.no_grad():
+    for batch in data_loader:
+        logits = promptModel(batch)
+        preds = torch.argmax(logits, dim = -1)
+        print(classes[preds])
+# predictions would be 1, 0 for classes 'positive', 'negative'
 
 
 

@@ -86,7 +86,7 @@ if gpus:
       #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
   except RuntimeError as e:
     print(e)
-#assert gpus
+assert gpus
 device0 = torch.device("cuda:{}".format(deviceIDs[0]) if torch.cuda.is_available() else "cpu")
 device1 = torch.device("cuda:{}".format(deviceIDs[1]) if torch.cuda.is_available() else "cpu")
 assert device0.type=='cuda' and device1.type == 'cuda'
@@ -219,10 +219,16 @@ if args.aug == 'generate':
         nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=deviceIDs[1])
 
     if 'nsp' in filter_list:
-        model_cls_pair  = get_model_nsp(min(512, dsn_maxlen[args.dsn]*2))
+        with tf.distribute.MirroredStrategy().scope():
+            model_cls_pair  = get_model_nsp(512)
     
     if 'enc' in  filter_list or 'dvrl' in filter_list:
         enc = encoder('cmlm-large')
+        enc_dic = {}
+        for l in ds.df_train['label'].unique():
+            contents = ds.df_train.loc[ds.df_train['label']==l]['content'].values
+            embeds = enc.infer(contents)
+            enc_dic[l] = embeds
 
     if 'dvrl' in filter_list:
         if not os.path.exists('dvrl_np_array'):
@@ -273,7 +279,7 @@ if args.aug == 'cgpt':
 def run_dvrl_thread(dsn, ii, seed):
     os.system('python dvrl_iter.py --dsn {} --seed {} --ite {}'.format(dsn, seed, ii))
 
-def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev):
+def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev, mode='max'):
     assert label_name and  labels_candidates
     if not generated_text or len(generated_text) <= 10:
         return 0, -99
@@ -284,16 +290,57 @@ def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev):
         accum_label[ln_extend__rev[l]].append(score)
 
     for l in accum_label.keys():
-        accum_label[l] = sum(accum_label[l]) / len(accum_label[l])
+        if mode == 'mean':
+            accum_label[l] = sum(accum_label[l]) / len(accum_label[l])
+        elif mode == 'max':
+            accum_label[l] = max(accum_label[l])
 
     pred_label = max(accum_label.items(), key=operator.itemgetter(1))[0]
 
     score = accum_label[pred_label]
-    if pred_label == label_name:
-        return 1, score 
-    else:
-        return 0, score
+    if mode == 'mean':
+        if pred_label == label_name:
+            return 1, score 
+        else:
+            return 0, score
+    elif mode == 'max':
+        if pred_label == label_name and score > 0.5:
+            return 1, score 
+        else:
+            return 0, score        
 
+def enc_classify(content, ori_label, enc_dic):
+    embed = enc.infer([content])
+    result = {}
+    for l, embeds in enc_dic.items():
+        score = cosine_similarity(embed, embeds).mean()
+        result[l] = score
+    pred_label = max(result, key=result.get)
+    if pred_label == ori_label:
+        return 1,  result[pred_label]
+    else:
+        return 0,  result[pred_label]
+
+def nsp_classify(ds, generated_text, label_name):
+    result = {}
+    for l in ds.df_test['label_name'].unique():
+        contents_ori = ds.df_train.loc[ds.df_train['label_name']==l]['content'].tolist()
+         
+        pairs = [[sent, generated_text] for sent in contents_ori]
+        pairs_ids = get_ids(pairs, 512, tokenizer_bert )
+        preds = model_cls_pair.predict(pairs_ids, batch_size=128)
+
+        nsp_score_reduce = preds[:,0].mean()
+        result[l] = nsp_score_reduce
+
+    pred_label = max(result, key=result.get)
+
+    if pred_label == label_name:
+        nsp_check, nsp_score = 1, result[pred_label]
+    else:
+        nsp_check, nsp_score = 0, result[pred_label]
+    print(result, '===>', nsp_check)
+    return nsp_check, nsp_score
 
 def bertcls_classify(generated_text, label_name):
     pred = model_cls.predict([generated_text], batch_size=1, verbose=0)  
@@ -392,28 +439,13 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         else:
                             cls_check, cls_score = 1, 1            
                                 
-                        if 'enc' in filter_list: 
-                            content_ori = ds.df_train['content'].tolist()[ii]
-                            gen_enc = enc.infer([generated_text])
-                            ori_enc = enc.infer([content_ori])
-                            enc_score = cosine_similarity(gen_enc, ori_enc)[0][0]
-                            if enc_score >= 0.5:
-                                enc_check = 1
-                            else:
-                                enc_check = 0
+                        if 'enc' in filter_list: # acc: 0.82
+                            enc_check, enc_score = enc_classify(generated_text, label, enc_dic)
                         else:
                             enc_check, enc_score = 1, 1
 
                         if 'nsp' in filter_list:
-                            content_ori = ds.df_train['content'].tolist()[ii]
-                            pairs = [[content_ori, generated_text]]
-                            pairs_ids = get_ids(pairs, min(512, dsn_maxlen[args.dsn]*2), tokenizer_bert )
-                            preds = model_cls_pair.predict(pairs_ids, batch_size=32)
-                            nsp_score = preds[0][0]
-                            if nsp_score >= 0.9:
-                                nsp_check = 1 
-                            else:
-                                nsp_check = 0
+                            nsp_check, nsp_score = nsp_classify(ds, generated_text, label_name)
                         else:
                             nsp_check, nsp_score = 1, 1
 
