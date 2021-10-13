@@ -38,7 +38,8 @@ if args.genm in ['gpt2']:
 #     tokenizer_t5 = T5Tokenizer.from_pretrained('t5-base', cache_dir="./cache")
 
 
-
+if not os.path.exists('fintune_csvs'):
+    os.makedirs('fintune_csvs')
 
 
 df_cc_text2text = get_cc_text_double(args.ft_pattern, args.ccsample)
