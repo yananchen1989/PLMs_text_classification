@@ -27,7 +27,7 @@ parser.add_argument("--abundance", default=1, type=int)
 parser.add_argument("--epochs_ft", default=3, type=int)
 parser.add_argument("--trunk_size", default=32, type=int)
 parser.add_argument("--epochs", default=100, type=int)
-parser.add_argument("--freq", default=10, type=int)
+parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 
 parser.add_argument("--dpp", default=0, type=int)
@@ -42,7 +42,7 @@ parser.add_argument("--ft_model_path", default="", type=str)
 
 parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--basetry", default=3, type=int)
-parser.add_argument("--num_return_sequences", default=8, type=int)
+parser.add_argument("--num_return_sequences", default=4, type=int)
 
 parser.add_argument("--gpu", default=0, type=int)
 parser.add_argument("--encm", default='dan', type=str, \
@@ -374,7 +374,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
     label_names = ds.df_train['label_name'].tolist()
     
-    if args.aug == 'generate' and args.genm not in ['neo']:
+    if args.aug == 'generate':
         # nli config
         ln_extend = {}
         for l in ds.df_test['label_name'].unique():
@@ -499,7 +499,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     for file in df_train_noise_files:
                         dfi = pd.read_csv(file)
                         auc = float(file.split('_')[-1].replace('.csv','')) 
-                        if auc >= 0.8:
+                        if auc >= 0.9:
                             ll.append(dfi)
                             print(file, auc, dfi.shape[0], dfi['content'].unique().shape[0])
 
@@ -527,51 +527,6 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                 
                 samples_syn = [(ii[0],ii[1]) for ii in df_syn_filter[['content','label']].values]
                 break
-    
-    # elif args.aug == 'generate' and args.genm  in ['neo']:
-    #     infos = []
-    #     while True:
-    #         prompt = ''
-    #         for ix, row in ds.df_train.sample(16).iterrows():
-    #             prompt += "label:{}\ncontent:{}\n###\n".format(row['label_name'], row['content']) 
-
-    #         next_label = ds.df_train.sample(1)['label_name'].tolist()[0]
-    #         prompt += "label:{}\ncontent:".format(next_label)
-    #         #print(prompt)
-
-    #         gen_text = gen_nlp(prompt, do_sample=True, max_length=1024, top_p=0.9,  \
-    #                     clean_up_tokenization_spaces=True, return_full_text=False)
-    #         #print('======>')
-    #         #print(gen_text[0]['generated_text'])
-
-
-    #         tokens = gen_text[0]['generated_text'].split('###')
-
-    #         infos.append((next_label, tokens[0].strip()))
-    #         for ii in tokens[1:]:
-    #             tt = ii.strip().split("\n")
-    #             if not tt or len(tt)!=2:
-    #                 continue
-    #             infos.append((tt[0].split(':')[-1] ,  tt[1].split(':')[-1])) 
-    #         df_syn_tmp = pd.DataFrame(infos, columns=['label_name', 'content'])
-    #         print('neo step==>')
-    #         print(df_syn_tmp['label_name'].value_counts())
-
-    #         if df_syn_tmp['label_name'].value_counts().values.min() >= args.samplecnt * args.abundance:
-    #             df_syn_tmp['label'] = df_syn_tmp['label_name'].map(lambda x: ixl_rev[x])
-    #             df_syn_filter_ll = []
-    #             for label_name in df_syn_tmp['label_name'].unique():
-    #                 df_syn_tmp_l = df_syn_tmp.loc[df_syn_tmp['label_name']==label_name].copy()
-    #                 #if args.filter=='no':
-    #                 df_syn_tmp_l = df_syn_tmp_l.sample(frac=1)
-    #                 #else:
-    #                 #    df_syn_tmp_l.sort_values(by=['score'], ascending=False, inplace=True) 
-    #                 df_syn_filter_ll.append(df_syn_tmp_l.head(args.samplecnt))
-
-    #             df_syn_filter = pd.concat(df_syn_filter_ll)
-                
-    #             samples_syn = [(ii[0],ii[1]) for ii in df_syn_filter[['content','label']].values]
-    #             break
     
 
     elif args.aug == 'eda':
