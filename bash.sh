@@ -19,10 +19,12 @@ nohup python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 --aug generate
 
 
 nohup python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 --aug generate  \
-	 --genft no --filter nli,dvrl --genm gpt --abundance 3 --basetry 1 --epochs 60 --freq 30 > augf.log & 
+	 --genft no --filter nli,dvrl --genm gpt --abundance 3 --basetry 1 --epochs 60 --freq 30 > augf.filter2.log & 
 
 
-
+nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
+				      --genft no  --genm gpt --filter dvrl --abundance 3  --basetry 1 \
+				      --verbose 1 --epochs 100 --freq 50 > augf.test.log & 
 
 
 
@@ -50,7 +52,7 @@ scp resource.tar.gz root@sdu:/home/yanan/topic_classification_augmentation/
 
 
 CUDA_VISIBLE_DEVICES=6 ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
-   --maxlen 512 --ccsample 0.4 --ftepochs 7 --batch_size 8
+   --maxlen 512 --ccsample 0.4 --ftepochs 7 --batch_size 8 
 
 
 
@@ -60,20 +62,16 @@ python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern 
 
 
 
-############## fine-tune for gpt & t5
-nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern tc --gpu 6  \
+############## ft gpt 
+nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern tc --gpu 6  --batch_size 8 \
  > ft.gpt2.tc.log &
 
 nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern pp  --gpu 7  \
  > ft.gpt2.pp.log &
 
 
-
-
-
-
 # ft t5
-CUDA_VISIBLE_DEVICES=6 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
+CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
    --maxlen 512 --ccsample 0.4 --ftepochs 7 --batch_size 8 > ft.t5.pp.log & 
 
 CUDA_VISIBLE_DEVICES=0 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern tc --num_workers 1 \
@@ -81,6 +79,7 @@ CUDA_VISIBLE_DEVICES=0 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern tc -
 
 
 
-
+CUDA_VISIBLE_DEVICES=7 ./envcbert/bin/python -u ft_t5.py --ft_pattern tc --num_workers 4  \
+   --maxlen 512 --ccsample 1 --ftepochs 7 --batch_size 8
 
 

@@ -78,7 +78,7 @@ if args.genm =='gpt2':
             --per_device_train_batch_size {} \
             --per_device_eval_batch_size {} \
             --output_dir {} \
-            --preprocessing_num_workers 16 --overwrite_cache True \
+            --preprocessing_num_workers 32 --overwrite_cache True \
             --model_type gpt2 \
             --block_size {}".format(args.gpu, args.num_train_epochs, train_file, validation_file, \
                     args.batch_size,  args.batch_size, \
