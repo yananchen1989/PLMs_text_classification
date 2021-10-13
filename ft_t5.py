@@ -62,8 +62,8 @@ class T5FineTuner(pl.LightningModule):
     self.tokenizer = T5Tokenizer.from_pretrained(self.hparams.tokenizer_name_or_path, cache_dir='./cache_cbert',  local_files_only=True)
   
 
-# model = T5ForConditionalGeneration.from_pretrained('t5-base', cache_dir='./cache_cbert')
-# tokenizer = T5Tokenizer.from_pretrained('t5-base', cache_dir='./cache_cbert')
+# model = T5ForConditionalGeneration.from_pretrained('t5-base', cache_dir='./cache_cbert',local_files_only=True )
+# tokenizer = T5Tokenizer.from_pretrained('t5-base', cache_dir='./cache_cbert', local_files_only=True)
       
 
   def is_logger(self):
