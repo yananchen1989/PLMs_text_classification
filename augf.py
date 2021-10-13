@@ -791,6 +791,7 @@ for _ in range(args.max_aug_times):
     syn_df_ll.append(df_synthesize)
 
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
+print("begin_to_test_aug")
 acc_aug, _ = do_train_test(df_train_aug, ds.df_test, args.epochs, args.freq, args.verbose, \
                         args.basetry, args.samplecnt, args.basemode, args.model)
 

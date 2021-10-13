@@ -45,7 +45,7 @@ do
 				for filter in dvrl #nli,cls,nsp,enc,dvrl  no  nli,cls,nsp,enc   #nli cls nsp enc no 
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft}  --genm ${genm} --filter ${filter} --abundance ${abundance}  --testbed 1 \
+				      --genft ${genft}  --genm ${genm} --filter ${filter} --abundance ${abundance}  --num_return_sequences 8 \
 				      > ./log_arxiv/${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
 				done
 			done
