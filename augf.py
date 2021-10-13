@@ -208,7 +208,7 @@ if args.aug == 'generate':
 
     print('generate model loaded ==>{}'.format(args.genm))
 
-    dsn_maxlen = {'uci':50, 'ag':160, 'nyt':300}
+    dsn_maxlen = {'uci':64, 'ag':160, 'nyt':300}
 
     ####################### filter setting ######################
     if 'nli' in filter_list: 
@@ -355,6 +355,40 @@ def bertcls_classify(generated_text, label_name):
     else:
         return 0, ori_label_score
 
+def dvrl_inner_join(files):
+    df_retain_ll = []
+    for file in files:
+        df_tmp = pd.read_csv(file)
+        df_tmp.sort_values(by=['dve_out'], ascending=False, inplace=True) 
+
+        for ix in range(df_tmp.shape[0]):
+            df_block = df_tmp[0:ix]
+            if df_block.shape[0] <= 10:
+                continue
+            ratio = df_block.loc[df_block['groudtruth']==0].shape[0] / df_tmp.loc[df_tmp['groudtruth']==0].shape[0]
+            if ratio >= 0.05:
+                print(ix, ratio)
+                break 
+        df_cut_tmp = df_tmp[:ix]
+        print('1 proportion:', df_cut_tmp.loc[df_cut_tmp['groudtruth']==1].shape[0] / df_tmp.loc[df_tmp['groudtruth']==1].shape[0], '\n')
+        del df_cut_tmp['dve_out']
+        for col in df_cut_tmp.columns:
+            if col.startswith('embed_'):
+                del df_cut_tmp[col]
+        df_retain_ll.append(df_cut_tmp.loc[df_cut_tmp['groudtruth']==9])
+
+
+    df_merge = df_retain_ll[0].copy()
+    for df_cut_tmp in df_retain_ll:
+        print('before:', df_merge.shape[0]) 
+        df_merge = pd.merge(df_merge, df_cut_tmp, on=['content','label','label_name','groudtruth'], how='inner')
+        print('after:', df_merge.shape[0]) 
+
+
+    dvrl_join_min_cnt = df_merge['label_name'].value_counts().min()
+    print('dvrl_join_min_cnt==>', dvrl_join_min_cnt, 'of', args.samplecnt)
+    return df_syn_tmp
+
 def synthesize(ds, proper_len, syn_df_ll, seed):
     labels = ds.df_train['label'].tolist()
     if args.genm == 'gpt':
@@ -460,7 +494,6 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             samples_syn_all.extend(buffer)
             print('gen_itr:', itr , 'filter_ratio:', len(buffer) / (ds.df_train.shape[0]*args.num_return_sequences) )
 
-
             df_syn_tmp = pd.DataFrame(samples_syn_all, columns=['content','label','label_name','score'])
             print(df_syn_tmp['label_name'].value_counts())
 
@@ -492,40 +525,17 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         t.join()
                     print("dvrl after join")
 
-                    df_train_noise_files = glob.glob("./dvrl_np_array/df_train_noise_{}_{}_*.csv".format(args.dsn, seed))
-                    print("valid output==>", len(df_train_noise_files), df_train_noise_files)
+                    files = glob.glob("./dvrl_np_array/df_train_noise_{}_{}_*_0.9*.csv".format(args.dsn, seed))
+                    print("valid output==>", len(files), files)
+                    assert len(files) >= 4
 
-                    ll = []
-                    for file in df_train_noise_files:
-                        dfi = pd.read_csv(file)
-                        auc = float(file.split('_')[-1].replace('.csv','')) 
-                        if auc >= 0.9:
-                            ll.append(dfi)
-                            print(file, auc, dfi.shape[0], dfi['content'].unique().shape[0])
+                    df_syn_tmp = dvrl_inner_join(files)
 
-                    assert len(ll) >= 4
-                    df_train_syn = pd.concat(ll)
-                    df_syn = df_train_syn.loc[df_train_syn['groudtruth']==9]
 
-                    df_syn_agg = df_syn.groupby(['content', 'label', 'label_name'])['dve_out'].mean().reset_index()
-                    df_syn_tmp = df_syn_agg.rename(columns={"dve_out": "score"} )
-                
-
-                # get final syn samples
-                df_syn_filter_ll = []
-                for label_name in df_syn_tmp['label_name'].unique():
-                    df_syn_tmp_l = df_syn_tmp.loc[df_syn_tmp['label_name']==label_name].copy()
-                    if args.filter=='no':
-                        df_syn_tmp_l = df_syn_tmp_l.sample(frac=1)      
-                    else:
-                        df_syn_tmp_l.sort_values(by=['score'], ascending=False, inplace=True) 
-                    # if args.dpp:
-                    #     df_syn_tmp_l = dpp_rerank(df_syn_tmp_l, enc)
-                    df_syn_filter_ll.append(df_syn_tmp_l.head(args.samplecnt))
-
-                df_syn_filter = pd.concat(df_syn_filter_ll)
-                
-                samples_syn = [(ii[0],ii[1]) for ii in df_syn_filter[['content','label']].values]
+                df_syn_balance = sample_stratify(df_syn_tmp, min(df_syn_tmp['label'].value_counts().min(), args.samplecnt) )
+                print("df_syn_balance ==> of {}".format(args.samplecnt) )
+                print(df_syn_balance['label_name'].value_counts())
+                samples_syn = df_syn_balance[['content','label']].values
                 break
     
 
