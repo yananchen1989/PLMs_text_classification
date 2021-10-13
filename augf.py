@@ -357,7 +357,7 @@ def bertcls_classify(generated_text, label_name):
 
 def dvrl_inner_join(files):
 
-    #files = glob.glob("./dvrl_np_array/df_train_noise_{}_{}_*_0.9*.csv".format('ag', 5125))
+    #files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(7805, 'ag', 7805))
 
     df_retain_ll = []
     for file in files:

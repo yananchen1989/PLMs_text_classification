@@ -103,8 +103,8 @@ mean_dve_out = np.array(dve_out).mean()
 std_dve_out = np.array(dve_out).std()
 print('dvrl iter:{} auc:{} mean:{} std:{}'.format(args.ite, auc, mean_dve_out, std_dve_out))
 #np.save("./dvrl_np_array/dve_out_{}_{}_{}.npy".format(args.dsn, args.seed, args.ite), np.array(dve_out))
-df_train_syn_noise.to_csv("./dvrl_np_array/df_train_noise_{}_{}_{}_{}.csv"\
-    .format(args.dsn, args.seed, args.ite, round(auc, 2)), index=False)
+df_train_syn_noise.to_csv("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_{}_{}.csv"\
+    .format(args.seed, args.dsn, args.seed, args.ite, round(auc, 2)), index=False)
 
 
 
