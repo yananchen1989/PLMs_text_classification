@@ -44,10 +44,10 @@ scp resource.tar.gz root@sdu:/home/yanan/topic_classification_augmentation/
 
 
 ############## ft gpt 
-nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern tc --gpu 6  --batch_size 8 \
+nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern tc --gpu 6  --batch_size 4 \
  > ft.gpt2.tc.log &
 
-nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern pp --gpu 7 --batch_size 8 \
+nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern pp --gpu 7 --batch_size 4 \
  > ft.gpt2.pp.log &
 
 
