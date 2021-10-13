@@ -356,6 +356,9 @@ def bertcls_classify(generated_text, label_name):
         return 0, ori_label_score
 
 def dvrl_inner_join(files):
+
+    #files = glob.glob("./dvrl_np_array/df_train_noise_{}_{}_*_0.9*.csv".format('ag', 5125))
+
     df_retain_ll = []
     for file in files:
         df_tmp = pd.read_csv(file)
@@ -365,12 +368,13 @@ def dvrl_inner_join(files):
             df_block = df_tmp[0:ix]
             if df_block.shape[0] <= 10:
                 continue
-            ratio = df_block.loc[df_block['groudtruth']==0].shape[0] / df_tmp.loc[df_tmp['groudtruth']==0].shape[0]
-            if ratio >= 0.05:
-                print(ix, ratio)
+            recall_0 = df_block.loc[df_block['groudtruth']==0].shape[0] / df_tmp.loc[df_tmp['groudtruth']==0].shape[0]
+            recall_1 = df_block.loc[df_block['groudtruth']==1].shape[0] / df_tmp.loc[df_tmp['groudtruth']==1].shape[0]
+            if recall_0 >= 0.1 and recall_1 >= 0.5:
+                print(ix, "recall 0:{} 1:{}".format(recall_0, recall_1) )
                 break 
         df_cut_tmp = df_tmp[:ix]
-        print('1 proportion:', df_cut_tmp.loc[df_cut_tmp['groudtruth']==1].shape[0] / df_tmp.loc[df_tmp['groudtruth']==1].shape[0], '\n')
+
         del df_cut_tmp['dve_out']
         for col in df_cut_tmp.columns:
             if col.startswith('embed_'):
