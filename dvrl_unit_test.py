@@ -35,8 +35,6 @@ for ii in range(embeds.shape[1]):
     df_train_valid_noise['embed_{}'.format(ii)] = embeds[:, ii]
 
 
-df_train_valid_noise.to_csv("./dvrl_np_array/df_train_valid_noise_{}_{}.csv".format(args.dsn, seed), index=False)
-
 
 from threading import Thread
 

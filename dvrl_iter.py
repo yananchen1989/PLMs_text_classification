@@ -38,7 +38,8 @@ parameters['batch_size'] = 256
 parameters['batch_size_predictor'] = 256
 checkpoint_file_name = './dvrl_tmp/tmp_{}/model.ckpt'.format(args.seed)
 
-df_train_valid_noise = pd.read_csv("./dvrl_np_array/df_train_valid_noise_{}_{}.csv".format(args.dsn, args.seed))
+df_train_valid_noise = pd.read_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv"\
+                                   .format(args.seed, args.dsn, args.seed))
 
 df_syn = df_train_valid_noise.loc[df_train_valid_noise['groudtruth'].isin([9])]
 

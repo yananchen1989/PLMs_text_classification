@@ -361,13 +361,15 @@ def dvrl_inner_join(files):
 
     df_retain_ll = []
     for file in files:
-        df_tmp = pd.read_csv(file)
+        df_tmp = pd.read_csv(file, usecols=['label','content','label_name','groudtruth', 'dve_out'])
+
         df_tmp.sort_values(by=['dve_out'], ascending=False, inplace=True) 
 
         for ix in range(df_tmp.shape[0]):
             df_block = df_tmp[0:ix]
             if df_block.shape[0] <= 10:
                 continue
+
             recall_0 = df_block.loc[df_block['groudtruth']==0].shape[0] / df_tmp.loc[df_tmp['groudtruth']==0].shape[0]
             recall_1 = df_block.loc[df_block['groudtruth']==1].shape[0] / df_tmp.loc[df_tmp['groudtruth']==1].shape[0]
             if recall_0 >= 0.1 and recall_1 >= 0.5:
@@ -376,9 +378,7 @@ def dvrl_inner_join(files):
         df_cut_tmp = df_tmp[:ix]
 
         del df_cut_tmp['dve_out']
-        for col in df_cut_tmp.columns:
-            if col.startswith('embed_'):
-                del df_cut_tmp[col]
+
         df_retain_ll.append(df_cut_tmp.loc[df_cut_tmp['groudtruth']==9])
 
 
@@ -513,7 +513,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     embeds = enc.infer(df_train_valid_noise['content'].values)
                     for ii in range(embeds.shape[1]):
                         df_train_valid_noise['embed_{}'.format(ii)] = embeds[:, ii]
-                    df_train_valid_noise.to_csv("./dvrl_np_array/df_train_valid_noise_{}_{}.csv".format(args.dsn, seed), index=False)
+                    os.mkdir("./dvrl_np_array/csvs_{}".format(seed))
+                    df_train_valid_noise.to_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv".format(seed, args.dsn, seed), index=False)
 
                     threads = []
                     for ii in range(args.threads):
@@ -526,7 +527,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         t.join()
                     print("dvrl after join")
 
-                    files = glob.glob("./dvrl_np_array/df_train_noise_{}_{}_*_0.9*.csv".format(args.dsn, seed))
+                    files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
                     print("valid output==>", len(files), files)
                     assert len(files) >= 4
 
