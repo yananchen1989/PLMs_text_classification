@@ -65,6 +65,7 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
+from threading import Thread
 #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
 #tf.keras.backend.set_floatx('float16')
 import nltk 
@@ -233,8 +234,7 @@ if args.aug == 'generate':
     if 'dvrl' in filter_list:
         if not os.path.exists('dvrl_np_array'):
             os.makedirs('dvrl_np_array')
-        from threading import Thread
-
+        
     print('filter==> {} model loaded'.format(args.filter))
 
 
@@ -384,10 +384,7 @@ def dvrl_inner_join(files):
         df_merge = pd.merge(df_merge, df_cut_tmp, on=['content','label','label_name','groudtruth'], how='inner')
         print('after:', df_merge.shape[0]) 
 
-
-    dvrl_join_min_cnt = df_merge['label_name'].value_counts().min()
-    print('dvrl_join_min_cnt==>', dvrl_join_min_cnt, 'of', args.samplecnt)
-    return df_syn_tmp
+    return df_merge
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
     labels = ds.df_train['label'].tolist()
