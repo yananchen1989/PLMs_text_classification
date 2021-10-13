@@ -52,15 +52,13 @@ nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pa
 
 
 # ft t5
-CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
-   --maxlen 512 --ccsample 0.4 --ftepochs 7 --batch_size 8 > ft.t5.pp.log & 
+CUDA_VISIBLE_DEVICES=5 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
+   --maxlen 512 --ccsample 1 --ftepochs 4 --batch_size 8 > ft.t5.pp.log & 
 
-CUDA_VISIBLE_DEVICES=0 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern tc --num_workers 1 \
-   --maxlen 512 --ccsample 0.35 --ftepochs 4 --batch_size 8 > ft.t5.tc.log & 
+CUDA_VISIBLE_DEVICES=4 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern tc --num_workers 4 \
+   --maxlen 512 --ccsample 1 --ftepochs 4 --batch_size 8 > ft.t5.tc.log & 
 
 
 
-CUDA_VISIBLE_DEVICES=7 ./envcbert/bin/python -u ft_t5.py --ft_pattern tc --num_workers 4  \
-   --maxlen 512 --ccsample 1 --ftepochs 7 --batch_size 8
 
 

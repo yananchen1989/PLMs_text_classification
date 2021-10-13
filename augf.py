@@ -5,7 +5,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 import GPUtil
 GPUtil.showUtilization()
-deviceIDs = GPUtil.getAvailable(order = 'memory', limit = 8, maxLoad = 1, maxMemory = 0.8, includeNan=False, excludeID=[], excludeUUID=[])
+deviceIDs = GPUtil.getAvailable(order = 'memory', limit = 4, maxLoad = 1, maxMemory = 0.8, includeNan=False, excludeID=[], excludeUUID=[])
 print("deviceIDs ==> ", deviceIDs)
 assert len(deviceIDs) >= 2
 
@@ -774,7 +774,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         raise KeyError("args.aug model illegal!")        
     print('samples_syn done...')
     df_synthesize = pd.DataFrame(samples_syn, columns = ['content','label'])
-    assert df_synthesize.shape[0] == ds.df_train.shape[0] #* args.beams 
+    aug_ratio_actual = df_synthesize.shape[0] / ds.df_train.shape[0] #* args.beams 
+    print("aug_ratio_actual==>", aug_ratio_actual)
     for ix, row in df_synthesize.iterrows():
         print('final_sample {}==> {}'.format(ixl[row['label']], row['content'].strip().replace('\n',' ') ) )
     return df_synthesize 

@@ -43,6 +43,8 @@ if not os.path.exists('fintune_csvs'):
 
 
 df_cc_text2text = get_cc_text_double(args.ft_pattern, args.ccsample)
+df_cc_text2text = df_cc_text2text.loc[(~df_cc_text2text['text1'].isnull()) & (~df_cc_text2text['text2'].isnull())]
+
 
 row = df_cc_text2text.sample(1)
 print(row['text1'].tolist()[0])

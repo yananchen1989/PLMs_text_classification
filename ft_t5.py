@@ -233,9 +233,8 @@ args_dict = dict(
 
 
 
-
-
 df_cc_text2text = get_cc_text_double(argsin.ft_pattern, argsin.ccsample)
+df_cc_text2text = df_cc_text2text.loc[(~df_cc_text2text['text1'].isnull()) & (~df_cc_text2text['text2'].isnull())]
 
 row = df_cc_text2text.sample(1)
 print(row['text1'].tolist()[0])
