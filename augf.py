@@ -171,7 +171,7 @@ if args.aug == 'generate':
                     --per_device_eval_batch_size 16 \
                     --output_dir {} \
                     --preprocessing_num_workers 16 --overwrite_cache True \
-                    --block_size {}".format(deviceIDs[0], 20, train_file, validation_file, model_output_path, 128) ) 
+                    --block_size {}".format(0, 20, train_file, validation_file, model_output_path, 128) ) 
             gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
 
         # elif args.genft == 'cc':
@@ -182,7 +182,7 @@ if args.aug == 'generate':
 
         gpt2.trainable = False
         gpt2.config.pad_token_id=50256
-        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=deviceIDs[0], return_full_text=False)
+        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
     elif args.genm == 't5':
         from transformers import T5Tokenizer, AutoModelWithLMHead
@@ -195,7 +195,7 @@ if args.aug == 'generate':
             checkpoint_files = glob.glob(args.ft_model_path+"/checkpoint_loss_*")
             list.sort(checkpoint_files)
             t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
-        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=deviceIDs[0])
+        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
 
     elif args.genm == 'ctrl':
         from transformers import CTRLTokenizer, TFCTRLLMHeadModel
@@ -203,10 +203,10 @@ if args.aug == 'generate':
         model_ctrl = TFCTRLLMHeadModel.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
         print(tokenizer_ctrl)
         control_codes = tokenizer_ctrl.control_codes.keys()
-        gen_nlp  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=deviceIDs[0], return_full_text=False)
+        gen_nlp  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=0, return_full_text=False)
  
     # elif args.genm == 'neo':
-    #     gen_nlp = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B', device=deviceIDs[0])
+    #     gen_nlp = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B', device=0)
 
     print('generate model loaded ==>{}'.format(args.genm))
 
@@ -214,11 +214,11 @@ if args.aug == 'generate':
 
     ####################### filter setting ######################
     if 'nli' in filter_list: 
-        #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=deviceIDs[1]) #  1.8.1+cu102
+        #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=1) #  1.8.1+cu102
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
         model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
-        nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=deviceIDs[1])
+        nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=1)
 
     if 'nsp' in filter_list:
         with tf.distribute.MirroredStrategy().scope():
@@ -246,8 +246,8 @@ if args.aug == 'bt':
     model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
     tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
     model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
-    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=deviceIDs[0])
-    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=deviceIDs[0])
+    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=0)
+    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=0)
     print('bt model loaded')
 
 if args.aug == 'fillin':
