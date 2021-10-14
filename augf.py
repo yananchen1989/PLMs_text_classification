@@ -3,14 +3,12 @@ from sklearn import metrics
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 
-import GPUtil
-GPUtil.showUtilization()
-deviceIDs = [0,1,2,3]
-#deviceIDs = GPUtil.getAvailable(order = 'memory', limit = 4, maxLoad = 1, maxMemory = 0.8, includeNan=False, excludeID=[], excludeUUID=[])
-print("deviceIDs ==> ", deviceIDs)
-assert len(deviceIDs) >= 2
-
-os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(ii) for ii in deviceIDs])
+# import GPUtil
+# GPUtil.showUtilization()
+# deviceIDs = [0,1,2,3]
+# #deviceIDs = GPUtil.getAvailable(order = 'memory', limit = 4, maxLoad = 1, maxMemory = 0.8, includeNan=False, excludeID=[], excludeUUID=[])
+# print("deviceIDs ==> ", deviceIDs)
+# assert len(deviceIDs) >= 2
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="eda", type=str)
@@ -45,7 +43,7 @@ parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--basetry", default=3, type=int)
 parser.add_argument("--num_return_sequences", default=4, type=int)
 
-parser.add_argument("--gpu", default=0, type=int)
+parser.add_argument("--gpu", default="0,1,2,3", type=str)
 parser.add_argument("--encm", default='dan', type=str, \
      choices=['dan', 'cmlm', \
      'paraphrase-distilroberta-base-v2','paraphrase-mpnet-base-v2','paraphrase-TinyBERT-L6-v2',\
@@ -54,6 +52,8 @@ parser.add_argument("--encm", default='dan', type=str, \
 args = parser.parse_args()
 print('args==>', args)
 filter_list = args.filter.split(',')
+os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+
 
 import numpy as np
 import tensorflow as tf
@@ -89,8 +89,8 @@ if gpus:
   except RuntimeError as e:
     print(e)
 assert gpus
-device0 = torch.device("cuda:{}".format(deviceIDs[0]) if torch.cuda.is_available() else "cpu")
-device1 = torch.device("cuda:{}".format(deviceIDs[1]) if torch.cuda.is_available() else "cpu")
+device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+device1 = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
 assert device0.type=='cuda' and device1.type == 'cuda'
 
 from utils.load_data import * 
@@ -531,12 +531,10 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     print("dvrl after join")
 
                     files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
-                    print("valid output==>", len(files), files)
+                    print("valid_output==>", len(files), files)
                     assert len(files) >= 4
 
-                    files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(5013, 'ag', 5013)) # debug
                     df_syn_tmp = dvrl_inner_join(files)
-
 
                 df_syn_balance = sample_stratify(df_syn_tmp, min(df_syn_tmp['label'].value_counts().min(), args.samplecnt) )
                 print("df_syn_balance ==> of {}".format(args.samplecnt) )
@@ -778,6 +776,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         raise KeyError("args.aug model illegal!")        
     print('samples_syn done...')
     df_synthesize = pd.DataFrame(samples_syn, columns = ['content','label'])
+    df_synthesize['label'] = df_synthesize['label'].astype(int)
     aug_ratio_actual = df_synthesize.shape[0] / ds.df_train.shape[0] #* args.beams 
     print("aug_ratio_actual==>", aug_ratio_actual)
     for ix, row in df_synthesize.iterrows():
@@ -794,7 +793,7 @@ for _ in range(args.max_aug_times):
     df_synthesize = synthesize(ds, proper_len, syn_df_ll, seed)
     syn_df_ll.append(df_synthesize)
 
-df_train_aug = pd.concat([ds.df_train] + syn_df_ll )
+df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
 acc_aug, _ = do_train_test(df_train_aug, ds.df_test, args.epochs, args.freq, args.verbose, \
                         args.basetry, args.samplecnt, args.basemode, args.model)

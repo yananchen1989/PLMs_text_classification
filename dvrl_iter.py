@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dsn', default='ag', type=str)
 parser.add_argument( '--ite', default=1, type=int)
 parser.add_argument( '--seed', default=333, type=int)
-parser.add_argument( '--iterations', default=100, type=int)#debug
+parser.add_argument( '--iterations', default=2000, type=int)
 parser.add_argument( '--inner_iterations', default=100, type=int)
 args = parser.parse_args()
 
@@ -26,6 +26,7 @@ if gpus:
       #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
   except RuntimeError as e:
     print(e)
+assert not gpus
 
 flags = {'sgd': True, 'pretrain': False}
 parameters = dict()
