@@ -330,7 +330,8 @@ def get_cc_text_double(ft_pattern, s=1):
 
 import datetime,csv
 def record_log(file, record):
-    cur = datetime.datetime.strftime(datetime.datetime.now() + datetime.timedelta(hours=8), '%Y-%m-%d %H:%M:%S')
+    #cur = datetime.datetime.strftime(datetime.datetime.now() + datetime.timedelta(hours=8), '%Y-%m-%d %H:%M:%S')
+    cur = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
     with open(file, 'a') as f:
         writer = csv.writer(f, delimiter=' ')
         writer.writerow([cur] + record)
