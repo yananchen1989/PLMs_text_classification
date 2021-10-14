@@ -50,7 +50,11 @@ df_train, df_valid = train_test_split(df_train_valid_noise.loc[df_train_valid_no
 
 df_train_1, df_train_0 = train_test_split(df_train, test_size=0.5)
 
-df_train_0['label'] = df_train_0['label'].map(lambda x: noisy_label(x, df_train_valid_noise['label'].unique() )  )
+df_train_0 = df_train_0.copy()
+corrupted_labels = df_train_0['label'].map(lambda x: noisy_label(x, df_train_valid_noise['label'].unique() )  ).tolist()
+
+df_train_0['label'] = corrupted_labels
+
 df_train_0['groudtruth'] = 0
 
 
