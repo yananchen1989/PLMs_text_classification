@@ -200,17 +200,16 @@ def get_cnndm_news(s=1):
 
 
 def get_cc_text_double(ft_pattern, s=1):
-    if ft_pattern in ['pp', 'tc']:
-        df_cc = get_cc_news(s)
-    elif ft_pattern == 'cnndm':
-        df_cc = get_cnndm_news(s)
+    #if ft_pattern in ['pp', 'tc']:
+    df_cc = get_cc_news(s)
+    df_cc = df_cc.loc[(df_cc['title']!='') & (df_cc['content']!='') & (~df_cc['title'].isnull()) & (~df_cc['content'].isnull())]
+    #elif ft_pattern == 'cnndm':
+    #    df_cc = get_cnndm_news(s)
         
     if ft_pattern == 'tc':
-        df_cc = df_cc.loc[df_cc['title']!='']
         return df_cc.rename(columns={'title': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
 
-    # elif ft_pattern == 'sc':
-    #     df_cc = df_cc.loc[df_cc['description']!='']
+    # elif ft_pattern == 'ep':
     #     return df_cc.rename(columns={'description': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
   
     elif ft_pattern == 'pp':
