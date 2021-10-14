@@ -1,22 +1,7 @@
-
-
-
-#nohup python -u bert_pair_nsp.py --dsn snli --max_length 64 --gpu 0 > pair.snli.log &
-# nohup python -u bert_pair_nsp.py --dsn news --max_length 64 --gpu 0 > pair.news.log &
-
-# nohup python -u bert_pair_nsp.py --dsn yelp2 --max_length 64 --gpu 1 > pair.yelp2.log &
-# nohup python -u bert_pair_nsp.py --dsn imdb --max_length 64 --gpu 1 > pair.imdb.log &
-# nohup python -u bert_pair_nsp.py --dsn yahoo --max_length 64 --gpu 1 > pair.yahoo.log &
-
-
-# CUDA_VISIBLE_DEVICES=0 nohup  python -u bert_pair_nsp.py --dsn ag --ft 0  --gpu 0 > pair.ppo.ag.ft0.log &
-# CUDA_VISIBLE_DEVICES=1 nohup  python -u bert_pair_nsp.py --dsn ag --ft 1  --gpu 1 > pair.ppo.ag.ft1.log &
-
-
-
-abundance=3 #parameter B 
 max_aug_times=${1} # parameter R
 samplecnt=${2} # simulate a low-data regime, where 32 samples per category are selected as anchor data
+abundance=${3} #parameter B 
+gpu=${4}
 while true
 do
 	seed=$RANDOM
@@ -46,7 +31,7 @@ do
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 				      --genft ${genft}  --genm ${genm} --filter ${filter} \
-				      --abundance ${abundance}  --num_return_sequences 8 --gpu 0,1,2,3 \
+				      --abundance ${abundance}  --num_return_sequences 8 --gpu ${gpu} \
 				      > ./log_arxiv/${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
 				done
 			done
@@ -87,7 +72,7 @@ done
 
 
 
-# nohup bash run.sh 1 128 &
+# nohup bash run.sh 1 128 3 0,1,2,3 &
 # nohup bash run.sh 3 128 &
 
 
