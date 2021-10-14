@@ -13,6 +13,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dsn', default='ag', type=str)
 parser.add_argument( '--ite', default=1, type=int)
 parser.add_argument( '--seed', default=333, type=int)
+parser.add_argument( '--iterations', default=100, type=int)#debug
+parser.add_argument( '--inner_iterations', default=100, type=int)
 args = parser.parse_args()
 
 gpus = tf.config.list_physical_devices('GPU')
@@ -29,9 +31,9 @@ flags = {'sgd': True, 'pretrain': False}
 parameters = dict()
 parameters['hidden_dim'] = 100
 parameters['comb_dim'] = 10
-parameters['iterations'] = 2000 ###
+parameters['iterations'] = args.iterations ###
 parameters['activation'] = tf.nn.relu
-parameters['inner_iterations'] = 100
+parameters['inner_iterations'] = args.inner_iterations
 parameters['layer_number'] = 5
 parameters['learning_rate'] = 0.01
 parameters['batch_size'] = 256

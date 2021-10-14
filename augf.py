@@ -358,12 +358,12 @@ def bertcls_classify(generated_text, label_name):
 
 def dvrl_inner_join(files):
 
-    #files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(7805, 'ag', 7805))
+    # files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(5013, 'ag', 5013))
 
     df_retain_ll = []
     for file in files:
         df_tmp = pd.read_csv(file, usecols=['label','content','label_name','groudtruth', 'dve_out'])
-
+        df_tmp.drop_duplicates(['content'], inplace=True)
         df_tmp.sort_values(by=['dve_out'], ascending=False, inplace=True) 
 
         for ix in range(df_tmp.shape[0]):
@@ -390,6 +390,8 @@ def dvrl_inner_join(files):
         print('after:', df_merge.shape[0]) 
 
     return df_merge
+
+
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
     labels = ds.df_train['label'].tolist()
@@ -532,6 +534,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     print("valid output==>", len(files), files)
                     assert len(files) >= 4
 
+                    files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(5013, 'ag', 5013)) # debug
                     df_syn_tmp = dvrl_inner_join(files)
 
 
