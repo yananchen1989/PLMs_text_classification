@@ -180,7 +180,7 @@ def get_cc_news(s=1):
 
     #df.to_csv("./torch_ds/df_cc_news.csv", index=False)
 
-    df = pd.read_csv("./torch_ds/df_cc_news.csv", lineterminator='\n')
+    df = pd.read_csv("./torch_ds/df_cc_news_ners.csv", lineterminator='\n')
     return df.sample(frac=s) #615019  
 
 def get_cnndm_news(s=1):
@@ -203,14 +203,15 @@ def get_cc_text_double(ft_pattern, s=1):
     #if ft_pattern in ['pp', 'tc']:
     df_cc = get_cc_news(s)
     df_cc = df_cc.loc[(df_cc['title']!='') & (df_cc['content']!='') & (~df_cc['title'].isnull()) & (~df_cc['content'].isnull())]
+    df_cc = df_cc.loc[(df_cc['ners']!='') & (~df_cc['ners'].isnull())]
     #elif ft_pattern == 'cnndm':
     #    df_cc = get_cnndm_news(s)
         
     if ft_pattern == 'tc':
         return df_cc.rename(columns={'title': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
 
-    # elif ft_pattern == 'ep':
-    #     return df_cc.rename(columns={'description': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
+    elif ft_pattern == 'ep':
+        return df_cc.rename(columns={'ners': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
   
     elif ft_pattern == 'pp':
         rr = df_cc['content'].map(lambda x: para_split2(x)).tolist()
