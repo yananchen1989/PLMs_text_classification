@@ -106,7 +106,7 @@ ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplica
 #seed = random.sample(list(range(10000)), 1)[0]
 
 if args.testbed:
-    acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
+    acc_noaug, model_cls = do_train_test_valid(ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
                args.basetry, args.basemode, args.model)
     #model_cls.save_weights("model_cls.h5")
 else:
@@ -793,7 +793,7 @@ for _ in range(args.max_aug_times):
 
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
-acc_aug, _ = do_train_test(df_train_aug, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
+acc_aug, _ = do_train_test_valid(df_train_aug, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
                         args.basetry, args.basemode, args.model)
 
 if acc_noaug > 0:
