@@ -287,7 +287,7 @@ def do_train_test(df_train, df_test, ixl, epochs=50, freq=10, verbose=1, \
 
         history = model.fit(
             x_train, y_train, batch_size=16, epochs=epochs, \
-            validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=64,validation_freq=freq
+            validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=64, validation_freq=freq,
             callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
         )
         if df_test.label.unique().shape[0] == 2:
