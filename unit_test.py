@@ -1,7 +1,7 @@
 
 sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
 
-content = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
+sent = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
 
 content = '''
 They are fed up with slow speeds, high prices and the level of customer service they receive. 17% of readers have switched suppliers and a further 16% are considering changing in the near future. It is particularly bad news for BT, the UK's biggest internet supplier, with almost three times as many people trying to leave as joining.
@@ -10,26 +10,7 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 sent = "Federal jury orders tech giant Samsung to pay"
 
-sent1 = 'FDA gives green light to migraine prevention tool'
-
-from transformers import GPT2Tokenizer, GPT2LMHeadModel#TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-#tokenizer_gpt2.padding_side = "left" 
-tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-tokenizer_gpt2.sep_token = '<|sep|>'
-#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
-print(tokenizer_gpt2)
-
-gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-gpt2.trainable = False
-gpt2.config.pad_token_id=50256
-gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
-
-ds.df_train.sample(10)['content'].tolist()
-
-results_trunk = gen_nlp([sent], max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1.0, \
-                repetition_penalty=1.0, num_return_sequences=4, clean_up_tokenization_spaces=True, skip_special_tokens=True)
-
+sent = 'FDA gives green light to migraine prevention tool'
 
 
 
@@ -40,92 +21,83 @@ generated_text = "Editorial cartoon, Sun Jun 6: Asian Innovation, how unfriendly
 
 
 
+sent = '''
+The Race is On: Second Private Team Sets Launch Date for Human Spaceflight (SPACE.com) SPACE.com - TORONTO, Canada -- A second\team of rocketeers competing for the  #36;10 million Ansari X Prize, a contest for\privately funded suborbital space flight, has officially announced the first\launch date for its manned rocket.
+'''
+
+from utils.load_data import * 
+
+ds = load_data(dataset='ag', samplecnt= 128)
+
+
+# gpt2
+from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+tokenizer_gpt2.sep_token = '<|sep|>'
+#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+print(tokenizer_gpt2)
+
+# no
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+
+# tc pp
+gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('gpt', 'pp') )
+
+gpt2.trainable = False
+gpt2.config.pad_token_id=50256
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+
+
+
+# t5
+import glob
+from transformers import pipeline
+from transformers import T5Tokenizer, AutoModelWithLMHead
+tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+print(tokenizer_t5)
+# no ft
+t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+
+# ft:tc pp
+ft_model_path = 'ft_model_{}_{}'.format('t5', 'pp')
+checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
+list.sort(checkpoint_files)
+t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+
+########
+gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
 
 
 
 
 
+sent = ds.df_train.sample(1)['content'].tolist()[0]
+
+# t5
+gen_nlp(sent+tokenizer_t5.eos_token, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                            repetition_penalty=1.0, num_return_sequences=4, clean_up_tokenization_spaces=True)
+
+# gpt
+gen_nlp(sent+tokenizer_gpt2.sep_token, max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                            repetition_penalty=1.0, num_return_sequences=4, clean_up_tokenization_spaces=True)
 
 
 
 
+'''
+t5:
+no: enough
+tc: enough
+pp: insufficient
+
+
+gpt2:
+tc: enough
+pp: insufficient
+'''
 
 
 
 
-
-
-from openprompt.data_utils import InputExample
-classes = [ # There are two classes in Sentiment Analysis, one for negative and one for positive
-    "negative",
-    "positive"
-]
-dataset = [ # For simplicity, there's only two examples
-    # text_a is the input text of the data, some other datasets may have multiple input sentences in one example.
-    InputExample(
-        guid = 0,
-        text_a = "Albert Einstein was one of the greatest intellects of his time.",
-    ),
-    InputExample(
-        guid = 1,
-        text_a = "The film was badly made.",
-    ),
-]
-
-from openprompt.plms import get_model_class
-model_class = get_model_class(plm_type = "bert")
-model_path = "bert-base-cased"
-bertConfig = model_class.config.from_pretrained(model_path)
-bertTokenizer = model_class.tokenizer.from_pretrained(model_path)
-bertModel = model_class.model.from_pretrained(model_path)
-
-from openprompt.prompts import ManualTemplate
-promptTemplate = ManualTemplate(
-    text = ["<text_a>", "It", "was", "<mask>"],
-    tokenizer = bertTokenizer,
-)
-
-from openprompt.prompts import ManualVerbalizer
-promptVerbalizer = ManualVerbalizer(
-    classes = classes,
-    label_words = {
-        "negative": ["bad"],
-        "positive": ["good", "wonderful", "great"],
-    },
-    tokenizer = bertTokenizer,
-)
-
-from openprompt import PromptForClassification
-promptModel = PromptForClassification(
-    template = promptTemplate,
-    model = bertModel,
-    verbalizer = promptVerbalizer,
-)
-
-from openprompt import PromptDataLoader
-data_loader = PromptDataLoader(
-    dataset = dataset,
-    tokenizer = bertTokenizer,
-    template = promptTemplate,
-)
-
-
-promptModel.eval()
-with torch.no_grad():
-    for batch in data_loader:
-        logits = promptModel(batch)
-        preds = torch.argmax(logits, dim = -1)
-        print(classes[preds])
-# predictions would be 1, 0 for classes 'positive', 'negative'
-
-
-
-
-
-
-
-
-
-
-import requests
-requests.get('https://huggingface.co/bert-base-uncased/resolve/main/config.json')

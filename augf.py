@@ -33,7 +33,7 @@ parser.add_argument("--testvalid", default='test', type=str)
 
 parser.add_argument("--seed", default=333, type=int)
 
-parser.add_argument("--dpp", default=0, type=int)
+#parser.add_argument("--dpp", default=0, type=int)
 parser.add_argument("--threads", default=64, type=int)
 
 parser.add_argument("--filter", default="nli,cls,enc,nsp", type=str)
@@ -212,7 +212,7 @@ if args.aug == 'generate':
 
     print('generate model loaded ==>{}'.format(args.genm))
 
-    dsn_maxlen = {'uci':64, 'ag':160, 'nyt':256}
+    dsn_maxlen = {'uci':256, 'ag':256, 'nyt':256}
 
     ####################### filter setting ######################
     if 'nli' in filter_list: 
