@@ -1,15 +1,11 @@
 
-ps aux|grep dvrl_iter|grep -v grep | awk '{print $2}'|xargs kill -9
-
-
-tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.py
 
 
 ##### augf
 
-nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-				      --genft no  --genm gpt --filter dvrl --abundance 3  --basetry 1 \
-				      --verbose 1 --epochs 1 --freq 1 --threads 4 > augf.test.log & 
+nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
+				      --genft no  --genm gpt --filter dvrl --abundance 3  --basetry 1 --testvalid valid \
+				      --verbose 1 --epochs 50 --freq 50 --threads 64 --gpu 0,1,2,3 > augf.test.log & 
 
 
 
@@ -31,7 +27,30 @@ CUDA_VISIBLE_DEVICES=4 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern tc -
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ############################################################################################################################################
+ps aux|grep dvrl_iter|grep -v grep | awk '{print $2}'|xargs kill -9
+
+
+tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.py
+
+
+
 # 解压
 unzip -o -d /home/sunny myfile.zip
 

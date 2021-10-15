@@ -1,5 +1,5 @@
 import random,os
-os.environ['CUDA_VISIBLE_DEVICES'] = ""
+os.environ['CUDA_VISIBLE_DEVICES'] = "6,7"
 
 import pandas as pd
 from flair.data import Sentence
