@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 #from sklearn.datasets import fetch_20newsgroups
 from transformers import AutoTokenizer
 
-tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-uncased',cache_dir="./cache", local_files_only=True)
+tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache", local_files_only=True)
 
 def truncate(sent, max_length):
     ids = tokenizer_bert.encode(sent, truncation=True, max_length=max_length)

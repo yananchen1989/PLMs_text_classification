@@ -1,9 +1,10 @@
-import random,os
-os.environ['CUDA_VISIBLE_DEVICES'] = "6,7"
+import random,os,torch
+os.environ['CUDA_VISIBLE_DEVICES'] = "6"
 
 import pandas as pd
 from flair.data import Sentence
 from flair.models import SequenceTagger
+from utils.load_data import * 
 
 tagger = SequenceTagger.load("flair/ner-english-fast")
 
@@ -16,12 +17,39 @@ def get_ners(text):
     sentence = Sentence(text)
     tagger.predict(sentence)
     ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
-    random.shuffle(ners)
     return '<=>'.join(ners)
 
 ners = get_ners(text)
 
 df = pd.read_csv("./torch_ds/df_cc_news.csv", lineterminator='\n')
 
-df['ners'] = df['content'].map(lambda x: get_ners(x))
+df['content'] = df['content'].map(lambda x: truncate(x, 512))
+ners_all = []
+
+ix = 0
+while ix < df.shape[0]:
+    torch.cuda.empty_cache()    
+    df_tmp = df[ix:ix+2048]
+
+    sentences = [Sentence(sent) for sent in df_tmp['content'].tolist()]
+    tagger.predict(sentences)
+    ners_tmp = []
+    for ii in sentences:
+        ners = [j['text'] for j in ii.to_dict(tag_type='ner')['entities']]
+        ners_tmp.append('<=>'.join(ners))
+    print('{} done'.format(ix/df.shape[0]*100 ))
+    ners_all.extend(ners_tmp)
+    ix+= 2048
+
+df['ners'] = ners_all
 df.to_csv("./torch_ds/df_cc_news_ners.csv", index=False)
+
+
+
+
+
+
+
+
+
+
