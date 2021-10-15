@@ -791,8 +791,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 print("augmentating...")
 
 syn_df_ll = []
-for _ in range(args.max_aug_times):
-    df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
+for ii in range(args.max_aug_times):
+    df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed+ii)
     syn_df_ll.append(df_synthesize)
 
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
