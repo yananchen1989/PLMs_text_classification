@@ -1,12 +1,13 @@
 max_aug_times=${1} # parameter R
 samplecnt=${2} # simulate a low-data regime, where 32 samples per category are selected as anchor data
 abundance=${3} #parameter B 
-gpu=${4}
+num_return_sequences=${4}
+gpu=${5}
 while true
 do
 	seed=$RANDOM
 	#seed=$(date +"%T")
-	for dsn in ag uci #nyt
+	for dsn in ag uci nyt
 	do
 		# for aug in eda bt 
 		# do
@@ -30,8 +31,8 @@ do
 				for filter in dvrl #nli,cls,nsp,enc,dvrl  no  nli,cls,nsp,enc   #nli cls nsp enc no 
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft}  --genm ${genm} --filter ${filter} \
-				      --abundance ${abundance}  --num_return_sequences 8 --gpu ${gpu} \
+				      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
+				      --abundance ${abundance}  --num_return_sequences ${num_return_sequences} --gpu ${gpu} \
 				      > ./log_arxiv/${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
 				done
 			done
@@ -72,7 +73,7 @@ done
 
 
 
-# nohup bash run.sh 1 128 3 0,1,2,3 &
+# nohup bash run.sh 1 128 3 8 0,1,2,3 &
 # nohup bash run.sh 3 128 &
 
 

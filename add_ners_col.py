@@ -1,4 +1,6 @@
-import random
+import random,os
+os.environ['CUDA_VISIBLE_DEVICES'] = ""
+
 import pandas as pd
 from flair.data import Sentence
 from flair.models import SequenceTagger

@@ -29,6 +29,8 @@ parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 
+parser.add_argument("--seed", default=333, type=int)
+
 parser.add_argument("--dpp", default=0, type=int)
 parser.add_argument("--threads", default=64, type=int)
 
@@ -74,10 +76,6 @@ from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
 #nltk.download('wordnet')
 gpus = tf.config.list_physical_devices('GPU')
 
-#tf.data.Options().experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
-
-
-
 
 print('======>',gpus,'<=======')
 if gpus:
@@ -105,11 +103,11 @@ print(ds.df_train.sample(8))
 print('proper_len==>', proper_len)
 ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
-seed = random.sample(list(range(10000)), 1)[0]
+#seed = random.sample(list(range(10000)), 1)[0]
 
 if args.testbed:
-    acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
-               args.basetry, args.samplecnt, args.basemode, args.model)
+    acc_noaug, model_cls = do_train_test(ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
+               args.basetry, args.basemode, args.model)
     #model_cls.save_weights("model_cls.h5")
 else:
     acc_noaug = -1
@@ -137,8 +135,8 @@ if args.aug == 'generate':
             if not os.path.exists('ft_tmp'):
                 os.makedirs('ft_tmp')
 
-            train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, seed)
-            validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, seed)
+            train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, args.seed)
+            validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, args.seed)
 
             df_train_ft = ds.df_train.copy()
             df_test_ft = ds.df_test.copy()
@@ -160,7 +158,7 @@ if args.aug == 'generate':
             with open (validation_file, 'w') as f:
                 f.write(" {} ".format(tokenizer_gpt2.eos_token).join(df_test_ft['text'].tolist()))
 
-            model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, seed) 
+            model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
             os.system(
             "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
                     --num_train_epochs {} \
@@ -790,13 +788,13 @@ print("augmentating...")
 
 syn_df_ll = []
 for _ in range(args.max_aug_times):
-    df_synthesize = synthesize(ds, proper_len, syn_df_ll, seed)
+    df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
     syn_df_ll.append(df_synthesize)
 
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
-acc_aug, _ = do_train_test(df_train_aug, ds.df_test, args.epochs, args.freq, args.verbose, \
-                        args.basetry, args.samplecnt, args.basemode, args.model)
+acc_aug, _ = do_train_test(df_train_aug, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
+                        args.basetry, args.basemode, args.model)
 
 if acc_noaug > 0:
     gain = round((acc_aug - acc_noaug) / acc_noaug, 4)
