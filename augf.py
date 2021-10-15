@@ -18,7 +18,7 @@ parser.add_argument("--temp", default=1.0, type=float)
 parser.add_argument("--batch_size", default=32, type=int)
 parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--verbose", default=0, type=int)
-parser.add_argument("--basemode", default="mean", type=str) # rank or thres
+parser.add_argument("--basemode", default="max", type=str) # rank or thres
 parser.add_argument("--beams", default=1, type=int)
 parser.add_argument("--abundance", default=1, type=int)
 
