@@ -39,9 +39,6 @@ for ii in range(embeds.shape[1]):
 from threading import Thread
 
 
-def run_dvrl_thread(dsn, ii, seed):
-    os.system('python dvrl_iter.py --dsn {} --seed {} --ite {}'.format(dsn, seed, ii))
-
 threads = []
 for ii in range(args.threds):
     t = Thread(target=run_dvrl_thread, args=(args.dsn, ii, seed))
