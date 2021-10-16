@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,time,operator,traceback
+import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,time,operator,traceback,shutil
 from sklearn import metrics
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
@@ -235,8 +235,7 @@ if args.aug == 'generate':
             enc_dic[l] = embeds
 
     if 'dvrl' in filter_list:
-        if not os.path.exists('dvrl_np_array'):
-            os.makedirs('dvrl_np_array')
+        os.makedirs('dvrl_np_array', exist_ok=True)
         
     print('filter==> {} model loaded'.format(args.filter))
 
@@ -280,7 +279,7 @@ if args.aug == 'cgpt':
 #         return 0, result['scores'][0]
 
 def run_dvrl_thread(dsn, ii, seed):
-    os.system('python dvrl_iter.py --dsn {} --seed {} --ite {}'.format(dsn, seed, ii))
+    os.system('python dvrl_iter.py --dsn {} --ite {} --seed {} '.format(dsn, ii, seed))
 
 def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev, mode='max'):
     assert label_name and  labels_candidates
@@ -516,14 +515,18 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     df_train_valid_noise = pd.concat([ds.df_train,  df_syn_tmp])
 
                     embeds = enc.infer(df_train_valid_noise['content'].values)
-                    for ii in range(embeds.shape[1]):
-                        df_train_valid_noise['embed_{}'.format(ii)] = embeds[:, ii]
-                    os.mkdir("./dvrl_np_array/csvs_{}".format(seed))
+                    for j in range(embeds.shape[1]):
+                        df_train_valid_noise['embed_{}'.format(j)] = embeds[:, j]
+
+                    if os.path.exists("./dvrl_np_array/csvs_{}".format(seed)):
+                        shutil.rmtree("./dvrl_np_array/csvs_{}".format(seed))
+                    os.makedirs("./dvrl_np_array/csvs_{}".format(seed), exist_ok=False)
+
                     df_train_valid_noise.to_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv".format(seed, args.dsn, seed), index=False)
 
                     threads = []
-                    for ii in range(args.threads):
-                        t = Thread(target=run_dvrl_thread, args=(args.dsn, ii, seed))
+                    for di in range(args.threads):
+                        t = Thread(target=run_dvrl_thread, args=(args.dsn, di, seed))
                         t.start()
                         threads.append(t)
 
@@ -791,8 +794,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 print("augmentating...")
 
 syn_df_ll = []
-for ii in range(args.max_aug_times):
-    df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed+ii)
+for augi in range(args.max_aug_times):
+    df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
     syn_df_ll.append(df_synthesize)
 
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)

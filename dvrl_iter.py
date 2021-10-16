@@ -39,7 +39,7 @@ parameters['layer_number'] = 5
 parameters['learning_rate'] = 0.01
 parameters['batch_size'] = 256
 parameters['batch_size_predictor'] = 256
-checkpoint_file_name = './dvrl_tmp/tmp_{}/model.ckpt'.format(args.seed)
+checkpoint_file_name = './dvrl_tmp/tmp_{}/model.ckpt'.format(args.seed+args.ite)
 
 df_train_valid_noise = pd.read_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv"\
                                    .format(args.seed, args.dsn, args.seed))
@@ -69,7 +69,7 @@ x_train = df_train_syn_noise[embed_cols].values
 x_valid = df_valid[embed_cols].values
 
 y_train, y_valid = df_train_syn_noise['label'].values, df_valid['label'].values
-print("embeding inferred ite:{}".format(args.ite))
+print("dvrl xy done==> ite:{}".format(args.ite))
 
 from dvrl import dvrl_v2
 # Run DVRL
