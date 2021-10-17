@@ -6,8 +6,14 @@ import transformers
 from sklearn.model_selection import train_test_split
 #from sklearn.datasets import fetch_20newsgroups
 from transformers import AutoTokenizer
+import transformers
 
-tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache", local_files_only=True)
+if transformers.__version__.startswith("4."):
+    tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache", local_files_only=True)
+
+if transformers.__version__.startswith("2."):
+    tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache_cbert", local_files_only=True)
+
 
 def truncate(sent, max_length):
     ids = tokenizer_bert.encode(sent, truncation=True, max_length=max_length)
