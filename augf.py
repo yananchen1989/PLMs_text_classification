@@ -537,7 +537,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
                     files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
                     print("valid_output==>", len(files), files)
-                    assert len(files) >= 4
+                    assert len(files) >= 1
 
                     df_syn_tmp = dvrl_inner_join(files)
 
