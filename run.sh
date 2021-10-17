@@ -34,7 +34,7 @@ do
 				      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
 				      --testvalid valid \
 				      --abundance ${abundance}  --num_return_sequences ${num_return_sequences} --gpu ${gpu} \
-				      > ./log_arxiv/${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log
+				      > ./log_arxiv/${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log 2>&1
 				done
 			done
 		done
