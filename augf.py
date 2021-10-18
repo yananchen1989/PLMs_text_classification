@@ -71,6 +71,10 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
 from threading import Thread
+
+import tensorflow.python.util.deprecation as deprecation
+deprecation._PRINT_DEPRECATION_WARNINGS = False
+
 #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
 #tf.keras.backend.set_floatx('float16')
 import nltk 
@@ -806,8 +810,8 @@ syn_df_ll = []
 for augi in range(args.max_aug_times):
     df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
     syn_df_ll.append(df_synthesize)
-
-df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
+syn_df_ll
+df_train_aug = pd.concat([ds.df_train] +  ).sample(frac=1)
 print("begin_to_test_aug")
 acc_aug, _ = testbed_func[args.testvalid](df_train_aug, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
                         args.basetry, args.basemode, args.model)
