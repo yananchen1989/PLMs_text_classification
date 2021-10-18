@@ -539,7 +539,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         print("dvrl after join")
 
                         files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
-                        print("valid_output==>", len(files), files)
+                        print("valid_output==>", len(files), files, 'dvrl_iter:', dvrl_iter)
 
                         valid_files.extend(files)
                         if len(valid_files) >= args.valid_files_cnt:

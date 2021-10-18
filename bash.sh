@@ -3,33 +3,32 @@ cat logb|grep 'samplecnt:128'|grep 'dsn:ag'|grep 'genm:t5'
 
 ##### augf
 seed=$RANDOM
-nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
-				      --genft no  --genm gpt --filter dvrl --abundance 3  --seed ${seed} --basetry 1 --testvalid valid \
-				      --verbose 1 --epochs 50 --freq 50 --threads 64 --gpu 0,1,2,3 > augf.test.log & 
-
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+                  --genft no  --genm gpt --filter dvrl --seed 0 \
+                  --testvalid valid --valid_files_cnt 16  --threads 16 \
+                  --abundance 3  --num_return_sequences 4 --gpu 6 --testbed 0
 
 
 ############## ft gpt 
-nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern tc --gpu 6  --batch_size 8 \
- > ft.gpt2.tc.log &
-
-nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern pp --gpu 7 --batch_size 8 \
- > ft.gpt2.pp.log &
-
-nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern pp --gpu 7 --batch_size 8 \
- > ft.gpt2.pp.log &
+nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern ep --gpu 0 --batch_size 8 \
+ > ft.gpt2.ep.log &
 
 
- 
+
 # ft t5
-CUDA_VISIBLE_DEVICES=5 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4  \
-   --maxlen 256 --ccsample 1 --ftepochs 4 --batch_size 4 > ft.t5.pp.log & 
-
-CUDA_VISIBLE_DEVICES=4 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern tc --num_workers 4 \
-   --maxlen 256 --ccsample 1 --ftepochs 4 --batch_size 4 > ft.t5.tc.log & 
 
 CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep --num_workers 4 \
    --maxlen 256 --ccsample 1 --ftepochs 4 --batch_size 4 > ft.t5.ep.log & 
+
+
+
+
+
+
+
+
+
+
 
 
 
