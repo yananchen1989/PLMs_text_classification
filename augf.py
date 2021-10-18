@@ -29,7 +29,7 @@ parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 parser.add_argument("--testvalid", default='test', type=str)
-
+parser.add_argument("--boost", default=0, type=int)
 
 parser.add_argument("--seed", default=333, type=int)
 
@@ -799,8 +799,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
 
 
-
-print("augmentating...")
+# if not args.boost:
+# print("augmentating... boost:", args.boost )
 
 syn_df_ll = []
 for augi in range(args.max_aug_times):
@@ -811,6 +811,10 @@ df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
 acc_aug, _ = testbed_func[args.testvalid](df_train_aug, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
                         args.basetry, args.basemode, args.model)
+
+
+
+
 
 if acc_noaug > 0:
     gain = round((acc_aug - acc_noaug) / acc_noaug, 4)

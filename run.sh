@@ -74,7 +74,7 @@ done
 
 
 
-# nohup bash run.sh 1 128 3 8 2,3 &
-# nohup bash run.sh 3 128 3 8 4,5 &
-# nohup bash run.sh 5 128 3 8 6,7 &
+# nohup bash run.sh 1 128 3 8 3,4 &
+# nohup bash run.sh 3 128 3 8 5,6 &
+# nohup bash run.sh 5 128 3 8 2 &
 

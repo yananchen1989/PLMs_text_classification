@@ -1,12 +1,13 @@
 cat logb|grep 'samplecnt:128'|grep 'dsn:ag'|grep 'genm:t5'
 
 
+
 ##### augf
 seed=$RANDOM
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
                   --genft no  --genm gpt --filter dvrl --seed 0 \
                   --testvalid valid --valid_files_cnt 16  --threads 16 \
-                  --abundance 3  --num_return_sequences 4 --gpu 6 --testbed 0
+                  --abundance 3  --num_return_sequences 4 --gpu 6 --testbed 0 > augf.test.log & 
 
 
 ############## ft gpt 

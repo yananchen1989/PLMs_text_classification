@@ -152,7 +152,7 @@ class Dvrl(object):
       self.ori_model.fit(x_train, self.y_train_onehot,
                          #validation_data=(self.x_valid, self.y_valid_onehot), 
                          batch_size=self.batch_size_predictor,
-                         epochs=self.inner_iterations, verbose=2)
+                         epochs=self.inner_iterations, verbose=0)
     else:
       self.ori_model = copy.copy(self.pred_model)
       self.ori_model.fit(x_train, y_train)
@@ -165,7 +165,7 @@ class Dvrl(object):
       # Trains the model
       self.val_model.fit(self.x_valid, self.y_valid_onehot,
                          batch_size=self.batch_size_predictor,
-                         epochs=self.inner_iterations, verbose=2)
+                         epochs=self.inner_iterations, verbose=0)
     else:
       self.val_model = copy.copy(self.pred_model)
       self.val_model.fit(self.x_valid, y_valid)
@@ -411,7 +411,7 @@ class Dvrl(object):
       self.final_model.fit(self.x_train, self.y_train_onehot,
                            sample_weight=final_data_value,
                            batch_size=self.batch_size_predictor,
-                           epochs=self.inner_iterations, verbose=2)
+                           epochs=self.inner_iterations, verbose=0)
     else:
       self.final_model.fit(self.x_train, self.y_train, final_data_value)
 
