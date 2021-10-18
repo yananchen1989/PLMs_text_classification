@@ -33,7 +33,7 @@ parser.add_argument("--testvalid", default='test', type=str)
 
 parser.add_argument("--seed", default=333, type=int)
 
-#parser.add_argument("--dpp", default=0, type=int)
+parser.add_argument("--valid_files_cnt", default=16, type=int)
 parser.add_argument("--threads", default=64, type=int)
 
 parser.add_argument("--filter", default="nli,cls,enc,nsp", type=str)
@@ -524,22 +524,31 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
                     df_train_valid_noise.to_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv".format(seed, args.dsn, seed), index=False)
 
-                    threads = []
-                    for di in range(args.threads):
-                        t = Thread(target=run_dvrl_thread, args=(args.dsn, di, seed))
-                        t.start()
-                        threads.append(t)
+                    valid_files = []
+                    dvrl_iter = 0
+                    while True:
+                        threads = []
+                        for di in range(args.threads):
+                            t = Thread(target=run_dvrl_thread, args=(args.dsn, di+dvrl_iter, seed))
+                            t.start()
+                            threads.append(t)
 
-                    # join all threads
-                    for t in threads:
-                        t.join()
-                    print("dvrl after join")
+                        # join all threads
+                        for t in threads:
+                            t.join()
+                        print("dvrl after join")
 
-                    files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
-                    print("valid_output==>", len(files), files)
-                    assert len(files) >= 1
+                        files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
+                        print("valid_output==>", len(files), files)
 
-                    df_syn_tmp = dvrl_inner_join(files)
+                        valid_files.extend(files)
+                        if len(valid_files) >= args.valid_files_cnt:
+                            print("valid_files_cnt OK:", len(valid_files))
+                            print("final_valid_output==>",  valid_files)
+                            break 
+                        dvrl_iter += args.threads
+
+                    df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
 
                 df_syn_balance = sample_stratify(df_syn_tmp, min(df_syn_tmp['label'].value_counts().min(), args.samplecnt) )
                 print("df_syn_balance ==> of {}".format(args.samplecnt) )

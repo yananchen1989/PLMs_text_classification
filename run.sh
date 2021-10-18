@@ -32,9 +32,9 @@ do
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 				      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
-				      --testvalid valid \
+				      --testvalid valid --valid_files_cnt 16  --threads 16 \
 				      --abundance ${abundance}  --num_return_sequences ${num_return_sequences} --gpu ${gpu} \
-				      > ./log_arxiv/${dsn}.generate.${samplecnt}.genm_${genm}.genft_${genft}.filter_${filter}.${seed}.log 2>&1
+				      > ./log_arxiv/${dsn}.generate.${samplecnt}.max_aug_times.${max_aug_times}.genm.${genm}.genft.${genft}.filter.${filter}.abundance.${abundance}.num_return_sequences.${num_return_sequences}.${seed}.log 2>&1
 				done
 			done
 		done
