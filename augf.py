@@ -326,7 +326,7 @@ def enc_classify(content, ori_label, enc_dic):
 def nsp_classify(ds, generated_text, label_name):
     result = {}
     for l in ds.df_test['label_name'].unique():
-        contents_ori = ds.df_train.loc[ds.df_train['label_name']==l]['content'].tolist()
+        contents_ori = ds.df_train.loc[ds.df_train['label_name']==l].sample(32)['content'].tolist()
          
         pairs = [[sent, generated_text] for sent in contents_ori]
         pairs_ids = get_ids(pairs, 512, tokenizer_bert )
