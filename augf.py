@@ -120,7 +120,9 @@ if args.testbed:
 else:
     acc_noaug = -1
 
-
+if args.aug == 'generate' and args.genft == 'ep':
+    from utils.flair_ners import * 
+    
 
 if args.aug == 'eda':
     from utils.eda import *
@@ -183,7 +185,7 @@ if args.aug == 'generate':
         # elif args.genft == 'cc':
         #     gpt2 = GPT2LMHeadModel.from_pretrained(args.ft_model_path)
 
-        elif args.genft in ['tc', 'pp']:
+        elif args.genft in ['tc', 'pp', 'ep']:
             gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format(args.genm, args.genft) )
 
         gpt2.trainable = False
@@ -196,7 +198,7 @@ if args.aug == 'generate':
         print(tokenizer_t5)
         if args.genft == 'no':
             t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-        elif args.genft in ['tc', 'pp']:
+        elif args.genft in ['tc', 'pp', 'ep']:
             args.ft_model_path = 'ft_model_{}_{}'.format(args.genm, args.genft)
             checkpoint_files = glob.glob(args.ft_model_path+"/checkpoint_loss_*")
             list.sort(checkpoint_files)
@@ -234,8 +236,8 @@ if args.aug == 'generate':
         enc = encoder('cmlm-large')
         enc_dic = {}
         for l in ds.df_train['label'].unique():
-            contents = ds.df_train.loc[ds.df_train['label']==l]['content'].values
-            embeds = enc.infer(contents)
+            contents_ = ds.df_train.loc[ds.df_train['label']==l]['content'].values
+            embeds = enc.infer(contents_)
             enc_dic[l] = embeds
 
     if 'dvrl' in filter_list:
@@ -402,18 +404,26 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
     labels = ds.df_train['label'].tolist()
     if args.genm == 'gpt':
         if args.genft == 'lambda':
-            contents = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
+            prompts = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
                         + ds.df_train['content'].map(lambda x: ' '.join(x.split(' ')[:3] )) ).tolist()
+
         elif args.genft in ['tc', 'pp']:
-            contents = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
+            prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
+        elif args.genft in ['ep']:
+            prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
+                                .map(lambda x: '{}{}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
         else:
-            contents = ds.df_train['content'].tolist()
+            prompts = ds.df_train['content'].tolist()
 
     elif args.genm == 'ctrl':
-        contents = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
+        prompts = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
 
     elif args.genm == 't5':
-        contents = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
+        if args.genft in ['ep']:
+            prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
+                                .map(lambda x: '{}{}'.format(x, tokenizer_t5.eos_token) ).tolist()
+        else:
+            prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
 
     label_names = ds.df_train['label_name'].tolist()
     
@@ -434,20 +444,20 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         for itr in range(100):     
             results = []
             for i in range(0, ds.df_train.shape[0], args.trunk_size):
-                contents_trunk = contents[i:i+args.trunk_size]
+                prompts_trunk = prompts[i:i+args.trunk_size]
                 labels_trunk = labels[i:i+args.trunk_size] 
-                # contents_trunk: list of contents
+                # prompts_trunk: list of prompts
                 if args.genm == 'gpt':
                     #return 32*8
-                    results_trunk = gen_nlp(contents_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, \
+                    results_trunk = gen_nlp(prompts_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, \
                         repetition_penalty=1.0, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
                 elif args.genm == 'ctrl':
                     #return 32*8
-                    results_trunk = gen_nlp(contents_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1, \
+                    results_trunk = gen_nlp(prompts_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1, \
                         repetition_penalty=1.2, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
                 elif args.genm == 't5':
                     results_trunk = []
-                    for sent in contents_trunk:
+                    for sent in prompts_trunk:
                         contents_trunk_ = gen_nlp(sent, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                             repetition_penalty=1.0, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True) 
                         results_trunk.append(contents_trunk_)

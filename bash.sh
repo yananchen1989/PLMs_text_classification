@@ -43,10 +43,6 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep -
 
 
 
-
-
-
-
 ############################################################################################################################################
 ps aux|grep dvrl_iter|grep -v grep | awk '{print $2}'|xargs kill -9
 

@@ -26,7 +26,6 @@ The Race is On: Second Private Team Sets Launch Date for Human Spaceflight (SPAC
 '''
 
 from utils.load_data import * 
-
 ds = load_data(dataset='ag', samplecnt= 128)
 
 
@@ -43,7 +42,7 @@ print(tokenizer_gpt2)
 gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 
 # tc pp
-gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('gpt', 'pp') )
+gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('gpt', 'ep') )
 
 gpt2.trainable = False
 gpt2.config.pad_token_id=50256
@@ -76,7 +75,7 @@ gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, de
 sent = ds.df_train.sample(1)['content'].tolist()[0]
 
 # t5
-gen_nlp(sent+tokenizer_t5.eos_token, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+gen_nlp(sent+tokenizer_t5.eos_token, max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                             repetition_penalty=1.0, num_return_sequences=4, clean_up_tokenization_spaces=True)
 
 # gpt
@@ -94,6 +93,7 @@ pp: insufficient
 
 
 gpt2:
+no:
 tc: enough
 pp: insufficient
 '''

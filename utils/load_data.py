@@ -200,10 +200,15 @@ def get_cnndm_news(s=1):
     # df_cnndm.drop_duplicates(['title','content'], inplace=True) # 311971
     # df_cnndm.to_csv('./torch_ds/df_cnndm_news.csv', index=False)
 
-    df = pd.read_csv("./torch_ds/df_cnndm_news.csv", lineterminator='\n')
-
     return df.sample(frac=s) #308870  
 
+
+def get_cc_text_single(s=1):
+    #if ft_pattern in ['pp', 'tc']:
+    df_cc = get_cc_news(s)
+    df_cc = df_cc.loc[(df_cc['content']!='')  & (~df_cc['content'].isnull())]
+    return df_cc.rename(columns={'content': 'text'})[['text']]
+    
 
 def get_cc_text_double(ft_pattern, s=1):
     #if ft_pattern in ['pp', 'tc']:
@@ -224,6 +229,20 @@ def get_cc_text_double(ft_pattern, s=1):
         df_cc['text1'] = [c[0] for c in rr]
         df_cc['text2'] = [c[1] for c in rr]
         return df_cc[['text1','text2']]
+
+def get_summary_text_double(dsn, s=1):
+
+    df = pd.read_csv("./torch_ds/df_{}_news.csv".format(dsn), lineterminator='\n').sample(frac=s)
+    if dsn == 'cnndm':
+        df = df.rename(columns={'highlights': 'text1'}).rename(columns={'article': 'text2'})[['text1','text2']]
+    elif dsn == 'xsum':
+        df = df.rename(columns={'summary': 'text1'}).rename(columns={'document': 'text2'})[['text1','text2']]
+
+    df = df.loc[(df['text1']!='') & (df['text2']!='') & (~df['text1'].isnull()) & (~df['text2'].isnull())]
+    df.drop_duplicates(['text1','text2'], inplace=True) 
+    
+    return df 
+
 
 '''
     def get_tweet(self):

@@ -18,18 +18,51 @@ yahoo_news_test = datasets.load_dataset('yahoo_answers_topics', split="test")
 news_train = datasets.load_dataset('newspop')
 
 import datasets
+import pandas as pd 
 
 cnndm_news = datasets.load_dataset('cnn_dailymail', '3.0.0')
-
 ll = []
 for col in ['train', 'validation', 'test']:
     df_tmp = pd.DataFrame(zip(cnndm_news[col]['article'], cnndm_news[col]['highlights']), \
-                columns=['content', 'title'])
-ll.append(df_tmp)
+                columns=['article', 'highlights'])
+    ll.append(df_tmp)
+df = pd.concat(ll)
+
+row = df.sample(1)
+print(row['article'].tolist()[0])
+print()
+print(row['highlights'].tolist()[0])
+
+df.to_csv("df_cnndm_news.csv", index=False)
+
+df.drop_duplicates(['article','highlights'], inplace=True)
 
 
 
 
+
+xsum_news = datasets.load_dataset('xsum', cache_dir='~/.cache/huggingface/datasets/xsum')
+ll = []
+for col in ['train', 'validation', 'test']:
+    df_tmp = pd.DataFrame(zip(xsum_news[col]['document'], xsum_news[col]['summary']), \
+                columns=['document', 'summary'])
+    ll.append(df_tmp)
+
+
+df = pd.concat(ll)
+
+row = df.sample(1)
+print(row['document'].tolist()[0])
+print()
+print(row['summary'].tolist()[0])
+
+df.to_csv("df_xsum_news.csv", index=False)
+
+df.drop_duplicates(['document','summary'], inplace=True)
+
+
+
+df.loc[df['document'].isnull()].shape
 
 # torchtext
 import torchtext 
