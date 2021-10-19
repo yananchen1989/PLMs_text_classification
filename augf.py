@@ -72,8 +72,6 @@ from tensorflow import keras
 from transformers import pipeline
 from threading import Thread
 
-import tensorflow.python.util.deprecation as deprecation
-deprecation._PRINT_DEPRECATION_WARNINGS = False
 
 #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
 #tf.keras.backend.set_floatx('float16')

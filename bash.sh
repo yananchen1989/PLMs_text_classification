@@ -45,8 +45,8 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep -
 
 
 
-
-
+nohup bash run_baseline.sh 1 128 3 8 7 &
+nohup bash run_baseline.sh 3 128 3 8 6 &
 
 
 
