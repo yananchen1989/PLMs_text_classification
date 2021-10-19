@@ -25,6 +25,7 @@ sent = '''
 The Race is On: Second Private Team Sets Launch Date for Human Spaceflight (SPACE.com) SPACE.com - TORONTO, Canada -- A second\team of rocketeers competing for the  #36;10 million Ansari X Prize, a contest for\privately funded suborbital space flight, has officially announced the first\launch date for its manned rocket.
 '''
 
+from transformers import pipeline
 from utils.load_data import * 
 ds = load_data(dataset='ag', samplecnt= 128)
 
@@ -47,6 +48,18 @@ gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('gpt', 'ep') )
 gpt2.trainable = False
 gpt2.config.pad_token_id=50256
 gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+
+
+for ix, row in ds.df_train.iterrows():
+    content = row['content']
+    sent_ners = get_ners(content)
+    if not sent_ners:
+        print(content)
+         
+
+
+gen_nlp(content+tokenizer_gpt2.sep_token, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                            repetition_penalty=1.0, num_return_sequences=4, clean_up_tokenization_spaces=True)
 
 
 

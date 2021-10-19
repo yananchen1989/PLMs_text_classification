@@ -43,7 +43,4 @@ do
 done
 
 
-# nohup bash run_gpt.sh 1 128 3 8 0 &
-# nohup bash run_gpt.sh 3 128 3 8 1 &
-# nohup bash run.sh 5 128 3 8 2 &
 

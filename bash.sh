@@ -39,19 +39,25 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep -
 
 python -u augf.py --dsn ag --samplecnt 128 --aug eda  --max_aug_times 1 --gpu 7
 
+python -u augf.py --dsn ag --samplecnt 128 --aug bt  --max_aug_times 1 --gpu 6
 
 
 
 
+# generate 
+nohup bash run_gpt.sh 1 128 3 8 0 &
+nohup bash run_gpt.sh 3 128 3 8 1 &
+nohup bash run.sh     5 128 3 8 2 &
 
 
+# baseline
 nohup bash run_baseline.sh 1 128 3 8 7 &
 nohup bash run_baseline.sh 3 128 3 8 6 &
 nohup bash run_baseline.sh 5 128 3 8 5 &
 
 
 ############################################################################################################################################
-ps aux|grep dvrl_iter|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep augf|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux --sort=start_time
 
 tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.py

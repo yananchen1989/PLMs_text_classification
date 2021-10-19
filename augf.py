@@ -112,6 +112,7 @@ ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplica
 testbed_func = {"test":do_train_test, "valid":do_train_test_valid}
 
 if args.testbed:
+    print("begin_to_test_noaug")
     acc_noaug, model_cls = testbed_func[args.testvalid](ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
                args.basetry, args.basemode, args.model)
     #model_cls.save_weights("model_cls.h5")

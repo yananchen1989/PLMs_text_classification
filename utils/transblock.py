@@ -219,6 +219,7 @@ def do_train_test_valid(df_train_valid, df_test, ixl, epochs=50, freq=10, verbos
     best_test_accs = []
     models = []
     for ii in range(basetry):
+        print("basetry==>", ii)
         df_train, df_valid = train_test_split(df_train_valid, test_size=0.2)
 
         x_train, y_train = get_keras_data(df_train)
@@ -271,6 +272,7 @@ def do_train_test(df_train, df_test, ixl, epochs=50, freq=10, verbose=1, \
     best_val_accs = []
     models = []
     for ii in range(basetry):
+        print("basetry==>", ii)
         with tf.distribute.MirroredStrategy().scope():
         #with tf.device('/GPU:{}'.format(gpu)):
             if model_name == 'albert':
