@@ -5,9 +5,16 @@ cat logb|grep 'samplecnt:128'|grep 'dsn:ag'|grep 'genm:t5'
 ##### augf
 seed=$RANDOM
 nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                  --genft no  --genm gpt --filter dvrl --seed 0 \
+                  --genft ep  --genm gpt --filter dvrl --seed 0 \
                   --testvalid valid --valid_files_cnt 16  --threads 16 \
-                  --abundance 3  --num_return_sequences 4 --gpu 6 --testbed 0 > augf.test.log & 
+                  --abundance 3  --num_return_sequences 4 --gpu 0 --testbed 0 > augf.test.log & 
+
+
+nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+                  --genft tc  --genm gpt --filter dvrl --seed 100 \
+                  --testvalid valid --valid_files_cnt 16  --threads 16 \
+                  --abundance 3  --num_return_sequences 4 --gpu 1 --testbed 0 > augf.test.log & 
+
 
 
 ############## ft gpt 
@@ -45,7 +52,7 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep -
 
 ############################################################################################################################################
 ps aux|grep dvrl_iter|grep -v grep | awk '{print $2}'|xargs kill -9
-
+ps aux --sort=start_time
 
 tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.py
 

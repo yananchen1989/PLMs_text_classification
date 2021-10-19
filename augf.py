@@ -574,8 +574,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
     elif args.aug == 'eda':
         aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
                                    alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
-        assert len(aug_sentences) == ds.df_train.shape[0] and len(aug_sentences[1]) == args.beams \
-                and len(aug_sentences) == len(labels)
+        assert len(aug_sentences) == ds.df_train.shape[0] and len(aug_sentences) == len(labels)
         samples_syn = []
         for ii in range(len(aug_sentences)):
             for sent in aug_sentences[ii]:
