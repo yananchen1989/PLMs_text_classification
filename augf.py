@@ -590,7 +590,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
     elif args.aug == 'bt':
         samples_syn = []
         for i in range(0, ds.df_train.shape[0], args.trunk_size):
-            contents_trunk = contents[i:i+args.trunk_size]
+            contents_trunk = prompts[i:i+args.trunk_size]
             labels_trunk = labels[i:i+args.trunk_size]
 
             content_ =  nlp_forward(contents_trunk, truncation=True, \
