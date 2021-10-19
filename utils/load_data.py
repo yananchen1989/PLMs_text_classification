@@ -189,19 +189,6 @@ def get_cc_news(s=1):
     df = pd.read_csv("./torch_ds/df_cc_news_ners.csv", lineterminator='\n')
     return df.sample(frac=s) #615019  
 
-def get_cnndm_news(s=1):
-    # cnndm_news = datasets.load_dataset('cnn_dailymail', '3.0.0', cache_dir='./torch_ds')
-    # ll = []
-    # for col in ['train', 'validation', 'test']:
-    #     df_tmp = pd.DataFrame(zip(cnndm_news[col]['article'], cnndm_news[col]['highlights']), \
-    #                 columns=['content', 'title'])
-    #     ll.append(df_tmp)
-    # df_cnndm = pd.concat(ll)
-    # df_cnndm.drop_duplicates(['title','content'], inplace=True) # 311971
-    # df_cnndm.to_csv('./torch_ds/df_cnndm_news.csv', index=False)
-
-    return df.sample(frac=s) #308870  
-
 
 def get_cc_text_single(s=1):
     #if ft_pattern in ['pp', 'tc']:
@@ -211,13 +198,11 @@ def get_cc_text_single(s=1):
     
 
 def get_cc_text_double(ft_pattern, s=1):
-    #if ft_pattern in ['pp', 'tc']:
+
     df_cc = get_cc_news(s)
     df_cc = df_cc.loc[(df_cc['title']!='') & (df_cc['content']!='') & (~df_cc['title'].isnull()) & (~df_cc['content'].isnull())]
     df_cc = df_cc.loc[(df_cc['ners']!='') & (~df_cc['ners'].isnull())]
-    #elif ft_pattern == 'cnndm':
-    #    df_cc = get_cnndm_news(s)
-        
+
     if ft_pattern == 'tc':
         return df_cc.rename(columns={'title': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
 
