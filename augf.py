@@ -816,6 +816,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
 syn_df_ll = []
 for augi in range(args.max_aug_times):
+    print("augi==>{}".format(augi))
     df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
     syn_df_ll.append(df_synthesize)
 
