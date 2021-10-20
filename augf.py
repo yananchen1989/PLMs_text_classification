@@ -89,7 +89,9 @@ if gpus:
       #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
   except RuntimeError as e:
     print(e)
-assert gpus
+
+if args.aug not in ['cgpt','cbert']:
+    assert gpus
 device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 device1 = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
 assert device0.type=='cuda' and device1.type == 'cuda'
