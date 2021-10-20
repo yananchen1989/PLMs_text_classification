@@ -37,9 +37,9 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep -
 
 
 
-python -u augf.py --dsn ag --samplecnt 128 --aug eda  --max_aug_times 1 --gpu 7
+python -u augf.py --dsn ag --samplecnt 128 --aug eda  --max_aug_times 1 --gpu 0 --testbed 
 
-python -u augf.py --dsn ag --samplecnt 128 --aug bt  --max_aug_times 1 --gpu 6
+python -u augf.py --dsn ag --samplecnt 128 --aug bt  --max_aug_times 1 --gpu 1 --testbed 0 --trunk_size 8 
 
 
 
@@ -54,6 +54,10 @@ nohup bash run.sh     5 128 3 8 2 &
 nohup bash run_baseline.sh 1 128 3 8 7 &
 nohup bash run_baseline.sh 3 128 3 8 6 &
 nohup bash run_baseline.sh 5 128 3 8 5 &
+
+# sec1dev
+nohup bash run_baseline.sh 1 128 3 8 0 &
+nohup bash run_baseline.sh 3 128 3 8 1 &
 
 
 ############################################################################################################################################

@@ -12,7 +12,7 @@ do
 		# for aug in eda bt 
 		# do
 		# 	python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug ${aug} \
-		# 	    --max_aug_times ${max_aug_times}  --gpu ${gpu} --seed ${seed} --testvalid valid \
+		# 	    --max_aug_times ${max_aug_times}  --gpu ${gpu} --seed ${seed} --testvalid valid --trunk_size 8 \
 		# 	   > ./log_arxiv_baseline/${dsn}.${aug}.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
 		# done
 

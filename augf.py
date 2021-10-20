@@ -41,17 +41,16 @@ parser.add_argument("--filter", default="nli,cls,enc,nsp", type=str)
 
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
-parser.add_argument("--ft_model_path", default="", type=str)
 
 parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--basetry", default=3, type=int)
 parser.add_argument("--num_return_sequences", default=4, type=int)
 
 parser.add_argument("--gpu", default="0,1,2,3", type=str)
-parser.add_argument("--encm", default='dan', type=str, \
-     choices=['dan', 'cmlm', \
-     'paraphrase-distilroberta-base-v2','paraphrase-mpnet-base-v2','paraphrase-TinyBERT-L6-v2',\
-     'paraphrase-MiniLM-L3-v2', 'average_word_embeddings_glove.6B.300d','nli-distilroberta-base-v2'])
+# parser.add_argument("--encm", default='dan', type=str, \
+#      choices=['dan', 'cmlm', \
+#      'paraphrase-distilroberta-base-v2','paraphrase-mpnet-base-v2','paraphrase-TinyBERT-L6-v2',\
+#      'paraphrase-MiniLM-L3-v2', 'average_word_embeddings_glove.6B.300d','nli-distilroberta-base-v2'])
 
 args = parser.parse_args()
 print('args==>', args)
@@ -198,8 +197,8 @@ if args.aug == 'generate':
         if args.genft == 'no':
             t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
         elif args.genft in ['tc', 'pp', 'ep']:
-            args.ft_model_path = 'ft_model_{}_{}'.format(args.genm, args.genft)
-            checkpoint_files = glob.glob(args.ft_model_path+"/checkpoint_loss_*")
+            ft_model_path = 'ft_model_{}_{}'.format(args.genm, args.genft)
+            checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
             list.sort(checkpoint_files)
             t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
         gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
