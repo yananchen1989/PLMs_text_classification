@@ -1,5 +1,3 @@
-cat logb|grep 'samplecnt:128'|grep 'dsn:ag'|grep 'genm:t5'
-
 
 
 ##### augf
@@ -8,12 +6,6 @@ nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate 
                   --genft ep  --genm gpt --filter dvrl --seed 0 \
                   --testvalid valid --valid_files_cnt 16  --threads 16 \
                   --abundance 3  --num_return_sequences 4 --gpu 0 --testbed 0 > augf.test.log & 
-
-
-nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                  --genft tc  --genm gpt --filter dvrl --seed 100 \
-                  --testvalid valid --valid_files_cnt 16  --threads 16 \
-                  --abundance 3  --num_return_sequences 4 --gpu 1 --testbed 0 > augf.test.log & 
 
 
 
@@ -32,32 +24,42 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep -
 
 
 
-
+nohup envcbert/bin/python -u augf.py --dsn ag --samplecnt 128 --aug cbert \
+             --max_aug_times 1 --gpu 6 --testbed 1 --testvalid valid > test.augf.cbert.log & 
 
 
 
 
 python -u augf.py --dsn ag --samplecnt 128 --aug eda  --max_aug_times 1 --gpu 0 --testbed 
 
-python -u augf.py --dsn ag --samplecnt 128 --aug bt  --max_aug_times 1 --gpu 7 --testbed 0 --trunk_size 32 
+python -u augf.py --dsn ag --samplecnt 128 --aug bt  --max_aug_times 1 --gpu 7 \
+       --testbed 1 --trunk_size 4 --basetry 1 --epochs 5 --testvalid valid
 
 
 
 
 # generate 
-nohup bash run_gpt.sh 1 128 3 8 0 &
-nohup bash run_gpt.sh 3 128 3 8 1 &
-nohup bash run.sh     5 128 3 8 2 &
+nohup bash run.sh 1 128 3 8 0 &
+nohup bash run.sh 1 128 3 8 1 &
+nohup bash run.sh 1 128 3 8 2 &
+nohup bash run.sh 1 128 3 8 3 &
+
+nohup bash run.sh 4 128 3 8 4 &
+nohup bash run.sh 4 128 3 8 5 &
+nohup bash run.sh 4 128 3 8 6 &
+nohup bash run.sh 4 128 3 8 7 &
 
 
-# baseline
-nohup bash run_baseline.sh 1 128 3 8 7 &
-nohup bash run_baseline.sh 3 128 3 8 6 &
-nohup bash run_baseline.sh 5 128 3 8 5 &
 
-# sec1dev
-nohup bash run_baseline.sh 1 128 3 8 0 &
-nohup bash run_baseline.sh 3 128 3 8 1 &
+
+
+
+
+
+
+
+
+
 
 
 ############################################################################################################################################
