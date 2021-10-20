@@ -252,6 +252,7 @@ def do_train_test_valid(df_train_valid, df_test, ixl, epochs=50, freq=10, verbos
         best_val_accs.append(result_valid[1])
         best_test_accs.append(result_test[1])
         models.append(model)
+        tf.keras.backend.clear_session()
 
     print('do_train_test iters valid==>', best_val_accs)
     print('do_train_test iters test==>', best_test_accs)
