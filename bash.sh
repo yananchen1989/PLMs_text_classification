@@ -25,7 +25,7 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep -
 
 
 nohup envcbert/bin/python -u augf.py --dsn ag --samplecnt 128 --aug cbert \
-             --max_aug_times 1 --gpu 6 --testbed 1 --testvalid valid > test.augf.cbert.log & 
+             --max_aug_times 1 --gpu 7 --testbed 1 --testvalid valid > test.augf.cbert.log & 
 
 
 
@@ -47,12 +47,13 @@ nohup bash run.sh 1 128 3 8 3 &
 nohup bash run.sh 4 128 3 8 4 &
 nohup bash run.sh 4 128 3 8 5 &
 nohup bash run.sh 4 128 3 8 6 &
-nohup bash run.sh 4 128 3 8 7 &
+nohup bash run.sh 4 128 3 8 7 & 
 
 
 
 
-
+# 31781 gpu1 倍增1 
+# 8811 gpu7 倍增4
 
 
 
