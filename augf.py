@@ -444,6 +444,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         for itr in range(100):     
             results = []
             for i in range(0, ds.df_train.shape[0], args.trunk_size):
+                torch.cuda.empty_cache() 
                 prompts_trunk = prompts[i:i+args.trunk_size]
                 labels_trunk = labels[i:i+args.trunk_size] 
                 # prompts_trunk: list of prompts
