@@ -433,33 +433,33 @@ def dvrl_inner_join(files):
 
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
-    labels = ds.df_train['label'].tolist()
-    if args.genm == 'gpt' and args.aug == 'generate':
-        if args.genft == 'lambda':
-            prompts = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
-                        + ds.df_train['content'].map(lambda x: ' '.join(x.split(' ')[:3] )) ).tolist()
 
-        elif args.genft in ['tc', 'pp']:
-            prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
-        elif args.genft in ['ep']:
-            prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
-                                .map(lambda x: '{}{}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
-        else:
-            prompts = ds.df_train['content'].tolist()
-
-    elif args.genm == 'ctrl' and args.aug == 'generate':
-        prompts = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
-
-    elif args.genm == 't5' and args.aug == 'generate':
-        if args.genft in ['ep']:
-            prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
-                                .map(lambda x: '{}{}'.format(x, tokenizer_t5.eos_token) ).tolist()
-        else:
-            prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
-
-    label_names = ds.df_train['label_name'].tolist()
-    
     if args.aug == 'generate':
+
+        labels = ds.df_train['label'].tolist()
+        if args.genm == 'gpt':
+            if args.genft == 'lambda':
+                prompts = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
+                            + ds.df_train['content'].map(lambda x: ' '.join(x.split(' ')[:3] )) ).tolist()
+
+            elif args.genft in ['tc', 'pp']:
+                prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
+            elif args.genft in ['ep']:
+                prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
+                                    .map(lambda x: '{}{}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
+            else:
+                prompts = ds.df_train['content'].tolist()
+
+        elif args.genm == 'ctrl':
+            prompts = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
+
+        elif args.genm == 't5':
+            if args.genft in ['ep']:
+                prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
+                                    .map(lambda x: '{}{}'.format(x, tokenizer_t5.eos_token) ).tolist()
+            else:
+                prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
+
         # nli config
         ln_extend = {}
         for l in ds.df_test['label_name'].unique():
@@ -507,7 +507,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     if not generated_text or len(tokenizer_bert.encode(generated_text))<= 20 :
                         continue
                     label = labels[ii]
-                    label_name = label_names[ii]
+                    label_name = ds.df_train['label_name'].tolist()[ii]
                     assert label_name in ds.df_test['label_name'].unique()
 
 
@@ -607,11 +607,11 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
     elif args.aug == 'eda':
         aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
                                    alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
-        assert len(aug_sentences) == ds.df_train.shape[0] and len(aug_sentences) == len(labels)
+        assert len(aug_sentences) == ds.df_train.shape[0]
         samples_syn = []
         for ii in range(len(aug_sentences)):
             for sent in aug_sentences[ii]:
-                samples_syn.append((sent, labels[ii]))
+                samples_syn.append((sent, ds.df_train['label'].tolist()[ii]))
 
     # elif args.aug == 'fillin':
     #     augmentor = fillInmask()
@@ -624,8 +624,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
     elif args.aug == 'bt':
         samples_syn = []
         for i in range(0, ds.df_train.shape[0], args.trunk_size):
-            contents_trunk = prompts[i:i+args.trunk_size]
-            labels_trunk = labels[i:i+args.trunk_size]
+            contents_trunk = ds.df_train['content'].tolist()[i:i+args.trunk_size]
+            labels_trunk = ds.df_train['label'].tolist()[i:i+args.trunk_size]
 
             content_ =  nlp_forward(contents_trunk, truncation=True, \
                        do_sample=True, temperature=0.9, max_length=512, num_return_sequences=1)
