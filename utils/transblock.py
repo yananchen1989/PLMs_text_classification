@@ -264,7 +264,7 @@ def do_train_test_valid(df_train_valid, df_test, ixl, epochs=50, freq=10, verbos
     elif basemode == 'max':
         return round(np.array(best_test_accs).max(), 4), best_model
 
-def do_train_test(df_train, df_test, ixl, epochs=50, freq=10, verbose=1, \
+def do_train_test(df_train, df_test, ixl, epochs=100, freq=100, verbose=1, \
                basetry=3, basemode='max', model_name='albert'):
 
     x_train, y_train = get_keras_data(df_train)
@@ -289,8 +289,8 @@ def do_train_test(df_train, df_test, ixl, epochs=50, freq=10, verbose=1, \
                 raise KeyError("input model illegal!")
 
         history = model.fit(
-            x_train, y_train, batch_size=16, epochs=epochs, \
-            validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=64, validation_freq=freq
+            x_train, y_train, batch_size=16, epochs=70, \
+            validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=64, validation_freq=70
             #callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
         )
         if df_test.label.unique().shape[0] == 2:

@@ -27,7 +27,7 @@ df = pd.DataFrame(infos, columns=['dsn','aug', 'max_aug_times', 'genm','genft', 
                     'valid_files_cnt', 'acc_aug', 'gain'])
 
 
-max_aug_times_sel = [3]
+max_aug_times_sel = [5]
 
 for dsn in ['ag', 'uci', 'nyt']:
     for aug in ['eda','bt','cbert']:
@@ -70,8 +70,10 @@ nyt bt 1 0.79(3)
 
 
 
-import glob 
-files = glob.glob("*.log")
+import glob, os 
+
+files = sorted(glob.glob('*.log'), key=os.path.getmtime)
+
 for file in files:
     with open(file, 'r') as f:
         success = 0 
@@ -91,20 +93,12 @@ for file in files:
 
 
 
-ag.generate.128.max_aug_times.1.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.31781.log
-ag.generate.128.max_aug_times.1.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.17132.log
-
-ag.generate.128.max_aug_times.1.genm.t5.genft.ep.filter.dvrl.abundance.3.num_return_sequences.8.17132.log
-ag.generate.128.max_aug_times.4.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.8811.log
-ag.generate.128.max_aug_times.1.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.31781.log
-ag.generate.128.max_aug_times.4.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.797.log
-ag.generate.128.max_aug_times.4.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.21043.log
-ag.generate.128.max_aug_times.1.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.17132.log
-nyt.generate.128.max_aug_times.1.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.23102.log
-ag.generate.128.max_aug_times.4.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.29871.log
-uci.generate.128.max_aug_times.1.genm.gpt.genft.no.filter.dvrl.abundance.3.num_return_sequences.8.31781.log
-ag.generate.128.max_aug_times.1.genm.t5.genft.no.filter.dvrl.abundance.3.num_return_sequences.8.558.log
-
+RuntimeError==> ag.generate.128.max_aug_times.1.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.31781.log
+RuntimeError==> ag.generate.128.max_aug_times.1.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.17132.log
+RuntimeError==> ag.generate.128.max_aug_times.1.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.31781.log
+RuntimeError==> uci.generate.128.max_aug_times.5.genm.t5.genft.no.filter.dvrl.abundance.3.num_return_sequences.8.14679.log
+RuntimeError==> ag.generate.128.max_aug_times.1.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.17132.log
+RuntimeError==> nyt.generate.128.max_aug_times.1.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.23102.log
 
 
 

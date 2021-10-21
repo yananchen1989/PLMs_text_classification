@@ -124,9 +124,9 @@ if args.testbed:
         best_test_accs = []
         models = []
 
-        for ddi in range(2):
+        for ddi in range(1):
             threads = []
-            for di in range(2):
+            for di in range(3):
                 t = Thread(target=do_train_test_valid_thread, args=(ds.df_train, ds.df_test, best_val_accs, best_test_accs, models,\
                                  ixl, args.epochs, args.freq, args.verbose, \
                                     args.model, di + ddi*2  ))
