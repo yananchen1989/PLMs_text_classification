@@ -26,9 +26,9 @@ parser.add_argument("--abundance", default=1, type=int)
 parser.add_argument("--epochs_ft", default=3, type=int)
 parser.add_argument("--trunk_size", default=32, type=int)
 parser.add_argument("--epochs", default=100, type=int)
-parser.add_argument("--freq", default=25, type=int)
+#parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
-parser.add_argument("--testvalid", default='valid', type=str)
+#parser.add_argument("--testvalid", default='valid', type=str)
 parser.add_argument("--boost", default=0, type=int)
 
 parser.add_argument("--seed", default=333, type=int)
@@ -36,19 +36,21 @@ parser.add_argument("--seed", default=333, type=int)
 parser.add_argument("--valid_files_cnt", default=16, type=int)
 parser.add_argument("--threads", default=64, type=int)
 
-parser.add_argument("--filter", default="nli,cls,enc,nsp", type=str)
+parser.add_argument("--filter", default="dvrl", type=str)
 # choices=['nli','cls','no','enc','nsp','dvrl','both']
 
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
 
 parser.add_argument("--max_aug_times", default=1, type=int)
-parser.add_argument("--basetry", default=3, type=int)
+#parser.add_argument("--basetry", default=3, type=int)
 parser.add_argument("--num_return_sequences", default=4, type=int)
-parser.add_argument("--do_train_test_parallel", default=0, type=int)
+#parser.add_argument("--do_train_test_parallel", default=0, type=int)
 
 parser.add_argument("--gpu", default="0", type=str)
 
+parser.add_argument("--ddi", default=1, type=int)
+parser.add_argument("--di", default=3, type=int)
 
 
 
@@ -115,45 +117,48 @@ ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates(
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 #seed = random.sample(list(range(10000)), 1)[0]
 
-testbed_func = {"test":do_train_test, "valid":do_train_test_valid}
+testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
+
+
+
+def thread_testing(testvalid, df_train, df_test):
+    best_test_accs = []
+    models = []
+
+    for ddi in range(args.ddi):
+        threads = []
+        for di in range(args.di):
+            t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
+                              args.epochs,  args.verbose))
+            t.start()
+            threads.append(t)
+
+        # join all threads
+        for t in threads:
+            t.join()
+
+    if args.basemode == 'mean':
+        acc = round(np.array(best_test_accs).mean(), 4)
+    elif args.basemode == 'max':
+        acc = round(np.array(best_test_accs).max(), 4)
+
+    model_best = models[np.array(best_test_accs).argmax()]
+    return  acc, model_best
 
 if args.testbed:
     print("begin_to_test_noaug")
-    if args.do_train_test_parallel and  args.testvalid == 'valid':
-        best_val_accs = []
-        best_test_accs = []
-        models = []
-
-        for ddi in range(1):
-            threads = []
-            for di in range(3):
-                t = Thread(target=do_train_test_valid_thread, args=(ds.df_train, ds.df_test, best_val_accs, best_test_accs, models,\
-                                 ixl, args.epochs, args.freq, args.verbose, \
-                                    args.model, di + ddi*2  ))
-                t.start()
-                threads.append(t)
-
-            # join all threads
-            for t in threads:
-                t.join()
-
-        if args.basemode == 'mean':
-            acc_noaug = round(np.array(best_test_accs).mean(), 4)
-        elif args.basemode == 'max':
-            acc_noaug = round(np.array(best_test_accs).max(), 4)
-
-        model_cls = models[np.array(best_test_accs).argmax()]
-    else:
-        acc_noaug, model_cls = testbed_func[args.testvalid](ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
-               args.basetry, args.basemode, args.model)
-    #model_cls.save_weights("model_cls.h5")
+    acc_noaug, model_cls = thread_testing('test',  ds.df_train, ds.df_test)
 else:
     acc_noaug = -1
+
+
+
+
+
 
 if args.aug == 'generate' and args.genft == 'ep':
     from utils.flair_ners import * 
     
-
 if args.aug == 'eda':
     from utils.eda import *
 
@@ -855,31 +860,10 @@ for augi in range(args.max_aug_times):
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
 
-if args.do_train_test_parallel and args.testvalid == 'valid':
-    best_val_accs = []
-    best_test_accs = []
-    models = []
 
-    for ddi in range(2):
-        threads = []
-        for di in range(2):
-            t = Thread(target=do_train_test_valid_thread, args=(ds.df_train, ds.df_test, best_val_accs, best_test_accs, models, \
-                                     ixl, args.epochs, args.freq, args.verbose, \
-                                        args.model, di + ddi*2))
-            t.start()
-            threads.append(t)
+acc_aug, _ = thread_testing('test', df_train_aug, ds.df_test)
 
-        # join all threads
-        for t in threads:
-            t.join()
-    if args.basemode == 'mean':
-        acc_aug = round(np.array(best_test_accs).mean(), 4)
-    elif args.basemode == 'max':
-        acc_aug = round(np.array(best_test_accs).max(), 4)
 
-else:  
-    acc_aug, _ = testbed_func[args.testvalid](df_train_aug, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
-                        args.basetry, args.basemode, args.model)
 
 
 
@@ -892,7 +876,7 @@ else:
 
 
 summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-    ['acc_base:{} acc_aug:{} gain:{}'.format(acc_noaug, acc_aug, gain )]
+    ['acc_base:{} acc_aug:{} gain:{} '.format(acc_noaug, acc_aug, gain )]
 
 
 record_log('logb', summary)

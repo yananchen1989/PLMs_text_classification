@@ -206,124 +206,108 @@ def get_class_acc(model, x_test, y_test, ixl):
         acc_class = cm.diagonal()[i] / cm[:,i].sum()
         print("acc_class==>", ixl[i], acc_class)
 
-def do_train_test_valid(df_train_valid, df_test, ixl, epochs=50, freq=10, verbose=1, \
-               basetry=3, basemode='max', model_name='albert'):
+# def do_train_test_valid(df_train_valid, df_test, ixl, epochs=50, freq=10, verbose=1, \
+#                basetry=3, basemode='max', model_name='albert'):
     
-    # df_train_valid = ds.df_train
-    # df_test = ds.df_test
-    # model_name = 'albert'
-    # verbose = 1
-    # epochs = 100
+#     # df_train_valid = ds.df_train
+#     # df_test = ds.df_test
+#     # model_name = 'albert'
+#     # verbose = 1
+#     # epochs = 100
 
-    best_val_accs = []
-    best_test_accs = []
-    models = []
-    for ii in range(basetry):
-        print("basetry==>", ii)
-        df_train, df_valid = train_test_split(df_train_valid, test_size=0.2)
+#     best_val_accs = []
+#     best_test_accs = []
+#     models = []
+#     for ii in range(basetry):
+#         print("basetry==>", ii)
+#         df_train, df_valid = train_test_split(df_train_valid, test_size=0.2)
 
-        x_train, y_train = get_keras_data(df_train)
-        x_valid, y_valid = get_keras_data(df_valid)
-        x_test, y_test = get_keras_data(df_test)
+#         x_train, y_train = get_keras_data(df_train)
+#         x_valid, y_valid = get_keras_data(df_valid)
+#         x_test, y_test = get_keras_data(df_test)
 
-        #with tf.distribute.MirroredStrategy().scope():
-        with tf.device('/GPU:0'):
-            if model_name == 'albert':
-                model = get_model_bert(df_test.label.unique().shape[0])
+#         #with tf.distribute.MirroredStrategy().scope():
+#         with tf.device('/GPU:0'):
+#             if model_name == 'albert':
+#                 model = get_model_bert(df_test.label.unique().shape[0])
                 
-            elif model_name == 'former':
-                model = get_model_former(df_test.label.unique().shape[0])
+#             elif model_name == 'former':
+#                 model = get_model_former(df_test.label.unique().shape[0])
                 
-            elif model_name == 'cnn':
-                model = get_model_cnn(df_test.label.unique().shape[0])
+#             elif model_name == 'cnn':
+#                 model = get_model_cnn(df_test.label.unique().shape[0])
                 
-            else:
-                raise KeyError("input model illegal!")
+#             else:
+#                 raise KeyError("input model illegal!")
 
-        model.fit(
-            x_train, y_train, batch_size=16, epochs=epochs, \
-            validation_data=(x_valid, y_valid), verbose=verbose, validation_batch_size=64, 
-            callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=7, mode='max',restore_best_weights=True)]
-        )
+#         model.fit(
+#             x_train, y_train, batch_size=16, epochs=epochs, \
+#             validation_data=(x_valid, y_valid), verbose=verbose, validation_batch_size=64, 
+#             callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=7, mode='max',restore_best_weights=True)]
+#         )
 
-        result_valid = model.evaluate(x_valid, y_valid, batch_size=64)
-        result_test = model.evaluate(x_test, y_test, batch_size=64)
+#         result_valid = model.evaluate(x_valid, y_valid, batch_size=64)
+#         result_test = model.evaluate(x_test, y_test, batch_size=64)
 
-        best_val_accs.append(result_valid[1])
-        best_test_accs.append(result_test[1])
-        models.append(model)
-        #tf.keras.backend.clear_session()
+#         best_val_accs.append(result_valid[1])
+#         best_test_accs.append(result_test[1])
+#         models.append(model)
+#         #tf.keras.backend.clear_session()
 
-    print('do_train_test iters valid==>', best_val_accs)
-    print('do_train_test iters test==>', best_test_accs)
-    #get_class_acc(model, x_test, y_test, ixl)
+#     print('do_train_test iters valid==>', best_val_accs)
+#     print('do_train_test iters test==>', best_test_accs)
+#     #get_class_acc(model, x_test, y_test, ixl)
 
-    best_model = models[np.array(best_test_accs).argmax()]
-    if basemode == 'mean':
-        return round(np.array(best_test_accs).mean(), 4), best_model
-    elif basemode == 'max':
-        return round(np.array(best_test_accs).max(), 4), best_model
+#     best_model = models[np.array(best_test_accs).argmax()]
+#     if basemode == 'mean':
+#         return round(np.array(best_test_accs).mean(), 4), best_model
+#     elif basemode == 'max':
+#         return round(np.array(best_test_accs).max(), 4), best_model
 
-def do_train_test(df_train, df_test, ixl, epochs=100, freq=100, verbose=1, \
-               basetry=3, basemode='max', model_name='albert'):
+def do_train_test_thread(df_train, df_test,  best_test_accs, models, di, \
+                epochs=100,  verbose=1,  model_name='albert'):
 
+    if df_test.label.unique().shape[0] == 2:
+        val_acc = 'val_binary_accuracy'   
+    else:
+        val_acc = 'val_acc'
+
+    print("do_train_test_thread di==>",  di)
     x_train, y_train = get_keras_data(df_train)
     x_test, y_test = get_keras_data(df_test)
 
-    best_val_accs = []
-    models = []
-    for ii in range(basetry):
-        print("basetry==>", ii)
-        with tf.distribute.MirroredStrategy().scope():
-        #with tf.device('/GPU:{}'.format(gpu)):
-            if model_name == 'albert':
-                model = get_model_bert(df_test.label.unique().shape[0])
-                
-            elif model_name == 'former':
-                model = get_model_former(df_test.label.unique().shape[0])
-                
-            elif model_name == 'cnn':
-                model = get_model_cnn(df_test.label.unique().shape[0])
-                
-            else:
-                raise KeyError("input model illegal!")
-
-        history = model.fit(
-            x_train, y_train, batch_size=16, epochs=epochs, \
-            validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=64, validation_freq=freq
-            #callbacks = [EarlyStopping(monitor='val_acc', patience=3, mode='max')]
-        )
-        if df_test.label.unique().shape[0] == 2:
-            val_acc = 'val_binary_accuracy'   
+    #with tf.distribute.MirroredStrategy().scope():
+    with tf.device('/GPU:0'):
+        if model_name == 'albert':
+            model = get_model_bert(df_test.label.unique().shape[0])
+            
+        elif model_name == 'former':
+            model = get_model_former(df_test.label.unique().shape[0])
+            
+        elif model_name == 'cnn':
+            model = get_model_cnn(df_test.label.unique().shape[0])
+            
         else:
-            val_acc = 'val_acc'
+            raise KeyError("input model illegal!")
 
-        best_val_accs.append(max(history.history[val_acc]))
-        models.append(model)
-        print('do_train_test iter==>', ii, 'acc:', max(history.history[val_acc]))
-    print('do_train_test iters==>', best_val_accs)
-    get_class_acc(model, x_test, y_test, ixl)
+    history = model.fit(
+        x_train, y_train, batch_size=16, epochs=epochs, \
+        validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=64, validation_freq=1,
+        callbacks = [tf.keras.callbacks.EarlyStopping(monitor=val_acc, patience=4, mode='max',restore_best_weights=True)]
+    )
 
-    best_model = models[np.array(best_val_accs).argmax()]
-    if basemode == 'mean':
-        return round(np.array(best_val_accs).mean(), 4), best_model
-    elif basemode == 'max':
-        return round(np.array(best_val_accs).max(), 4), best_model
+    best_test_accs.append(max(history.history[val_acc]))
+    models.append(model)
 
+    print('do_train_test iters test==>', best_test_accs)
 
 
 
-def do_train_test_valid_thread(df_train_valid, df_test,  best_val_accs, best_test_accs, models, ixl, epochs=50, freq=10, verbose=1, \
-                         model_name='albert', di=9):
-    
-    # df_train_valid = ds.df_train
-    # df_test = ds.df_test
-    # model_name = 'albert'
-    # verbose = 1
-    # epochs = 100
 
+def do_train_test_valid_thread(df_train_valid, df_test,  best_val_accs, best_test_accs, models, \
+                        ixl, epochs=50, freq=10, verbose=1,  model_name='albert', di=9):
 
-    print("di==>",  di)
+    print("do_train_test_valid_thread di==>",  di)
     df_train, df_valid = train_test_split(df_train_valid, test_size=0.2)
 
     x_train, y_train = get_keras_data(df_train)
@@ -358,8 +342,8 @@ def do_train_test_valid_thread(df_train_valid, df_test,  best_val_accs, best_tes
     models.append(model)
     tf.keras.backend.clear_session()
 
-    print('do_train_test iters valid==>', best_val_accs)
-    print('do_train_test iters test==>', best_test_accs)
+    print('do_train_test_valid iters valid==>', best_val_accs)
+    print('do_train_test_valid iters test==>', best_test_accs)
     #get_class_acc(model, x_test, y_test, ixl)
 
 
