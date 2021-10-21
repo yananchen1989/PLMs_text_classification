@@ -313,8 +313,8 @@ def do_train_test(df_train, df_test, ixl, epochs=50, freq=10, verbose=1, \
 
 
 
-def do_train_test_valid_thread(df_train_valid, df_test, ixl, epochs=50, freq=10, verbose=1, \
-                         model_name='albert', di=9, best_val_accs, best_test_accs, models):
+def do_train_test_valid_thread(df_train_valid, df_test,  best_val_accs, best_test_accs, models, ixl, epochs=50, freq=10, verbose=1, \
+                         model_name='albert', di=9):
     
     # df_train_valid = ds.df_train
     # df_test = ds.df_test
