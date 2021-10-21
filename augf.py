@@ -14,13 +14,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="eda", type=str)
 parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','nyt'])
 parser.add_argument("--samplecnt", default=128, type=int)
+parser.add_argument("--max_aug_times", default=1, type=int)
+
 parser.add_argument("--temp", default=1.0, type=float)
 parser.add_argument("--batch_size", default=32, type=int)
 parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--verbose", default=0, type=int)
 parser.add_argument("--basemode", default="max", type=str) # rank or thres
-parser.add_argument("--beams", default=1, type=int)
-parser.add_argument("--abundance", default=1, type=int)
 
 #parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--epochs_ft", default=3, type=int)
@@ -30,27 +30,24 @@ parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 #parser.add_argument("--testvalid", default='valid', type=str)
 parser.add_argument("--boost", default=0, type=int)
-
-parser.add_argument("--seed", default=333, type=int)
+parser.add_argument("--filter", default="dvrl", type=str)
 
 parser.add_argument("--valid_files_cnt", default=16, type=int)
 parser.add_argument("--threads", default=64, type=int)
 
-parser.add_argument("--filter", default="dvrl", type=str)
-# choices=['nli','cls','no','enc','nsp','dvrl','both']
-
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
 
-parser.add_argument("--max_aug_times", default=1, type=int)
-#parser.add_argument("--basetry", default=3, type=int)
-parser.add_argument("--num_return_sequences", default=4, type=int)
-#parser.add_argument("--do_train_test_parallel", default=0, type=int)
 
+parser.add_argument("--num_return_sequences", default=4, type=int)
+parser.add_argument("--beams", default=1, type=int)
+parser.add_argument("--abundance", default=1, type=int)
+
+parser.add_argument("--seed", default=333, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 
-parser.add_argument("--ddi", default=1, type=int)
-parser.add_argument("--di", default=3, type=int)
+# parser.add_argument("--ddi", default=2, type=int)
+# parser.add_argument("--di", default=2, type=int)
 
 
 
@@ -125,9 +122,9 @@ def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
 
-    for ddi in range(args.ddi):
+    for ddi in range(2):
         threads = []
-        for di in range(args.di):
+        for di in range(2):
             t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
                               args.epochs,  args.verbose))
             t.start()
@@ -437,7 +434,7 @@ def dvrl_inner_join(files):
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
     labels = ds.df_train['label'].tolist()
-    if args.genm == 'gpt':
+    if args.genm == 'gpt' and args.aug == 'generate':
         if args.genft == 'lambda':
             prompts = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
                         + ds.df_train['content'].map(lambda x: ' '.join(x.split(' ')[:3] )) ).tolist()
@@ -450,10 +447,10 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         else:
             prompts = ds.df_train['content'].tolist()
 
-    elif args.genm == 'ctrl':
+    elif args.genm == 'ctrl' and args.aug == 'generate':
         prompts = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
 
-    elif args.genm == 't5':
+    elif args.genm == 't5' and args.aug == 'generate':
         if args.genft in ['ep']:
             prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
                                 .map(lambda x: '{}{}'.format(x, tokenizer_t5.eos_token) ).tolist()
