@@ -137,7 +137,11 @@ if args.testbed:
             for t in threads:
                 t.join()
 
-        acc_noaug = round(np.array(best_test_accs).max(), 4)
+        if args.basemode == 'mean':
+            acc_noaug = round(np.array(best_test_accs).mean(), 4)
+        elif args.basemode == 'max':
+            acc_noaug = round(np.array(best_test_accs).max(), 4)
+
         model_cls = models[np.array(best_test_accs).argmax()]
     else:
         acc_noaug, model_cls = testbed_func[args.testvalid](ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
@@ -252,7 +256,7 @@ if args.aug == 'generate':
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
         model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
-        nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=1)
+        nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=0)
 
     if 'nsp' in filter_list:
         with tf.distribute.MirroredStrategy().scope():
@@ -868,8 +872,10 @@ if args.do_train_test_parallel and args.testvalid == 'valid':
         # join all threads
         for t in threads:
             t.join()
-
-    acc_aug = round(np.array(best_test_accs).max(), 4)
+    if args.basemode == 'mean':
+        acc_aug = round(np.array(best_test_accs).mean(), 4)
+    elif args.basemode == 'max':
+        acc_aug = round(np.array(best_test_accs).max(), 4)
 
 else:  
     acc_aug, _ = testbed_func[args.testvalid](df_train_aug, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \

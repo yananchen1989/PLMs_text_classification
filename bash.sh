@@ -24,8 +24,8 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp -
 
 
 python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
-                  --genft pp  --genm t5 --filter no --seed 1234267  --do_train_test_parallel 1 \
-                  --testvalid valid --valid_files_cnt 16  --threads 16  --epochs 4 \
+                  --genft no  --genm t5 --filter nli --seed 0  --do_train_test_parallel 1 \
+                  --testvalid valid  \
                   --abundance 3  --num_return_sequences 8 --gpu 0 --testbed 1  --trunk_size 32 
 
 
