@@ -45,8 +45,13 @@ parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','e
 parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--basetry", default=3, type=int)
 parser.add_argument("--num_return_sequences", default=4, type=int)
+parser.add_argument("--do_train_test_parallel", default=0, type=int)
 
 parser.add_argument("--gpu", default="0", type=str)
+
+
+
+
 # parser.add_argument("--encm", default='dan', type=str, \
 #      choices=['dan', 'cmlm', \
 #      'paraphrase-distilroberta-base-v2','paraphrase-mpnet-base-v2','paraphrase-TinyBERT-L6-v2',\
@@ -114,7 +119,27 @@ testbed_func = {"test":do_train_test, "valid":do_train_test_valid}
 
 if args.testbed:
     print("begin_to_test_noaug")
-    acc_noaug, model_cls = testbed_func[args.testvalid](ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
+    if args.do_train_test_parallel and  args.testvalid == 'valid':
+        best_val_accs = []
+        best_test_accs = []
+        models = []
+
+        for ddi in range(2):
+            threads = []
+            for di in range(2):
+                t = Thread(target=do_train_test_valid_thread, args=(ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
+                             args.model, di + ddi*2 ))
+                t.start()
+                threads.append(t)
+
+            # join all threads
+            for t in threads:
+                t.join()
+
+        acc_noaug = round(np.array(best_test_accs).max(), 4)
+        model_cls = models[np.array(best_test_accs).argmax()]
+    else:
+        acc_noaug, model_cls = testbed_func[args.testvalid](ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
                args.basetry, args.basemode, args.model)
     #model_cls.save_weights("model_cls.h5")
 else:
@@ -824,7 +849,28 @@ for augi in range(args.max_aug_times):
 
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
-acc_aug, _ = testbed_func[args.testvalid](df_train_aug, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
+
+if args.do_train_test_parallel and args.testvalid == 'valid':
+    best_val_accs = []
+    best_test_accs = []
+    models = []
+
+    for ddi in range(2):
+        threads = []
+        for di in range(2):
+            t = Thread(target=do_train_test_valid_thread, args=(ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
+                         args.model, di + ddi*2 ))
+            t.start()
+            threads.append(t)
+
+        # join all threads
+        for t in threads:
+            t.join()
+
+    acc_aug = round(np.array(best_test_accs).max(), 4)
+
+else:  
+    acc_aug, _ = testbed_func[args.testvalid](df_train_aug, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
                         args.basetry, args.basemode, args.model)
 
 
