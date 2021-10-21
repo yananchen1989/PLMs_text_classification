@@ -2,10 +2,10 @@
 
 ##### augf
 seed=$RANDOM
-nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                  --genft ep  --genm gpt --filter dvrl --seed 0 \
+nohup python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate \
+                  --genft pp  --genm t5 --filter dvrl --seed 0 --epochs 5 --basetry 1 \
                   --testvalid valid --valid_files_cnt 16  --threads 16 \
-                  --abundance 3  --num_return_sequences 4 --gpu 0 --testbed 0 > augf.test.log & 
+                  --abundance 3  --num_return_sequences 8 --gpu 0 --testbed 1 > augf.test.log & 
 
 
 
@@ -17,16 +17,16 @@ nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pa
 
 # ft t5
 
-CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep --num_workers 4 \
+CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4 \
    --maxlen 256 --ccsample 1 --ftepochs 4 --batch_size 4 > ft.t5.ep.log & 
 
 
 
 
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                  --genft no  --genm gpt --filter nli --seed 1234267  \
-                  --testvalid valid --valid_files_cnt 16  --threads 16  --epochs 5 \
-                  --abundance 3  --num_return_sequences 8 --gpu 3,4 --testbed 1 --basetry 1 --trunk_size 32 
+python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
+                  --genft pp  --genm t5 --filter no --seed 1234267  --do_train_test_parallel 1 \
+                  --testvalid valid --valid_files_cnt 16  --threads 16  --epochs 4 \
+                  --abundance 3  --num_return_sequences 8 --gpu 0 --testbed 1  --trunk_size 32 
 
 
 

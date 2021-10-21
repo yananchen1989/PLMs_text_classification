@@ -128,7 +128,7 @@ if args.testbed:
             threads = []
             for di in range(2):
                 t = Thread(target=do_train_test_valid_thread, args=(ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
-                             args.model, di + ddi*2 ))
+                             args.model, di + ddi*2 , best_val_accs, best_test_accs, models ))
                 t.start()
                 threads.append(t)
 
@@ -859,7 +859,7 @@ if args.do_train_test_parallel and args.testvalid == 'valid':
         threads = []
         for di in range(2):
             t = Thread(target=do_train_test_valid_thread, args=(ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
-                         args.model, di + ddi*2 ))
+                         args.model, di + ddi*2, best_val_accs, best_test_accs, models ))
             t.start()
             threads.append(t)
 
