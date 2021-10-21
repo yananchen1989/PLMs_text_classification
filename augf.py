@@ -28,7 +28,7 @@ parser.add_argument("--trunk_size", default=32, type=int)
 parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
-parser.add_argument("--testvalid", default='test', type=str)
+parser.add_argument("--testvalid", default='valid', type=str)
 parser.add_argument("--boost", default=0, type=int)
 
 parser.add_argument("--seed", default=333, type=int)
@@ -46,7 +46,7 @@ parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--basetry", default=3, type=int)
 parser.add_argument("--num_return_sequences", default=4, type=int)
 
-parser.add_argument("--gpu", default="0,1,2,3", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 # parser.add_argument("--encm", default='dan', type=str, \
 #      choices=['dan', 'cmlm', \
 #      'paraphrase-distilroberta-base-v2','paraphrase-mpnet-base-v2','paraphrase-TinyBERT-L6-v2',\

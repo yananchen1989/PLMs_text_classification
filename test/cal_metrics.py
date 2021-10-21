@@ -70,10 +70,40 @@ nyt bt 1 0.79(3)
 
 
 
+import glob 
+files = glob.glob("*.log")
+for file in files:
+    with open(file, 'r') as f:
+        success = 0 
+        for line in f:
+            if 'success summary===>' in line:
+                break
+            if 'RuntimeError' in line:
+                print("RuntimeError==>", file)
+                break 
+            if 'error' in line.lower() and 'filtering' not in line.lower() \
+                and 'CUDA_ERROR_NO_DEVICE' not in line and 'final_sample' not in line \
+                and 'Running this sequence through the model will result in indexing errors' not in line :
+                print(line)
+                print("error==>", file)
+                break 
 
 
 
 
+ag.generate.128.max_aug_times.1.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.31781.log
+ag.generate.128.max_aug_times.1.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.17132.log
+
+ag.generate.128.max_aug_times.1.genm.t5.genft.ep.filter.dvrl.abundance.3.num_return_sequences.8.17132.log
+ag.generate.128.max_aug_times.4.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.8811.log
+ag.generate.128.max_aug_times.1.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.31781.log
+ag.generate.128.max_aug_times.4.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.797.log
+ag.generate.128.max_aug_times.4.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.21043.log
+ag.generate.128.max_aug_times.1.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.17132.log
+nyt.generate.128.max_aug_times.1.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.23102.log
+ag.generate.128.max_aug_times.4.genm.gpt.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.29871.log
+uci.generate.128.max_aug_times.1.genm.gpt.genft.no.filter.dvrl.abundance.3.num_return_sequences.8.31781.log
+ag.generate.128.max_aug_times.1.genm.t5.genft.no.filter.dvrl.abundance.3.num_return_sequences.8.558.log
 
 
 

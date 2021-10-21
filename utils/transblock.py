@@ -226,8 +226,8 @@ def do_train_test_valid(df_train_valid, df_test, ixl, epochs=50, freq=10, verbos
         x_valid, y_valid = get_keras_data(df_valid)
         x_test, y_test = get_keras_data(df_test)
 
-        with tf.distribute.MirroredStrategy().scope():
-        #with tf.device('/GPU:{}'.format(gpu)):
+        #with tf.distribute.MirroredStrategy().scope():
+        with tf.device('/GPU:0'):
             if model_name == 'albert':
                 model = get_model_bert(df_test.label.unique().shape[0])
                 
@@ -256,7 +256,7 @@ def do_train_test_valid(df_train_valid, df_test, ixl, epochs=50, freq=10, verbos
 
     print('do_train_test iters valid==>', best_val_accs)
     print('do_train_test iters test==>', best_test_accs)
-    get_class_acc(model, x_test, y_test, ixl)
+    #get_class_acc(model, x_test, y_test, ixl)
 
     best_model = models[np.array(best_test_accs).argmax()]
     if basemode == 'mean':
@@ -311,33 +311,27 @@ def do_train_test(df_train, df_test, ixl, epochs=50, freq=10, verbose=1, \
         return round(np.array(best_val_accs).max(), 4), best_model
 
 
-def fit_within_thread(model, x_train, y_train, batch_size, epochs, x_test, y_test, df_test):
-    history = model.fit(
-        x_train, y_train, batch_size=batch_size, epochs=epochs, \
-        validation_data=(x_test, y_test), verbose=0, validation_batch_size=64, validation_freq=10
-    )
-    if df_test.label.unique().shape[0] == 2:
-        val_acc = 'val_binary_accuracy'   
-    else:
-        val_acc = 'val_acc'
 
-    best_val_accs.append(max(history.history[val_acc]))
-    models.append(model)
 
-def do_train_test_thread(df_train, df_test, epochs=50, freq=10, verbose=1, \
-               basetry=3, samplecnt=32, basemode='max', model_name='albert'):
-        
-    if samplecnt <= 32:
-        batch_size = 8
-    elif samplecnt == 64:
-        batch_size = 16
-    else:
-        batch_size = 32
+def do_train_test_valid_thread(df_train_valid, df_test, ixl, epochs=50, freq=10, verbose=1, \
+                         model_name='albert', di=9):
+    
+    # df_train_valid = ds.df_train
+    # df_test = ds.df_test
+    # model_name = 'albert'
+    # verbose = 1
+    # epochs = 100
 
-    (x_train, y_train),  (x_test, y_test)= get_keras_data(df_train, df_test)
 
-    with tf.distribute.MirroredStrategy().scope():
-    #with tf.device('/GPU:{}'.format(gpu)):
+    print("di==>",  di)
+    df_train, df_valid = train_test_split(df_train_valid, test_size=0.2)
+
+    x_train, y_train = get_keras_data(df_train)
+    x_valid, y_valid = get_keras_data(df_valid)
+    x_test, y_test = get_keras_data(df_test)
+
+    #with tf.distribute.MirroredStrategy().scope():
+    with tf.device('/GPU:0'):
         if model_name == 'albert':
             model = get_model_bert(df_test.label.unique().shape[0])
             
@@ -349,75 +343,28 @@ def do_train_test_thread(df_train, df_test, epochs=50, freq=10, verbose=1, \
             
         else:
             raise KeyError("input model illegal!")
-    best_val_accs = []
-    models = []
 
-    from threading import Thread
-    threads = []
-    for ii in range(basetry):
-        t = Thread(target=fit_within_thread, args=(model, x_train, y_train, batch_size, epochs, x_test, y_test, df_test))
-        t.start()
-        threads.append(t)
+    model.fit(
+        x_train, y_train, batch_size=16, epochs=epochs, \
+        validation_data=(x_valid, y_valid), verbose=verbose, validation_batch_size=64, 
+        callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=7, mode='max',restore_best_weights=True)]
+    )
 
-    # join all threads
-    for t in threads:
-        t.join()
-    print("do_train_test joined")
-    print('do_train_test iters==>', best_val_accs)
-    assert len(best_val_accs) == basetry and len(models) == basetry
+    result_valid = model.evaluate(x_valid, y_valid, batch_size=64)
+    result_test = model.evaluate(x_test, y_test, batch_size=64)
 
-    best_model = models[np.array(best_val_accs).argmax()]
-    if basemode == 'mean':
-        return round(np.array(best_val_accs).mean(), 4), best_model
-    elif basemode == 'max':
-        return round(np.array(best_val_accs).max(), 4), best_model    
+    best_val_accs.append(result_valid[1])
+    best_test_accs.append(result_test[1])
+    models.append(model)
+    tf.keras.backend.clear_session()
+
+    print('do_train_test iters valid==>', best_val_accs)
+    print('do_train_test iters test==>', best_test_accs)
+    #get_class_acc(model, x_test, y_test, ixl)
 
 
 
-# from utils.load_data import * 
 
-# enc = encoder('cmlm-large','cpu')
-# for _ in range(5):
-#     ds = load_data(dataset='ag', samplecnt= 1024)
-#     acc_aug, _ = do_train_test_cmlm(ds.df_train, ds.df_test, enc)
-#     print('iter', acc_aug)
-
-
-# from utils.encoders import *
-def do_train_test_cmlm(df_train, df_test, enc, basemode='max',  gpu=0):
-    
-    x_train = enc.infer(df_train['content'].values)
-    x_test = enc.infer(df_test['content'].values)
-
-    y_train, y_test = df_train['label'].values, df_test['label'].values
-
-    best_val_accs = []
-    models = []
-    for ii in range(3):
-        #with tf.distribute.MirroredStrategy().scope():
-        with tf.device('/GPU:{}'.format(gpu)):
-            model = get_model_mlp(x_train, df_test.label.unique().shape[0])
-                
-        if df_test.label.unique().shape[0] == 2:
-            val_acc = 'val_binary_accuracy'   
-        else:
-            val_acc = 'val_acc'
-
-        history = model.fit(
-            x_train, y_train, batch_size=32, epochs=400, \
-            validation_data=(x_test, y_test), verbose=0, validation_batch_size=64,validation_freq=1
-            #callbacks = [tf.keras.callbacks.EarlyStopping(monitor=val_acc, patience=10, mode='max')
-        )
-        best_val_accs.append(max(history.history[val_acc]))
-        models.append(model)
-        print('do_train_test iter==>', ii, 'acc:', max(history.history[val_acc]))
-    print('do_train_test iters==>', best_val_accs)
-
-    best_model = models[np.array(best_val_accs).argmax()]
-    if basemode == 'mean':
-        return round(np.array(best_val_accs).mean(), 4), best_model
-    elif basemode == 'max':
-        return round(np.array(best_val_accs).max(), 4), best_model
 
 
 

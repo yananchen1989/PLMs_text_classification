@@ -23,17 +23,11 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern ep -
 
 
 
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+                  --genft no  --genm gpt --filter nli --seed 1234267  \
+                  --testvalid valid --valid_files_cnt 16  --threads 16  --epochs 5 \
+                  --abundance 3  --num_return_sequences 8 --gpu 3,4 --testbed 1 --basetry 1 --trunk_size 32 
 
-nohup envcbert/bin/python -u augf.py --dsn ag --samplecnt 128 --aug cbert \
-             --max_aug_times 1 --gpu 7 --testbed 1 --testvalid valid > test.augf.cbert.log & 
-
-
-
-
-python -u augf.py --dsn ag --samplecnt 128 --aug eda  --max_aug_times 1 --gpu 0 --testbed 
-
-python -u augf.py --dsn ag --samplecnt 128 --aug bt  --max_aug_times 1 --gpu 7 \
-       --testbed 1 --trunk_size 4 --basetry 1 --epochs 5 --testvalid valid
 
 
 

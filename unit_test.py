@@ -70,7 +70,7 @@ print(tokenizer_t5)
 t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
 
 # ft:tc pp
-ft_model_path = 'ft_model_{}_{}'.format('t5', 'ep')
+ft_model_path = 'ft_model_{}_{}'.format('t5', 'tc')
 checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
 list.sort(checkpoint_files)
 t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
@@ -85,8 +85,8 @@ gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, de
 sent = ds.df_train.sample(1)['content'].tolist()[0]
 
 # t5
-gen_nlp(sent_ners + tokenizer_t5.eos_token, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=4, clean_up_tokenization_spaces=True)
+gen_nlp(sent + tokenizer_t5.eos_token, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                            repetition_penalty=1.0, num_return_sequences=8, clean_up_tokenization_spaces=True)
 
 
 
@@ -103,6 +103,29 @@ no:
 tc: enough
 pp: insufficient
 '''
+
+
+
+
+best_val_accs = []
+best_test_accs = []
+models = []
+
+threads = []
+for di in range(3):
+    t = Thread(target=do_train_test_valid_thread, args=(ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
+                 args.model, di ))
+    t.start()
+    threads.append(t)
+
+# join all threads
+for t in threads:
+    t.join()
+
+torch.cuda.empty_cache()
+
+best_model = models[np.array(best_test_accs).argmax()]
+
 
 
 
