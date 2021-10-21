@@ -603,7 +603,6 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                 samples_syn = df_syn_balance[['content','label']].values
                 break
     
-
     elif args.aug == 'eda':
         aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
                                    alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
@@ -612,14 +611,6 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         for ii in range(len(aug_sentences)):
             for sent in aug_sentences[ii]:
                 samples_syn.append((sent, ds.df_train['label'].tolist()[ii]))
-
-    # elif args.aug == 'fillin':
-    #     augmentor = fillInmask()
-    #     samples_syn = []
-    #     for b in range(args.beams):
-    #         sentences = ds.df_train['content'].map(lambda x: augmentor.augment(x)).tolist()
-    #         samples_syn.extend(list(zip(sentences, labels)))
-    #         print('beam:', b)
 
     elif args.aug == 'bt':
         samples_syn = []
