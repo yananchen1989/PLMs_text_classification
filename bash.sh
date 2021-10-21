@@ -23,16 +23,22 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp -
 
 
 
-python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
-                  --genft no  --genm t5 --filter nli --seed 0  --do_train_test_parallel 1 \
+nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
+                 --genft no  --genm t5 --filter nli --seed 0  --do_train_test_parallel 1 \
                   --testvalid valid  \
-                  --abundance 3  --num_return_sequences 8 --gpu 0 --testbed 1  --trunk_size 32 
+                  --abundance 3  --num_return_sequences 8 --gpu 7 --testbed 1  --trunk_size 32 > ag.t5.nli.1.log & 
+
+nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 4 --aug generate \
+                 --genft no  --genm t5 --filter nli --seed 0  --do_train_test_parallel 1 \
+                  --testvalid valid  \
+                  --abundance 3  --num_return_sequences 8 --gpu 6 --testbed 1  --trunk_size 32 > ag.t5.nli.4.log & 
 
 
 
 
 
-# generate 
+
+# sdu  generate 
 nohup bash run.sh 1 128 3 8 0 &
 nohup bash run.sh 1 128 3 8 1 &
 nohup bash run.sh 1 128 3 8 2 &
@@ -45,9 +51,9 @@ nohup bash run.sh 4 128 3 8 7 &
 
 
 
-
-# 31781 gpu1 倍增1 
-# 8811 gpu7 倍增4
+# sec1dev 
+nohup bash run.sh 1 128 3 8 0 &
+nohup bash run.sh 4 128 3 8 1 &
 
 
 
