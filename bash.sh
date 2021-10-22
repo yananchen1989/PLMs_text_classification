@@ -28,18 +28,29 @@ python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
                   --abundance 3  --num_return_sequences 8 --gpu 0  
 
 
-python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug bt \
-                 --genft no  --genm t5 --filter no --seed 0  --epochs 1 \
-                  --abundance 3  --num_return_sequences 8 --gpu 0  
+python -u augf.py --dsn nyt --samplecnt 64 --max_aug_times 1 --aug generate \
+                 --genft no  --genm t5 --filter dvrl --seed 0  --epochs 2 \
+                  --abundance 3  --num_return_sequences 8 --gpu 1  
 
 
 
-# sdu  generate 
+nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
+                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2  --testbed 0 \
+                  --abundance 3  --num_return_sequences 8 --gpu 7  > test.dvrl.nogpu.log & 
+
+nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
+                 --genft no  --genm gpt --filter dvrl --seed 999  --epochs 2  --testbed 0 \
+                  --abundance 3  --num_return_sequences 8 --gpu 6  > test.dvrl.gpu.log & 
+
+
+# sdu  generate dvrl
 nohup bash run.sh 1 128 3 8 0 &
 nohup bash run.sh 1 128 3 8 1 &
 nohup bash run.sh 1 128 3 8 2 &
 nohup bash run.sh 1 128 3 8 3 &
 
+
+# wait for finish
 nohup bash run.sh 4 128 3 8 4 &
 nohup bash run.sh 4 128 3 8 5 &
 nohup bash run.sh 4 128 3 8 6 &
@@ -47,7 +58,7 @@ nohup bash run.sh 4 128 3 8 7 &
 
 
 
-# sec1dev 
+# sec1dev  generate nli...
 nohup bash run.sh 1 128 3 8 0 &
 nohup bash run.sh 4 128 3 8 1 &
 

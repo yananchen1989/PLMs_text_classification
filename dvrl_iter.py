@@ -26,7 +26,7 @@ if gpus:
       #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
   except RuntimeError as e:
     print(e)
-assert not gpus
+
 
 flags = {'sgd': True, 'pretrain': False}
 parameters = dict()
