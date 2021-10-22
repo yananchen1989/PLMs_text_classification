@@ -571,6 +571,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
                     df_train_valid_noise.to_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv".format(seed, args.dsn, seed), index=False)
 
+                    t0 = time.time()
                     valid_files = []
                     dvrl_iter = 0
                     while True:
@@ -594,7 +595,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                             print("final_valid_output==>",  valid_files)
                             break 
                         dvrl_iter += args.threads
-
+                    t1 = time.time()
+                    print("dvrl_cost_sec:", int(t1-t0) )
                     df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
 
                 df_syn_balance = sample_stratify(df_syn_tmp, min(df_syn_tmp['label'].value_counts().min(), args.samplecnt) )

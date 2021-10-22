@@ -23,18 +23,14 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp -
 
 
 
-nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
-                 --genft no  --genm t5 --filter nli --seed 0  --do_train_test_parallel 1 \
-                  --testvalid valid  \
-                  --abundance 3  --num_return_sequences 8 --gpu 7 --testbed 1  --trunk_size 32 > ag.t5.nli.1.log & 
-
-nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 4 --aug generate \
-                 --genft no  --genm t5 --filter nli --seed 0  --do_train_test_parallel 1 \
-                  --testvalid valid  \
-                  --abundance 3  --num_return_sequences 8 --gpu 6 --testbed 1  --trunk_size 32 > ag.t5.nli.4.log & 
+python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
+                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2 \
+                  --abundance 3  --num_return_sequences 8 --gpu 0  
 
 
-
+python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug bt \
+                 --genft no  --genm t5 --filter no --seed 0  --epochs 1 \
+                  --abundance 3  --num_return_sequences 8 --gpu 0  
 
 
 
@@ -55,21 +51,27 @@ nohup bash run.sh 4 128 3 8 7 &
 nohup bash run.sh 1 128 3 8 0 &
 nohup bash run.sh 4 128 3 8 1 &
 
-
-
-
+#v8
+nohup bash run.sh 1 128 3 8 0 &
+nohup bash run.sh 1 128 3 8 1 &
+nohup bash run.sh 1 128 3 8 2 &
+nohup bash run.sh 1 128 3 8 3 &
+nohup bash run.sh 4 128 3 8 4 &
+nohup bash run.sh 4 128 3 8 5 &
+nohup bash run.sh 4 128 3 8 6 &
+nohup bash run.sh 4 128 3 8 7 &
 
 
 
 
 
 ############################################################################################################################################
-ps aux|grep augf|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux --sort=start_time
 
 tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.py
 
-
+alias wn='watch -n 1 nvidia-smi'
 
 # 解压
 unzip -o -d /home/sunny myfile.zip

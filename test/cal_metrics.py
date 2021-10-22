@@ -15,8 +15,8 @@ for file in ['logb']:
         for line in f:
             line = line.strip().split('summary===>')[-1] 
             tokens = line.strip().split(' ') 
-            dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens}
-            if dic['model']!='albert' or dic['testvalid']!='valid' or int(dic['testbed'])!=1 \
+            dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens if ':' in ii}
+            if dic['model']!='albert'  or int(dic['testbed'])!=1 \
                 or int(dic['samplecnt'])!=128:
                 continue
             infos.append((dic['dsn'], dic['aug'], int(dic['max_aug_times']), dic.get('genm','*'), dic.get('genft', '*'), \
@@ -27,13 +27,13 @@ df = pd.DataFrame(infos, columns=['dsn','aug', 'max_aug_times', 'genm','genft', 
                     'valid_files_cnt', 'acc_aug', 'gain'])
 
 
-max_aug_times_sel = [5]
+max_aug_times_sel = [1]
 
 for dsn in ['ag', 'uci', 'nyt']:
     for aug in ['eda','bt','cbert']:
         for max_aug_times in max_aug_times_sel:
             dfi = df.loc[(df['dsn']==dsn) & (df['aug']==aug) &(df['max_aug_times']==max_aug_times)]
-            if dfi.shape[0] < 3:
+            if dfi.shape[0] < 1:
                 continue
             print("{:>3} {:>8} {:>1} {:>4}({:>2})".format(dsn, aug, max_aug_times, round(dfi['gain'].mean()*100,2), dfi.shape[0])   )
     
