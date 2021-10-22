@@ -13,8 +13,6 @@ nohup python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate
 nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern ep --gpu 0 --batch_size 8 \
  > ft.gpt2.ep.log &
 
-
-
 # ft t5
 
 CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4 \
@@ -43,14 +41,14 @@ nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generat
                   --abundance 3  --num_return_sequences 8 --gpu 6  > test.dvrl.gpu.log & 
 
 
-# sdu  generate dvrl
+# sdu  generate dvrl  ==> log_arxiv_testearlystop
 nohup bash run.sh 1 128 3 8 0 &
 nohup bash run.sh 1 128 3 8 1 &
 nohup bash run.sh 1 128 3 8 2 &
 nohup bash run.sh 1 128 3 8 3 &
 
 
-# wait for finish
+# wait for finish: aug_times:4
 nohup bash run.sh 4 128 3 8 4 &
 nohup bash run.sh 4 128 3 8 5 &
 nohup bash run.sh 4 128 3 8 6 &
@@ -61,6 +59,10 @@ nohup bash run.sh 4 128 3 8 7 &
 # sec1dev  generate nli...
 nohup bash run.sh 1 128 3 8 0 &
 nohup bash run.sh 4 128 3 8 1 &
+
+
+
+
 
 #v8
 nohup bash run.sh 1 128 3 8 0 &

@@ -19,8 +19,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow.python.util.deprecation as deprecation
-deprecation._PRINT_DEPRECATION_WARNINGS = False
+# import tensorflow.python.util.deprecation as deprecation
+# deprecation._PRINT_DEPRECATION_WARNINGS = False
 
 import copy
 import os,random
