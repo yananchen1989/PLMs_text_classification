@@ -18,7 +18,7 @@ for file in ['logb']:
                 continue 
             tokens = line.strip().split(' ') 
             dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens if ':' in ii}
-            if dic['model']!='albert'  or int(dic['testbed'])!=1 or int(dic['samplecnt'])!=128:
+            if dic['model']!='albert'  or int(dic['testbed'])!=1 or int(dic['samplecnt'])!=128 or int(dic['epochs'])<=10 :
                 continue
             infos.append((dic['dsn'], dic['aug'], int(dic['max_aug_times']), dic.get('genm','*'), dic.get('genft', '*'), \
                 dic.get('filter', '*'), int(dic.get('valid_files_cnt', -1)), float(dic['acc_aug']), float(dic['gain'].replace('"','')) ))

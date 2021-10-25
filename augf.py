@@ -43,7 +43,7 @@ parser.add_argument("--beams", default=1, type=int)
 parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=333, type=int)
-parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--gpu", default="0,1", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -120,9 +120,9 @@ def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
 
-    for ddi in range(2):
+    for ddi in range(1):
         threads = []
-        for di in range(2):
+        for di in range(3):
             t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
                               args.epochs,  args.verbose))
             t.start()

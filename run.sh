@@ -26,14 +26,14 @@ do
 		###### no finetune
 		for genm in gpt t5 #ctrl
 		do
-			for genft in no tc pp ep
+			for genft in no #tc pp ep
 			do
 				for filter in dvrl 
 				#for filter in no nli cls enc nsp
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 				      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
-				      --valid_files_cnt 16  --threads 8 \
+				      --valid_files_cnt 16  --threads 16 \
 				      --abundance ${abundance}  --num_return_sequences ${num_return_sequences} --gpu ${gpu} \
 				      > ./log_arxiv/${dsn}.generate.${samplecnt}.max_aug_times.${max_aug_times}.genm.${genm}.genft.${genft}.filter.${filter}.abundance.${abundance}.num_return_sequences.${num_return_sequences}.${seed}.log 2>&1
 				done
