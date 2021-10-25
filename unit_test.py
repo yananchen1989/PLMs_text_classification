@@ -104,29 +104,3 @@ tc: enough
 pp: insufficient
 '''
 
-
-
-
-best_val_accs = []
-best_test_accs = []
-models = []
-
-threads = []
-for di in range(3):
-    t = Thread(target=do_train_test_valid_thread, args=(ds.df_train, ds.df_test, ixl, args.epochs, args.freq, args.verbose, \
-                 args.model, di ))
-    t.start()
-    threads.append(t)
-
-# join all threads
-for t in threads:
-    t.join()
-
-torch.cuda.empty_cache()
-
-best_model = models[np.array(best_test_accs).argmax()]
-
-
-
-
-

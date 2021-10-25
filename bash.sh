@@ -1,13 +1,5 @@
 
 
-##### augf
-seed=$RANDOM
-nohup python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1 --aug generate \
-                  --genft pp  --genm t5 --filter dvrl --seed 0 --epochs 5 --basetry 1 \
-                  --testvalid valid --valid_files_cnt 16  --threads 16 \
-                  --abundance 3  --num_return_sequences 8 --gpu 0 --testbed 1 > augf.test.log & 
-
-
 
 ############## ft gpt 
 nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern ep --gpu 0 --batch_size 8 \
@@ -20,24 +12,21 @@ CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp -
 
 
 
-
-python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
-                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2 \
-                  --abundance 3  --num_return_sequences 8 --gpu 0  
+nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pattern summary --ccsample 0.1 --gpu 0
 
 
-python -u augf.py --dsn nyt --samplecnt 64 --max_aug_times 1 --aug generate \
-                 --genft no  --genm t5 --filter dvrl --seed 0  --epochs 2 \
-                  --abundance 3  --num_return_sequences 8 --gpu 1  
+
+
+
 
 
 
 nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
-                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2  --testbed 0 \
+                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2  --testbed 0 --valid_files_cnt 16  --threads 8 \
                   --abundance 3  --num_return_sequences 8 --gpu 7  > test.dvrl.nogpu.log & 
 
 nohup python -u augf.py --dsn ag --samplecnt 128 --max_aug_times 1 --aug generate \
-                 --genft no  --genm gpt --filter dvrl --seed 999  --epochs 2  --testbed 0 \
+                 --genft no  --genm gpt --filter dvrl --seed 999  --epochs 2  --testbed 0 --valid_files_cnt 16  --threads 8 \
                   --abundance 3  --num_return_sequences 8 --gpu 6  > test.dvrl.gpu.log & 
 
 
@@ -46,13 +35,13 @@ nohup bash run.sh 1 128 3 8 0 &
 nohup bash run.sh 1 128 3 8 1 &
 nohup bash run.sh 1 128 3 8 2 &
 nohup bash run.sh 1 128 3 8 3 &
-
-
-# wait for finish: aug_times:4
+#  aug_times:4
 nohup bash run.sh 4 128 3 8 4 &
-nohup bash run.sh 4 128 3 8 5 &
 nohup bash run.sh 4 128 3 8 6 &
+nohup bash run.sh 4 128 3 8 5 &
 nohup bash run.sh 4 128 3 8 7 & 
+
+
 
 
 
@@ -71,15 +60,17 @@ nohup bash run.sh 1 128 3 8 2 &
 nohup bash run.sh 1 128 3 8 3 &
 nohup bash run.sh 4 128 3 8 4 &
 nohup bash run.sh 4 128 3 8 5 &
-nohup bash run.sh 4 128 3 8 6 &
-nohup bash run.sh 4 128 3 8 7 &
+
+
+nohup bash run_nli.sh 1 128 3 8 6 &
+nohup bash run_nli.sh 4 128 3 8 7 &
 
 
 
 
 
 ############################################################################################################################################
-ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "dvrl"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux --sort=start_time
 
 tf_upgrade_v2 --infile main_data_valuation.py --outfile main_data_valuation_v2.py

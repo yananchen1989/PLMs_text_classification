@@ -264,8 +264,7 @@ def get_class_acc(model, x_test, y_test, ixl):
 #     elif basemode == 'max':
 #         return round(np.array(best_test_accs).max(), 4), best_model
 
-def do_train_test_thread(df_train, df_test,  best_test_accs, models, di, \
-                epochs=100,  verbose=1,  model_name='albert'):
+def do_train_test_thread(df_train, df_test,  best_test_accs, models, di, epochs=100,verbose=1,model_name='albert'):
 
     if df_test.label.unique().shape[0] == 2:
         val_acc = 'val_binary_accuracy'   
@@ -304,11 +303,10 @@ def do_train_test_thread(df_train, df_test,  best_test_accs, models, di, \
 
 
 
-def do_train_test_valid_thread(df_train_valid, df_test,  best_val_accs, best_test_accs, models, \
-                        ixl, epochs=50, freq=10, verbose=1,  model_name='albert', di=9):
+def do_train_test_valid_thread(df_train_, df_test, best_test_accs, models,di,epochs=100,verbose=1,model_name='albert'):
 
     print("do_train_test_valid_thread di==>",  di)
-    df_train, df_valid = train_test_split(df_train_valid, test_size=0.2)
+    df_train, df_valid = train_test_split(df_train_, test_size=0.2)
 
     x_train, y_train = get_keras_data(df_train)
     x_valid, y_valid = get_keras_data(df_valid)
@@ -334,15 +332,12 @@ def do_train_test_valid_thread(df_train_valid, df_test,  best_val_accs, best_tes
         callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=7, mode='max',restore_best_weights=True)]
     )
 
-    result_valid = model.evaluate(x_valid, y_valid, batch_size=64)
     result_test = model.evaluate(x_test, y_test, batch_size=64)
 
-    best_val_accs.append(result_valid[1])
     best_test_accs.append(result_test[1])
     models.append(model)
     tf.keras.backend.clear_session()
 
-    print('do_train_test_valid iters valid==>', best_val_accs)
     print('do_train_test_valid iters test==>', best_test_accs)
     #get_class_acc(model, x_test, y_test, ixl)
 

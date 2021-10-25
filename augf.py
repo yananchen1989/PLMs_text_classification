@@ -17,7 +17,6 @@ parser.add_argument("--samplecnt", default=128, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
 parser.add_argument("--temp", default=1.0, type=float)
-parser.add_argument("--batch_size", default=32, type=int)
 parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--verbose", default=0, type=int)
 parser.add_argument("--basemode", default="max", type=str) # rank or thres
@@ -222,7 +221,7 @@ if args.aug == 'generate':
 
         gpt2.trainable = False
         gpt2.config.pad_token_id=50256
-        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
 
     elif args.genm == 't5':
         from transformers import T5Tokenizer, AutoModelWithLMHead
@@ -235,7 +234,7 @@ if args.aug == 'generate':
             checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
             list.sort(checkpoint_files)
             t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
-        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
+        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=1)
 
     elif args.genm == 'ctrl':
         from transformers import CTRLTokenizer, TFCTRLLMHeadModel
@@ -243,7 +242,7 @@ if args.aug == 'generate':
         model_ctrl = TFCTRLLMHeadModel.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
         print(tokenizer_ctrl)
         control_codes = tokenizer_ctrl.control_codes.keys()
-        gen_nlp  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=0, return_full_text=False)
+        gen_nlp  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=1, return_full_text=False)
  
     # elif args.genm == 'neo':
     #     gen_nlp = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B', device=0)
@@ -596,7 +595,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                             break 
                         dvrl_iter += args.threads
                     t1 = time.time()
-                    print("dvrl_cost_sec:", int(t1-t0) )
+                    print("dvrl_cost_sec:", (t1-t0)/3600, "hour" )
                     df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
 
                 df_syn_balance = sample_stratify(df_syn_tmp, min(df_syn_tmp['label'].value_counts().min(), args.samplecnt) )
