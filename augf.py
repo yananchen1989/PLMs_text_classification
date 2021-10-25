@@ -96,8 +96,7 @@ if gpus:
 if args.aug not in ['cgpt','cbert']:
     assert gpus
 device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
-device1 = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
-assert device0.type=='cuda' and device1.type == 'cuda'
+assert device0.type=='cuda' 
 
 from utils.load_data import * 
 from utils.transblock import * 
@@ -221,7 +220,7 @@ if args.aug == 'generate':
 
         gpt2.trainable = False
         gpt2.config.pad_token_id=50256
-        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
+        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
     elif args.genm == 't5':
         from transformers import T5Tokenizer, AutoModelWithLMHead
@@ -234,7 +233,7 @@ if args.aug == 'generate':
             checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
             list.sort(checkpoint_files)
             t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
-        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=1)
+        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
 
     elif args.genm == 'ctrl':
         from transformers import CTRLTokenizer, TFCTRLLMHeadModel
@@ -284,12 +283,12 @@ if args.aug == 'bt':
     model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
     tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
     model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
-    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=0)
-    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=0)
+    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=1)
+    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=1)
     print('bt model loaded')
 
-if args.aug == 'fillin':
-    from utils.aug_fillinmask import *
+# if args.aug == 'fillin':
+#     from utils.aug_fillinmask import *
 
 if args.aug == 'cbert':
     from utils.cbert_config import * 
@@ -483,17 +482,20 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     #return 32*8
                     results_trunk = gen_nlp(prompts_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, \
                         repetition_penalty=1.0, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
+                # results_trunk==> [[text0, text1, ..., text7], [text0, text1, ..., text7], ...] (32)
+
                 elif args.genm == 'ctrl':
                     #return 32*8
                     results_trunk = gen_nlp(prompts_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1, \
                         repetition_penalty=1.2, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
                 elif args.genm == 't5':
-                    results_trunk = []
-                    for sent in prompts_trunk:
-                        contents_trunk_ = gen_nlp(sent, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True) 
-                        results_trunk.append(contents_trunk_)
-
+                    results_trunk =  [[] for _ in range(args.trunk_size)]
+                    for step in range(args.num_return_sequences):
+                        results_trunk_step = gen_nlp(prompts, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                            repetition_penalty=1.0, num_return_sequences=1, clean_up_tokenization_spaces=True) 
+                        for gen in range(len(results_trunk_step)):
+                            results_trunk[gen].append(results_trunk_step[gen])
+                        
                 results.extend(results_trunk)
 
                 print('generate trunk==>', i, i+args.trunk_size, 'of', ds.df_train.shape[0])

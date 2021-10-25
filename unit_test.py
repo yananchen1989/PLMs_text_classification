@@ -19,10 +19,10 @@ The Race is On: Second Private Team Sets Launch Date for Human Spaceflight (SPAC
 '''
 
 import os 
-os.environ['CUDA_VISIBLE_DEVICES'] = "7"
+os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 from transformers import pipeline
 from utils.load_data import * 
-ds = load_data(dataset='ag', samplecnt= 128)
+ds = load_data(dataset='ag', samplecnt= -1)
 
 from utils.flair_ners import * 
 
@@ -54,9 +54,9 @@ for ix, row in ds.df_train.sample(frac=1).iterrows():
         print(content)
          
 
-
-gen_nlp(content+tokenizer_gpt2.sep_token, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=4, clean_up_tokenization_spaces=True)
+prompts = ds.df_train.sample(32)['content'].tolist()
+contents_trunk_ = gen_nlp(prompts, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                            repetition_penalty=1.0, num_return_sequences=8, clean_up_tokenization_spaces=True)
 
 
 
@@ -80,13 +80,12 @@ gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, de
 
 
 
+for ii in range(1):
+    prompts = ds.df_train.sample(32)['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
+    contents_trunk_ = gen_nlp(prompts, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.0, num_return_sequences=1, clean_up_tokenization_spaces=True) 
+    print(ii)
 
-
-sent = ds.df_train.sample(1)['content'].tolist()[0]
-
-# t5
-gen_nlp(sent + tokenizer_t5.eos_token, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=8, clean_up_tokenization_spaces=True)
 
 
 
