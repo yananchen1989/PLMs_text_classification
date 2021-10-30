@@ -241,7 +241,7 @@ if args.aug == 'generate':
         model_ctrl = TFCTRLLMHeadModel.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
         print(tokenizer_ctrl)
         control_codes = tokenizer_ctrl.control_codes.keys()
-        gen_nlp  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=1, return_full_text=False)
+        gen_nlp  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=len(gpus)-1, return_full_text=False)
  
     # elif args.genm == 'neo':
     #     gen_nlp = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B', device=0)

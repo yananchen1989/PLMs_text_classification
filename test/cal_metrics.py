@@ -28,7 +28,7 @@ df = pd.DataFrame(infos, columns=['dsn','aug', 'max_aug_times', 'genm','genft', 
                     'valid_files_cnt', 'acc_aug', 'gain'])
 
 print(df.max_aug_times.value_counts())
-max_aug_times_sel = [4]
+max_aug_times_sel = [1]
 
 for dsn in ['ag', 'uci', 'nyt']:
     for aug in ['eda','bt','cbert']:
@@ -64,68 +64,12 @@ for file in files:
     with open(file, 'r') as f:
         fail = 0 
         for line in f:
-            if 'RuntimeError: CUDA out of memory' in line:
-                print("CUDA out of memory==>")
+            if 'RuntimeError: CUDA out of memory' in line or 'ERROR' in line :
+                print(line)
+                #print("CUDA out of memory==>")
                 fail += 1
     if fail > 0:
         print(file,'\n')
-
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.1.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.26257.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.1.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.26257.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.1.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.2728.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.1.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.18371.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.1.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.18371.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.1.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.2728.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.4.genm.t5.genft.no.filter.dvrl.abundance.3.num_return_sequences.8.18034.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.4.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.18034.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.4.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.18034.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.4.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.3970.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.4.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.3970.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.4.genm.t5.genft.tc.filter.dvrl.abundance.3.num_return_sequences.8.11640.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.4.genm.t5.genft.ep.filter.dvrl.abundance.3.num_return_sequences.8.3970.log
-
-RuntimeError==>
-CUDA out of memory==>
-ag.generate.128.max_aug_times.4.genm.t5.genft.pp.filter.dvrl.abundance.3.num_return_sequences.8.11640.log
 
 
 #################### test_valid ############################
@@ -218,13 +162,14 @@ ag.generate.128.max_aug_times.4.genm.t5.genft.pp.filter.dvrl.abundance.3.num_ret
  ag generate 1  t5 no  cls  0.12( 3)
  ag generate 1  t5 no  enc -0.04( 3)
 
- ag generate 1 gpt no dvrl  0.19( 4)
- ag generate 1 gpt pp dvrl  0.47( 4) *
- ag generate 1 gpt tc dvrl  0.14( 4)
- ag generate 1 gpt ep dvrl   0.1( 4)
- ag generate 1  t5 no dvrl -0.11( 4)
- ag generate 1  t5 tc dvrl  0.46( 1) * 
- ag generate 1  t5 ep dvrl  0.21( 4)
+ag generate 1 gpt no dvrl  0.06(15)  *
+ag generate 1 gpt pp dvrl  0.47( 4)
+ag generate 1 gpt tc dvrl  0.14( 4)
+ag generate 1 gpt ep dvrl   0.1( 4)
+
+ag generate 1  t5 no dvrl  0.06(14)  *
+ag generate 1  t5 tc dvrl  0.46( 1)
+ag generate 1  t5 ep dvrl  0.21( 4)
 
 
 uci      eda 1  0.03( 6)
@@ -238,17 +183,20 @@ uci generate 1  t5 no  nli  1.04( 2)
 uci generate 1  t5 no  cls -0.43( 2)
 uci generate 1  t5 no  enc  1.25( 2)
 
-uci generate 1 gpt no dvrl  0.83( 4)
+uci generate 1 gpt no dvrl  0.81(14)  *
 uci generate 1 gpt pp dvrl  0.94( 4)
 uci generate 1 gpt tc dvrl -0.16( 4)
 uci generate 1 gpt ep dvrl  0.96( 4)
-uci generate 1  t5 no dvrl  0.85( 4)
+
+uci generate 1  t5 no dvrl  0.56(14)  *
 uci generate 1  t5 pp dvrl   0.7( 2)
 uci generate 1  t5 tc dvrl -0.35( 3)
+uci generate 1  t5 ep dvrl  0.26( 2)
+
 
 nyt      eda 1  0.01( 6)
 nyt       bt 1 -0.38( 4)
-nyt generate 1 gpt no   no  0.14( 2)
+nyt generate 1 gpt no   no  0.14( 2)   
 nyt generate 1 gpt no  nli  1.18( 2)
 nyt generate 1 gpt no  cls  0.37( 2)
 nyt generate 1 gpt no  enc  0.46( 2)
@@ -256,6 +204,10 @@ nyt generate 1  t5 no   no -0.75( 1)
 nyt generate 1  t5 no  nli   1.6( 1)
 nyt generate 1  t5 no  cls  1.84( 1)
 nyt generate 1  t5 no  enc -2.98( 1)
+
+nyt generate 1 gpt no dvrl  0.38(10)  *
+nyt generate 1  t5 no dvrl  0.21(10)  *
+
 
 ################ aug_times : 4 ###########
 
