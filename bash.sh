@@ -39,7 +39,6 @@ nohup python -u augf.py --dsn nyt --samplecnt 128 --max_aug_times 1 --aug genera
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 nohup bash run.sh 1 128 3 8 0,1 &
 nohup bash run.sh 1 128 3 8 2,3 &
-#  aug_times:4
 nohup bash run.sh 1 128 3 8 4,5 &
 nohup bash run.sh 1 128 3 8 6,7 &
 

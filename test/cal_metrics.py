@@ -10,7 +10,7 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 import pandas as pd 
 infos = []
-for file in ['logb']:
+for file in ['logb_nli_16']:
     with open(file,'r') as f: 
         for line in f:
             line = line.strip().split('summary===>')[-1] 
@@ -28,7 +28,7 @@ df = pd.DataFrame(infos, columns=['dsn','aug', 'max_aug_times', 'genm','genft', 
                     'valid_files_cnt', 'acc_aug', 'gain'])
 
 print(df.max_aug_times.value_counts())
-max_aug_times_sel = [1]
+max_aug_times_sel = [4]
 
 for dsn in ['ag', 'uci', 'nyt']:
     for aug in ['eda','bt','cbert']:
@@ -41,7 +41,7 @@ for dsn in ['ag', 'uci', 'nyt']:
     for aug in ['generate']:
         for max_aug_times in max_aug_times_sel:
             for genm in ['gpt', 't5']:
-                for genft in ['no', 'pp','tc', 'ep']:
+                for genft in ['no']: #  'pp','tc', 'ep'
                     for fil in ['no', 'dvrl', 'nli', 'cls', 'enc', 'nsp']:
                         dfi = df.loc[(df['dsn']==dsn) & (df['aug']==aug) & (df['max_aug_times']==max_aug_times) \
                           & (df['genm']==genm) & (df['genft']==genft) & (df['filter']==fil) ]
@@ -151,97 +151,53 @@ for file in files:
 
 
 ################ aug_times : 1 ###########
- ag      eda 1 -0.01(12)
- ag       bt 1 -0.15( 9)
- ag generate 1 gpt no   no -0.31( 3)
- ag generate 1 gpt no  nli  0.12( 3)
- ag generate 1 gpt no  cls -0.01( 3)
- ag generate 1 gpt no  enc  0.03( 3)
- ag generate 1  t5 no   no  0.12( 3)
- ag generate 1  t5 no  nli  0.24( 3)
- ag generate 1  t5 no  cls  0.12( 3)
- ag generate 1  t5 no  enc -0.04( 3)
-
+ag      eda 1             -0.01(12)
+ag       bt 1             -0.15( 9)
+ag generate 1 gpt no   no -0.37( 3)
 ag generate 1 gpt no dvrl  0.06(15)  *
-ag generate 1 gpt pp dvrl  0.47( 4)
-ag generate 1 gpt tc dvrl  0.14( 4)
-ag generate 1 gpt ep dvrl   0.1( 4)
-
+ag generate 1  t5 no   no -0.37( 2)
 ag generate 1  t5 no dvrl  0.06(14)  *
-ag generate 1  t5 tc dvrl  0.46( 1)
-ag generate 1  t5 ep dvrl  0.21( 4)
 
 
-uci      eda 1  0.03( 6)
-uci       bt 1  0.31( 6)
-uci generate 1 gpt no   no -0.12( 2)
-uci generate 1 gpt no  nli  2.65( 2)
-uci generate 1 gpt no  cls  1.26( 2)
-uci generate 1 gpt no  enc   0.9( 2)
-uci generate 1  t5 no   no -0.32( 2)
-uci generate 1  t5 no  nli  1.04( 2)
-uci generate 1  t5 no  cls -0.43( 2)
-uci generate 1  t5 no  enc  1.25( 2)
 
+uci      eda 1              0.03( 6)
+uci       bt 1              0.31( 6)
+uci generate 1 gpt no   no  0.29( 2)
 uci generate 1 gpt no dvrl  0.81(14)  *
-uci generate 1 gpt pp dvrl  0.94( 4)
-uci generate 1 gpt tc dvrl -0.16( 4)
-uci generate 1 gpt ep dvrl  0.96( 4)
-
+uci generate 1  t5 no   no  0.92( 2)
 uci generate 1  t5 no dvrl  0.56(14)  *
-uci generate 1  t5 pp dvrl   0.7( 2)
-uci generate 1  t5 tc dvrl -0.35( 3)
-uci generate 1  t5 ep dvrl  0.26( 2)
 
 
-nyt      eda 1  0.01( 6)
-nyt       bt 1 -0.38( 4)
-nyt generate 1 gpt no   no  0.14( 2)   
-nyt generate 1 gpt no  nli  1.18( 2)
-nyt generate 1 gpt no  cls  0.37( 2)
-nyt generate 1 gpt no  enc  0.46( 2)
-nyt generate 1  t5 no   no -0.75( 1)
-nyt generate 1  t5 no  nli   1.6( 1)
-nyt generate 1  t5 no  cls  1.84( 1)
-nyt generate 1  t5 no  enc -2.98( 1)
-
+nyt      eda 1              0.01( 6)
+nyt       bt 1             -0.38( 4)
+nyt generate 1 gpt no   no  0.33( 2)
 nyt generate 1 gpt no dvrl  0.38(10)  *
+
 nyt generate 1  t5 no dvrl  0.21(10)  *
+
+
+
+
+
 
 
 ################ aug_times : 4 ###########
 
-     ag      eda 4 -0.45( 4)
-     ag       bt 4 -0.57( 5)
-     ag generate 4 gpt no   no -0.05( 2)
-     ag generate 4 gpt no  nli -0.98( 1)
-     ag generate 4 gpt no  cls -0.09( 2)
-     ag generate 4 gpt no  enc  0.05( 2)
-     ag generate 4  t5 no   no -0.16( 2)
-     ag generate 4  t5 no  nli  0.32( 2)
-     ag generate 4  t5 no  cls -0.19( 2)
-     ag generate 4  t5 no  enc  0.06( 2)
-     ag generate 4 gpt no dvrl  0.24( 4)
-     ag generate 4 gpt pp dvrl -0.09( 4)
-     ag generate 4 gpt tc dvrl -0.21( 4)
-     ag generate 4 gpt ep dvrl  0.32( 4)
-     ag generate 4  t5 no dvrl  0.19( 3)
-     ag generate 4  t5 ep dvrl  0.36( 1)
+ ag      eda 4            -0.45( 4) 
+ ag       bt 4            -0.57( 5)
+ ag generate 4 gpt no   no -0.71( 3)
+ag generate 4 gpt no dvrl  0.07( 8)
+ag generate 4  t5 no   no -0.11( 2)
+ag generate 4  t5 no dvrl   0.1( 7)   *
 
 
-uci      eda 4  0.26( 5)
-uci       bt 4  0.29( 4)
-uci generate 4 gpt no   no  0.46( 2)
-uci generate 4 gpt no  nli  0.01( 2)
-uci generate 4 gpt no  cls  1.31( 1)
-uci generate 4 gpt no  enc  2.37( 1)
-uci generate 4  t5 no   no -0.85( 1)
-uci generate 4  t5 no  nli  1.06( 1)
-uci generate 4  t5 no  cls  1.58( 1)
-uci generate 4  t5 no  enc -0.06( 1)
+uci      eda 4              0.26( 5)
+uci       bt 4              0.29( 4)
+uci generate 4 gpt no dvrl  0.07( 4)
+uci generate 4  t5 no dvrl  0.39( 4)   *
 
 
-
-nyt      eda 4  0.36( 3)
-nyt       bt 4 -0.47( 3)
-nyt generate 4 gpt no   no  0.95( 1)
+nyt      eda 4              0.36( 3)
+nyt       bt 4             -0.47( 3)
+nyt generate 4 gpt no dvrl -0.03( 2)
+nyt generate 4  t5 no dvrl  0.89( 2)   *

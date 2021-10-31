@@ -87,6 +87,8 @@ for ii in range(1):
     print(ii)
 
 
+prompts = ds.df_train.sample(32)['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
+
 
 
 
