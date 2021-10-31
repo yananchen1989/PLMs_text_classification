@@ -459,16 +459,17 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                 prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
 
         # nli config
-        ln_extend = {}
-        for l in ds.df_test['label_name'].unique():
-            ln_extend[l] = expand_label_nli[l]
-        ln_extend__rev = {}
-        for i, j in ln_extend.items():
-            for jj in j:
-                ln_extend__rev[jj] = i
-        labels_candidates = set()
-        for v in ln_extend.values():
-            labels_candidates.update(v)
+        if args.dsn in ['ag','uci', 'nyt']:
+            ln_extend = {}
+            for l in ds.df_test['label_name'].unique():
+                ln_extend[l] = expand_label_nli[l]
+            ln_extend__rev = {}
+            for i, j in ln_extend.items():
+                for jj in j:
+                    ln_extend__rev[jj] = i
+            labels_candidates = set()
+            for v in ln_extend.values():
+                labels_candidates.update(v)
 
         samples_syn_all = []
         for itr in range(100):     
