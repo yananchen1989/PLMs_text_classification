@@ -491,8 +491,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                 elif args.genm == 't5':
                     results_trunk =  [[] for _ in range(args.trunk_size)]
                     for step in range(args.num_return_sequences):
-                        results_trunk_step = gen_nlp(prompts_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=1, clean_up_tokenization_spaces=True) 
+                        results_trunk_step = gen_nlp(prompts_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                            repetition_penalty=1.2, num_return_sequences=1, clean_up_tokenization_spaces=True) 
                         for gen in range(len(results_trunk_step)):
                             results_trunk[gen].append(results_trunk_step[gen])
                         
