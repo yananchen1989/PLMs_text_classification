@@ -114,14 +114,14 @@ def get_model_bert(num_classes):
     outputs = encoder(encoder_inputs)
     embed = outputs["pooled_output"]  
 
-    if num_classes == 2:
-        out = layers.Dense(1, activation='sigmoid')(embed)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=2e-5), "binary_crossentropy", metrics=["binary_accuracy"])
-    else:
-        out = layers.Dense(num_classes, activation="softmax")(embed)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(Adam(lr=2e-5), "sparse_categorical_crossentropy", metrics=["acc"])
+    # if num_classes == 2:
+    #     out = layers.Dense(1, activation='sigmoid')(embed)
+    #     model = tf.keras.Model(inputs=text_input, outputs=out)
+    #     model.compile(Adam(lr=2e-5), "binary_crossentropy", metrics=["binary_accuracy"])
+    # else:
+    out = layers.Dense(num_classes, activation="softmax")(embed)
+    model = tf.keras.Model(inputs=text_input, outputs=out)
+    model.compile(Adam(lr=2e-5), "sparse_categorical_crossentropy", metrics=["acc"])
     return model
 
 

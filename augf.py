@@ -12,7 +12,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="eda", type=str)
-parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','nyt'])
+parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','nyt','yelp2','amazon2'])
 parser.add_argument("--samplecnt", default=128, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
@@ -28,7 +28,7 @@ parser.add_argument("--epochs", default=100, type=int)
 #parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 #parser.add_argument("--testvalid", default='valid', type=str)
-parser.add_argument("--boost", default=0, type=int)
+parser.add_argument("--maxlen", default=256, type=int)
 parser.add_argument("--filter", default="dvrl", type=str)
 
 parser.add_argument("--valid_files_cnt", default=16, type=int)
@@ -248,7 +248,7 @@ if args.aug == 'generate':
 
     print('generate model loaded ==>{}'.format(args.genm))
 
-    dsn_maxlen = {'uci':256, 'ag':256, 'nyt':256}
+    dsn_maxlen = {'uci':64, 'ag':args.maxlen, 'nyt':args.maxlen, 'amazon2':args.maxlen, 'yelp2':args.maxlen}
 
     ####################### filter setting ######################
     if 'nli' in filter_list: 

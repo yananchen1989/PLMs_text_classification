@@ -19,10 +19,10 @@ The Race is On: Second Private Team Sets Launch Date for Human Spaceflight (SPAC
 '''
 
 import os 
-os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+os.environ['CUDA_VISIBLE_DEVICES'] = "6"
 from transformers import pipeline
 from utils.load_data import * 
-ds = load_data(dataset='ag', samplecnt= -1)
+ds = load_data(dataset='yelp2', samplecnt= -1)
 
 from utils.flair_ners import * 
 
@@ -40,22 +40,22 @@ print(tokenizer_gpt2)
 gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 
 # tc pp
-gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('t5', 'ep') )
+#gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('t5', 'ep') )
 
 gpt2.trainable = False
 gpt2.config.pad_token_id=50256
-gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
 
-for ix, row in ds.df_train.sample(frac=1).iterrows():
-    content = row['content']
-    sent_ners = get_ners(content)
-    if not sent_ners:
-        print(content)
+# for ix, row in ds.df_train.sample(frac=1).iterrows():
+#     content = row['content']
+#     sent_ners = get_ners(content)
+#     if not sent_ners:
+#         print(content)
          
 
-prompts = ds.df_train.sample(32)['content'].tolist()
-contents_trunk_ = gen_nlp(prompts, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+prompts = ds.df_train['content'].tolist()
+contents_trunk_ = gen_nlp_gpt2([prompts[11]], max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                             repetition_penalty=1.0, num_return_sequences=8, clean_up_tokenization_spaces=True)
 
 
@@ -70,38 +70,33 @@ print(tokenizer_t5)
 t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
 
 # ft:tc pp
-ft_model_path = 'ft_model_{}_{}'.format('t5', 'tc')
-checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
-list.sort(checkpoint_files)
-t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+# ft_model_path = 'ft_model_{}_{}'.format('t5', 'tc')
+# checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
+# list.sort(checkpoint_files)
+# t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
 
 ########
-gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
+gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
 
 
 
-for ii in range(1):
-    prompts = ds.df_train.sample(32)['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
-    contents_trunk_ = gen_nlp(prompts, max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                repetition_penalty=1.0, num_return_sequences=1, clean_up_tokenization_spaces=True) 
-    print(ii)
+prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
+labels =  ds.df_train['label'].tolist()
 
-
-prompts = ds.df_train.sample(32)['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
+contents_trunk_ = gen_nlp_t5([prompts[11]], max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                          repetition_penalty=1.2, num_return_sequences=1, clean_up_tokenization_spaces=True)
 
 
 
 
-'''
-t5:
-no: enough
-tc: enough
-pp: insufficient
 
 
-gpt2:
-no:
-tc: enough
-pp: insufficient
-'''
+
+
+
+
+
+
+
+
 
