@@ -266,10 +266,10 @@ def get_class_acc(model, x_test, y_test, ixl):
 
 def do_train_test_thread(df_train, df_test,  best_test_accs, models, di, epochs=100,verbose=1,model_name='albert'):
 
-    if df_test.label.unique().shape[0] == 2:
-        val_acc = 'val_binary_accuracy'   
-    else:
-        val_acc = 'val_acc'
+    # if df_test.label.unique().shape[0] == 2:
+    #     val_acc = 'val_binary_accuracy'   
+    # else:
+    #     val_acc = 'val_acc'
 
     print("do_train_test_thread di==>",  di)
     x_train, y_train = get_keras_data(df_train)
@@ -292,10 +292,10 @@ def do_train_test_thread(df_train, df_test,  best_test_accs, models, di, epochs=
     history = model.fit(
         x_train, y_train, batch_size=16, epochs=epochs, \
         validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=16, validation_freq=1,
-        callbacks = [tf.keras.callbacks.EarlyStopping(monitor=val_acc, patience=4, mode='max',restore_best_weights=True)]
+        callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=4, mode='max',restore_best_weights=True)]
     )
 
-    best_test_accs.append(max(history.history[val_acc]))
+    best_test_accs.append(max(history.history['val_acc']))
     models.append(model)
 
     print('do_train_test iters test==>', best_test_accs)
