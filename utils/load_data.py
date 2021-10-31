@@ -44,9 +44,18 @@ class load_data():
         self.path = './torch_ds'
         self.samplecnt_test = samplecnt_test
 
-        if self.dataset in ['ag','yahoo']:
-            self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, self.dataset))
-            self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, self.dataset))
+        if self.dataset in ['ag','yahoo', 'agt']:
+
+            if self.dataset == 'agt':
+                self.df_train = pd.read_csv('{}/ag_train_kaggle.csv'.format(self.path))
+                self.df_test = pd.read_csv('{}/ag_test_kaggle.csv'.format(self.path)) 
+                del self.df_train['Description'],  self.df_test['Description']
+                self.df_train = self.df_train.rename(columns={'Title': 'content'}).rename(columns={'Class Index': 'label'}) 
+                self.df_test = self.df_test.rename(columns={'Title': 'content'}).rename(columns={'Class Index': 'label'}) 
+                              
+            else:
+                self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, self.dataset))
+                self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, self.dataset))
             
             if self.dataset == 'ag':
                 world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
@@ -67,6 +76,7 @@ class load_data():
             self.df_test['label_name'] = self.df_test['label'].map(lambda x: ixl.get(x))
             self.df_train['label'] = self.df_train['label'] - 1
             self.df_test['label'] = self.df_test['label'] - 1
+
 
 
         elif self.dataset == 'stsa':
