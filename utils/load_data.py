@@ -57,7 +57,7 @@ class load_data():
                 self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, self.dataset))
                 self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, self.dataset))
             
-            if self.dataset == 'ag':
+            if self.dataset in ['ag', 'agt']:
                 world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
                                   'Crime','Murder','Religion','Jurisdiction', 'Democracy'])
                 ixl = {1:'World', 2:"Sports", 3:"Business", 4:"science and technology"} 
