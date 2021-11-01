@@ -7,7 +7,7 @@ while true
 do
 	seed=$RANDOM
 	#seed=$(date +"%T")
-	for dsn in ag uci nyt
+	for dsn in ag uci yelp2 amazon2
 	do
 		# for aug in eda bt 
 		# do

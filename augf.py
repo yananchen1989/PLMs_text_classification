@@ -862,7 +862,7 @@ acc_aug, _ = thread_testing('test', df_train_aug, ds.df_test)
 
 
 if acc_noaug > 0:
-    gain = round((acc_aug - acc_noaug) / acc_noaug, 4)
+    gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
 else:
     gain = -1
 
