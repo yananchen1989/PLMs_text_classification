@@ -109,28 +109,34 @@ sent = "Federal jury orders tech giant Samsung to pay"
 sent = 'FDA gives green light to migraine prevention tool'
 
 
-sent = ds.df_train.sample(1)['content'].tolist()[0]
+temperature=1.0
 
-for _ in range(128):
-    input_ids = tokenizer.encode(sent, return_tensors="pt").to(device0)
+for step in range(10):
+    row = ds.df_train.sample(1)
+    sent = row['content'].tolist()[0]
+    label_name = row['label_name'].tolist()[0]
+    print("label==>", label_name)
+    print("ori==>", sent)
+    
+    for _ in range(64):
+        input_ids = tokenizer.encode(sent, return_tensors="pt").to(device0)
 
-    # get logits of last hidden state
-    next_token_logits = model(input_ids).logits[:, -1, :]
+        # get logits of last hidden state
+        next_token_logits = model(input_ids).logits[:, -1, :] / temperature
 
-    # filter
-    filtered_next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=0, top_p=0.9)
+        # filter
+        filtered_next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=0, top_p=0.9)
+        filtered_next_token_logits_ = filtered_next_token_logits.cpu().detach().numpy()[0]
+        next_logits = [ii for ii in filtered_next_token_logits_ if not math.isinf(ii)]
+        print("valid next logits:", len(next_logits))
+        # sample
+        probs = F.softmax(filtered_next_token_logits, dim=-1)
+        next_token = torch.multinomial(probs, num_samples=1)
 
-    # sample
-    probs = F.softmax(filtered_next_token_logits, dim=-1)
-    next_token = torch.multinomial(probs, num_samples=1)
+        generated = torch.cat([input_ids, next_token], dim=-1)
 
-    generated = torch.cat([input_ids, next_token], dim=-1)
+        sent = tokenizer.decode(generated.tolist()[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
 
-    sent = tokenizer.decode(generated.tolist()[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
-
-print(sent)
-
-
-
-
+    print("gen==>", sent.replace('\n',' '))
+    print('\n')
 

@@ -853,7 +853,7 @@ df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
 
 
-acc_aug, _ = thread_testing('test', df_train_aug, ds.df_test)
+acc_aug, _ = thread_testing(args.testvalid, df_train_aug, ds.df_test)
 
 
 
