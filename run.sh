@@ -28,7 +28,7 @@ do
 		do
 			for genft in no #tc pp ep
 			do
-				for filter in dvrl 
+				for filter in dvrl no
 				#for filter in no nli cls enc nsp
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \

@@ -19,10 +19,10 @@ The Race is On: Second Private Team Sets Launch Date for Human Spaceflight (SPAC
 '''
 
 import os 
-os.environ['CUDA_VISIBLE_DEVICES'] = "6"
+os.environ['CUDA_VISIBLE_DEVICES'] = "7"
 from transformers import pipeline
 from utils.load_data import * 
-ds = load_data(dataset='yelp2', samplecnt= -1)
+ds = load_data(dataset='uci', samplecnt= -1)
 
 from utils.flair_ners import * 
 
@@ -55,7 +55,7 @@ gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2
          
 
 prompts = ds.df_train['content'].tolist()
-contents_trunk_ = gen_nlp_gpt2([prompts[11]], max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+contents_trunk_ = gen_nlp_gpt2([prompts[11]], max_length=128, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                             repetition_penalty=1.0, num_return_sequences=8, clean_up_tokenization_spaces=True)
 
 
@@ -83,7 +83,7 @@ gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5,
 prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
 labels =  ds.df_train['label'].tolist()
 
-contents_trunk_ = gen_nlp_t5([prompts[11]], max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+contents_trunk_ = gen_nlp_t5([prompts[11]], max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                           repetition_penalty=1.2, num_return_sequences=1, clean_up_tokenization_spaces=True)
 
 
@@ -95,6 +95,40 @@ contents_trunk_ = gen_nlp_t5([prompts[11]], max_length=64, do_sample=True, top_p
 
 
 
+from transformers import GPT2Tokenizer, top_k_top_p_filtering, GPT2LMHeadModel
+import torch
+from torch.nn import functional as F
+
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2", cache_dir="./cache", local_files_only=True)
+model = GPT2LMHeadModel.from_pretrained("gpt2", cache_dir="./cache", local_files_only=True)
+
+device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+model.to(device0)
+sent = "Federal jury orders tech giant Samsung to pay"
+
+sent = 'FDA gives green light to migraine prevention tool'
+
+
+sent = ds.df_train.sample(1)['content'].tolist()[0]
+
+for _ in range(128):
+    input_ids = tokenizer.encode(sent, return_tensors="pt").to(device0)
+
+    # get logits of last hidden state
+    next_token_logits = model(input_ids).logits[:, -1, :]
+
+    # filter
+    filtered_next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=0, top_p=0.9)
+
+    # sample
+    probs = F.softmax(filtered_next_token_logits, dim=-1)
+    next_token = torch.multinomial(probs, num_samples=1)
+
+    generated = torch.cat([input_ids, next_token], dim=-1)
+
+    sent = tokenizer.decode(generated.tolist()[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
+
+print(sent)
 
 
 

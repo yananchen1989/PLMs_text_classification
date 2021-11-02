@@ -27,7 +27,7 @@ parser.add_argument("--trunk_size", default=32, type=int)
 parser.add_argument("--epochs", default=100, type=int)
 #parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
-#parser.add_argument("--testvalid", default='valid', type=str)
+parser.add_argument("--testvalid", default='valid', type=str)
 parser.add_argument("--maxlen", default=256, type=int)
 parser.add_argument("--filter", default="dvrl", type=str)
 
@@ -120,9 +120,9 @@ def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
 
-    for ddi in range(2):
+    for ddi in range(1):
         threads = []
-        for di in range(2):
+        for di in range(3):
             t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
                               args.epochs,  args.verbose))
             t.start()
@@ -142,7 +142,7 @@ def thread_testing(testvalid, df_train, df_test):
 
 if args.testbed:
     print("begin_to_test_noaug")
-    acc_noaug, model_cls = thread_testing('test',  ds.df_train, ds.df_test)
+    acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)
 else:
     acc_noaug = -1
 
