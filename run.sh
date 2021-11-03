@@ -9,12 +9,12 @@ do
 	#seed=$(date +"%T")
 	for dsn in ag uci yelp2 amazon2
 	do
-		# for aug in eda bt 
-		# do
-		# 	python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug ${aug} \
-		# 	      --gpu ${gpu} --seed ${seed}   \
-		# 	   > ./log_arxiv_baseline/${dsn}.${aug}.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
-		# done
+		for aug in eda bt 
+		do
+			python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug ${aug} \
+			      --gpu ${gpu} --seed ${seed} --testvalid test   \
+			   > ./log_arxiv_32/${dsn}.${aug}.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
+		done
 
 		# for aug in cbert
 		# do
@@ -33,9 +33,9 @@ do
 				do
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 				      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
-				      --valid_files_cnt 16  --threads 16 \
+				      --valid_files_cnt 16  --threads 16 --testvalid test \
 				      --abundance ${abundance}  --num_return_sequences ${num_return_sequences} --gpu ${gpu} \
-				      > ./log_arxiv/${dsn}.generate.${samplecnt}.max_aug_times.${max_aug_times}.genm.${genm}.genft.${genft}.filter.${filter}.abundance.${abundance}.num_return_sequences.${num_return_sequences}.${seed}.log 2>&1
+				      > ./log_arxiv_32/${dsn}.generate.${samplecnt}.max_aug_times.${max_aug_times}.genm.${genm}.genft.${genft}.filter.${filter}.abundance.${abundance}.num_return_sequences.${num_return_sequences}.${seed}.log 2>&1
 				done
 			done
 		done

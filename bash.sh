@@ -23,10 +23,10 @@ nohup python -u augf.py --dsn yelp2 --samplecnt 128 --max_aug_times 1 --aug gene
 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
-nohup bash run_senti.sh 1 128 3 8 0,1 &
-nohup bash run_senti.sh 1 128 3 8 2,3 &
-nohup bash run_senti.sh 1 128 3 8 4,5 &
-nohup bash run_senti.sh 1 128 3 8 6,7 &
+nohup bash run.sh 1 32 3 8 0,1 &
+nohup bash run.sh 1 32 3 8 2,3 &
+nohup bash run.sh 1 32 3 8 4,5 &
+nohup bash run.sh 1 32 3 8 6,7 &
 
 
 
@@ -34,8 +34,10 @@ nohup bash run_senti.sh 1 128 3 8 6,7 &
 
 
 ############################################################################################################################################
-ps aux|grep "augf"|grep "--seed 10277"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "augf"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run_senti.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+
+ps aux|grep "dvrl_iter"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "dvrl_iter"|grep "3762"|grep -v grep | awk '{print $2}'|xargs kill -9
 
 
