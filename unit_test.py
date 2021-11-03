@@ -27,6 +27,18 @@ ds = load_data(dataset='uci', samplecnt= -1)
 from utils.flair_ners import * 
 
 
+import torch
+from transformers import GPT2Tokenizer, GPTNeoForCausalLM
+
+tokenizer = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
+model = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache",  local_files_only=True)
+
+inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
+outputs = model(**inputs, labels=inputs["input_ids"])
+loss = outputs.loss
+logits = outputs.logits
+
+
 # gpt2
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -91,10 +103,6 @@ contents_trunk_ = gen_nlp_t5([prompts[11]], max_length=256, do_sample=True, top_
 
 
 
-
-
-
-
 from transformers import GPT2Tokenizer, top_k_top_p_filtering, GPT2LMHeadModel
 import torch
 from torch.nn import functional as F
@@ -139,4 +147,5 @@ for step in range(10):
 
     print("gen==>", sent.replace('\n',' '))
     print('\n')
+
 
