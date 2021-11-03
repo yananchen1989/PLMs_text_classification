@@ -617,6 +617,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                 samples_syn.append((sent, ds.df_train['label'].tolist()[ii]))
 
     elif args.aug == 'bt':
+        args.trunk_size = 8
         samples_syn = []
         for i in range(0, ds.df_train.shape[0], args.trunk_size):
             contents_trunk = ds.df_train['content'].tolist()[i:i+args.trunk_size]
