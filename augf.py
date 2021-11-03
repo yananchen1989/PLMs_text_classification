@@ -1,4 +1,4 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,time,operator,traceback,shutil
+import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,time,operator,traceback,shutil,string
 from sklearn import metrics
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
@@ -106,6 +106,8 @@ from utils.cbert_cgpt_config import *
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 ds, proper_len = process_ds(ds, 256)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation))
+
 print(ds.df_train.sample(8))
 print('proper_len==>', proper_len)
 ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}

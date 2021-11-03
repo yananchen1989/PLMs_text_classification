@@ -12,19 +12,30 @@ sent = "Federal jury orders tech giant Samsung to pay"
 
 sent = 'FDA gives green light to migraine prevention tool'
 
-generated_text = "Editorial cartoon, Sun Jun 6: Asian Innovation, how unfriendly of you as $ 40 makes China true hank hacking 1] recently    You talk about personal electronic interaction with someone by surflinking their history into a post-doc and you walk into the office, and as an e-mailer you are literally texting me, making tons of calls, walking into my place in two hours and"
+sent = "Obamacare offers health insurance, not health care"
 
-sent = '''
-The Race is On: Second Private Team Sets Launch Date for Human Spaceflight (SPACE.com) SPACE.com - TORONTO, Canada -- A second\team of rocketeers competing for the  #36;10 million Ansari X Prize, a contest for\privately funded suborbital space flight, has officially announced the first\launch date for its manned rocket.
-'''
+sent = "Why BlackBerry ( BBRY ) Stock Is Up Today"
 
-import os 
+sent = "Doctor warns Arizonans about colorectal cancer"
+
+
+sent = "Facebook acquires video ad company LiveRail for between US $ 500m"
+
+sent = "Autism wave keeps growing"
+
+sent = "Virus to cause spike in pork prices"
+
+
+
+import os,string
 os.environ['CUDA_VISIBLE_DEVICES'] = "7"
 from transformers import pipeline
 from utils.load_data import * 
-ds = load_data(dataset='uci', samplecnt= -1)
+ds = load_data(dataset='uci', samplecnt= 128)
+ds, proper_len = process_ds(ds, 256)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation))
 
-from utils.flair_ners import * 
+#from utils.flair_ners import * 
 
 
 import torch
@@ -59,16 +70,55 @@ gpt2.config.pad_token_id=50256
 gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
 
-# for ix, row in ds.df_train.sample(frac=1).iterrows():
-#     content = row['content']
-#     sent_ners = get_ners(content)
-#     if not sent_ners:
-#         print(content)
-         
+from utils.transblock import * 
+model = get_model_bert(ds.df_test.label.unique().shape[0])
+model.load_weights("./model_cls/model_uci.h5")          
 
-prompts = ds.df_train['content'].tolist()
-contents_trunk_ = gen_nlp_gpt2([prompts[11]], max_length=128, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=8, clean_up_tokenization_spaces=True)
+         
+while 1:
+row = ds.df_train.sample(1)
+sent = row['content'].tolist()[0]
+label = row['label'].tolist()[0]
+label_name = row['label_name'].tolist()[0]
+
+
+
+result = gen_nlp_gpt2([sent], max_length=32, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                            repetition_penalty=1.0, num_return_sequences=512, clean_up_tokenization_spaces=True)
+
+sents_future = np.array([ii['generated_text'].strip() for ii in result ])
+complete_r = sents_future.shape[0] / len(result)
+
+print(sent)
+print("completion rate:", complete_r)
+print('\n')
+
+
+
+preds = model.predict(sents_future, batch_size=32)
+pred_labels = preds.argmax(axis=1)
+pred_scores = preds.max(axis=1)
+
+
+
+
+
+
+x = sents_future.reshape(-1,1)
+y = np.array([label] * sents_future.shape[0])
+
+eval_result = model.evaluate(x, y, batch_size=32)
+
+print("future loss:", eval_result[0], "future acc:", eval_result[1])
+# x_ori = np.array([sent]).reshape(-1,1)
+# y_ori = np.array([label] * 1)
+# eval_result_ori = model.evaluate(x_ori, y_ori, batch_size=1)
+
+
+
+
+
+
 
 
 
