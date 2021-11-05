@@ -10,7 +10,7 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 import pandas as pd 
 infos = []
-for file in ['logb_valid']:
+for file in ['logb']:
     with open(file,'r') as f: 
         for line in f:
             if 'summary===>' not in line:
@@ -18,16 +18,17 @@ for file in ['logb_valid']:
             line = line.strip().split('summary===>')[-1] 
             # if 'testvalid:valid' in line:
             #     continue 
-            tokens = line.strip().split(' ') 
+            tokens = line.strip().replace('"','').split(' ') 
             dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens if ':' in ii}
-            if dic['model']!='albert'  or int(dic['testbed'])!=1 or int(dic['samplecnt'])!=128 or int(dic['epochs'])<=10 :
+            if dic['model']!='albert'  or int(dic['testbed'])!=1 or int(dic['samplecnt'])!=32 or int(dic['epochs'])<=10 :
                 continue
             infos.append((dic['dsn'], dic['aug'], int(dic['max_aug_times']), dic.get('genm','*'), dic.get('genft', '*'), \
-                dic.get('filter', '*'), int(dic.get('valid_files_cnt', -1)), float(dic['acc_aug']), float(dic['gain'].replace('"','')) ))
+                dic.get('filter', '*'), int(dic.get('valid_files_cnt', -1)), \
+                float(dic['acc_base']), float(dic['acc_aug']), float(dic['gain'].replace('"','')) ))
                 # infos.append((dic['dsn'], dic.get('aug','*'), \
                 # float(dic['acc_base']), float(dic['acc_aug'])))
 df = pd.DataFrame(infos, columns=['dsn','aug', 'max_aug_times', 'genm','genft', 'filter', 
-                    'valid_files_cnt', 'acc_aug', 'gain'])
+                    'valid_files_cnt', 'acc_base', 'acc_aug', 'gain'])
 
 print(df.max_aug_times.value_counts())
 max_aug_times_sel = [1]
@@ -39,7 +40,7 @@ for dsn in ['ag', 'uci', 'yelp2', 'amazon2']:
             dfi = df.loc[(df['dsn']==dsn) & (df['aug']==aug) &(df['max_aug_times']==max_aug_times)]
             if dfi.shape[0] < 1:
                 continue
-            print("{:>5} {:>8} {:>1} {:>5}({:>2})".format(dsn, aug, max_aug_times, round(dfi['gain'].mean()*100,2), dfi.shape[0])   )
+            print("{:>5} {:>8} {:>1} {:>5}({:>2})".format(dsn, aug, max_aug_times, round(dfi['gain'].mean(),2), dfi.shape[0])   )
     
     for aug in ['generate']:
         for max_aug_times in max_aug_times_sel:
