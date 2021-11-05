@@ -117,8 +117,9 @@ while 1:
         next_token = torch.multinomial(probs, num_samples=1)
         gen_ids = torch.cat([input_ids, next_token], dim=-1)
         sent = tokenizer_gpt2.decode(gen_ids.tolist()[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
-    
-        print("sent_tmp==>", sent)
+        
+        if step % 8 ==0:
+            print("sent_tmp==>", sent.replace('\n',' '))
 
     print("sent_final==>", sent)
     print('\n\n\n')
