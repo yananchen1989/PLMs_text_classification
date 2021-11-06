@@ -165,8 +165,8 @@ for epoch in range(args.ppo_epoch):
         response_ids  = respond_to_batch(gpt2_model_trl, query_ids.to(device_2), \
                                 txt_len=args.future_steps, temperature=args.temperature, top_p=0.9)
         response = tokenizer_gpt2.decode(response_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
-
-        query_response_ids = torch.cat([query_ids, response_ids], dim=-1)
+         
+        query_response_ids = torch.cat([query_ids, response_ids.cpu()], dim=-1)
         query_response = tokenizer_gpt2.decode(query_response_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
 
         result_query = gen_nlp_gpt2([query], max_length=query_ids.shape[1] + args.future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
