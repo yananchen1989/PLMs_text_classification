@@ -10,7 +10,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
 from transformers import top_k_top_p_filtering
 from torch.nn import functional as F
-import os,string,torch,math
+import os,string,torch,math,time
 
 from transformers import pipeline
 from utils.load_data import * 
@@ -31,15 +31,16 @@ gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_
 #gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('t5', 'ep') )
 gpt2.trainable = False
 gpt2.config.pad_token_id = 50256
+
 gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=True)
 
-device0 = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
-gpt2.to(device0)
+device_i = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
+gpt2.to(device_i)
 
 
 from utils.transblock import * 
-model = get_model_bert(ds.df_test.label.unique().shape[0])
-model.load_weights("./model_cls/model_uci.h5")          
+model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+model_cls.load_weights("./model_cls/model_uci.h5")          
 
 
 
@@ -51,10 +52,11 @@ def vs(sent, label, candidate_ids, future_steps=32, beams=512):
     tokens_len_ori = ori_ids.shape[1]
     result = gen_nlp_gpt2([sent], max_length=tokens_len_ori+future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                             repetition_penalty=1.0, num_return_sequences=beams, clean_up_tokenization_spaces=True)
+    
     sents_future = np.array([ ii['generated_text'].strip() for ii in result ])
     x = sents_future.reshape(-1,1)
     y = np.array([label] * sents_future.shape[0])
-    eval_result = model.evaluate(x, y, batch_size=64, verbose=0)  
+    eval_result = model_cls.evaluate(x, y, batch_size=64, verbose=0)  
     loss_ori =  eval_result[0]
 
     candidate_sents = []
@@ -70,7 +72,7 @@ def vs(sent, label, candidate_ids, future_steps=32, beams=512):
     for i in range(len(result_1)): #  32 * 256
         x = np.array([ii['generated_text'] for ii in result_1[i]])
         y = np.array([label] * x.shape[0])
-        eval_result = model.evaluate(x, y, batch_size=64, verbose=0) 
+        eval_result = model_cls.evaluate(x, y, batch_size=64, verbose=0) 
         #print('\n' ,candidate_sents[i])
         #print("loss_diff:", loss_ori-eval_result[0] )
         scores.append(loss_ori-eval_result[0])
@@ -84,8 +86,9 @@ while 1:
     label_name = row['label_name'].tolist()[0]
     print("ori===>", sent, label_name)
 
-    for step in range(64):
-        input_ids = tokenizer_gpt2.encode(sent, return_tensors="pt").to(device0)
+    t0 = time.time()
+    for step in range(50):
+        input_ids = tokenizer_gpt2.encode(sent, return_tensors="pt").to(device_i)
 
         # get logits of last hidden state
         next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
@@ -100,10 +103,11 @@ while 1:
         probs_ = probs.detach().cpu().numpy()[0]
 
         candidate_ids = np.where(probs_>0)[0]
+        break 
 
         #print(probs_[probs_>0])
 
-        scores = vs(sent, label, candidate_ids, 32, 256)
+        scores = vs(sent, label, candidate_ids, 32, 128)
 
         # modify probs
         for idd, score in zip(candidate_ids, scores):
@@ -120,6 +124,8 @@ while 1:
         
         if step % 8 ==0:
             print("sent_tmp==>", sent.replace('\n',' '))
+    t1 = time.time()
 
     print("sent_final==>", sent)
+    print("time cost:", (t1-t0) / 3600)
     print('\n\n\n')
