@@ -148,6 +148,12 @@ def get_loss(result, label, model_cls):
     future_loss_0 = eval_result[0]
     return future_loss_0
 
+def ret_result_gpt(sent):
+    result = gen_nlp_gpt2([sent], \
+                                max_length=tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1] + args.future_steps, \
+                                do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.0, num_return_sequences=256, clean_up_tokenization_spaces=True)
+    return result
 
 from collections import deque
 memory = deque(maxlen=32)
@@ -170,21 +176,12 @@ for epoch in range(args.ppo_epoch):
         query_response_ids = torch.cat([query_ids, response_ids.cpu()], dim=-1)
         query_response = tokenizer_gpt2.decode(query_response_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
 
-        result_query = gen_nlp_gpt2([query], max_length=query_ids.shape[1] + args.future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                    repetition_penalty=1.0, num_return_sequences=256, clean_up_tokenization_spaces=True)
-        #print("result_query generated")
+        result_query = ret_result_gpt(query)
+        result_query_response = ret_result_gpt(query_response)
+        result_response = ret_result_gpt(response)
 
-        result_query_response = gen_nlp_gpt2([query_response], max_length=query_response_ids.shape[1] + args.future_steps, \
-                                      do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                    repetition_penalty=1.0, num_return_sequences=256, clean_up_tokenization_spaces=True)
-        #print("result_query_response generated")
 
-        result_response = gen_nlp_gpt2([response], max_length=query_response_ids.shape[1] + args.future_steps, \
-                                      do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                    repetition_penalty=1.0, num_return_sequences=256, clean_up_tokenization_spaces=True)
-        #print("result_response generated")
-
-        future_loss_query = get_loss(result_query,label,  model_cls)
+        future_loss_query = get_loss(result_query, label,  model_cls)
         future_loss_query_response = get_loss(result_query_response, label, model_cls)
         future_loss_response = get_loss(result_response, label, model_cls)
 
