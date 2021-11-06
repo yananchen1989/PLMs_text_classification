@@ -92,8 +92,8 @@ from trl.gpt2 import GPT2HeadWithValueModel, respond_to_batch
 from trl.ppo import PPOTrainer
 from trl.core import build_bert_batch_from_txt
 
-gpt2_model_ref_trl = GPT2HeadWithValueModel.from_pretrained('gpt2')
-gpt2_model_trl = GPT2HeadWithValueModel.from_pretrained('gpt2')
+gpt2_model_ref_trl = GPT2HeadWithValueModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2_model_trl = GPT2HeadWithValueModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 config = {
     # "lm_name": "lvwerra/gpt2-imdb",
     # "ref_lm_name": "lvwerra/gpt2-imdb",
