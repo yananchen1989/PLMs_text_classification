@@ -103,7 +103,7 @@ while 1:
 
         #print(probs_[probs_>0])
 
-        scores = vs(sent, label, candidate_ids, 32, 512)
+        scores = vs(sent, label, candidate_ids, 32, 256)
 
         # modify probs
         for idd, score in zip(candidate_ids, scores):
