@@ -141,7 +141,7 @@ gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2
 
 #. ppo training
 
-def get_loss(result, model_cls):
+def get_loss(result, label, model_cls):
     x = np.array([ii['generated_text'] for ii in result])
     y = np.array([label] * x.shape[0])
     eval_result = model_cls.evaluate(x, y, batch_size=64, verbose=0) 
@@ -184,9 +184,9 @@ for epoch in range(args.ppo_epoch):
                                     repetition_penalty=1.0, num_return_sequences=256, clean_up_tokenization_spaces=True)
         #print("result_response generated")
 
-        future_loss_query = get_loss(result_query, model_cls)
-        future_loss_query_response = get_loss(result_query_response, model_cls)
-        future_loss_response = get_loss(result_response, model_cls)
+        future_loss_query = get_loss(result_query,label,  model_cls)
+        future_loss_query_response = get_loss(result_query_response, label, model_cls)
+        future_loss_response = get_loss(result_response, label, model_cls)
 
         # print("ori===>", query,  "<===", label_name)
         # print("response==>", response)

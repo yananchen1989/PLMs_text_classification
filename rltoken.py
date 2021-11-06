@@ -118,7 +118,7 @@ while 1:
         #     next_token = torch.multinomial(probs, num_samples=1)
         #     next_word = tokenizer_gpt2.convert_ids_to_tokens([next_token.detach().cpu().numpy()[0][0]], skip_special_tokens=True)
         #     print(next_word)
-        if probs.numpy().max()==0:
+        if probs.cpu().numpy().max()==0:
             probs += 1
         next_token = torch.multinomial(probs, num_samples=1)
         gen_ids = torch.cat([input_ids, next_token], dim=-1)
