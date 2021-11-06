@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 tqdm.pandas()
 import tensorflow_hub as hub
-from transformers import GPT2Tokenizer
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import tensorflow as tf 
 from sklearn.metrics.pairwise import cosine_distances
@@ -42,16 +41,25 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print('======>',gpus,'<=======')
-if gpus:
-  try:
-    for gpu in gpus:
-      tf.config.experimental.set_memory_growth(gpu, True)
-      # tf.config.experimental.set_virtual_device_configuration(gpu, \
-      #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
-  except RuntimeError as e:
-    print(e)
+# if gpus:
+#   try:
+#     for gpu in gpus:
+#       #tf.config.experimental.set_memory_growth(gpu, True)
+
+#       if gpus[1].name.endswith('1'):
+#         tf.config.experimental.set_virtual_device_configuration(gpu, \
+#            [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=0)])
+#   except RuntimeError as e:
+#     print(e)
+
+tf.config.experimental.set_virtual_device_configuration(gpus[0], \
+           [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=11019)])
+tf.config.experimental.set_virtual_device_configuration(gpus[1], \
+           [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=0)])
+
 #assert gpus
-device_i = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
+device_1 = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
+device_2 = torch.device("cuda:{}".format(2) if torch.cuda.is_available() else "cpu")
 
 from transformers import pipeline
 from utils.load_data import * 
@@ -93,15 +101,17 @@ config = {
     "cliprange_value": args.cliprange_value,
     "vf_coef":.1, 
 }
-gpt2_model_ref_trl.to(device)
-gpt2_model_trl.to(device)
+gpt2_model_ref_trl.to(device_2)
+gpt2_model_trl.to(device_2)
 ppo_trainer = PPOTrainer(gpt2_model_trl, gpt2_model_ref_trl, **config)
 
 
 
 from utils.transblock import * 
-model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-model_cls.load_weights("./model_cls/model_uci.h5")          
+with tf.device('/GPU:0'):
+#with tf.distribute.MirroredStrategy().scope():
+    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+    model_cls.load_weights("./model_cls/model_uci.h5")          
 
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -139,8 +149,8 @@ for epoch in range(args.ppo_epoch):
         label_name = row['label_name']
         
          
-        query_ids = tokenizer_gpt2.encode(query, return_tensors="pt").to(device_i)
-        response_ids  = respond_to_batch(gpt2_model_trl, query_ids, \
+        query_ids = tokenizer_gpt2.encode(query, return_tensors="pt")
+        response_ids  = respond_to_batch(gpt2_model_trl, query_ids.to(device_2), \
                                 txt_len=args.future_steps, temperature=args.temperature, top_p=0.9)
         response = tokenizer_gpt2.decode(response_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
 
@@ -172,11 +182,11 @@ for epoch in range(args.ppo_epoch):
 
         loss_diff = future_loss_query-future_loss_query_response + future_loss_query-future_loss_response
 
-        reward = torch.tensor([loss_diff]).to(device_i)
+        reward = torch.tensor([loss_diff])
 
-        train_stats = ppo_trainer.step(query_ids, response_ids, reward)
+        train_stats = ppo_trainer.step(query_ids.to(device_2), response_ids.to(device_2), reward.to(device_2) )
         #print(ix,  'pred:', preds_test.argmax(), 'label', row['label'], 'reward:', round(reward.cpu().numpy()[0],4))
-        memory.append(reward.cpu().numpy()[0])
+        memory.append(reward.numpy()[0])
 
         rewards_epoch.append(reward.cpu().numpy()[0])
         if ix % 32 == 0 :
