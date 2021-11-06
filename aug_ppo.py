@@ -1,4 +1,5 @@
 import torch,argparse,time,os,nltk,random,nltk,collections
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -84,7 +85,7 @@ from utils.transblock import *
 #with tf.device('/GPU:0'):
 with tf.distribute.MirroredStrategy().scope():
     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-    model_cls.load_weights("./model_cls/model_uci.h5")    
+model_cls.load_weights("./model_cls/model_uci.h5")    
 
 
 
@@ -187,10 +188,10 @@ for epoch in range(args.ppo_epoch):
         future_loss_query_response = get_loss(result_query_response, model_cls)
         future_loss_response = get_loss(result_response, model_cls)
 
-        print("ori===>", query,  "<===", label_name)
-        print("response==>", response)
-        print("loss reduction:", future_loss_query-future_loss_query_response, future_loss_query-future_loss_response)
-        print("\n")
+        # print("ori===>", query,  "<===", label_name)
+        # print("response==>", response)
+        # print("loss reduction:", future_loss_query-future_loss_query_response, future_loss_query-future_loss_response)
+        # print("\n")
 
         loss_diff = future_loss_query-future_loss_query_response + future_loss_query-future_loss_response
 
