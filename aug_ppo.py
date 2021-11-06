@@ -203,7 +203,7 @@ for epoch in range(args.ppo_epoch):
 
         rewards_epoch.append(reward.cpu().numpy()[0])
         if ix % 32 == 0 :
-            print('iter_reward:', np.array(memory).mean())
+            print('iter_reward:', np.array(memory).mean(), "<==", ix)
 
     print("epoch:", epoch, np.array(rewards_epoch).mean())
     rewards_epoch = []

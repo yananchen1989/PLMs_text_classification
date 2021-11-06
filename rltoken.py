@@ -86,7 +86,7 @@ while 1:
     sent = row['content'].tolist()[0]
     label = row['label'].tolist()[0]
     label_name = row['label_name'].tolist()[0]
-    print("ori===>", sent, label_name)
+    print("ori===>", sent, "<===", label_name)
 
     t0 = time.time()
     for step in range(64):
@@ -118,13 +118,14 @@ while 1:
         #     next_token = torch.multinomial(probs, num_samples=1)
         #     next_word = tokenizer_gpt2.convert_ids_to_tokens([next_token.detach().cpu().numpy()[0][0]], skip_special_tokens=True)
         #     print(next_word)
-
+        if probs.numpy().max()==0:
+            probs += 1
         next_token = torch.multinomial(probs, num_samples=1)
         gen_ids = torch.cat([input_ids, next_token], dim=-1)
         sent = tokenizer_gpt2.decode(gen_ids.tolist()[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
         
-        if step % 16 ==0:
-            print("sent_tmp==>", sent.replace('\n',' '))
+        # if step % 32 ==0:
+        #     print("sent_tmp==>", sent.replace('\n',' '))
     t1 = time.time()
 
     print("sent_final==>", sent)
