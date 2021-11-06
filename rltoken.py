@@ -1,5 +1,7 @@
 import argparse,os
 parser = argparse.ArgumentParser()
+parser.add_argument("--future_steps", default=32, type=int)
+parser.add_argument("--beams", default=128, type=int)
 parser.add_argument("--alpha", default=128, type=float)
 parser.add_argument("--gpu", default="0,1", type=str)
 args = parser.parse_args()
@@ -87,7 +89,7 @@ while 1:
     print("ori===>", sent, label_name)
 
     t0 = time.time()
-    for step in range(50):
+    for step in range(64):
         input_ids = tokenizer_gpt2.encode(sent, return_tensors="pt").to(device_i)
 
         # get logits of last hidden state
@@ -102,12 +104,11 @@ while 1:
 
         probs_ = probs.detach().cpu().numpy()[0]
 
-        candidate_ids = np.where(probs_>0)[0]
-        break 
+        candidate_ids = np.where(probs_>0)[0] 
 
         #print(probs_[probs_>0])
 
-        scores = vs(sent, label, candidate_ids, 32, 128)
+        scores = vs(sent, label, candidate_ids, args.future_steps, args.beams)
 
         # modify probs
         for idd, score in zip(candidate_ids, scores):
@@ -122,7 +123,7 @@ while 1:
         gen_ids = torch.cat([input_ids, next_token], dim=-1)
         sent = tokenizer_gpt2.decode(gen_ids.tolist()[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
         
-        if step % 8 ==0:
+        if step % 16 ==0:
             print("sent_tmp==>", sent.replace('\n',' '))
     t1 = time.time()
 
