@@ -40,30 +40,35 @@ print('args==>', args)
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
+
+# tf.config.experimental.set_memory_growth(gpus[0], True)
+# tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+
+
+# logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+# print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+
+
 print('======>',gpus,'<=======')
-# if gpus:
-#   try:
-#     for gpu in gpus:
-#       #tf.config.experimental.set_memory_growth(gpu, True)
+if gpus:
+  try:
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+  except RuntimeError as e:
+    print(e)
 
-#       if gpus[1].name.endswith('1'):
-#         tf.config.experimental.set_virtual_device_configuration(gpu, \
+# tf.config.experimental.set_virtual_device_configuration(gpus[0], \
+#            [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=11019)])
+# tf.config.experimental.set_virtual_device_configuration(gpus[1], \
 #            [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=0)])
-#   except RuntimeError as e:
-#     print(e)
 
-tf.config.experimental.set_virtual_device_configuration(gpus[0], \
-           [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=11019)])
-tf.config.experimental.set_virtual_device_configuration(gpus[1], \
-           [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=0)])
 
 #assert gpus
-device_1 = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
-device_2 = torch.device("cuda:{}".format(2) if torch.cuda.is_available() else "cpu")
+device_1 = torch.device("cuda:{}".format(len(gpus)-2) if torch.cuda.is_available() else "cpu")
+device_2 = torch.device("cuda:{}".format(len(gpus)-1) if torch.cuda.is_available() else "cpu")
 
 from transformers import pipeline
 from utils.load_data import * 
-from utils.ppo_config import * 
 
 # get dataset
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
@@ -73,6 +78,15 @@ ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 # ds.df_test['label_name'] = ds.df_test['label'].map(lambda x: {0:'negative',1:'positive'}.get(x))
 #print('ixl==>', ixl)
 #num_classes = len(ixl)
+from utils.transblock import * 
+    
+#tf.debugging.set_log_device_placement(True) 
+#with tf.device('/GPU:0'):
+with tf.distribute.MirroredStrategy().scope():
+    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+    model_cls.load_weights("./model_cls/model_uci.h5")    
+
+
 
 from trl.gpt2 import GPT2HeadWithValueModel, respond_to_batch
 from trl.ppo import PPOTrainer
@@ -107,11 +121,9 @@ ppo_trainer = PPOTrainer(gpt2_model_trl, gpt2_model_ref_trl, **config)
 
 
 
-from utils.transblock import * 
-with tf.device('/GPU:0'):
-#with tf.distribute.MirroredStrategy().scope():
-    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-    model_cls.load_weights("./model_cls/model_uci.h5")          
+#from utils.transblock import * 
+
+
 
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -123,7 +135,7 @@ print(tokenizer_gpt2)
 
 gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 gpt2.config.pad_token_id = 50256
-gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=True)
+gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=device_1.index, return_full_text=True)
 
 
 #. ppo training
