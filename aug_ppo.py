@@ -7,11 +7,10 @@ import tensorflow_hub as hub
 from transformers import GPT2Tokenizer
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import tensorflow as tf 
-from utils.cbert_cgpt_config import * 
 from sklearn.metrics.pairwise import cosine_distances
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="ag", type=str)
+parser.add_argument("--dsn", default="uci", type=str)
 parser.add_argument("--samplecnt", default=128, type=int)
 parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--verbose", default=0, type=int)
@@ -23,39 +22,23 @@ parser.add_argument("--freq", default=20, type=int)
 
 parser.add_argument("--ppo_batchsize", default=1, type=int)
 parser.add_argument("--forward_batch_size", default=1, type=int)
-parser.add_argument("--load_bert", default=1, type=int)
-
-
-parser.add_argument("--external_frac", default=0.9, type=float)
-parser.add_argument("--external_thres", default=0.9, type=float)
-parser.add_argument("--add_external_ft", default=0, type=int)
-parser.add_argument("--add_external_ppo", default=0, type=int)
-
 
 #parser.add_argument("--warmup_epoch", default=-1, type=int)
 parser.add_argument("--fbs", default=8, type=int)
 parser.add_argument("--ppo_epoch", default=100, type=int)
-parser.add_argument("--use_query", default=1, type=int)
-parser.add_argument("--ref_ft", default=1, type=int)
-parser.add_argument("--gpt_ft", default=0, type=int)
-parser.add_argument("--shuffle_ctrl", default=0, type=int) 
-parser.add_argument("--above", default=0.9, type=float) 
-parser.add_argument("--external_cnt", default=0, type=int) 
-parser.add_argument("--internal_cnt", default=0, type=int) 
 
 parser.add_argument("--init_kl_coef", default=0.2, type=float) 
 parser.add_argument("--cliprange", default=0.2, type=float) 
 parser.add_argument("--cliprange_value", default=0.2, type=float) 
-parser.add_argument("--temperature", default=1.2, type=float) 
+parser.add_argument("--temperature", default=1.0, type=float) 
 parser.add_argument("--min_tokens_to_keep", default=1, type=int) 
 parser.add_argument("--maxlen", default=64, type=int) 
-parser.add_argument("--ft_pattern", default='no', type=str, choices=['pp', 'tc', 'no'])
+parser.add_argument("--gpu", default="6,7", type=str)
+parser.add_argument("--future_steps", default=32, type=int)
 args = parser.parse_args()
 print('args==>', args)
 
-import GPUtil
-GPUtil.showUtilization()
-deviceIDs = GPUtil.getAvailable(order = 'memory', limit = 8, maxLoad = 0.99, maxMemory = 0.9, includeNan=False, excludeID=[], excludeUUID=[])
+os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 print('======>',gpus,'<=======')
@@ -68,181 +51,141 @@ if gpus:
   except RuntimeError as e:
     print(e)
 #assert gpus
-device_0 = torch.device("cuda:{}".format(deviceIDs[0]) if torch.cuda.is_available() else "cpu")
-device_1 = torch.device("cuda:{}".format(deviceIDs[1]) if torch.cuda.is_available() else "cpu")
-assert device_0.type=='cuda'
+device_i = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
 
+from transformers import pipeline
 from utils.load_data import * 
-from utils.transblock import * 
-#from utils.encoders import *
 from utils.ppo_config import * 
-
 
 # get dataset
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
-
-
-ixl = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
-ixl_rev = {ii[1]:ii[0] for ii in ixl.items()}
+#ixl = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+#ixl_rev = {ii[1]:ii[0] for ii in ixl.items()}
 # ds.df_train['label_name'] = ds.df_train['label'].map(lambda x: {0:'negative',1:'positive'}.get(x))
 # ds.df_test['label_name'] = ds.df_test['label'].map(lambda x: {0:'negative',1:'positive'}.get(x))
-print('ixl==>', ixl)
-num_classes = len(ixl)
+#print('ixl==>', ixl)
+#num_classes = len(ixl)
 
+from trl.gpt2 import GPT2HeadWithValueModel, respond_to_batch
+from trl.ppo import PPOTrainer
+from trl.core import build_bert_batch_from_txt
 
-ppo_trainer, gpt2_model_trl, gpt2_model_ref_trl = get_ppo_trainer('ft_model_gpt_pp', device_0, vars(args), '<|sep|>')
-
-if args.load_bert:
-    
-    model = get_model_bert(ds.df_test.label.unique().shape[0])
-    model.load_weights("./cls/model_full_{}.h5".format(args.dsn) )
-    best_val_acc_noaug = -1
-else:
-    best_val_acc_noaug, model = do_train_test(ds.df_train, ds.df_test, args.epochs, args.freq, args.verbose, \
-                                            args.basetry, args.samplecnt, args.basemode, args.model)
-    print('best_val_acc_noaug:', best_val_acc_noaug)
-    assert best_val_acc_noaug > 0.6
-
-
-# def get_external_news_purified(model, cols, thres, external_frac):
-#     df_news = get_external_news(external_frac)
-#     preds = model.predict(df_news['content'].values, batch_size=256, verbose=1)
-
-#     df_news['label'] = preds.argmax(axis=1)
-#     df_news['label_name'] = df_news['label'].map(lambda x: ixl_rev[x])
-#     df_news['pred_score'] = preds.max(axis=1)
-
-#     df_news_use = df_news.loc[(df_news['pred_score']>=thres)]
-#     print('df_news_use==>')
-#     print(df_news_use['label_name'].value_counts())
-#     min_class_cnt = df_news_use['label_name'].value_counts().min()
-
-#     df_news_use_balance = sample_stratify(df_news_use, min_class_cnt)
-#     df_news_use_balance['content'] = df_news_use_balance['content'].map(lambda x: truncate(x, 300))
-#     return df_news_use_balance[cols]
-
-# if args.add_external_ft or args.add_external_ppo:
-#     df_news_use_balance = get_external_news_purified(model, list(ds.df_train.columns), \
-#         args.external_thres, args.external_frac )
-#     print('df_news_use_balance==>', df_news_use_balance.shape[0])
+gpt2_model_ref_trl = GPT2HeadWithValueModel.from_pretrained('gpt2')
+gpt2_model_trl = GPT2HeadWithValueModel.from_pretrained('gpt2')
+config = {
+    # "lm_name": "lvwerra/gpt2-imdb",
+    # "ref_lm_name": "lvwerra/gpt2-imdb",
+     "cls_model_name": "lvwerra/bert-imdb",
+    #"tk_name": "gpt2",
+    #"steps": 25600,
+    "forward_batch_size": args.forward_batch_size,
+    "ppo_epochs": 4,   
+    #"txt_in_len": 5,
+    #"txt_out_len": 15,
+    "batch_size": args.ppo_batchsize ,
+    "lr": 1.41e-5,
+    "init_kl_coef": args.init_kl_coef,
+    "target": 6,
+    "horizon":10000,
+    "gamma":1,
+    "lam":0.95,
+    "cliprange": args.cliprange,
+    "cliprange_value": args.cliprange_value,
+    "vf_coef":.1, 
+}
+gpt2_model_ref_trl.to(device)
+gpt2_model_trl.to(device)
+ppo_trainer = PPOTrainer(gpt2_model_trl, gpt2_model_ref_trl, **config)
 
 
 
-#ctrl_str = ['[negative]', '[positive]'] # 
-# ctrl_str = ['[{}]'.format(ii) for ii in ixl.values()]
-# ctrl_tokens = dict((s, gpt2_tokenizer.encode(s, return_tensors="pt").squeeze().to(device)) for s in ctrl_str)
+from utils.transblock import * 
+model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+model_cls.load_weights("./model_cls/model_uci.h5")          
 
-# reward function
-# def pos_logit_to_reward(logit, task):
-#     """
-#     Take the positive sentiment logit and scale it for the task.
-#         task [negative]: reward = -logit
-#         task [neutral]: reward = -2*abs(logit)+4
-#         task [positive]: reward = logit
-#     """
-#     for i in range(len(logit)):
-#         if task[i]=='[negative]':
-#             logit[i] = -logit[i]
-#         elif task[i]=='[neutral]':
-#             logit[i] = -2*torch.abs(logit[i])+4
-#         elif task[i]=='[positive]':
-#             pass
-#         else:
-#             raise ValueError('task has to be in [0, 1, 2]!')
-#     return logit
+from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+tokenizer_gpt2.sep_token = '<|sep|>'
+#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+print(tokenizer_gpt2)
 
-# def get_rewards_sentiment(texts, task_list, model):
-#     preds_test = model.predict(texts, batch_size=64)
-#     preds_rev = np.log(preds_test) - np.log(1-preds_test)
-#     preds_rev = preds_rev.reshape(-1)
-#     pos_logits = torch.tensor(preds_rev)
-#     rewards = pos_logit_to_reward(pos_logits, task_list)
-#     return rewards.reshape(-1)
-
-scce = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
-even_loss = scce([[0]], [[1/num_classes]*num_classes ]).numpy()[0].item()
-
-# def get_rewards_topics(df, model, spec_col):
-
-#     preds_test = model.predict(df[spec_col].values, batch_size=64) # (128, 4)
-
-#     loss = scce(df['label'].values, preds_test).numpy()
-
-#     rewards = torch.tensor([even_loss-i for i in loss])
-
-#     return rewards
-
-#config['txt_in_len'] = proper_len
-# ds.df_train['tokens'] = ds.df_train['content'].map(lambda x: gpt2_tokenizer.encode(x, return_tensors="pt").to(device)[0, :config['txt_in_len']])
-# ds.df_train['query'] = ds.df_train['tokens'].map(lambda x: gpt2_tokenizer.decode(x))
-
-# steps = int(np.ceil(ds.df_train.shape[0] / config['batch_size']))
-# print('total steps:', steps)
-#gpt2_tokenizer.pad_token = gpt2_tokenizer.eos_token
-
-# init model test
-# result_test = model.evaluate(ds.df_test['content'].values.reshape(-1,1), ds.df_test['label'].values, batch_size=64)
-# result_train = model.evaluate(ds.df_train['content'].values.reshape(-1,1), ds.df_train['label'].values, batch_size=64)
-# print('base_model_check_accuracy ==>', result_train[1], result_test[1] )
-
-# pred0_score_gold, pred1_score_gold = get_ft_performance(ds.df_test, model) 
-# print('pred0_score_gold:',pred0_score_gold, 'pred1_score_gold', pred1_score_gold, \
-#     'goldgap:', pred1_score_gold-pred0_score_gold)
-
-# reward check
-# for dd in [ds.df_train, ds.df_test]:
-#     rewards = get_rewards_topics(dd, model, 'content')
-#     print("{} rewards_upperbond:".format(dd.shape[0]), rewards.cpu().numpy().mean() )
-
-# ds.df_train['tokens_cnt'] = ds.df_train['content'].map(lambda x: gpt2_tokenizer.encode(x, return_tensors="pt")[0].shape[0]).tolist()
-# print('tokens_cnt ==>', ds.df_train['tokens_cnt'].min(), ds.df_train['tokens_cnt'].max(), ds.df_train['tokens_cnt'].mean())
-#  # 32 0.77867
- # -1 1.17
-# if args.dsn == 'uci':
-#     maxlen = 32 
-# elif args.dsn == 'ag':
-#     maxlen = 128
-
-
-
-# from transformers import pipeline
-# nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=deviceIDs[1])
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2.config.pad_token_id = 50256
+gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=True)
 
 
 #. ppo training
 
+def get_loss(result, model_cls):
+    x = np.array([ii['generated_text'] for ii in result])
+    y = np.array([label] * x.shape[0])
+    eval_result = model_cls.evaluate(x, y, batch_size=64, verbose=0) 
+    future_loss_0 = eval_result[0]
+    return future_loss_0
+
+
 from collections import deque
-memory = deque(maxlen=100)
-rewards_epoch = []
+memory = deque(maxlen=32)
+
 for epoch in range(args.ppo_epoch):
     ds.df_train = ds.df_train.sample(frac=1)
     for ix, row in ds.df_train.reset_index().iterrows():
-        query = "[{}]".format(row['label']) + row['content'] #truncate(row['content'], 12)
-        query_tensor = gpt2_tokenizer.encode(query, return_tensors="pt").to(device_0)
-        response_tensor  = respond_to_batch(gpt2_model_trl, query_tensor, \
-                            txt_len=args.maxlen, temperature=args.temperature, top_p=0.9)
-        response = gpt2_tokenizer.decode(response_tensor[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
+        torch.cuda.empty_cache()
 
-        # get reward from another component
-        preds_test = model.predict([response], steps=1) # (128, 4)
+        query = row['content']
+        label = row['label']
+        label_name = row['label_name']
+        
+         
+        query_ids = tokenizer_gpt2.encode(query, return_tensors="pt").to(device_i)
+        response_ids  = respond_to_batch(gpt2_model_trl, query_ids, \
+                                txt_len=args.future_steps, temperature=args.temperature, top_p=0.9)
+        response = tokenizer_gpt2.decode(response_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
 
-        loss = scce(row['label'], preds_test).numpy()
+        query_response_ids = torch.cat([query_ids, response_ids], dim=-1)
+        query_response = tokenizer_gpt2.decode(query_response_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
 
-        reward = torch.tensor([even_loss - loss[0]]).to(device_0)
+        result_query = gen_nlp_gpt2([query], max_length=query_ids.shape[1] + args.future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                    repetition_penalty=1.0, num_return_sequences=256, clean_up_tokenization_spaces=True)
+        #print("result_query generated")
 
-        train_stats = ppo_trainer.step(query_tensor, response_tensor, reward)
+        result_query_response = gen_nlp_gpt2([query_response], max_length=query_response_ids.shape[1] + args.future_steps, \
+                                      do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                    repetition_penalty=1.0, num_return_sequences=256, clean_up_tokenization_spaces=True)
+        #print("result_query_response generated")
+
+        result_response = gen_nlp_gpt2([response], max_length=query_response_ids.shape[1] + args.future_steps, \
+                                      do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                    repetition_penalty=1.0, num_return_sequences=256, clean_up_tokenization_spaces=True)
+        #print("result_response generated")
+
+        future_loss_query = get_loss(result_query, model_cls)
+        future_loss_query_response = get_loss(result_query_response, model_cls)
+        future_loss_response = get_loss(result_response, model_cls)
+
+        print("ori===>", query,  "<===", label_name)
+        print("response==>", response)
+        print("loss reduction:", future_loss_query-future_loss_query_response, future_loss_query-future_loss_response)
+        print("\n")
+
+        loss_diff = future_loss_query-future_loss_query_response + future_loss_query-future_loss_response
+
+        reward = torch.tensor([loss_diff]).to(device_i)
+
+        train_stats = ppo_trainer.step(query_ids, response_ids, reward)
         #print(ix,  'pred:', preds_test.argmax(), 'label', row['label'], 'reward:', round(reward.cpu().numpy()[0],4))
         memory.append(reward.cpu().numpy()[0])
+
         rewards_epoch.append(reward.cpu().numpy()[0])
-        if ix % 100 == 0 :
+        if ix % 32 == 0 :
             print('iter_reward:', np.array(memory).mean())
-        if ix % 10 == 0:
-            print('label==>', row['label_name'], 'reward:', round(reward.cpu().numpy()[0],4) )
-            print('ori==>', row['content'])
-            print('syn==>', response)
-            print('\n')
+
     print("epoch:", epoch, np.array(rewards_epoch).mean())
     rewards_epoch = []
+
+
 
 '''
 
