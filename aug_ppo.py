@@ -150,7 +150,7 @@ def get_loss(result, model_cls):
 
 from collections import deque
 memory = deque(maxlen=32)
-
+rewards_epoch = []
 for epoch in range(args.ppo_epoch):
     ds.df_train = ds.df_train.sample(frac=1)
     for ix, row in ds.df_train.reset_index().iterrows():
@@ -165,7 +165,7 @@ for epoch in range(args.ppo_epoch):
         response_ids  = respond_to_batch(gpt2_model_trl, query_ids.to(device_2), \
                                 txt_len=args.future_steps, temperature=args.temperature, top_p=0.9)
         response = tokenizer_gpt2.decode(response_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
-         
+
         query_response_ids = torch.cat([query_ids, response_ids.cpu()], dim=-1)
         query_response = tokenizer_gpt2.decode(query_response_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
 
