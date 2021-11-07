@@ -6,8 +6,6 @@ sent = "The dollar has hit its highest level against the euro in almost three mo
 content = '''
 They are fed up with slow speeds, high prices and the level of customer service they receive. 17% of readers have switched suppliers and a further 16% are considering changing in the near future. It is particularly bad news for BT, the UK's biggest internet supplier, with almost three times as many people trying to leave as joining.
 '''
-
-
 sent = "Federal jury orders tech giant Samsung to pay"
 
 sent = 'FDA gives green light to migraine prevention tool'
@@ -37,25 +35,51 @@ sent = "Virus to cause spike in pork prices"
 # loss = outputs.loss
 # logits = outputs.logits
 
+
+############## whole token generation ############  
 import argparse,os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
 parser = argparse.ArgumentParser()
-parser.add_argument("--alpha", default=128, type=float)
-parser.add_argument("--gpu", default="0,1", type=str)
+parser.add_argument("--dsn", default='uci', type=str)
+parser.add_argument("--future_steps", default=50, type=int)
+parser.add_argument("--test_beams", default=256, type=int)
+parser.add_argument("--batch_size", default=32, type=int)
+parser.add_argument("--candidates", default=64, type=int)
+parser.add_argument("--cls_score_thres", default=0.95, type=float)
+
+
+parser.add_argument("--gpu", default="0,1,2,3", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-
+import tensorflow as tf 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print('======>',gpus,'<=======')
+if gpus:
+  try:
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+      # tf.config.experimental.set_virtual_device_configuration(gpu, \
+      #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+  except RuntimeError as e:
+    print(e)
 
 from transformers import top_k_top_p_filtering
 from torch.nn import functional as F
-import os,string,torch,math
+import os,string,torch,math,time
 
 from transformers import pipeline
 from utils.load_data import * 
-ds = load_data(dataset='uci', samplecnt= 128)
-ds, proper_len = process_ds(ds, 256)
+ds = load_data(dataset=args.dsn, samplecnt= 128)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation))
+
+from utils.transblock import * 
+with tf.distribute.MirroredStrategy().scope():
+    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+model_cls.load_weights("./model_cls/model_{}.h5".format(dsn))   
+
 
 # gpt2
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
@@ -66,173 +90,109 @@ tokenizer_gpt2.sep_token = '<|sep|>'
 #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
 print(tokenizer_gpt2)
 # no
-gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-# tc pp
-#gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('t5', 'ep') )
-gpt2.trainable = False
-gpt2.config.pad_token_id = 50256
-gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=True)
 
-device0 = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
-gpt2.to(device0)
+gen_d = {}
+for g in args.gpu.split(","):
+    gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    # tc pp
+    #gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('t5', 'ep') )
+    gpt2.trainable = False
+    gpt2.config.pad_token_id = 50256
 
-
-from utils.transblock import * 
-model = get_model_bert(ds.df_test.label.unique().shape[0])
-model.load_weights("./model_cls/model_uci.h5")          
+    gen_d[int(g)]  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, \
+                    device=int(g), return_full_text=False)
 
 
 
-################# gpt token generation ############  
 
-def vs(sent, label, candidate_ids, future_steps=32, beams=512):
-    # ori
-    ori_ids = tokenizer_gpt2.encode(sent, return_tensors="pt")
-    tokens_len_ori = ori_ids.shape[1]
-    result = gen_nlp_gpt2([sent], max_length=tokens_len_ori+future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=beams, clean_up_tokenization_spaces=True)
-    sents_future = np.array([ ii['generated_text'].strip() for ii in result ])
-    x = sents_future.reshape(-1,1)
-    y = np.array([label] * sents_future.shape[0])
-    eval_result = model.evaluate(x, y, batch_size=64, verbose=0)  
-    loss_ori =  eval_result[0]
+from threading import Thread
+def gen_vs(sent, future_steps, test_beams, model_cls, di):
+    tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
+    result_ = gen_d[di]([sent], max_length=tokens_len_ori + future_steps, \
+                                  do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.0, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
+    x = np.array([ii['generated_text'] for ii in result_])
+    y = np.array([label] * x.shape[0])
+    eval_result_ori = model_cls.evaluate(x, y, batch_size=args.batch_size, verbose=0)    
+    eval_result_oris.append(eval_result_ori[0])
+    print(eval_result_ori[0])
 
-    candidate_sents = []
-    for idd in candidate_ids: 
-        candidate_sent_ids = torch.cat([ori_ids, torch.tensor(idd).reshape(1,-1)], dim=-1) 
-        candidate_sent = tokenizer_gpt2.decode(candidate_sent_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
-        candidate_sents.append(candidate_sent)
-
-    result_1 = gen_nlp_gpt2(candidate_sents, max_length=tokens_len_ori+1+future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=beams, clean_up_tokenization_spaces=True)
+def gengen_vs(sent, future_steps, candidates, test_beams, model_cls, di):
+    tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
+    result_0 = gen_d[di]([sent], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.0, num_return_sequences=candidates, clean_up_tokenization_spaces=True)
+    #print("result_0 generated")
+    result_1 = gen_d[di]([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], max_length=future_steps+future_steps, \
+                                  do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.0, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
+    #print("result_1 generated")
 
     scores = []
     for i in range(len(result_1)): #  32 * 256
         x = np.array([ii['generated_text'] for ii in result_1[i]])
         y = np.array([label] * x.shape[0])
-        eval_result = model.evaluate(x, y, batch_size=64, verbose=0) 
-        #print('\n' ,candidate_sents[i])
-        #print("loss_diff:", loss_ori-eval_result[0] )
-        scores.append(loss_ori-eval_result[0])
-    return scores
+        eval_result = model_cls.evaluate(x, y, batch_size=args.batch_size, verbose=0) 
+        #print('\n' , result_0[i]['generated_text'])
+        score = loss_ori - eval_result[0] 
+        #print("loss_diff:", score)
+        scores.append(score)
+
+    df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], scores), \
+                                        columns=['content','score'])
+    df_future_ll.append(df_future)
 
 
-while 1:
+
+while 1:    
     row = ds.df_train.sample(1)
     sent = row['content'].tolist()[0]
     label = row['label'].tolist()[0]
     label_name = row['label_name'].tolist()[0]
-    print("ori===>", sent, label_name)
+    torch.cuda.empty_cache()
+    eval_result_oris = []
+    threads = []
+    for di in range(len(args.gpu.split(","))):
+        t = Thread(target=gen_vs, args=(sent, args.future_steps, args.test_beams, model_cls, di))
+        t.start()
+        threads.append(t)
 
-    for step in range(64):
-        input_ids = tokenizer_gpt2.encode(sent, return_tensors="pt").to(device0)
+    # join all threads
+    for t in threads:
+        t.join()
 
-        # get logits of last hidden state
-        next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
+    loss_ori = sum(eval_result_oris) / len(eval_result_oris)
 
-        # filter
-        filtered_next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=16) # , top_p=1
-        #next_logits = [ii for ii in filtered_next_token_logits.cpu().detach().numpy()[0] if not math.isinf(ii)]
-        #print("valid next logits:", len(next_logits)) 
+    torch.cuda.empty_cache()
 
-        probs = F.softmax(filtered_next_token_logits, dim=-1) # 50257
+    df_future_ll = []
+    threads = []
+    for di in range(len(args.gpu.split(","))):
+        t = Thread(target=gengen_vs, args=(sent, args.future_steps, args.candidates, args.test_beams, model_cls, di))
+        t.start()
+        threads.append(t)
 
-        probs_ = probs.detach().cpu().numpy()[0]
+    # join all threads
+    for t in threads:
+        t.join()
 
-        candidate_ids = np.where(probs_>0)[0]
+    df_future_threds = pd.concat(df_future_ll)
 
-        #print(probs_[probs_>0])
+    df_future_threds.sort_values(by=['score'], ascending=False, inplace=True)
+    #sents = df_future.head(8)['content'].tolist()
 
-        scores = vs(sent, label, candidate_ids, 32, 512)
+    preds = model_cls.predict(df_future_threds['content'].values, batch_size= args.batch_size, verbose=0)
 
-        # modify probs
-        for idd, score in zip(candidate_ids, scores):
-            probs[0][idd] =  max( (1-args.alpha) * probs[0][idd] + args.alpha * score, 0)
+    df_future_threds['cls_score'] = preds[:, label] 
+    df_future_threds['cls_label'] = preds.argmax(axis=1)
+    dfaug = df_future_threds.loc[(df_future_threds['cls_label']==label) & (df_future_threds['cls_score']>=args.cls_score_thres)]
+    print("reduce rate ===>", dfaug.shape[0] / df_future_threds.shape[0] )
+    assert dfaug.shape[0] >= 8
 
-        # for _ in range(50):
-        #     next_token = torch.multinomial(probs, num_samples=1)
-        #     next_word = tokenizer_gpt2.convert_ids_to_tokens([next_token.detach().cpu().numpy()[0][0]], skip_special_tokens=True)
-        #     print(next_word)
-
-        next_token = torch.multinomial(probs, num_samples=1)
-        gen_ids = torch.cat([input_ids, next_token], dim=-1)
-        sent = tokenizer_gpt2.decode(gen_ids.tolist()[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
-    
-        print("sent_tmp==>", sent)
-
-    print("sent_final==>", sent)
-
-
-
-
-
-
-
-
-
-
-
-############## whole token generation ############  
-
-# tokenizer_gpt2('Sierra', add_prefix_space=True).input_ids
-
-gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=True)
-
-
-row = ds.df_train.sample(1)
-sent = row['content'].tolist()[0]
-label = row['label'].tolist()[0]
-label_name = row['label_name'].tolist()[0]
-print(label_name, "==>", sent)
-
-test_beams = 512
-future_steps = 32
-# original vs
-tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
-result_ = gen_nlp_gpt2([sent], max_length=tokens_len_ori + future_steps, \
-                              do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
-x = np.array([ii['generated_text'] for ii in result_])
-y = np.array([label] * x.shape[0])
-eval_result_ori = model.evaluate(x, y, batch_size=64, verbose=1)    
-
-
-
-torch.cuda.empty_cache()
-
-
-result_0 = gen_nlp_gpt2([sent], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=64, clean_up_tokenization_spaces=True)
-print("result_0 generated")
-result_1 = gen_nlp_gpt2([ ii['generated_text'].strip() for ii in result_0], max_length=tokens_len_ori+future_steps*2, \
-                              do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                            repetition_penalty=1.0, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
-print("result_1 generated")
-
-scores = []
-for i in range(len(result_1)): #  32 * 256
-    x = np.array([ii['generated_text'] for ii in result_1[i]])
-    y = np.array([label] * x.shape[0])
-    eval_result = model.evaluate(x, y, batch_size=64, verbose=1) 
-    print('\n' ,result_0[i]['generated_text'])
-    print("loss_diff:", eval_result_ori[0]-eval_result[0] )
-    scores.append(eval_result[0])
-
-df_future = pd.DataFrame(zip([ ii['generated_text'].strip() for ii in result_0], scores), \
-                                    columns=['content','loss'])
-
-df_future['lossdiff'] = eval_result_ori[0] - df_future_trial['loss']
-
-df_future.sort_values(by=['lossdiff'], ascending=False, inplace=True)
-#sents = df_future.head(8)['content'].tolist()
-
-print('pos==>')
-for s in df_future.head(8)['content'].tolist():
-    print(s.replace('\n', ' '))
-print('\n')
-print('neg==>')
-for s in df_future.tail(8)['content'].tolist():
-    print(s.replace('\n', ' '))
+    print(label_name, "==>", sent)
+    print('\n')
+    for s in dfaug.head(8)['content'].tolist():
+        print("gen==>", s.replace(sent, ''))
+    print('\n\n')
 
 
 
@@ -240,17 +200,6 @@ for s in df_future.tail(8)['content'].tolist():
 
 
 
-
-#pred_ori = model.predict([sent], batch_size=1)
-
-preds = model.predict(sents_future, batch_size=32)
-pred_labels = preds.argmax(axis=1)
-pred_scores = preds.max(axis=1)
-
-df_future = pd.DataFrame(zip(sents_future.tolist(), pred_labels.tolist(), pred_scores.tolist()), \
-                columns=['sent','label','score'])
-
-df_future_sel = df_future.loc[(df_future['label']==label) & (df_future['score']>=0.95)].sort_values(by=['score'], ascending=False)
 
 
 
@@ -409,3 +358,24 @@ In [31]: vs(sent + ' to', label, 32, 128)
 4/4 [==============================] - 1s 152ms/step - loss: 2.2012 - acc: 0.4453
 Out[31]: 0.017421722412109375
 '''
+
+for dsn in ['uci','ag','stsa']:
+    ds = load_data(dataset=dsn, samplecnt= -1)
+
+    x_train, y_train = get_keras_data(ds.df_train)
+    x_test, y_test = get_keras_data(ds.df_test)
+
+    with tf.distribute.MirroredStrategy().scope():
+    #with tf.device('/GPU:0'):
+        model = get_model_bert(ds.df_test.label.unique().shape[0])
+
+
+    history = model.fit(
+        x_train, y_train, batch_size=32, epochs=12, \
+        validation_data=(x_test, y_test), verbose=1, validation_batch_size=64, validation_freq=1,
+        callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=4, mode='max',restore_best_weights=True)]
+    )
+    model.save_weights("./model_cls/model_full_uci.h5")
+
+
+

@@ -23,19 +23,27 @@ nohup python -u augf.py --dsn yelp2 --samplecnt 128 --max_aug_times 1 --aug gene
 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
-nohup bash run.sh 1 32 3 8 0,1 &
-nohup bash run.sh 1 32 3 8 2,3 &
-nohup bash run.sh 1 32 3 8 4,5 &
-nohup bash run.sh 1 32 3 8 6,7 &
+nohup bash run.sh 1 128 3 8 0,1 &
+nohup bash run.sh 1 128 3 8 2,3 &
+nohup bash run.sh 1 128 3 8 4,5 &
+nohup bash run.sh 1 128 3 8 6,7 &
 
 
+
+
+
+nohup python -u rltoken.py  --gpu 0,1  --alpha 0.9 --future_steps 32 --beams 128 > rltoken.0p9.log &
+nohup python -u rltoken.py  --gpu 2,3  --alpha 0.5 --future_steps 32 --beams 128 > rltoken.0p5.log &
+nohup python -u rltoken.py  --gpu 4,5  --alpha 0.1 --future_steps 32 --beams 128 > rltoken.0p1.log &
+
+nohup python -u aug_ppo.py > aug_ppo.log & 
 
 
 
 
 ############################################################################################################################################
 ps aux|grep "augf"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "run_senti.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
 ps aux|grep "dvrl_iter"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "dvrl_iter"|grep "3762"|grep -v grep | awk '{print $2}'|xargs kill -9

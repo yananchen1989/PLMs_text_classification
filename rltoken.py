@@ -1,15 +1,28 @@
 import argparse,os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--future_steps", default=32, type=int)
 parser.add_argument("--beams", default=128, type=int)
-parser.add_argument("--alpha", default=128, type=float)
+parser.add_argument("--alpha", default=0.5, type=float)
 parser.add_argument("--gpu", default="0,1", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
-
+import tensorflow as tf 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print('======>',gpus,'<=======')
+if gpus:
+  try:
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+      # tf.config.experimental.set_virtual_device_configuration(gpu, \
+      #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+  except RuntimeError as e:
+    print(e)
+    
 from transformers import top_k_top_p_filtering
 from torch.nn import functional as F
 import os,string,torch,math,time
