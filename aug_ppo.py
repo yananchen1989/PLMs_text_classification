@@ -144,7 +144,7 @@ gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2
 def get_loss(result, label, model_cls):
     x = np.array([ii['generated_text'] for ii in result])
     y = np.array([label] * x.shape[0])
-    eval_result = model_cls.evaluate(x, y, batch_size=64, verbose=0) 
+    eval_result = model_cls.evaluate(x, y, batch_size=32, verbose=0) 
     future_loss_0 = eval_result[0]
     return future_loss_0
 
