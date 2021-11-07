@@ -33,7 +33,26 @@ import os,string,torch,math,time
 from transformers import pipeline
 from utils.load_data import * 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
-ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation))
+
+
+def remove_str(sent):
+    rml = ['(AP)', '(Reuters)', '(Canadian Press)', '&lt;b&gt;...&lt;/b&gt', '(AFP)', '(washingtonpost.com)', \
+                '(NewsFactor)', '(USATODAY.com)', '(Ziff Davis)', '#39;' ]
+    for word in rml:
+        sent = sent.replace(word,'')
+
+    sent.replace(' #39;', "'")
+    return sent.strip(string.punctuation).strip()
+
+if args.dsn =='agt':
+    ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
+
+# for ix, row in ds.df_train.iterrows():
+#     print(row['label_name'])
+#     print(row['content'], '\n')
+
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation).strip())
+#ds, proper_len = process_ds(ds, 32)
 
 from utils.transblock import * 
 with tf.distribute.MirroredStrategy().scope():
@@ -144,8 +163,8 @@ for ix, row in ds.df_train.iterrows():
     df_future_threds['cls_score'] = preds[:, label] 
     df_future_threds['cls_label'] = preds.argmax(axis=1)
     dfaug = df_future_threds.loc[(df_future_threds['cls_label']==label) & (df_future_threds['cls_score']>=args.cls_score_thres)]
-    print("reduce rate ===>", dfaug.shape[0] / df_future_threds.shape[0] )
-    assert dfaug.shape[0] >= 8
+    print("reduce rate ===>", dfaug.shape[0] / df_future_threds.shape[0], dfaug.shape[0] )
+    #assert dfaug.shape[0] >= 8
 
     print(label_name, "==>", sent)
     print('\n')
