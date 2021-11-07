@@ -123,6 +123,7 @@ def gengen_vs(sent, future_steps, candidates, test_beams, model_cls, di):
 
 
 for ix, row in ds.df_train.iterrows():
+    t0 = time.time()
     sent = row['content']
     label = row['label']
     label_name = row['label_name']
@@ -162,12 +163,20 @@ for ix, row in ds.df_train.iterrows():
 
     df_future_threds['cls_score'] = preds[:, label] 
     df_future_threds['cls_label'] = preds.argmax(axis=1)
-    dfaug = df_future_threds.loc[(df_future_threds['cls_label']==label) & (df_future_threds['cls_score']>=args.cls_score_thres)]
+    dfaug = df_future_threds.loc[(df_future_threds['cls_label']==label) & \
+                 (df_future_threds['cls_score']>=args.cls_score_thres)  & \
+                 (df_future_threds['score']>0)]
     print("reduce rate ===>", dfaug.shape[0] / df_future_threds.shape[0], dfaug.shape[0] )
-    #assert dfaug.shape[0] >= 8
-
+    
     print(label_name, "==>", sent)
     print('\n')
+    t1 = time.time()
+    print("time cost:", (t1-t0) / 60 )
+    
+    if dfaug.shape[0] == 0:
+        print("reduct_empty")  
+        continue 
+
     for s in dfaug.head(8)['content'].tolist():
         print("gen==>", s.replace(sent, ''))
     print('\n\n')

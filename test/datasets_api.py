@@ -84,7 +84,7 @@ for dsn, f in dsnf.items():
 	# df_test.to_csv('{}/{}_test.csv'.format(path, dsn), index=False)
 
 
-
+ds_train, ds_test  = torchtext.datasets.AG_NEWS(root='.data', split=('train', 'test'))
 
 
 

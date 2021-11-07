@@ -85,7 +85,7 @@ from utils.transblock import *
 #with tf.device('/GPU:0'):
 with tf.distribute.MirroredStrategy().scope():
     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-model_cls.load_weights("./model_cls/model_uci.h5")    
+model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn) )    
 
 
 
@@ -189,10 +189,11 @@ for epoch in range(args.ppo_epoch):
         # print("response==>", response)
         # print("loss reduction:", future_loss_query-future_loss_query_response, future_loss_query-future_loss_response)
         # print("\n")
-
-        loss_diff = future_loss_query-future_loss_query_response + future_loss_query-future_loss_response
-
+        gain_qr = (future_loss_query-future_loss_query_response) #/ future_loss_query * 100
+        gain_r = (future_loss_query-future_loss_response) #/ future_loss_query * 100
+        loss_diff = gain_qr + gain_r
         reward = torch.tensor([loss_diff])
+        print("loss_diff:", gain_qr, gain_r)
 
         train_stats = ppo_trainer.step(query_ids.to(device_2), response_ids.to(device_2), reward.to(device_2) )
         #print(ix,  'pred:', preds_test.argmax(), 'label', row['label'], 'reward:', round(reward.cpu().numpy()[0],4))
