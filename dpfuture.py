@@ -57,7 +57,7 @@ ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.pun
 from utils.transblock import * 
 with tf.distribute.MirroredStrategy().scope():
     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-model_cls.load_weights("./model_cls/model_{}.h5".format(args.dsn))   
+model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 
 # gpt2
@@ -172,7 +172,7 @@ for ix, row in ds.df_train.iterrows():
     print('\n')
     t1 = time.time()
     print("time cost:", (t1-t0) / 60 )
-    
+
     if dfaug.shape[0] == 0:
         print("reduct_empty")  
         continue 
