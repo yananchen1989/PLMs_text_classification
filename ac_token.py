@@ -43,7 +43,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--future_steps", default=32, type=int)
-parser.add_argument("--beams", default=128, type=int)
+parser.add_argument("--beams", default=256, type=int)
 parser.add_argument("--gpu", default="5,6,7", type=str)
 args = parser.parse_args()
 print('args==>', args)
@@ -146,16 +146,10 @@ def get_future_score(sent, label, future_steps, beams):
                             repetition_penalty=1.0, num_return_sequences=beams, clean_up_tokenization_spaces=True)
     
     x = tf.convert_to_tensor([ ii['generated_text'].strip() for ii in result ])
-    preds = model_cls.predict(x, batch_size=32, verbose=0)
-
-    # preds_ll = []
-    # fbs = 8
-    # for ix in range(0, x.shape[0], fbs):
-    #     preds_tmp = model_cls(x[ix: ix+fbs], training=False)
-    #     preds_ll.append(preds_tmp)
-
-    # preds = tf.concat(preds_ll, axis=0)
-    future_loss = tf.keras.losses.SparseCategoricalCrossentropy()(tf.convert_to_tensor([label] * preds.shape[0]), preds)
+    y = np.array([label] * x.shape[0])
+    #preds = model_cls(x)
+    future_loss = model_cls.evaluate(x, y, batch_size=64, verbose=0) 
+    #future_loss = tf.keras.losses.SparseCategoricalCrossentropy()(tf.convert_to_tensor([label] * preds.shape[0]), preds)
     return future_loss
 
 
