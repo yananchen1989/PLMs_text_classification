@@ -185,8 +185,8 @@ for epoch in range(args.ppo_epoch):
 
         # print("loss reduction:", future_loss_query-future_loss_query_response, future_loss_query-future_loss_response)
         # print("\n")
-        gain_qr = (future_loss_query-future_loss_query_response) #/ future_loss_query * 100
-        gain_r = (future_loss_query-future_loss_response) #/ future_loss_query * 100
+        gain_qr = (future_loss_query-future_loss_query_response) / future_loss_query * 100
+        gain_r = (future_loss_query-future_loss_response) / future_loss_query * 100
         loss_diff = gain_qr + gain_r
         reward = torch.tensor([loss_diff])
         
@@ -200,7 +200,7 @@ for epoch in range(args.ppo_epoch):
         print("\nori===>", query,  "<===", label_name)
         print("response==>", response)
         print("loss_diff:", gain_qr, gain_r)
-        print('iter_reward:', np.array(memory).mean(), '\n')
+        print('memory_reward:', np.array(memory).mean(), '\n')
             
 
     print("epoch:", epoch,  "reward:", np.array(rewards_epoch).mean())
