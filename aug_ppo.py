@@ -138,9 +138,12 @@ gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2
 def get_loss(result, label, model_cls):
     x = np.array([ii['generated_text'] for ii in result])
     y = np.array([label] * x.shape[0])
-    eval_result = model_cls.evaluate(x, y, batch_size=32, verbose=0) 
-    future_loss_0 = eval_result[0]
-    return future_loss_0
+
+    preds = model_cls.predict(x, batch_size=32, verbose=0)
+    return preds[:, label].mean()
+    # eval_result = model_cls.evaluate(x, y, batch_size=32, verbose=0) 
+    # future_loss_0 = eval_result[0]
+    # return future_loss_0
 
 def ret_result_gpt(sent):
     result = gen_nlp_gpt2([sent], \
@@ -162,12 +165,12 @@ for epoch in range(args.ppo_epoch):
 
         query = row['content']
         label = row['label']
-        label_name = row['label_name']
+        label_name = row['label_name'] 
         
          
         query_ids = tokenizer_gpt2.encode(query, return_tensors="pt")
         response_ids  = respond_to_batch(gpt2_model_trl, query_ids.to(device_2), \
-                                txt_len=args.future_steps, temperature=args.temperature, top_p=0.9)
+                                txt_len=args.future_steps, temperature=args.temperature, top_p=0.9, repetition_penalty=1.2)
         response = tokenizer_gpt2.decode(response_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True).strip().replace('\n',' ')
 
         query_response_ids = torch.cat([query_ids, response_ids.cpu()], dim=-1)
@@ -177,20 +180,21 @@ for epoch in range(args.ppo_epoch):
         result_query_response = ret_result_gpt(query_response)
         result_response = ret_result_gpt(response)
 
-
         future_loss_query = get_loss(result_query, label,  model_cls)
         future_loss_query_response = get_loss(result_query_response, label, model_cls)
         future_loss_response = get_loss(result_response, label, model_cls)
 
-
+        gain_qr = future_loss_query_response-future_loss_query
+        gain_r = future_loss_response-future_loss_query
+        print(gain_qr, gain_r )
         # print("loss reduction:", future_loss_query-future_loss_query_response, future_loss_query-future_loss_response)
         # print("\n")
-        gain_qr = (future_loss_query-future_loss_query_response) / future_loss_query * 100
-        gain_r = (future_loss_query-future_loss_response) / future_loss_query * 100
-        loss_diff = gain_qr + gain_r
-        reward = torch.tensor([loss_diff])
-        
+        #gain_qr = (future_loss_query-future_loss_query_response) / future_loss_query * 100
+        #gain_r = (future_loss_query-future_loss_response) / future_loss_query * 100
 
+        gain = gain_qr + gain_r
+        reward = torch.tensor([gain])
+        
         train_stats = ppo_trainer.step(query_ids.to(device_2), response_ids.to(device_2), reward.to(device_2) )
         #print(ix,  'pred:', preds_test.argmax(), 'label', row['label'], 'reward:', round(reward.cpu().numpy()[0],4))
         memory.append(reward.numpy()[0])
@@ -199,7 +203,7 @@ for epoch in range(args.ppo_epoch):
 
         print("\nori===>", query,  "<===", label_name)
         print("response==>", response)
-        print("loss_diff:", gain_qr, gain_r)
+        print("gain:", gain_qr, gain_r)
         print('memory_reward:', np.array(memory).mean(), '\n')
             
 
@@ -212,7 +216,7 @@ for epoch in range(args.ppo_epoch):
 
 '''
 
-nohup python -u aug_ppo.py --dsn uci --init_kl_coef 0.2 --lr 1.41e-5 --future_steps 40 --temperature 1.2 --gpu 6,7 > aug_ppo.log & 
+nohup python -u aug_ppo.py --dsn uci --init_kl_coef 0.2 --lr 1.41e-5 --future_steps 40 --temperature 1.0 --gpu 6,7 > aug_ppo.log & 
 
 '''
 

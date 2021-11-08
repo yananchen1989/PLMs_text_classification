@@ -110,37 +110,27 @@ class GPT2HeadWithValueModel(GPT2PreTrainedModel):
 
 # Cell
 
-def _create_next_token_logits_penalties(input_ids, logits, repetition_penalty):
-    # create logit penalties for already seen input_ids
-    token_penalties = np.ones(shape_list(logits))
-    prev_input_ids = [np.unique(input_id) for input_id in input_ids.numpy()]
-    for i, prev_input_id in enumerate(prev_input_ids):
-        logit_penalized = logits[i].numpy()[prev_input_id]
-        logit_penalties = np.zeros(logit_penalized.shape)
-        # if previous logit score is < 0 then multiply repetition penalty else divide
-        logit_penalties[logit_penalized < 0] = repetition_penalty
-        logit_penalties[logit_penalized > 0] = 1 / repetition_penalty
-        np.put(token_penalties[i], prev_input_id, logit_penalties)
-    return tf.convert_to_tensor(token_penalties, dtype=tf.float32)
 
-def respond_to_batch(model, queries, txt_len=20, top_k=0, top_p=1.0, temperature=1.0, min_tokens_to_keep=1):
+def respond_to_batch(gpt2_model_trl, query_ids, txt_len=20, top_k=0, top_p=0.9, temperature=1.0, \
+                     repetition_penalty=1.0,  min_tokens_to_keep=1):
     """Sample text from language model."""
-    input_ids = queries
     for i in range(txt_len):
         # Get Logits
-        outputs = model(input_ids)
+        outputs = gpt2_model_trl(query_ids)
         next_token_logits = outputs[0][:, -1, :] / temperature
+
+        #penalty
+        for i in range(next_token_logits.shape[1]):
+            if i in query_ids:
+                if next_token_logits[0][i] < 0 :
+                    next_token_logits[0][i] *= repetition_penalty
+                else:
+                    next_token_logits[0][i] /= repetition_penalty
+
         next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p, min_tokens_to_keep=min_tokens_to_keep)
         
-        #penalty
-        # next_token_logits_penalties = _create_next_token_logits_penalties(
-        #             input_ids, next_token_logits, 1.2
-        #         )
-        # next_token_logits = tf.math.multiply(next_token_logits, next_token_logits_penalties)
-
-
         # Sample
         probs = F.softmax(next_token_logits, dim=-1)
         next_token = torch.multinomial(probs, num_samples=1).squeeze(1)
-        input_ids = torch.cat([input_ids, next_token.unsqueeze(-1)], dim=-1)
-    return input_ids[:, -txt_len:]
+        query_ids = torch.cat([query_ids, next_token.unsqueeze(-1)], dim=-1)
+    return query_ids[:, -txt_len:]
