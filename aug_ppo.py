@@ -12,11 +12,7 @@ from sklearn.metrics.pairwise import cosine_distances
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="uci", type=str)
 parser.add_argument("--samplecnt", default=128, type=int)
-parser.add_argument("--model", default="albert", type=str)
-parser.add_argument("--verbose", default=0, type=int)
-parser.add_argument("--basemode", default="max", type=str) 
-parser.add_argument("--epochs", default=100, type=int)
-parser.add_argument("--basetry", default=3, type=int)
+
 parser.add_argument("--batch_size", default=32, type=int)
 parser.add_argument("--freq", default=20, type=int)
 
@@ -25,16 +21,18 @@ parser.add_argument("--forward_batch_size", default=1, type=int)
 
 #parser.add_argument("--warmup_epoch", default=-1, type=int)
 parser.add_argument("--fbs", default=8, type=int)
-parser.add_argument("--ppo_epoch", default=100, type=int)
+parser.add_argument("--ppo_epoch", default=200, type=int)
 
+parser.add_argument("--lr", default=1.41e-5, type=float) 
 parser.add_argument("--init_kl_coef", default=0.2, type=float) 
 parser.add_argument("--cliprange", default=0.2, type=float) 
 parser.add_argument("--cliprange_value", default=0.2, type=float) 
 parser.add_argument("--temperature", default=1.0, type=float) 
 parser.add_argument("--min_tokens_to_keep", default=1, type=int) 
-parser.add_argument("--maxlen", default=64, type=int) 
-parser.add_argument("--gpu", default="6,7", type=str)
 parser.add_argument("--future_steps", default=32, type=int)
+parser.add_argument("--beams", default=256, type=int)
+
+parser.add_argument("--gpu", default="6,7", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -106,7 +104,7 @@ config = {
     #"txt_in_len": 5,
     #"txt_out_len": 15,
     "batch_size": args.ppo_batchsize ,
-    "lr": 1.41e-5,
+    "lr": args.lr,
     "init_kl_coef": args.init_kl_coef,
     "target": 6,
     "horizon":10000,
@@ -120,11 +118,7 @@ gpt2_model_ref_trl.to(device_2)
 gpt2_model_trl.to(device_2)
 ppo_trainer = PPOTrainer(gpt2_model_trl, gpt2_model_ref_trl, **config)
 
-
-
 #from utils.transblock import * 
-
-
 
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -152,12 +146,15 @@ def ret_result_gpt(sent):
     result = gen_nlp_gpt2([sent], \
                                 max_length=tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1] + args.future_steps, \
                                 do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                repetition_penalty=1.0, num_return_sequences=256, clean_up_tokenization_spaces=True)
+                                repetition_penalty=1.0, num_return_sequences=args.beams, clean_up_tokenization_spaces=True)
     return result
 
 from collections import deque
 memory = deque(maxlen=32)
 rewards_epoch = []
+model_output_path_ppo = "./finetune_gpt2_ppo"
+os.makedirs(model_output_path_ppo, exist_ok=True)
+
 for epoch in range(args.ppo_epoch):
     ds.df_train = ds.df_train.sample(frac=1)
     for ix, row in ds.df_train.reset_index().iterrows():
@@ -185,32 +182,38 @@ for epoch in range(args.ppo_epoch):
         future_loss_query_response = get_loss(result_query_response, label, model_cls)
         future_loss_response = get_loss(result_response, label, model_cls)
 
-        # print("ori===>", query,  "<===", label_name)
-        # print("response==>", response)
+
         # print("loss reduction:", future_loss_query-future_loss_query_response, future_loss_query-future_loss_response)
         # print("\n")
         gain_qr = (future_loss_query-future_loss_query_response) #/ future_loss_query * 100
         gain_r = (future_loss_query-future_loss_response) #/ future_loss_query * 100
         loss_diff = gain_qr + gain_r
         reward = torch.tensor([loss_diff])
-        print("loss_diff:", gain_qr, gain_r)
+        
 
         train_stats = ppo_trainer.step(query_ids.to(device_2), response_ids.to(device_2), reward.to(device_2) )
         #print(ix,  'pred:', preds_test.argmax(), 'label', row['label'], 'reward:', round(reward.cpu().numpy()[0],4))
         memory.append(reward.numpy()[0])
 
         rewards_epoch.append(reward.cpu().numpy()[0])
-        if ix % 32 == 0 :
-            print('iter_reward:', np.array(memory).mean(), "<==", ix)
 
-    print("epoch:", epoch, np.array(rewards_epoch).mean())
+        if ix % 8 == 0:
+            print("ori===>", query,  "<===", label_name)
+            print("response==>", response)
+            print("loss_diff:", gain_qr, gain_r)
+            print('iter_reward:', np.array(memory).mean())
+            
+
+    print("epoch:", epoch,  "reward:", np.array(rewards_epoch).mean())
     rewards_epoch = []
+
+    gpt2_model_trl.save_pretrained(model_output_path_ppo)
 
 
 
 '''
 
-nohup python -u aug_ppo.py --dsn ag --maxlen 64 --init_kl_coef 0.1 --temperature 1.0 > ppo.log & 
+nohup python -u aug_ppo.py --dsn uci --init_kl_coef 0.18 --lr 1.41e-4 --future_steps 40 --gpu 6,7 > aug_ppo.log & 
 
 '''
 
