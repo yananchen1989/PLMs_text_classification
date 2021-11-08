@@ -44,7 +44,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 parser = argparse.ArgumentParser()
 parser.add_argument("--future_steps", default=32, type=int)
 parser.add_argument("--beams", default=128, type=int)
-parser.add_argument("--alpha", default=0.5, type=float)
 parser.add_argument("--gpu", default="6,7", type=str)
 args = parser.parse_args()
 print('args==>', args)
@@ -202,7 +201,7 @@ for epoch in range(100):
                 action_probs_history.append(tf.math.log(action_probs[0, next_token.cpu().numpy()[0][0] ]) )
 
                 # Apply the sampled action in our environment
-                reward, state = next_sent_reward(sent, label, next_token, 32, 128)
+                reward, state = next_sent_reward(sent, label, next_token, args.future_steps, args.beams)
                 print("step reward:", reward)
                 rewards_history.append(reward)
                 episode_reward += reward
