@@ -197,11 +197,10 @@ for epoch in range(args.ppo_epoch):
 
         rewards_epoch.append(reward.cpu().numpy()[0])
 
-        if ix % 8 == 0:
-            print("ori===>", query,  "<===", label_name)
-            print("response==>", response)
-            print("loss_diff:", gain_qr, gain_r)
-            print('iter_reward:', np.array(memory).mean())
+        print("\nori===>", query,  "<===", label_name)
+        print("response==>", response)
+        print("loss_diff:", gain_qr, gain_r)
+        print('iter_reward:', np.array(memory).mean(), '\n')
             
 
     print("epoch:", epoch,  "reward:", np.array(rewards_epoch).mean())
@@ -213,7 +212,7 @@ for epoch in range(args.ppo_epoch):
 
 '''
 
-nohup python -u aug_ppo.py --dsn uci --init_kl_coef 0.18 --lr 1.41e-4 --future_steps 40 --gpu 6,7 > aug_ppo.log & 
+nohup python -u aug_ppo.py --dsn uci --init_kl_coef 0.2 --lr 1.41e-5 --future_steps 40 --temperature 1.2 --gpu 6,7 > aug_ppo.log & 
 
 '''
 
