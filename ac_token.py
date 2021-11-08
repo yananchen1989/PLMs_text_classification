@@ -93,7 +93,8 @@ gpt2.to(device_i)
 
 
 from utils.transblock import * 
-with tf.distribute.MirroredStrategy().scope():
+#with tf.distribute.MirroredStrategy().scope():
+with tf.device('/GPU:0'):
     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 model_cls.load_weights("./model_cls/model_full_uci.h5")          
 
@@ -112,7 +113,8 @@ an estimate of total rewards in the future.
 
 In our implementation, they share the initial layer.
 """
-with tf.distribute.MirroredStrategy().scope():
+#with tf.distribute.MirroredStrategy().scope():
+with tf.device('/GPU:0'):
     model = get_model_bert_ac(gpt2.config.vocab_size)
 
 """
