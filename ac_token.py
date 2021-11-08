@@ -44,7 +44,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 parser = argparse.ArgumentParser()
 parser.add_argument("--future_steps", default=32, type=int)
 parser.add_argument("--beams", default=128, type=int)
-parser.add_argument("--gpu", default="6,7", type=str)
+parser.add_argument("--gpu", default="5,6,7", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -94,7 +94,7 @@ gpt2.to(device_i)
 
 from utils.transblock import * 
 #with tf.distribute.MirroredStrategy().scope():
-with tf.device('/GPU:0'):
+with tf.device('/GPU:2'):
     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 model_cls.load_weights("./model_cls/model_full_uci.h5")          
 
