@@ -93,10 +93,11 @@ gpt2.to(device_i)
 
 
 from utils.transblock import * 
-#with tf.distribute.MirroredStrategy().scope():
-with tf.device('/cpu:0'):
+with tf.distribute.MirroredStrategy().scope():
+#with tf.device('/gpu:0'):
     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 model_cls.load_weights("./model_cls/model_full_uci.h5")          
+model_cls.trainable = False
 
 print("model cls loaded")
 
@@ -114,8 +115,8 @@ an estimate of total rewards in the future.
 
 In our implementation, they share the initial layer.
 """
-#with tf.distribute.MirroredStrategy().scope():
-with tf.device('/gpu:0'):
+with tf.distribute.MirroredStrategy().scope():
+#with tf.device('/gpu:0'):
     model = get_model_bert_ac(gpt2.config.vocab_size)
 
 print("model ac loaded")
@@ -145,15 +146,15 @@ def get_future_score(sent, label, future_steps, beams):
                             repetition_penalty=1.0, num_return_sequences=beams, clean_up_tokenization_spaces=True)
     
     x = tf.convert_to_tensor([ ii['generated_text'].strip() for ii in result ])
-    #preds = model_cls.predict(x, batch_size=8, verbose=0)
+    preds = model_cls.predict(x, batch_size=32, verbose=0)
 
-    preds_ll = []
-    fbs = 8
-    for ix in range(0, x.shape[0], fbs):
-        preds_tmp = model_cls(x[ix: ix+fbs])
-        preds_ll.append(preds_tmp)
+    # preds_ll = []
+    # fbs = 8
+    # for ix in range(0, x.shape[0], fbs):
+    #     preds_tmp = model_cls(x[ix: ix+fbs], training=False)
+    #     preds_ll.append(preds_tmp)
 
-    preds = tf.concat(preds_ll, axis=0)
+    # preds = tf.concat(preds_ll, axis=0)
     future_loss = tf.keras.losses.SparseCategoricalCrossentropy()(tf.convert_to_tensor([label] * preds.shape[0]), preds)
     return future_loss
 
@@ -176,7 +177,7 @@ huber_loss = keras.losses.Huber()
 action_probs_history = []
 critic_value_history = []
 rewards_history = []
-
+returns_history = []
 
 
 for epoch in range(100):
@@ -189,7 +190,9 @@ for epoch in range(100):
         label_name = row['label_name']  
          
         episode_reward = 0
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=True) as tape:
+            #tape.watch(model.trainable_weights)
+
             for step in range(64):
                 # env.render(); Adding this line would show the attempts
                 # of the agent in a pop up window.
@@ -203,13 +206,13 @@ for epoch in range(100):
                 action_probs, critic_value = model(state)
             
                 # Sample action from action probability distribution with GPT2
-
-                next_token = sample_action_gpt(sent, action_probs)# action
-                #action = np.random.choice(gpt2.config.vocab_size, p=np.squeeze(action_probs))
-                
-                # Apply the sampled action in our environment
-                reward, state = next_sent_reward(sent, label, next_token, args.future_steps, args.beams)
-                print("step reward:", reward)
+                with tape.stop_recording():
+                    next_token = sample_action_gpt(sent, action_probs)# action
+                    #action = np.random.choice(gpt2.config.vocab_size, p=np.squeeze(action_probs))
+                    
+                    # Apply the sampled action in our environment
+                    reward, state = next_sent_reward(sent, label, next_token, args.future_steps, args.beams)
+                    print("step reward:", reward)
 
                 critic_value_history.append(critic_value[0, 0])
                 action_probs_history.append(tf.math.log(action_probs[0, next_token.cpu().numpy()[0][0] ]) )
@@ -231,6 +234,9 @@ for epoch in range(100):
             returns = np.array(returns)
             returns = (returns - np.mean(returns)) / (np.std(returns) + eps)
             returns = returns.tolist()
+            returns_history.extend(returns)
+
+
 
             # Calculating loss values to update our network
             history = zip(action_probs_history, critic_value_history, returns)
