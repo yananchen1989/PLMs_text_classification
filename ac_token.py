@@ -146,8 +146,14 @@ def get_future_score(sent, label, future_steps, beams):
     
     x = tf.convert_to_tensor([ ii['generated_text'].strip() for ii in result ])
     #preds = model_cls.predict(x, batch_size=8, verbose=0)
-    preds = model_cls(x, batch_size=8)
 
+    preds_ll = []
+    fbs = 8
+    for ix in range(0, x.shape[0], fbs):
+        preds_tmp = model_cls(x[ix: ix+fbs])
+        preds_ll.append(preds_tmp)
+
+    preds = tf.concat(preds_ll, axis=0)
     future_loss = tf.keras.losses.SparseCategoricalCrossentropy()(tf.convert_to_tensor([label] * preds.shape[0]), preds)
     return future_loss
 
