@@ -163,7 +163,7 @@ def next_sent_reward(sent, label, next_token, future_steps=32, beams=512):
     
     score_next  = get_future_score(sent_next, label, future_steps, beams)
 
-    return score_ori - score_next, sent_next
+    return tf.convert_to_tensor(score_ori - score_next), sent_next
 
 
 optimizer = keras.optimizers.Adam(learning_rate=5e-5)
