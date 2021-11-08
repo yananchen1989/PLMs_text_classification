@@ -55,7 +55,7 @@ gpt2.to(device_i)
 
 from utils.transblock import * 
 model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-model_cls.load_weights("./model_cls/model_uci.h5")          
+model_cls.load_weights("./model_cls/model_all_uci.h5")          
 
 
 

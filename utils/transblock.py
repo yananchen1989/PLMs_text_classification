@@ -125,6 +125,23 @@ def get_model_bert(num_classes):
     return model
 
 
+def get_model_bert_ac(num_actions):
+
+    text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
+
+    encoder = hub.KerasLayer("./resource/albert_en_base_2", trainable=True, name=str(random.sample(list(range(10000)), 1)[0]))
+
+    encoder_inputs = preprocessor_layer(text_input)
+    outputs = encoder(encoder_inputs)
+    embed = outputs["pooled_output"]  
+
+    action = tf.keras.layers.Dense(num_actions, activation="softmax")(embed)
+    critic = tf.keras.layers.Dense(1)(embed)
+    model = tf.keras.Model(inputs=text_input, outputs=[action, critic])
+
+    return model
+
+
 # def encode_rcnn(x, rnn=False):
 #     # Conv1D(64, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(title_embed)
 #     #title_gru = layers.Bidirectional(layers.GRU(128, return_sequences=False))(x)#(?, ?, 256)

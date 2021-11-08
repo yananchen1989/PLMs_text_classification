@@ -185,7 +185,7 @@ for epoch in range(args.ppo_epoch):
 
         gain_qr = future_loss_query_response-future_loss_query
         gain_r = future_loss_response-future_loss_query
-        print(gain_qr, gain_r )
+
         # print("loss reduction:", future_loss_query-future_loss_query_response, future_loss_query-future_loss_response)
         # print("\n")
         #gain_qr = (future_loss_query-future_loss_query_response) / future_loss_query * 100
