@@ -146,7 +146,7 @@ def get_future_score(sent, label, future_steps, beams):
                             repetition_penalty=1.0, num_return_sequences=beams, clean_up_tokenization_spaces=True)
     
     x = np.array([ ii['generated_text'].strip() for ii in result ])
-    preds = model_cls.predict(x, batch_size=32, verbose=0)
+    preds = model_cls.predict(x, batch_size=8, verbose=0)
     return preds[:, label].mean()
 
 
