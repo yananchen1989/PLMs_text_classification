@@ -98,6 +98,7 @@ with tf.device('/GPU:0'):
     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 model_cls.load_weights("./model_cls/model_full_uci.h5")          
 
+print("model cls loaded")
 
 eps = np.finfo(np.float32).eps.item()  # Smallest number such that 1.0 + eps != 1.0
 
@@ -117,9 +118,7 @@ In our implementation, they share the initial layer.
 with tf.device('/GPU:0'):
     model = get_model_bert_ac(gpt2.config.vocab_size)
 
-"""
-## Train
-"""
+print("model ac loaded")
 
 
 
@@ -145,14 +144,16 @@ def get_future_score(sent, label, future_steps, beams):
     result = gen_nlp_gpt2([sent], max_length=tokens_len_ori+future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                             repetition_penalty=1.0, num_return_sequences=beams, clean_up_tokenization_spaces=True)
     
-    x = np.array([ ii['generated_text'].strip() for ii in result ])
-    preds = model_cls.predict(x, batch_size=8, verbose=0)
-    return preds[:, label].mean()
+    x = tf.convert_to_tensor([ ii['generated_text'].strip() for ii in result ])
+    #preds = model_cls.predict(x, batch_size=8, verbose=0)
+    preds = model_cls(x)
+
+    future_loss = tf.keras.losses.SparseCategoricalCrossentropy()(tf.convert_to_tensor([label] * preds.shape[0]), preds)
+    return future_loss
 
 
 
 def next_sent_reward(sent, label, next_token, future_steps=32, beams=512):
-
     score_ori = get_future_score(sent, label, future_steps, beams)
 
     next_state_ids = torch.cat([tokenizer_gpt2.encode(sent, return_tensors="pt"), next_token.cpu()], dim=-1)
@@ -161,7 +162,7 @@ def next_sent_reward(sent, label, next_token, future_steps=32, beams=512):
     
     score_next  = get_future_score(sent_next, label, future_steps, beams)
 
-    return score_next - score_ori, sent_next
+    return score_ori - score_next, sent_next
 
 
 optimizer = keras.optimizers.Adam(learning_rate=5e-5)
