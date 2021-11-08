@@ -150,7 +150,7 @@ def get_future_score(sent, label, future_steps, beams):
     #preds = model_cls(x)
     future_loss = model_cls.evaluate(x, y, batch_size=64, verbose=0) 
     #future_loss = tf.keras.losses.SparseCategoricalCrossentropy()(tf.convert_to_tensor([label] * preds.shape[0]), preds)
-    return future_loss
+    return future_loss[0]
 
 
 
