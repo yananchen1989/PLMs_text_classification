@@ -114,18 +114,19 @@ class GPT2HeadWithValueModel(GPT2PreTrainedModel):
 def respond_to_batch(gpt2_model_trl, query_ids, txt_len=20, top_k=0, top_p=0.9, temperature=1.0, \
                      repetition_penalty=1.0,  min_tokens_to_keep=1):
     """Sample text from language model."""
-    for i in range(txt_len):
+    for _ in range(txt_len):
         # Get Logits
         outputs = gpt2_model_trl(query_ids)
         next_token_logits = outputs[0][:, -1, :] / temperature
 
         #penalty
-        for i in range(next_token_logits.shape[1]):
-            if i in query_ids:
-                if next_token_logits[0][i] < 0 :
-                    next_token_logits[0][i] *= repetition_penalty
-                else:
-                    next_token_logits[0][i] /= repetition_penalty
+        #penalties = torch.ones([1, next_token_logits.shape[1]])
+
+        for i in query_ids.unique().cpu().numpy():
+            if next_token_logits[0][i] < 0 :
+                next_token_logits[0][i] *= repetition_penalty
+            else:
+                next_token_logits[0][i] /= repetition_penalty
 
         next_token_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p, min_tokens_to_keep=min_tokens_to_keep)
         

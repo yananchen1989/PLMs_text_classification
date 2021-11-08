@@ -167,7 +167,6 @@ for epoch in range(args.ppo_epoch):
         label = row['label']
         label_name = row['label_name'] 
         
-         
         query_ids = tokenizer_gpt2.encode(query, return_tensors="pt")
         response_ids  = respond_to_batch(gpt2_model_trl, query_ids.to(device_2), \
                                 txt_len=args.future_steps, temperature=args.temperature, top_p=0.9, repetition_penalty=1.2)
