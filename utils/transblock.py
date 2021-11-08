@@ -136,6 +136,7 @@ def get_model_bert_ac(num_actions):
     embed = outputs["pooled_output"]  
 
     action = tf.keras.layers.Dense(num_actions, activation="softmax")(embed)
+
     critic = tf.keras.layers.Dense(1)(embed)
     model = tf.keras.Model(inputs=text_input, outputs=[action, critic])
 

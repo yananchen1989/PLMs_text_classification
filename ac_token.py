@@ -120,13 +120,54 @@ with tf.distribute.MirroredStrategy().scope():
 ## Train
 """
 
+
+
+def sample_action_gpt(sent, action_probs):
+    input_ids = tokenizer_gpt2.encode(sent, return_tensors="pt").to(device_i)
+    # get logits of last hidden state
+    next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
+    next_token_logits_a = torch.mul(torch.tensor(action_probs.numpy()).to(device_i), next_token_logits)
+    # filter
+    filtered_next_token_logits = top_k_top_p_filtering(next_token_logits_a, top_p=0.9) # , top_p=1
+
+    probs = F.softmax(filtered_next_token_logits, dim=-1) # 50257
+
+    next_token = torch.multinomial(probs, num_samples=1)
+
+    return next_token
+
+
+def get_future_score(sent, label, future_steps, beams):
+    # ori
+    ori_ids = tokenizer_gpt2.encode(sent, return_tensors="pt")
+    tokens_len_ori = ori_ids.shape[1]
+    result = gen_nlp_gpt2([sent], max_length=tokens_len_ori+future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                            repetition_penalty=1.0, num_return_sequences=beams, clean_up_tokenization_spaces=True)
+    
+    x = np.array([ ii['generated_text'].strip() for ii in result ])
+    preds = model_cls.predict(x, batch_size=32, verbose=0)
+    return preds[:, label].mean()
+
+
+
+def next_sent_reward(sent, label, next_token, future_steps=32, beams=512):
+
+    score_ori = get_future_score(sent, label, future_steps, beams)
+
+    next_state_ids = torch.cat([tokenizer_gpt2.encode(sent, return_tensors="pt"), next_token.cpu()], dim=-1)
+
+    sent_next = tokenizer_gpt2.decode(next_state_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
+    
+    score_next  = get_future_score(sent_next, label, future_steps, beams)
+
+    return score_next - score_ori, sent_next
+
+
 optimizer = keras.optimizers.Adam(learning_rate=5e-5)
 huber_loss = keras.losses.Huber()
 action_probs_history = []
 critic_value_history = []
 rewards_history = []
-running_reward = 0
-episode_count = 0
 
 
 
@@ -137,38 +178,40 @@ for epoch in range(100):
 
         sent = row['content']
         label = row['label']
-        label_name = row['label_name'] 
-
+        label_name = row['label_name']  
+         
         episode_reward = 0
         with tf.GradientTape() as tape:
             for step in range(64):
                 # env.render(); Adding this line would show the attempts
                 # of the agent in a pop up window.
 
-                state = tf.convert_to_tensor(state)
+                state = tf.convert_to_tensor(sent)
                 state = tf.expand_dims(state, 0) #  shape=(1, 4)
 
                 # Predict action probabilities and estimated future rewards
                 # from environment state
-                action_probs, critic_value = model(sent)
+
+                action_probs, critic_value = model(state)
                 critic_value_history.append(critic_value[0, 0])
 
-                # Sample action from action probability distribution
-                action = np.random.choice(num_actions, p=np.squeeze(action_probs))
-                action_probs_history.append(tf.math.log(action_probs[0, action]))
+                # Sample action from action probability distribution with GPT2
+
+                next_token = sample_action_gpt(sent, action_probs)# action
+                #action = np.random.choice(gpt2.config.vocab_size, p=np.squeeze(action_probs))
+                action_probs_history.append(tf.math.log(action_probs[0, next_token.cpu().numpy()[0][0] ]) )
 
                 # Apply the sampled action in our environment
-                state, reward, done, _ = env.step(action)
+                reward, state = next_sent_reward(sent, label, next_token, 32, 128)
+                print("step reward:", reward)
                 rewards_history.append(reward)
                 episode_reward += reward
-
-                if done:
-                    break
 
             # Calculate expected value from rewards
             # - At each timestep what was the total reward received after that timestep
             # - Rewards in the past are discounted by multiplying them with gamma
             # - These are the labels for our critic
+            print("episode_reward:", episode_reward)
             returns = []
             discounted_sum = 0
             for r in rewards_history[::-1]:
