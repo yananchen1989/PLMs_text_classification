@@ -94,7 +94,7 @@ gpt2.to(device_i)
 
 from utils.transblock import * 
 #with tf.distribute.MirroredStrategy().scope():
-with tf.device('/GPU:2'):
+with tf.device('/cpu:0'):
     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 model_cls.load_weights("./model_cls/model_full_uci.h5")          
 
@@ -115,7 +115,7 @@ an estimate of total rewards in the future.
 In our implementation, they share the initial layer.
 """
 #with tf.distribute.MirroredStrategy().scope():
-with tf.device('/GPU:0'):
+with tf.device('/gpu:0'):
     model = get_model_bert_ac(gpt2.config.vocab_size)
 
 print("model ac loaded")
@@ -201,17 +201,18 @@ for epoch in range(100):
                 # from environment state
 
                 action_probs, critic_value = model(state)
-                critic_value_history.append(critic_value[0, 0])
-
+            
                 # Sample action from action probability distribution with GPT2
 
                 next_token = sample_action_gpt(sent, action_probs)# action
                 #action = np.random.choice(gpt2.config.vocab_size, p=np.squeeze(action_probs))
-                action_probs_history.append(tf.math.log(action_probs[0, next_token.cpu().numpy()[0][0] ]) )
-
+                
                 # Apply the sampled action in our environment
                 reward, state = next_sent_reward(sent, label, next_token, args.future_steps, args.beams)
                 print("step reward:", reward)
+
+                critic_value_history.append(critic_value[0, 0])
+                action_probs_history.append(tf.math.log(action_probs[0, next_token.cpu().numpy()[0][0] ]) )
                 rewards_history.append(reward)
                 episode_reward += reward
 
