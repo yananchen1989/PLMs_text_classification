@@ -177,7 +177,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, d
 
 
 infos = []
-for ix, row in ds.df_train..reset_index().iterrows():
+for ix, row in ds.df_train.reset_index().iterrows():
     print(ix)
     t0 = time.time()
     sent = row['content']
