@@ -71,7 +71,7 @@ print(tokenizer_gpt2)
 # no
 
 gen_d = {}
-for g in args.gpu.split(","):
+for g in range(len(args.gpu.split(","))):
     gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
     # tc pp
     #gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('t5', 'ep') )
