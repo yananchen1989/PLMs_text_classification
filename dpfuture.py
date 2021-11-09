@@ -176,7 +176,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, d
 
 
 infos = []
-for ix, row in ds.df_train.iterrows():
+for ix, row in ds.df_train..reset_index().iterrows():
     print(ix)
     t0 = time.time()
     sent = row['content']
@@ -235,7 +235,7 @@ for ix, row in ds.df_train.iterrows():
     contents_syn = dfaug.head( args.max_aug_times )['content'].tolist()
 
     for sent_syn  in contents_syn:
-        print("gen==>", sent_syn )
+        print("gen==>", sent_syn, '\n\n' )
         infos.append((label, label_name, sent_syn ))
 
 
