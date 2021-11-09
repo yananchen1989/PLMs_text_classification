@@ -187,9 +187,7 @@ for ix, row in ds.df_train.iterrows():
                  (df_future_threds['cls_score']>=args.cls_score_thres)  & \
                  (df_future_threds['score']>0)]
     print("reduce rate ===>", dfaug.shape[0], df_future_threds.shape[0], dfaug.shape[0] / df_future_threds.shape[0] )
-    
     print(label_name, "==>", sent)
-    print('\n')
     t1 = time.time()
     print("time cost:", (t1-t0) / 60 )
 
