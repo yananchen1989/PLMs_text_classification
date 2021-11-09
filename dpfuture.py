@@ -234,12 +234,14 @@ for ix, row in ds.df_train.iterrows():
     contents_syn = dfaug.head( args.max_aug_times )['content'].tolist()
 
     for sent_syn  in contents_syn:
-        print("gen==>", s.replace(sent, ''))
-        infos.append((label, label_name, sent_syn))
+        print("gen==>", sent_syn )
+        infos.append((label, label_name, sent_syn ))
 
 
 df_syn = pd.DataFrame(infos, columns=['label', 'label_name', 'content' ])
-df_train_aug = pd.concat([ds.df_train, df_syn])
+df_train_aug = pd.concat([ds.df_train, df_syn]).sample(frac=1)
+
+print(df_train_aug.head(16))
 
 acc_noaug, _ = thread_testing('test', ds.df_train, ds.df_test)
 
