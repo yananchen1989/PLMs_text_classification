@@ -282,7 +282,7 @@ def get_class_acc(model, x_test, y_test, ixl):
 #     elif basemode == 'max':
 #         return round(np.array(best_test_accs).max(), 4), best_model
 
-def do_train_test_thread(df_train, df_test,  best_test_accs, models, di, epochs=100,verbose=1,model_name='albert'):
+def do_train_test_thread(df_train, df_test,  best_test_accs, models, di,  epochs=100,verbose=1,model_name='albert'):
 
     # if df_test.label.unique().shape[0] == 2:
     #     val_acc = 'val_binary_accuracy'   
@@ -293,8 +293,8 @@ def do_train_test_thread(df_train, df_test,  best_test_accs, models, di, epochs=
     x_train, y_train = get_keras_data(df_train)
     x_test, y_test = get_keras_data(df_test)
 
-    #with tf.distribute.MirroredStrategy().scope():
-    with tf.device('/GPU:0'):
+    with tf.distribute.MirroredStrategy().scope():
+    #with tf.device('/GPU:0'):
         if model_name == 'albert':
             model = get_model_bert(df_test.label.unique().shape[0])
             
@@ -308,8 +308,8 @@ def do_train_test_thread(df_train, df_test,  best_test_accs, models, di, epochs=
             raise KeyError("input model illegal!")
 
     history = model.fit(
-        x_train, y_train, batch_size=8, epochs=epochs, \
-        validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=8, validation_freq=1,
+        x_train, y_train, batch_size=16, epochs=epochs, \
+        validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=16, validation_freq=1,
         callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=4, mode='max',restore_best_weights=True)]
     )
 

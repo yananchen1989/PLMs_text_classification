@@ -12,7 +12,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="eda", type=str)
-parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','nyt','yelp2','amazon2'])
+parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','nyt','yelp2','amazon2'])
 parser.add_argument("--samplecnt", default=128, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
@@ -43,7 +43,7 @@ parser.add_argument("--beams", default=1, type=int)
 parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=333, type=int)
-parser.add_argument("--gpu", default="0,1", type=str)
+parser.add_argument("--gpu", default="4,5", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)

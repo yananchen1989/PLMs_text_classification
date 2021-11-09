@@ -8,7 +8,9 @@ parser.add_argument("--future_steps", default=64, type=int)
 parser.add_argument("--test_beams", default=256, type=int)
 parser.add_argument("--batch_size", default=32, type=int)
 parser.add_argument("--candidates", default=64, type=int)
-parser.add_argument("--cls_score_thres", default=0.95, type=float)
+parser.add_argument("--cls_score_thres", default=0.8, type=float)
+parser.add_argument("--max_aug_times", default=1, type=int)
+
 parser.add_argument("--gpu", default="0,1,2,3,4,5,6,7", type=str)
 args = parser.parse_args()
 print('args==>', args)
@@ -33,6 +35,38 @@ import os,string,torch,math,time
 from transformers import pipeline
 from utils.load_data import * 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+
+ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+#seed = random.sample(list(range(10000)), 1)[0]
+
+testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
+
+
+def thread_testing(testvalid, df_train, df_test):
+    best_test_accs = []
+    models = []
+
+    for ddi in range(1):
+        threads = []
+        for di in range(3):
+            t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
+                              args.epochs,  args.verbose))
+            t.start()
+            threads.append(t)
+
+        # join all threads
+        for t in threads:
+            t.join()
+
+    if args.basemode == 'mean':
+        acc = round(np.array(best_test_accs).mean(), 4)
+    elif args.basemode == 'max':
+        acc = round(np.array(best_test_accs).max(), 4)
+
+    model_best = models[np.array(best_test_accs).argmax()]
+    return  acc, model_best
+
 
 
 def remove_str(sent):
@@ -141,7 +175,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, d
     df_future_ll.append(df_future)
 
 
-
+infos = []
 for ix, row in ds.df_train.iterrows():
     t0 = time.time()
     sent = row['content']
@@ -186,6 +220,8 @@ for ix, row in ds.df_train.iterrows():
     dfaug = df_future_threds.loc[(df_future_threds['cls_label']==label) & \
                  (df_future_threds['cls_score']>=args.cls_score_thres)  & \
                  (df_future_threds['score']>0)]
+
+    print(ix)
     print("reduce rate ===>", dfaug.shape[0], df_future_threds.shape[0], dfaug.shape[0] / df_future_threds.shape[0] )
     print(label_name, "==>", sent)
     t1 = time.time()
@@ -194,12 +230,25 @@ for ix, row in ds.df_train.iterrows():
     if dfaug.shape[0] == 0:
         print("reduct_empty")  
         continue 
+    contents_syn = dfaug.head( args.max_aug_times )['content'].tolist()
 
-    for s in dfaug.head(8)['content'].tolist():
+    for sent_syn  in contents_syn:
         print("gen==>", s.replace(sent, ''))
-    print('\n\n')
+        infos.append((label, label_name, sent_syn))
 
+
+df_syn = pd.DataFrame(infos, columns=['label', 'label_name', 'content' ])
+df_train_aug = pd.concat([ds.df_train, df_syn])
+
+acc_noaug, _ = thread_testing('test', ds.df_train, ds.df_test)
+
+acc_aug, _ = thread_testing('test', df_train_aug, ds.df_test)
+
+gain = (acc_aug - acc_noaug) / acc_noaug
+
+print("acc_aummary==>", acc_noaug, acc_aug, gain)
 
 '''
-nohup python -u dpfuture.py --batch_size 64 --samplecnt -1 --cls_score_thres 0.9 --test_beams 64   > dpfuture.log &
+nohup python -u dpfuture.py --batch_size 64 --samplecnt 8 --cls_score_thres 0.85 \
+    --test_beams 128  --gpu 0,1,2  > dpfuture.log &
 '''
