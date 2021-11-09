@@ -250,5 +250,5 @@ print("acc_aummary==>", acc_noaug, acc_aug, gain)
 
 '''
 nohup python -u dpfuture.py --batch_size 64 --samplecnt 8 --cls_score_thres 0.85 \
-    --test_beams 128  --gpu 0,1,2  > dpfuture.log &
+    --candidates 64 --test_beams 128  --gpu 0,1,2  > dpfuture.log &
 '''
