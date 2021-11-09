@@ -34,6 +34,7 @@ import os,string,torch,math,time
 
 from transformers import pipeline
 from utils.load_data import * 
+from utils.transblock import * 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 
 ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
@@ -88,7 +89,7 @@ if args.dsn =='agt':
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation).strip())
 #ds, proper_len = process_ds(ds, 32)
 
-from utils.transblock import * 
+
 with tf.distribute.MirroredStrategy().scope():
     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
