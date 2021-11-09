@@ -186,7 +186,7 @@ for ix, row in ds.df_train.iterrows():
     dfaug = df_future_threds.loc[(df_future_threds['cls_label']==label) & \
                  (df_future_threds['cls_score']>=args.cls_score_thres)  & \
                  (df_future_threds['score']>0)]
-    print("reduce rate ===>", dfaug.shape[0] / df_future_threds.shape[0], dfaug.shape[0] )
+    print("reduce rate ===>", dfaug.shape[0], df_future_threds.shape[0], dfaug.shape[0] / df_future_threds.shape[0] )
     
     print(label_name, "==>", sent)
     print('\n')
@@ -200,3 +200,8 @@ for ix, row in ds.df_train.iterrows():
     for s in dfaug.head(8)['content'].tolist():
         print("gen==>", s.replace(sent, ''))
     print('\n\n')
+
+
+'''
+nohup python -u dpfuture.py --batch_size 64 --samplecnt -1 --cls_score_thres 0.9 --test_beams 64   > dpfuture.log &
+'''
