@@ -9,7 +9,7 @@ parser.add_argument("--test_beams", default=256, type=int)
 parser.add_argument("--batch_size", default=32, type=int)
 parser.add_argument("--candidates", default=64, type=int)
 parser.add_argument("--cls_score_thres", default=0.95, type=float)
-parser.add_argument("--gpu", default="0,1,2,3", type=str)
+parser.add_argument("--gpu", default="0,1,2,3,4,5,6,7", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -96,7 +96,7 @@ def gen_vs(sent, future_steps, test_beams, model_cls, di):
     eval_result_oris.append(eval_result_ori[0])
     print(eval_result_ori[0])
 
-def gengen_vs(sent, future_steps, candidates, test_beams, model_cls, di):
+def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, di):
     tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
     result_0 = gen_d[di]([sent], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                                 repetition_penalty=1.0, num_return_sequences=candidates, clean_up_tokenization_spaces=True)
@@ -105,16 +105,36 @@ def gengen_vs(sent, future_steps, candidates, test_beams, model_cls, di):
                                   do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                                 repetition_penalty=1.0, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
     #print("result_1 generated")
+    assert len(result_1) * len(result_1[0]) == candidates * test_beams
+
+    all_results = []
+    for r in result_1:
+        all_results.extend( [ii['generated_text'] for ii in r] )
+
+    assert len(all_results) == candidates * test_beams
+
+    x = np.array(all_results)
+    #y = np.array([label] * x.shape[0])
+    preds = model_cls.predict(x,  batch_size=args.batch_size, verbose=1) 
 
     scores = []
-    for i in range(len(result_1)): #  32 * 256
-        x = np.array([ii['generated_text'] for ii in result_1[i]])
-        y = np.array([label] * x.shape[0])
-        eval_result = model_cls.evaluate(x, y, batch_size=args.batch_size, verbose=0) 
-        #print('\n' , result_0[i]['generated_text'])
-        score = loss_ori - eval_result[0] 
-        #print("loss_diff:", score)
+    for j in range(0, len(all_results), test_beams):
+        preds_j = preds[j:j+test_beams]
+        y_j = np.array([label] * preds_j.shape[0])
+        loss = tf.keras.losses.sparse_categorical_crossentropy(y_j, preds_j)
+        loss_mean = loss.numpy().mean()
+        score = loss_ori - loss_mean
         scores.append(score)
+    
+    # for i in range(len(result_1)): #  32 * 256
+    #     x = np.array([ii['generated_text'] for ii in result_1[i]])
+    #     y = np.array([label] * x.shape[0])
+    #     eval_result = model_cls.evaluate(x, y, batch_size=args.batch_size, verbose=0) 
+    #     print(eval_result[0])
+    #     #print('\n' , result_0[i]['generated_text'])
+    #     score = loss_ori - eval_result[0] 
+    #     #print("loss_diff:", score)
+    #     scores.append(score)
 
     df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], scores), \
                                         columns=['content','score'])
@@ -146,7 +166,7 @@ for ix, row in ds.df_train.iterrows():
     df_future_ll = []
     threads = []
     for di in range(len(args.gpu.split(","))):
-        t = Thread(target=gengen_vs, args=(sent, args.future_steps, args.candidates, args.test_beams, model_cls, di))
+        t = Thread(target=gengen_vs, args=(sent, loss_ori, args.future_steps, args.candidates, args.test_beams, model_cls, di))
         t.start()
         threads.append(t)
 

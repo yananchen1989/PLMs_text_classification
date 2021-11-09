@@ -230,8 +230,6 @@ for epoch in range(100):
             returns = returns.tolist()
             returns_history.extend(returns)
 
-
-
             # Calculating loss values to update our network
             history = zip(action_probs_history, critic_value_history, returns)
             actor_losses = []
