@@ -41,6 +41,27 @@ nohup python -u aug_ppo.py > aug_ppo.log &
 
 
 
+
+
+nohup python -u dpfuture.py --dsn uci --batch_size 64 --samplecnt 32 --cls_score_thres 0.8 \
+    --candidates 64 --test_beams 64  --gpu 0  > dpfuture.uci.candidates.64.test_beams.64.log &
+
+nohup python -u dpfuture.py --dsn agt --batch_size 64 --samplecnt 32 --cls_score_thres 0.8 \
+    --candidates 64 --test_beams 64  --gpu 1  > dpfuture.agt.candidates.64.test_beams.64.log &
+
+nohup python -u dpfuture.py --dsn stsa --batch_size 64 --samplecnt 32 --cls_score_thres 0.8 \
+    --candidates 64 --test_beams 64  --gpu 2  > dpfuture.stsa.candidates.64.test_beams.64.log &
+
+
+
+
+
+python -u dpfuture.py --dsn agt --batch_size 64 --samplecnt 8 --cls_score_thres 0.85 \
+    --candidates 64 --test_beams 128  --gpu 1
+
+python -u dpfuture.py --dsn stsa --batch_size 64 --samplecnt 8 --cls_score_thres 0.85 \
+    --candidates 64 --test_beams 64  --gpu 7
+
 ############################################################################################################################################
 ps aux|grep "augf"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
