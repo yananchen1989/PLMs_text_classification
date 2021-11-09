@@ -36,6 +36,7 @@ from transformers import pipeline
 from utils.load_data import * 
 from utils.transblock import * 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+ds, proper_len = process_ds(ds, 64)
 
 ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
@@ -220,8 +221,8 @@ for ix, row in ds.df_train..reset_index().iterrows():
     df_future_threds['cls_score'] = preds[:, label] 
     df_future_threds['cls_label'] = preds.argmax(axis=1)
     dfaug = df_future_threds.loc[(df_future_threds['cls_label']==label) & \
-                 (df_future_threds['cls_score']>=args.cls_score_thres)  & \
-                 (df_future_threds['score']>0)]
+                                 (df_future_threds['cls_score']>=args.cls_score_thres)  & \
+                                 (df_future_threds['score']>0)]
 
     
     print("reduce rate ===>", dfaug.shape[0], df_future_threds.shape[0], dfaug.shape[0] / df_future_threds.shape[0] )
