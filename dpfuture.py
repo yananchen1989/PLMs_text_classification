@@ -61,13 +61,10 @@ def thread_testing(testvalid, df_train, df_test):
         for t in threads:
             t.join()
 
-    if args.basemode == 'mean':
-        acc = round(np.array(best_test_accs).mean(), 4)
-    elif args.basemode == 'max':
-        acc = round(np.array(best_test_accs).max(), 4)
+    acc = round(np.array(best_test_accs).max(), 4)
 
-    model_best = models[np.array(best_test_accs).argmax()]
-    return  acc, model_best
+    #model_best = models[np.array(best_test_accs).argmax()]
+    return  acc
 
 
 
@@ -246,9 +243,9 @@ df_train_aug = pd.concat([ds.df_train, df_syn]).sample(frac=1)
 print("aug times:", df_syn.shape[0] / ds.df_train.shape[0])
 print(df_train_aug.head(16))
 
-acc_noaug, _ = thread_testing('test', ds.df_train, ds.df_test)
+acc_noaug  = thread_testing('test', ds.df_train, ds.df_test)
 
-acc_aug, _ = thread_testing('test', df_train_aug, ds.df_test)
+acc_aug = thread_testing('test', df_train_aug, ds.df_test)
 
 gain = (acc_aug - acc_noaug) / acc_noaug
 
