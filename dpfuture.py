@@ -174,6 +174,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, d
 
 
 infos = []
+infos_rnd = []
 for ix, row in ds.df_train.reset_index().iterrows():
     print(ix)
     t0 = time.time()
@@ -230,15 +231,25 @@ for ix, row in ds.df_train.reset_index().iterrows():
     if dfaug.shape[0] == 0:
         print("reduct_empty")  
         continue 
+
     contents_syn = dfaug.head( args.max_aug_times )['content'].tolist()
+
+    contents_syn_rnd = df_future_threds.sample(frac=1).head(len(contents_syn))['content'].tolist()
 
     for sent_syn  in contents_syn:
         print("gen==>", sent_syn, '\n\n' )
         infos.append((label, label_name, sent_syn ))
 
+    for sent_syn  in contents_syn_rnd:
+        #print("gen==>", sent_syn, '\n\n' )
+        infos_rnd.append((label, label_name, sent_syn ))
+
 
 df_syn = pd.DataFrame(infos, columns=['label', 'label_name', 'content' ])
 df_train_aug = pd.concat([ds.df_train, df_syn]).sample(frac=1)
+
+df_syn_rnd = pd.DataFrame(infos_rnd, columns=['label', 'label_name', 'content' ])
+df_train_aug_rnd = pd.concat([ds.df_train, df_syn_rnd]).sample(frac=1)
 
 print("aug times:", df_syn.shape[0] / ds.df_train.shape[0])
 print(df_train_aug.head(16))
@@ -247,11 +258,11 @@ acc_noaug  = thread_testing('test', ds.df_train, ds.df_test)
 
 acc_aug = thread_testing('test', df_train_aug, ds.df_test)
 
+acc_aug_rnd = thread_testing('test', df_train_aug_rnd, ds.df_test)
+
 gain = (acc_aug - acc_noaug) / acc_noaug
+gain_rnd = (acc_aug_rnd - acc_noaug) / acc_noaug
 
-print("acc_aummary==>", acc_noaug, acc_aug, gain)
+print("acc_aummary==>", acc_noaug, acc_aug, acc_aug_rnd)
+print("gain_summary==>", gain, gain_rnd )
 
-'''
-nohup python -u dpfuture.py --batch_size 64 --samplecnt 8 --cls_score_thres 0.85 \
-    --candidates 64 --test_beams 128  --gpu 0,1,2  > dpfuture.log &
-'''
