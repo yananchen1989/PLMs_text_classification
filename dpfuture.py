@@ -129,7 +129,6 @@ def gen_vs(sent, future_steps, test_beams, model_cls, di):
     y = np.array([label] * x.shape[0])
     eval_result_ori = model_cls.evaluate(x, y, batch_size=args.batch_size, verbose=0)    
     eval_result_oris.append(eval_result_ori[0])
-    print(eval_result_ori[0])
 
 def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, di):
     tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
@@ -178,6 +177,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, d
 
 infos = []
 for ix, row in ds.df_train.iterrows():
+    print(ix)
     t0 = time.time()
     sent = row['content']
     label = row['label']
@@ -195,6 +195,7 @@ for ix, row in ds.df_train.iterrows():
         t.join()
 
     loss_ori = sum(eval_result_oris) / len(eval_result_oris)
+    print("eval_result_oris==>", eval_result_oris)
 
     torch.cuda.empty_cache()
 
@@ -222,7 +223,7 @@ for ix, row in ds.df_train.iterrows():
                  (df_future_threds['cls_score']>=args.cls_score_thres)  & \
                  (df_future_threds['score']>0)]
 
-    print(ix)
+    
     print("reduce rate ===>", dfaug.shape[0], df_future_threds.shape[0], dfaug.shape[0] / df_future_threds.shape[0] )
     print(label_name, "==>", sent)
     t1 = time.time()
@@ -241,6 +242,7 @@ for ix, row in ds.df_train.iterrows():
 df_syn = pd.DataFrame(infos, columns=['label', 'label_name', 'content' ])
 df_train_aug = pd.concat([ds.df_train, df_syn]).sample(frac=1)
 
+print("aug times:", df_syn.shape[0] / ds.df_train.shape[0])
 print(df_train_aug.head(16))
 
 acc_noaug, _ = thread_testing('test', ds.df_train, ds.df_test)
