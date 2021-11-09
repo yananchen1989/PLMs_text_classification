@@ -115,7 +115,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, d
 
     x = np.array(all_results)
     #y = np.array([label] * x.shape[0])
-    preds = model_cls.predict(x,  batch_size=args.batch_size, verbose=1) 
+    preds = model_cls.predict(x,  batch_size=args.batch_size, verbose=0) 
 
     scores = []
     for j in range(0, len(all_results), test_beams):
