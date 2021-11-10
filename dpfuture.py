@@ -49,9 +49,9 @@ def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
 
-    for ddi in range(1):
+    for ddi in range(2):
         threads = []
-        for di in range(3):
+        for di in range(2):
             t = Thread(target=testbed_func[testvalid], \
                         args=(df_train, df_test, best_test_accs, models, di + ddi*2, 100,  0))
             t.start()

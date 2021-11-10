@@ -308,8 +308,8 @@ def do_train_test_thread(df_train, df_test,  best_test_accs, models, di,  epochs
             raise KeyError("input model illegal!")
 
     history = model.fit(
-        x_train, y_train, batch_size=16, epochs=epochs, \
-        validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=16, validation_freq=1,
+        x_train, y_train, batch_size=8, epochs=epochs, \
+        validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=8, validation_freq=1,
         callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=4, mode='max',restore_best_weights=True)]
     )
 

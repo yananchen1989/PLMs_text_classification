@@ -41,8 +41,6 @@ nohup python -u aug_ppo.py > aug_ppo.log &
 
 
 
-
-
 nohup python -u dpfuture.py --dsn uci --batch_size 64 --samplecnt 32 --cls_score_thres 0.8 \
     --candidates 32 --test_beams 32  --gpu 0  > dpfuture.uci.candidates.32.test_beams.32.log &
 
@@ -50,10 +48,17 @@ nohup python -u dpfuture.py --dsn agt --batch_size 64 --samplecnt 32 --cls_score
     --candidates 32 --test_beams 32  --gpu 1  > dpfuture.agt.candidates.32.test_beams.32.log &
 
 nohup python -u dpfuture.py --dsn uci --batch_size 64 --samplecnt 32 --cls_score_thres 0.8 \
-    --candidates 64 --test_beams 64  --gpu 3  > dpfuture.uci.candidates.64.test_beams.64.log &
+    --candidates 64 --test_beams 64  --gpu 2  > dpfuture.uci.candidates.64.test_beams.64.log &
 
 nohup python -u dpfuture.py --dsn agt --batch_size 64 --samplecnt 32 --cls_score_thres 0.8 \
-    --candidates 64 --test_beams 64  --gpu 4  > dpfuture.agt.candidates.64.test_beams.64.log &
+    --candidates 64 --test_beams 64  --gpu 3  > dpfuture.agt.candidates.64.test_beams.64.log &
+
+
+nohup python -u dpfuture.py --dsn uci --batch_size 64 --samplecnt 32 --cls_score_thres 0.8 \
+    --candidates 64 --test_beams 128  --gpu 4  > dpfuture.uci.candidates.64.test_beams.128.log &
+
+nohup python -u dpfuture.py --dsn agt --batch_size 64 --samplecnt 32 --cls_score_thres 0.8 \
+    --candidates 64 --test_beams 128  --gpu 5  > dpfuture.agt.candidates.64.test_beams.128.log &
 
 nohup python -u dpfuture.py --dsn uci --batch_size 64 --samplecnt 32 --cls_score_thres 0.8 \
     --candidates 128 --test_beams 128  --gpu 6  > dpfuture.uci.candidates.128.test_beams.128.log &
