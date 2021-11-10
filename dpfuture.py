@@ -49,9 +49,9 @@ def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
 
-    for ddi in range(2):
+    for ddi in range(3):
         threads = []
-        for di in range(2):
+        for di in range(1):
             t = Thread(target=testbed_func[testvalid], \
                         args=(df_train, df_test, best_test_accs, models, di + ddi*2, 100,  0))
             t.start()
@@ -244,6 +244,8 @@ for ix, row in ds.df_train.reset_index().iterrows():
         #print("gen==>", sent_syn, '\n\n' )
         infos_rnd.append((label, label_name, sent_syn ))
 
+torch.cuda.empty_cache()
+
 
 df_syn = pd.DataFrame(infos, columns=['label', 'label_name', 'content' ])
 df_train_aug = pd.concat([ds.df_train, df_syn]).sample(frac=1)
@@ -254,10 +256,13 @@ df_train_aug_rnd = pd.concat([ds.df_train, df_syn_rnd]).sample(frac=1)
 print("aug times:", df_syn.shape[0] / ds.df_train.shape[0])
 print(df_train_aug.head(16))
 
+print("acc_noaug thread_testing")
 acc_noaug  = thread_testing('test', ds.df_train, ds.df_test)
 
+print("acc_aug thread_testing")
 acc_aug = thread_testing('test', df_train_aug, ds.df_test)
 
+print("acc_aug_rnd thread_testing")
 acc_aug_rnd = thread_testing('test', df_train_aug_rnd, ds.df_test)
 
 gain = (acc_aug - acc_noaug) / acc_noaug
@@ -265,4 +270,5 @@ gain_rnd = (acc_aug_rnd - acc_noaug) / acc_noaug
 
 print("acc_aummary==>", acc_noaug, acc_aug, acc_aug_rnd)
 print("gain_summary==>", gain, gain_rnd )
+
 
