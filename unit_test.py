@@ -42,12 +42,47 @@ sent = "Virus to cause spike in pork prices"
 
 
 
+import glob
+files = glob.glob("./dpfuture*.log")
+
+infos_ori = []
+infos_aug = []
+for file in files:
+
+    with open(file, 'r') as f:
+
+        lines = f.readlines()
+    start_ix = []
+    for i, line in enumerate(lines):
+        if "reduce rate ===>" in line:
+            start_ix.append(i)
+
+    for i, j in zip(start_ix[0:len(start_ix)-1], start_ix[1:len(start_ix)] ):
+        content_gens = []
+        for line  in lines[i:j]:
+            
+            if " ==> " in line:
+                label = line.split(" ==> ")[0]
+                content = line.split(" ==> ")[1].strip()
+            if line.startswith("gen==> "):
+                content_gens.append(line.replace("gen==> ", "").strip())
+        infos_ori.append((label, content ))
+
+        for at in range(min(4, len(content_gens))):
+            infos_aug.append((label, content_gens[at]))
+
+
+df_ori = pd.DataFrame(infos_ori, columns=['label_name', 'content'])
+df_ori['label'] = df_ori['label_name'].map(lambda x: ixl_rev[x])
+
+df_aug = pd.DataFrame(infos_aug, columns=['label_name', 'content'])
+df_aug['label'] = df_aug['label_name'].map(lambda x: ixl_rev[x])
+
+acc_noaug, model_cls = thread_testing('test', df_ori, ds.df_test)
 
 
 
-
-
-
+acc_noaug, model_cls = thread_testing('test', pd.concat([df_ori,df_aug]),  ds.df_test) 
 
 
 
@@ -168,39 +203,39 @@ In [25]: sent
 Out[25]: 'Apple, other tech firms formally agree to US $ 325m hiring accord'
 
 In [26]: loss_future = vs(sent + ' FDA', label, 32, 128)
-4/4 [==============================] - 1s 150ms/step - loss: 3.1841 - acc: 0.1875
-4/4 [==============================] - 1s 151ms/step - loss: 3.2459 - acc: 0.1719
-4/4 [==============================] - 1s 154ms/step - loss: 3.4739 - acc: 0.1250
-4/4 [==============================] - 1s 150ms/step - loss: 3.4979 - acc: 0.1406
-4/4 [==============================] - 1s 149ms/step - loss: 3.1692 - acc: 0.2188
+4/4  - 1s 150ms/step - loss: 3.1841 - acc: 0.1875
+4/4  - 1s 151ms/step - loss: 3.2459 - acc: 0.1719
+4/4  - 1s 154ms/step - loss: 3.4739 - acc: 0.1250
+4/4  - 1s 150ms/step - loss: 3.4979 - acc: 0.1406
+4/4  - 1s 149ms/step - loss: 3.1692 - acc: 0.2188
 
 In [27]: loss_future
 Out[27]: 0.025892172008752823
 
 In [28]: loss_future = vs(sent + ' FDA', label, 32, 128)
-4/4 [==============================] - 1s 157ms/step - loss: 3.5690 - acc: 0.1094
-4/4 [==============================] - 1s 156ms/step - loss: 3.4631 - acc: 0.1641
-4/4 [==============================] - 1s 152ms/step - loss: 3.6237 - acc: 0.0859
-4/4 [==============================] - 1s 154ms/step - loss: 3.0837 - acc: 0.1797
-4/4 [==============================] - 1s 162ms/step - loss: 3.6443 - acc: 0.1406
+4/4  - 1s 157ms/step - loss: 3.5690 - acc: 0.1094
+4/4  - 1s 156ms/step - loss: 3.4631 - acc: 0.1641
+4/4  - 1s 152ms/step - loss: 3.6237 - acc: 0.0859
+4/4  - 1s 154ms/step - loss: 3.0837 - acc: 0.1797
+4/4  - 1s 162ms/step - loss: 3.6443 - acc: 0.1406
 
 In [29]: loss_future
 Out[29]: 0.02716214470565319
 
 In [30]: vs(sent + ' cyber security', label, 32, 128)
-4/4 [==============================] - 1s 157ms/step - loss: 2.0523 - acc: 0.4375
-4/4 [==============================] - 1s 153ms/step - loss: 2.0199 - acc: 0.4766
-4/4 [==============================] - 1s 153ms/step - loss: 2.2970 - acc: 0.3906
-4/4 [==============================] - 1s 152ms/step - loss: 2.1723 - acc: 0.3984
-4/4 [==============================] - 1s 156ms/step - loss: 2.0566 - acc: 0.4141
+4/4  - 1s 157ms/step - loss: 2.0523 - acc: 0.4375
+4/4  - 1s 153ms/step - loss: 2.0199 - acc: 0.4766
+4/4  - 1s 153ms/step - loss: 2.2970 - acc: 0.3906
+4/4  - 1s 152ms/step - loss: 2.1723 - acc: 0.3984
+4/4  - 1s 156ms/step - loss: 2.0566 - acc: 0.4141
 Out[30]: 0.01655937284231186
 
 In [31]: vs(sent + ' to', label, 32, 128)
-4/4 [==============================] - 1s 156ms/step - loss: 2.4899 - acc: 0.3359
-4/4 [==============================] - 1s 151ms/step - loss: 2.2010 - acc: 0.4375
-4/4 [==============================] - 1s 152ms/step - loss: 1.9590 - acc: 0.4141
-4/4 [==============================] - 1s 151ms/step - loss: 2.2989 - acc: 0.3672
-4/4 [==============================] - 1s 152ms/step - loss: 2.2012 - acc: 0.4453
+4/4  - 1s 156ms/step - loss: 2.4899 - acc: 0.3359
+4/4  - 1s 151ms/step - loss: 2.2010 - acc: 0.4375
+4/4  - 1s 152ms/step - loss: 1.9590 - acc: 0.4141
+4/4  - 1s 151ms/step - loss: 2.2989 - acc: 0.3672
+4/4  - 1s 152ms/step - loss: 2.2012 - acc: 0.4453
 Out[31]: 0.017421722412109375
 '''
 

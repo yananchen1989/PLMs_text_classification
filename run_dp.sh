@@ -11,9 +11,8 @@ do
 	do
 		python -u dpfuture.py --dsn ${dsn} --batch_size 64 --samplecnt ${samplecnt} --cls_score_thres 0.8 \
     	--candidates ${candidates} --test_beams ${test_beams} --max_aug_times ${max_aug_times} --gpu ${gpu}  \
-    	> dpfuture.${dsn}.samplecnt_${samplecnt}.max_aug_times_${max_aug_times}.candidates_${candidates}.test_beams_${test_beams}.log 2>&1
+    	> ./log_dpfuture/dpfuture.${dsn}.samplecnt_${samplecnt}.max_aug_times_${max_aug_times}.candidates_${candidates}.test_beams_${test_beams}.${seed}.log 2>&1
     done
-
 done
 
 
