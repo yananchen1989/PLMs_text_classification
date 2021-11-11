@@ -4,7 +4,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 parser = argparse.ArgumentParser()
 parser.add_argument("--future_steps", default=32, type=int)
 parser.add_argument("--beams", default=256, type=int)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="0,1", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -324,8 +324,8 @@ def get_future_score(sent, label, future_steps, beams):
     #future_loss = tf.keras.losses.SparseCategoricalCrossentropy()(tf.convert_to_tensor([label] * preds.shape[0]), preds)
     return future_loss[0]
 
-def next_sent_reward(sent, label, next_token, future_steps=32, beams=512):
-    score_ori = get_future_score(sent, label, future_steps, beams)
+def next_sent_reward(sent_ori, sent, label, next_token, future_steps=32, beams=512):
+    score_ori = get_future_score(sent_ori, label, future_steps, beams)
 
     next_state_ids = torch.cat([tokenizer_gpt2.encode(sent, return_tensors="pt"), next_token.cpu()], dim=-1)
 
@@ -338,8 +338,15 @@ def next_sent_reward(sent, label, next_token, future_steps=32, beams=512):
 # To store reward history of each episode
 
 # To store average reward history of last few episodes
+def env_reward(loss_ori, sent, label, next_token):
+    next_state_ids = torch.cat([tokenizer_gpt2.encode(sent, return_tensors="pt"), next_token.cpu()], dim=-1)
+    sent_next = tokenizer_gpt2.decode(next_state_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
+    cls_score_next = model_cls.predict([sent_next], steps=1, verbose=0)[0]
 
+    loss_next = tf.keras.losses.sparse_categorical_crossentropy(np.array([label]), cls_score_next)[0]
+    return loss_ori - loss_next, sent_next
 
+reward_offset = 0.01
 
 for epoch in range(100):
     ds.df_train = ds.df_train.sample(frac=1)
@@ -349,23 +356,29 @@ for epoch in range(100):
         sent = row['content']
         label = row['label']
         label_name = row['label_name']
+        cls_score_ori = model_cls.predict([row['content']], steps=1, verbose=0)[0]
+        loss_ori = tf.keras.losses.sparse_categorical_crossentropy(np.array([label]), cls_score_ori)[0]
+
         avg_reward_list = []
         for step in range(64):
             action = policy(tf.expand_dims(tf.convert_to_tensor(sent), 0), ou_noise)
             next_token = sample_action_gpt(sent, action)
-            reward, sent_next = next_sent_reward(sent, label, next_token, args.future_steps, args.beams)
+            #reward, sent_next = next_sent_reward(row['content'], sent, label, next_token, args.future_steps, args.beams)
+            reward, sent_next = env_reward(loss_ori, sent, label, next_token)
+
             buffer.record((sent, list(action), float(reward.numpy()), sent_next))
             sent = sent_next
-            print(reward.numpy(), "==>", sent_next)
             ep_reward_list.append(reward.numpy())
             avg_reward_list.append(reward.numpy())
+
+        print(ix, "instance reward==>", np.array(avg_reward_list).mean(), "==>", sent_next)
 
         if ix > 0 and ix % 8 == 0:
             buffer.learn()
             update_target(target_actor.variables, actor_model.variables, tau)
             update_target(target_critic.variables, critic_model.variables, tau)
 
-        print("instance reward==>", np.array(avg_reward_list).mean())
+        
     print("epoch reward==>", np.array(ep_reward_list).mean())
 
 
