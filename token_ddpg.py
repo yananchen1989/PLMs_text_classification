@@ -371,7 +371,7 @@ for epoch in range(100):
             ep_reward_list.append(reward.numpy())
             avg_reward_list.append(reward.numpy())
 
-        print(ix, "instance reward==>", np.array(avg_reward_list).mean(), "==>", sent_next)
+        print(ix, label_name, "instance reward==>", np.array(avg_reward_list).mean(), "==>", sent_next)
 
         if ix > 0 and ix % 8 == 0:
             buffer.learn()
