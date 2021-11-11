@@ -122,7 +122,7 @@ def gen_vs(sent, future_steps, test_beams, model_cls, di):
     tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
     result_ = gen_d[di]([sent], max_length=tokens_len_ori + future_steps, \
                                   do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                repetition_penalty=1.0, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
+                                repetition_penalty=1.2, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
     x = np.array([ii['generated_text'] for ii in result_])
     y = np.array([label] * x.shape[0])
     eval_result_ori = model_cls.evaluate(x, y, batch_size=args.batch_size, verbose=0)    
@@ -131,11 +131,11 @@ def gen_vs(sent, future_steps, test_beams, model_cls, di):
 def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, di):
     tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
     result_0 = gen_d[di]([sent], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                repetition_penalty=1.0, num_return_sequences=candidates, clean_up_tokenization_spaces=True)
+                                repetition_penalty=1.2, num_return_sequences=candidates, clean_up_tokenization_spaces=True)
     #print("result_0 generated")
     result_1 = gen_d[di]([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], max_length=future_steps+future_steps, \
                                   do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                repetition_penalty=1.0, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
+                                repetition_penalty=1.2, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
     #print("result_1 generated")
     assert len(result_1) * len(result_1[0]) == candidates * test_beams
 
@@ -256,6 +256,7 @@ df_train_aug_rnd = pd.concat([ds.df_train, df_syn_rnd]).sample(frac=1)
 print("aug times:", df_syn.shape[0] / ds.df_train.shape[0])
 print(df_train_aug.head(16))
 
+# no aug
 print("acc_noaug thread_testing")
 acc_noaug  = thread_testing('test', ds.df_train, ds.df_test)
 
