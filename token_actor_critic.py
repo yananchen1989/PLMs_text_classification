@@ -86,7 +86,7 @@ gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_
 gpt2.trainable = False
 gpt2.config.pad_token_id = 50256
 
-gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=1, return_full_text=True)
+gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=True)
 
 device_i = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
 gpt2.to(device_i)
@@ -191,8 +191,7 @@ for epoch in range(100):
                 # env.render(); Adding this line would show the attempts
                 # of the agent in a pop up window.
 
-                state = tf.convert_to_tensor(sent)
-                state = tf.expand_dims(state, 0) #  shape=(1, 4)
+                state = tf.expand_dims(tf.convert_to_tensor(sent), 0) #  shape=(1, 4)
 
                 # Predict action probabilities and estimated future rewards
                 # from environment state

@@ -144,7 +144,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, d
         all_results.extend( [ii['generated_text'] for ii in r] )
 
     assert len(all_results) == candidates * test_beams
-
+  
     x = np.array(all_results)
     #y = np.array([label] * x.shape[0])
     preds = model_cls.predict(x,  batch_size=args.batch_size, verbose=0) 
@@ -176,7 +176,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, d
 infos = []
 infos_rnd = []
 for ix, row in ds.df_train.reset_index().iterrows():
-    print(ix)
+    print(ix, 'of', ds.df_train.shape[0])
     t0 = time.time()
     sent = row['content']
     label = row['label']
