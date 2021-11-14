@@ -3,7 +3,7 @@ sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Cha
 
 sent = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
 
-content = '''
+sent = '''
 They are fed up with slow speeds, high prices and the level of customer service they receive. 17% of readers have switched suppliers and a further 16% are considering changing in the near future. It is particularly bad news for BT, the UK's biggest internet supplier, with almost three times as many people trying to leave as joining.
 '''
 sent = "Federal jury orders tech giant Samsung to pay"
@@ -102,12 +102,22 @@ acc_noaug, model_cls = thread_testing('test', pd.concat([df_ori,df_aug]),  ds.df
 
 
 
+from transformers import GPT2Tokenizer, TFGPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache_tfgpt")
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+tokenizer_gpt2.sep_token = '<|sep|>'
+#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+print(tokenizer_gpt2)
+# no
+gpt2 = TFGPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache_tfgpt")
 
 
 
 
-
-
+input_ids = tokenizer_gpt2.encode(sent, return_tensors="tf")
+# get logits of last hidden state
+next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
 
 
 
@@ -198,46 +208,6 @@ print(tokenizer_t5.decode(decoder_input_ids[0], skip_special_tokens=True, clean_
 
 
 
-'''
-In [25]: sent
-Out[25]: 'Apple, other tech firms formally agree to US $ 325m hiring accord'
-
-In [26]: loss_future = vs(sent + ' FDA', label, 32, 128)
-4/4  - 1s 150ms/step - loss: 3.1841 - acc: 0.1875
-4/4  - 1s 151ms/step - loss: 3.2459 - acc: 0.1719
-4/4  - 1s 154ms/step - loss: 3.4739 - acc: 0.1250
-4/4  - 1s 150ms/step - loss: 3.4979 - acc: 0.1406
-4/4  - 1s 149ms/step - loss: 3.1692 - acc: 0.2188
-
-In [27]: loss_future
-Out[27]: 0.025892172008752823
-
-In [28]: loss_future = vs(sent + ' FDA', label, 32, 128)
-4/4  - 1s 157ms/step - loss: 3.5690 - acc: 0.1094
-4/4  - 1s 156ms/step - loss: 3.4631 - acc: 0.1641
-4/4  - 1s 152ms/step - loss: 3.6237 - acc: 0.0859
-4/4  - 1s 154ms/step - loss: 3.0837 - acc: 0.1797
-4/4  - 1s 162ms/step - loss: 3.6443 - acc: 0.1406
-
-In [29]: loss_future
-Out[29]: 0.02716214470565319
-
-In [30]: vs(sent + ' cyber security', label, 32, 128)
-4/4  - 1s 157ms/step - loss: 2.0523 - acc: 0.4375
-4/4  - 1s 153ms/step - loss: 2.0199 - acc: 0.4766
-4/4  - 1s 153ms/step - loss: 2.2970 - acc: 0.3906
-4/4  - 1s 152ms/step - loss: 2.1723 - acc: 0.3984
-4/4  - 1s 156ms/step - loss: 2.0566 - acc: 0.4141
-Out[30]: 0.01655937284231186
-
-In [31]: vs(sent + ' to', label, 32, 128)
-4/4  - 1s 156ms/step - loss: 2.4899 - acc: 0.3359
-4/4  - 1s 151ms/step - loss: 2.2010 - acc: 0.4375
-4/4  - 1s 152ms/step - loss: 1.9590 - acc: 0.4141
-4/4  - 1s 151ms/step - loss: 2.2989 - acc: 0.3672
-4/4  - 1s 152ms/step - loss: 2.2012 - acc: 0.4453
-Out[31]: 0.017421722412109375
-'''
 
 for dsn in ['uci','ag','stsa']:
     ds = load_data(dataset=dsn, samplecnt= -1)
@@ -258,4 +228,8 @@ for dsn in ['uci','ag','stsa']:
     model.save_weights("./model_cls/model_full_uci.h5")
 
 
+infos = []
+infos.append(('aaa',1, 'sent1', ['aaa','bbb','ccc']))
+infos.append(('bbb',2, 'sent2', ['rrr','fff','ggg']))
+infos.append(('bbb',3, 'sent3', ['fff','nnn','bbb']))
 

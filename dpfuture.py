@@ -11,7 +11,7 @@ parser.add_argument("--candidates", default=64, type=int)
 parser.add_argument("--cls_score_thres", default=0.8, type=float)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
-parser.add_argument("--gpu", default="0,1,2,3,4,5,6,7", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -32,7 +32,6 @@ from transformers import top_k_top_p_filtering
 from torch.nn import functional as F
 import os,string,torch,math,time
 
-from transformers import pipeline
 from utils.load_data import * 
 from utils.transblock import * 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
@@ -94,6 +93,9 @@ model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))
 
 
 # gpt2
+from transformers import pipeline
+
+#if args.genm == 'gpt2':
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 #tokenizer_gpt2.padding_side = "left" 
@@ -101,39 +103,46 @@ tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endof
 tokenizer_gpt2.sep_token = '<|sep|>'
 #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
 print(tokenizer_gpt2)
-# no
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2.trainable = False
+gpt2.config.pad_token_id = 50256
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
-gen_d = {}
-for g in range(len(args.gpu.split(","))):
-    gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-    # tc pp
-    #gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('t5', 'ep') )
-    gpt2.trainable = False
-    gpt2.config.pad_token_id = 50256
 
-    gen_d[int(g)]  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, \
-                    device=int(g), return_full_text=False)
+# elif args.genm == 't5':
+# from transformers import T5Tokenizer, AutoModelWithLMHead
+# tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+# print(tokenizer_t5)
+# t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+# gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+
+# tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
+# result_ = gen_nlp([sent+tokenizer_t5.eos_token], max_length=tokens_len_ori , \
+#                                 do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+#                                 repetition_penalty=1.2, num_return_sequences=test_beams,\
+#                                 clean_up_tokenization_spaces=True)
 
 
 
 
 from threading import Thread
-def gen_vs(sent, future_steps, test_beams, model_cls, di):
+def gen_vs(sent, future_steps, test_beams, model_cls):
     tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
-    result_ = gen_d[di]([sent], max_length=tokens_len_ori + future_steps, \
-                                  do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                repetition_penalty=1.2, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
+    result_ = gen_nlp([sent], max_length=tokens_len_ori + future_steps, \
+                                do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.2, num_return_sequences=test_beams,\
+                                clean_up_tokenization_spaces=True)
     x = np.array([ii['generated_text'] for ii in result_])
     y = np.array([label] * x.shape[0])
     eval_result_ori = model_cls.evaluate(x, y, batch_size=args.batch_size, verbose=0)    
     eval_result_oris.append(eval_result_ori[0])
 
-def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls, di):
+def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls):
     tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
-    result_0 = gen_d[di]([sent], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+    result_0 = gen_nlp([sent], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                                 repetition_penalty=1.2, num_return_sequences=candidates, clean_up_tokenization_spaces=True)
     #print("result_0 generated")
-    result_1 = gen_d[di]([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], max_length=future_steps+future_steps, \
+    result_1 = gen_nlp([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], max_length=future_steps+future_steps, \
                                   do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                                 repetition_penalty=1.2, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
     #print("result_1 generated")
@@ -184,7 +193,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
     torch.cuda.empty_cache()
     eval_result_oris = []
     threads = []
-    for di in range(len(args.gpu.split(","))):
+    for di in range(4):
         t = Thread(target=gen_vs, args=(sent, args.future_steps, args.test_beams, model_cls, di))
         t.start()
         threads.append(t)
@@ -200,7 +209,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
 
     df_future_ll = []
     threads = []
-    for di in range(len(args.gpu.split(","))):
+    for di in range(1):
         t = Thread(target=gengen_vs, args=(sent, loss_ori, args.future_steps, args.candidates, args.test_beams, model_cls, di))
         t.start()
         threads.append(t)
@@ -269,7 +278,7 @@ acc_aug_rnd = thread_testing('test', df_train_aug_rnd, ds.df_test)
 gain = (acc_aug - acc_noaug) / acc_noaug
 gain_rnd = (acc_aug_rnd - acc_noaug) / acc_noaug
 
-print("acc_aummary==>", acc_noaug, acc_aug, acc_aug_rnd)
-print("gain_summary==>", gain, gain_rnd )
+print("acc_summary==>", acc_noaug, acc_aug, acc_aug_rnd, gain, gain_rnd)
+
 
 
