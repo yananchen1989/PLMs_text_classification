@@ -110,26 +110,26 @@ gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, dev
 
 
 # elif args.genm == 't5':
-from transformers import T5Tokenizer, AutoModelWithLMHead
-tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-print(tokenizer_t5)
+# from transformers import T5Tokenizer, AutoModelWithLMHead
+# tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+# print(tokenizer_t5)
 
 
-t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+# t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
 
-ft_model_path = 'ft_model_{}_{}'.format('t5', 'tc')
-checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
-list.sort(checkpoint_files)
-t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+# ft_model_path = 'ft_model_{}_{}'.format('t5', 'tc')
+# checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
+# list.sort(checkpoint_files)
+# t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
 
 
-gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+# gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
 
-tokens_len_ori = tokenizer_t5.encode(sent, return_tensors="pt").shape[1]
-result_ = gen_nlp([sent+tokenizer_t5.eos_token], max_length=64 , \
-                                do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                repetition_penalty=1.2, num_return_sequences=32,\
-                                clean_up_tokenization_spaces=True)
+# tokens_len_ori = tokenizer_t5.encode(sent, return_tensors="pt").shape[1]
+# result_ = gen_nlp([sent+tokenizer_t5.eos_token], max_length=64 , \
+#                                 do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+#                                 repetition_penalty=1.2, num_return_sequences=32,\
+#                                 clean_up_tokenization_spaces=True)
 
 
 
