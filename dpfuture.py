@@ -10,7 +10,7 @@ parser.add_argument("--batch_size", default=32, type=int)
 parser.add_argument("--candidates", default=64, type=int)
 parser.add_argument("--cls_score_thres", default=0.8, type=float)
 parser.add_argument("--max_aug_times", default=1, type=int)
-
+parser.add_argument("--seed", default=0, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 print('args==>', args)
@@ -184,6 +184,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls):
 
 infos = []
 infos_rnd = []
+arxivs = []
 for ix, row in ds.df_train.reset_index().iterrows():
     print(ix, 'of', ds.df_train.shape[0])
     t0 = time.time()
@@ -245,6 +246,10 @@ for ix, row in ds.df_train.reset_index().iterrows():
 
     contents_syn_rnd = df_future_threds.sample(frac=1).head(len(contents_syn))['content'].tolist()
 
+    arxivs.append((label, label_name, sent, \
+                    "<sep>".join(dfaug.head(8)['content'].tolist()), \
+                    "<sep>".join(df_future_threds.sample(frac=1).head(8)['content'].tolist()) ))
+
     for sent_syn  in contents_syn:
         print("gen==>", sent_syn, '\n\n' )
         infos.append((label, label_name, sent_syn ))
@@ -253,6 +258,11 @@ for ix, row in ds.df_train.reset_index().iterrows():
         #print("gen==>", sent_syn, '\n\n' )
         infos_rnd.append((label, label_name, sent_syn ))
 
+    if len(arxivs) > 0 and len(arxivs) % 64 == 0:
+        df_arxiv = pd.DataFrame(arxivs, columns=['label','label_name','content','content_syn_aug','content_syn_rnd'])
+        df_arxiv.to_csv("df_arxiv_{}.csv".format(args.seed), index=False)
+        print("df_arxiv saved ==>", df_arxiv.shape[0])
+        
 torch.cuda.empty_cache()
 
 
