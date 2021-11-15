@@ -144,7 +144,8 @@ def gen_vs(sent, future_steps, test_beams, model_cls):
     x = np.array([ii['generated_text'] for ii in result_])
     y = np.array([label] * x.shape[0])
     eval_result_ori = model_cls.evaluate(x, y, batch_size=args.batch_size, verbose=0)    
-    eval_result_oris.append(eval_result_ori[0])
+    #eval_result_oris.append(eval_result_ori[0])
+    return eval_result_ori[0]
 
 def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls):
     tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
@@ -188,7 +189,8 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls):
 
     df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], scores), \
                                         columns=['content','score'])
-    df_future_ll.append(df_future)
+    #df_future_ll.append(df_future)
+    return df_future
 
 
 infos = []
@@ -202,15 +204,9 @@ for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
     label_name = row['label_name']
     torch.cuda.empty_cache()
     eval_result_oris = []
-    threads = []
-    for di in range(1):
-        t = Thread(target=gen_vs, args=(sent, args.future_steps, args.test_beams, model_cls))
-        t.start()
-        threads.append(t)
-
-    # join all threads
-    for t in threads:
-        t.join()
+    for _ in range(3):
+        eval_result_ori = gen_vs(sent, args.future_steps, args.test_beams, model_cls)
+        eval_result_oris.append(eval_result_ori)
 
     loss_ori = sum(eval_result_oris) / len(eval_result_oris)
     print("eval_result_oris==>", eval_result_oris)
@@ -218,18 +214,8 @@ for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
     torch.cuda.empty_cache()
 
     df_future_ll = []
-    threads = []
-    for di in range(1):
-        t = Thread(target=gengen_vs, args=(sent, loss_ori, args.future_steps, args.candidates, args.test_beams, model_cls))
-        t.start()
-        threads.append(t)
 
-    # join all threads
-    for t in threads:
-        t.join()
-
-    df_future_threds = pd.concat(df_future_ll)
-
+    df_future_threds = gengen_vs(sent, loss_ori, args.future_steps, args.candidates, args.test_beams, model_cls)
     df_future_threds.sort_values(by=['score'], ascending=False, inplace=True)
     #sents = df_future.head(8)['content'].tolist()
 
