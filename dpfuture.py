@@ -11,7 +11,7 @@ parser.add_argument("--candidates", default=64, type=int)
 parser.add_argument("--cls_score_thres", default=0.8, type=float)
 parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--gpu", default="3", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -110,17 +110,26 @@ gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, dev
 
 
 # elif args.genm == 't5':
-# from transformers import T5Tokenizer, AutoModelWithLMHead
-# tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-# print(tokenizer_t5)
-# t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-# gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+from transformers import T5Tokenizer, AutoModelWithLMHead
+tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+print(tokenizer_t5)
 
-# tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
-# result_ = gen_nlp([sent+tokenizer_t5.eos_token], max_length=tokens_len_ori , \
-#                                 do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-#                                 repetition_penalty=1.2, num_return_sequences=test_beams,\
-#                                 clean_up_tokenization_spaces=True)
+
+t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+
+ft_model_path = 'ft_model_{}_{}'.format('t5', 'tc')
+checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
+list.sort(checkpoint_files)
+t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+
+
+gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+
+tokens_len_ori = tokenizer_t5.encode(sent, return_tensors="pt").shape[1]
+result_ = gen_nlp([sent+tokenizer_t5.eos_token], max_length=64 , \
+                                do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                repetition_penalty=1.2, num_return_sequences=32,\
+                                clean_up_tokenization_spaces=True)
 
 
 
@@ -194,7 +203,7 @@ for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
     torch.cuda.empty_cache()
     eval_result_oris = []
     threads = []
-    for di in range(4):
+    for di in range(1):
         t = Thread(target=gen_vs, args=(sent, args.future_steps, args.test_beams, model_cls))
         t.start()
         threads.append(t)
