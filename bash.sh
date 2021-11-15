@@ -21,9 +21,10 @@ nohup python -u augf.py --dsn yelp2 --samplecnt 128 --max_aug_times 1 --aug gene
                   --abundance 3  --num_return_sequences 8 --gpu 6,7  > test.dvrl.gpu.log & 
 
 
-python -u dpfuture.py --dsn uci --batch_size 64 --samplecnt -1  --cls_score_thres 0.8 \
-      --candidates ${candidates} --test_beams ${test_beams} --max_aug_times ${max_aug_times} \
-      --seed ${seed} --gpu ${gpu}
+nohup python -u dpfuture.py --dsn uci --batch_size 16 --samplecnt 1024  --cls_score_thres 0.8 \
+      --candidates 256 --test_beams 256 --max_aug_times 1 \
+      --seed 3333 --gpu 0
+
 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
@@ -45,10 +46,10 @@ nohup python -u aug_ppo.py > aug_ppo.log &
 
 
 
-nohup bash run_dp.sh 1 128 64 64 0 & 
-nohup bash run_dp.sh 1 128 64 64 1 & 
-nohup bash run_dp.sh 1 128 64 64 2 & 
-nohup bash run_dp.sh 1 128 64 64 3 & 
+nohup bash run_dp.sh uci 1 1024 256 256 0 & 
+nohup bash run_dp.sh ag  1 1024 256 256 2 &
+nohup bash run_dp.sh agt 1 1024 256 256 3 & 
+
 
 nohup bash run_dp.sh 1 128 128 128 4 & 
 nohup bash run_dp.sh 1 128 128 128 5 & 

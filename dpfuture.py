@@ -255,7 +255,7 @@ for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
 
     if len(arxivs) > 0 and len(arxivs) % 64 == 0:
         df_arxiv = pd.DataFrame(arxivs, columns=['label','label_name','content','content_syn_aug','content_syn_rnd'])
-        df_arxiv.to_csv("df_arxiv_{}.csv".format(args.seed), index=False)
+        df_arxiv.to_csv("./aug_arxiv/df_arxiv_{}.csv".format(args.seed), index=False)
         print("df_arxiv saved ==>", df_arxiv.shape[0])
 
 torch.cuda.empty_cache()
