@@ -185,7 +185,7 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls):
 infos = []
 infos_rnd = []
 arxivs = []
-for ix, row in ds.df_train.reset_index().iterrows():
+for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
     print(ix, 'of', ds.df_train.shape[0])
     t0 = time.time()
     sent = row['content']
@@ -262,7 +262,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
         df_arxiv = pd.DataFrame(arxivs, columns=['label','label_name','content','content_syn_aug','content_syn_rnd'])
         df_arxiv.to_csv("df_arxiv_{}.csv".format(args.seed), index=False)
         print("df_arxiv saved ==>", df_arxiv.shape[0])
-        
+
 torch.cuda.empty_cache()
 
 

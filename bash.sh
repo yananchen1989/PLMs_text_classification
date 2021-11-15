@@ -21,6 +21,10 @@ nohup python -u augf.py --dsn yelp2 --samplecnt 128 --max_aug_times 1 --aug gene
                   --abundance 3  --num_return_sequences 8 --gpu 6,7  > test.dvrl.gpu.log & 
 
 
+python -u dpfuture.py --dsn uci --batch_size 64 --samplecnt -1  --cls_score_thres 0.8 \
+      --candidates ${candidates} --test_beams ${test_beams} --max_aug_times ${max_aug_times} \
+      --seed ${seed} --gpu ${gpu}
+
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 nohup bash run.sh 1 128 3 8 0,1 &
@@ -54,8 +58,8 @@ nohup bash run_dp.sh 1 128 128 128 7 &
 
 
 ############################################################################################################################################
-ps aux|grep "augf"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "dpfuture"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run_dp.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
 ps aux|grep "dvrl_iter"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "dvrl_iter"|grep "3762"|grep -v grep | awk '{print $2}'|xargs kill -9
