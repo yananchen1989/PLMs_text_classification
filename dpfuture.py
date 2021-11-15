@@ -195,7 +195,7 @@ for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
     eval_result_oris = []
     threads = []
     for di in range(4):
-        t = Thread(target=gen_vs, args=(sent, args.future_steps, args.test_beams, model_cls, di))
+        t = Thread(target=gen_vs, args=(sent, args.future_steps, args.test_beams, model_cls))
         t.start()
         threads.append(t)
 
@@ -211,7 +211,7 @@ for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
     df_future_ll = []
     threads = []
     for di in range(1):
-        t = Thread(target=gengen_vs, args=(sent, loss_ori, args.future_steps, args.candidates, args.test_beams, model_cls, di))
+        t = Thread(target=gengen_vs, args=(sent, loss_ori, args.future_steps, args.candidates, args.test_beams, model_cls))
         t.start()
         threads.append(t)
 
