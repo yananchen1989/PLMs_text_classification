@@ -3,14 +3,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default='uci', type=str)
-parser.add_argument("--samplecnt", default=-1, type=int)
-parser.add_argument("--future_steps", default=64, type=int)
-parser.add_argument("--test_beams", default=256, type=int)
-parser.add_argument("--batch_size", default=32, type=int)
-parser.add_argument("--candidates", default=64, type=int)
-parser.add_argument("--cls_score_thres", default=0.8, type=float)
-parser.add_argument("--max_aug_times", default=1, type=int)
-parser.add_argument("--seed", default=0, type=int)
 parser.add_argument("--gpu", default="7", type=str)
 args = parser.parse_args()
 print('args==>', args)
@@ -34,12 +26,12 @@ import os,string,torch,math,time
 
 from utils.load_data import * 
 from utils.transblock import * 
-ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+ds = load_data(dataset=args.dsn, samplecnt= -1)
 #ds, proper_len = process_ds(ds, 64)
 
 ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
-#seed = random.sample(list(range(10000)), 1)[0]
+
 
 from threading import Thread
 testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
@@ -68,10 +60,7 @@ def thread_testing(testvalid, df_train, df_test):
 
 
 import glob
-files = glob.glob("./log_dpfuture/dpfuture.{}.samplecnt_128.max_aug_times_1.candidates_128.test_beams_128.*.log".format(args.uci))
-
-files = glob.glob("./log_dpfuture/dpfuture.{}.samplecnt_128.max_aug_times_1.candidates_128.test_beams_128.*.log".format("agt"))
-
+files = glob.glob("./log_dpfuture/dpfuture.{}.samplecnt_128.max_aug_times_1.candidates_128.test_beams_128.*.log".format(args.dsn))
 
 infos = []
 for file in files:
