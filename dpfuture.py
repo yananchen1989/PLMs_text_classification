@@ -3,7 +3,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default='uci', type=str)
-parser.add_argument("--samplecnt", default=128, type=int)
+parser.add_argument("--samplecnt", default=-1, type=int)
 parser.add_argument("--future_steps", default=64, type=int)
 parser.add_argument("--test_beams", default=256, type=int)
 parser.add_argument("--batch_size", default=32, type=int)
@@ -11,7 +11,7 @@ parser.add_argument("--candidates", default=64, type=int)
 parser.add_argument("--cls_score_thres", default=0.8, type=float)
 parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="3", type=str)
+parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -35,12 +35,13 @@ import os,string,torch,math,time
 from utils.load_data import * 
 from utils.transblock import * 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
-ds, proper_len = process_ds(ds, 64)
+#ds, proper_len = process_ds(ds, 64)
 
 ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 #seed = random.sample(list(range(10000)), 1)[0]
 
+from threading import Thread
 testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
 
 
@@ -110,31 +111,12 @@ gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, dev
 
 
 # elif args.genm == 't5':
-# from transformers import T5Tokenizer, AutoModelWithLMHead
-# tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-# print(tokenizer_t5)
-
-
-# t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-
-# ft_model_path = 'ft_model_{}_{}'.format('t5', 'tc')
-# checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
-# list.sort(checkpoint_files)
-# t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
-
-
-# gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
-
-# tokens_len_ori = tokenizer_t5.encode(sent, return_tensors="pt").shape[1]
-# result_ = gen_nlp([sent+tokenizer_t5.eos_token], max_length=64 , \
-#                                 do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-#                                 repetition_penalty=1.2, num_return_sequences=32,\
-#                                 clean_up_tokenization_spaces=True)
 
 
 
 
-from threading import Thread
+
+
 def gen_vs(sent, future_steps, test_beams, model_cls):
     tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
     result_ = gen_nlp([sent], max_length=tokens_len_ori + future_steps, \
@@ -258,7 +240,21 @@ for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
         df_arxiv.to_csv("./aug_arxiv/df_arxiv_{}.csv".format(args.seed), index=False)
         print("df_arxiv saved ==>", df_arxiv.shape[0])
 
-torch.cuda.empty_cache()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 df_syn = pd.DataFrame(infos, columns=['label', 'label_name', 'content' ])

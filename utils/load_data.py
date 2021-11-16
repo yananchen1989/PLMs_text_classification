@@ -119,7 +119,7 @@ class load_data():
             ixl = {'e':0, 'b':1, 't':2, 'm':3}
             df['label_name'] = df['label'].map(lambda x: ld[x])
             df['label'] = df['label'].map(lambda x: ixl[x])
-            self.df_train, self.df_test = train_test_split(df, test_size=0.3)
+            self.df_train, self.df_test = train_test_split(df, test_size=0.3, random_state=333)
 
         elif self.dataset == 'nyt':
             infos = []
@@ -141,7 +141,7 @@ class load_data():
             ixl = {ix:l for ix, l in enumerate(names)}
             df['label_name'] = df['label'].map(lambda x: ixl[x])
 
-            self.df_train, self.df_test = train_test_split(df, test_size=0.3)
+            self.df_train, self.df_test = train_test_split(df, test_size=0.3, random_state=333)
 
         else:
             raise KeyError("dsn illegal!")  

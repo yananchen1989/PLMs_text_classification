@@ -1,4 +1,3 @@
-
 sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
 
 sent = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
@@ -37,54 +36,124 @@ sent = "Virus to cause spike in pork prices"
 
 
 ############## whole token generation ############  
+import argparse,os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--dsn", default='uci', type=str)
+parser.add_argument("--samplecnt", default=-1, type=int)
+parser.add_argument("--future_steps", default=64, type=int)
+parser.add_argument("--test_beams", default=256, type=int)
+parser.add_argument("--batch_size", default=32, type=int)
+parser.add_argument("--candidates", default=64, type=int)
+parser.add_argument("--cls_score_thres", default=0.8, type=float)
+parser.add_argument("--max_aug_times", default=1, type=int)
+parser.add_argument("--seed", default=0, type=int)
+parser.add_argument("--gpu", default="7", type=str)
+args = parser.parse_args()
+print('args==>', args)
+
+os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+import tensorflow as tf 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print('======>',gpus,'<=======')
+if gpus:
+  try:
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+      # tf.config.experimental.set_virtual_device_configuration(gpu, \
+      #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+  except RuntimeError as e:
+    print(e)
+
+from transformers import top_k_top_p_filtering
+from torch.nn import functional as F
+import os,string,torch,math,time
+
+from utils.load_data import * 
+from utils.transblock import * 
+ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+#ds, proper_len = process_ds(ds, 64)
+
+ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+#seed = random.sample(list(range(10000)), 1)[0]
+
+from threading import Thread
+testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
 
 
+def thread_testing(testvalid, df_train, df_test):
+    best_test_accs = []
+    models = []
 
+    for ddi in range(3):
+        threads = []
+        for di in range(1):
+            t = Thread(target=testbed_func[testvalid], \
+                        args=(df_train, df_test, best_test_accs, models, di + ddi*2, 100,  0))
+            t.start()
+            threads.append(t)
+
+        # join all threads
+        for t in threads:
+            t.join()
+
+    acc = round(np.array(best_test_accs).max(), 4)
+
+    #model_best = models[np.array(best_test_accs).argmax()]
+    return  acc
 
 
 import glob
-files = glob.glob("./dpfuture*.log")
+files = glob.glob("./log_dpfuture/dpfuture.{}.samplecnt_128.max_aug_times_1.candidates_128.test_beams_128.*.log".format(args.uci))
 
-infos_ori = []
-infos_aug = []
+infos = []
 for file in files:
 
     with open(file, 'r') as f:
-
         lines = f.readlines()
+     
     start_ix = []
     for i, line in enumerate(lines):
-        if "reduce rate ===>" in line:
+        if 'eval_result_oris==>' in  line:
             start_ix.append(i)
 
     for i, j in zip(start_ix[0:len(start_ix)-1], start_ix[1:len(start_ix)] ):
-        content_gens = []
-        for line  in lines[i:j]:
-            
-            if " ==> " in line:
-                label = line.split(" ==> ")[0]
-                content = line.split(" ==> ")[1].strip()
-            if line.startswith("gen==> "):
-                content_gens.append(line.replace("gen==> ", "").strip())
-        infos_ori.append((label, content ))
 
-        for at in range(min(4, len(content_gens))):
-            infos_aug.append((label, content_gens[at]))
+        label_name = lines[i:j][2].split("==>")[0].strip()
+        content_ori = lines[i:j][2].split("==>")[1].strip()
+        content_syn = lines[i:j][4].replace("gen==>","").strip()
+        infos.append((label_name, content_ori, content_syn))
 
 
-df_ori = pd.DataFrame(infos_ori, columns=['label_name', 'content'])
-df_ori['label'] = df_ori['label_name'].map(lambda x: ixl_rev[x])
+df = pd.DataFrame(infos, columns=['label_name', 'content', 'content_syn'])
+df['label'] = df['label_name'].map(lambda x: ixl_rev[x])
 
-df_aug = pd.DataFrame(infos_aug, columns=['label_name', 'content'])
-df_aug['label'] = df_aug['label_name'].map(lambda x: ixl_rev[x])
+ds = load_data(dataset='uci', samplecnt= -1)
+ds, proper_len = process_ds(ds, 64)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation).strip())
+ds.df_test['content'] = ds.df_test['content'].map(lambda x: x.strip(string.punctuation).strip())
 
-acc_noaug, model_cls = thread_testing('test', df_ori, ds.df_test)
+df_all = pd.concat([ds.df_train, ds.df_test])
+
+df_test = df_all.loc[~df_all['content'].isin(df['content'].tolist())]
 
 
+for samplecnt in [32, 64, 128]:
+    for trial in range(7):
+        df_ = df.sample(frac=1).drop_duplicates(['content','label_name'])
+        df_train = sample_stratify(df_, samplecnt)
 
-acc_noaug, model_cls = thread_testing('test', pd.concat([df_ori,df_aug]),  ds.df_test) 
+        acc_noaug, _ = thread_testing('test', df_train[['label_name','label', 'content']], df_test)
 
-  
+        acc_aug, _ = thread_testing('test', \
+            pd.concat([df_train[['label_name','label', 'content']], \
+                      df_train[['label_name','label', 'content_syn']].rename(columns={'content_syn': 'content'}) ]), \
+            df_test) 
+
+        gain = (acc_aug - acc_noaug) / acc_noaug
+        print("samplecnt:", samplecnt, "trial:", trial, 'gain:', gain, "<==", acc_noaug, acc_aug)
 
 
 
@@ -209,27 +278,7 @@ print(tokenizer_t5.decode(decoder_input_ids[0], skip_special_tokens=True, clean_
 
 
 
-for dsn in ['uci','ag','stsa']:
-    ds = load_data(dataset=dsn, samplecnt= -1)
-
-    x_train, y_train = get_keras_data(ds.df_train)
-    x_test, y_test = get_keras_data(ds.df_test)
-
-    with tf.distribute.MirroredStrategy().scope():
-    #with tf.device('/GPU:0'):
-        model = get_model_bert(ds.df_test.label.unique().shape[0])
 
 
-    history = model.fit(
-        x_train, y_train, batch_size=32, epochs=12, \
-        validation_data=(x_test, y_test), verbose=1, validation_batch_size=64, validation_freq=1,
-        callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=4, mode='max',restore_best_weights=True)]
-    )
-    model.save_weights("./model_cls/model_full_uci.h5")
 
-
-infos = []
-infos.append(('aaa',1, 'sent1', ['aaa','bbb','ccc']))
-infos.append(('bbb',2, 'sent2', ['rrr','fff','ggg']))
-infos.append(('bbb',3, 'sent3', ['fff','nnn','bbb']))
 

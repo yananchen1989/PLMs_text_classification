@@ -47,7 +47,9 @@ nohup python -u aug_ppo.py > aug_ppo.log &
 
 
 nohup bash run_dp.sh uci 1 1024 256 256 0 & 
-nohup bash run_dp.sh ag  1 1024 256 256 2 &
+nohup bash run_dp.sh uci 1 1024 256 256 1 &
+
+nohup bash run_dp.sh agt 1 1024 256 256 2 &
 nohup bash run_dp.sh agt 1 1024 256 256 3 & 
 
 
