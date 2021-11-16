@@ -104,9 +104,9 @@ for samplecnt in [32, 64, 128]:
         df_ = df.sample(frac=1).drop_duplicates(['content','label_name'])
         df_train = sample_stratify(df_, samplecnt)
 
-        acc_noaug, _ = thread_testing('test', df_train[['label_name','label', 'content']], df_test)
+        acc_noaug = thread_testing('test', df_train[['label_name','label', 'content']], df_test)
 
-        acc_aug, _ = thread_testing('test', \
+        acc_aug = thread_testing('test', \
             pd.concat([df_train[['label_name','label', 'content']], \
                       df_train[['label_name','label', 'content_syn']].rename(columns={'content_syn': 'content'}) ]), \
             df_test) 
