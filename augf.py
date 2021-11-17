@@ -11,7 +11,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 # assert len(deviceIDs) >= 2
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--aug", default="eda", type=str)
+parser.add_argument("--aug", default="generate", type=str)
 parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','nyt','yelp2','amazon2'])
 parser.add_argument("--samplecnt", default=128, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
@@ -37,13 +37,18 @@ parser.add_argument("--threads", default=64, type=int)
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
 
+# dpfuture
+parser.add_argument("--future_steps", default=64, type=int)
+parser.add_argument("--test_beams", default=64, type=int)
+parser.add_argument("--candidates", default=64, type=int)
+parser.add_argument("--cls_score_thres", default=0.8, type=float)
 
 parser.add_argument("--num_return_sequences", default=4, type=int)
 parser.add_argument("--beams", default=1, type=int)
 parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=333, type=int)
-parser.add_argument("--gpu", default="4,5", type=str)
+parser.add_argument("--gpu", default="6,7", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -105,7 +110,7 @@ from utils.cbert_cgpt_config import *
 #from utils.dpp_model import * 
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
-ds, proper_len = process_ds(ds, 256)
+ds, proper_len = process_ds(ds, 128)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation))
 
 print(ds.df_train.sample(8))
@@ -431,6 +436,54 @@ def dvrl_inner_join(files):
     return df_merge
 
 
+if args.dpfuture:
+    with tf.distribute.MirroredStrategy().scope():
+        model_cls_dp = get_model_bert(ds.df_test.label.unique().shape[0])
+    model_cls_dp.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
+
+
+def dpfuture_gen(sent, label, future_steps, candidates, test_beams, dp_headcnt, model_cls):
+    # for each single sample
+    tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
+    result_0 = gen_nlp([sent], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.2, num_return_sequences=candidates, clean_up_tokenization_spaces=True)
+    #print("result_0 generated")
+    result_1 = gen_nlp([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], max_length=future_steps+future_steps, \
+                                  do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.2, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
+    #print("result_1 generated")
+    assert len(result_1) * len(result_1[0]) == candidates * test_beams
+
+    all_results = []
+    for r in result_1:
+        all_results.extend( [ii['generated_text'] for ii in r] )
+
+    assert len(all_results) == candidates * test_beams
+  
+    x = np.array(all_results)
+    #y = np.array([label] * x.shape[0])
+    preds = model_cls.predict(x,  batch_size=args.batch_size, verbose=0) 
+
+    losses = []
+    for j in range(0, len(all_results), test_beams):
+        preds_j = preds[j:j+test_beams]
+        y_j = np.array([label] * preds_j.shape[0])
+        loss = tf.keras.losses.sparse_categorical_crossentropy(y_j, preds_j)
+        loss_mean = loss.numpy().mean()
+        losses.append(loss_mean)
+
+    df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], losses), \
+                                        columns=['content','score'])
+    df_future.sort_values(by=['score'], ascending=True, inplace=True) 
+
+    assert df_future.shape[0] == candidates
+    preds = model_cls.predict(df_future['content'].values, batch_size= args.batch_size, verbose=0)
+    df_future['cls_score'] = preds[:, label] 
+    df_future['cls_label'] = preds.argmax(axis=1)
+    dfaug = df_future.loc[(df_future['cls_label']==label) & (df_future['cls_score']>=args.cls_score_thres)]
+
+    return dfaug.head(dp_headcnt)['content'].tolist()
+
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
 
@@ -476,39 +529,46 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         samples_syn_all = []
         for itr in range(100):     
             results = []
-            for i in range(0, ds.df_train.shape[0], args.trunk_size):
-                torch.cuda.empty_cache() 
-                prompts_trunk = prompts[i:i+args.trunk_size]
-                labels_trunk = labels[i:i+args.trunk_size] 
-                # prompts_trunk: list of prompts
-                if args.genm == 'gpt':
-                    #return 32*8
-                    results_trunk = gen_nlp(prompts_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, \
-                        repetition_penalty=1.0, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
-                # results_trunk==> [[text0, text1, ..., text7], [text0, text1, ..., text7], ...] (32)
 
-                elif args.genm == 'ctrl':
-                    #return 32*8
-                    results_trunk = gen_nlp(prompts_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1, \
-                        repetition_penalty=1.2, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
-                elif args.genm == 't5':
-                    results_trunk =  [[] for _ in range(args.trunk_size)]
-                    for step in range(args.num_return_sequences):
-                        results_trunk_step = gen_nlp(prompts_trunk, max_length=dsn_maxlen[args.dsn], do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                            repetition_penalty=1.2, num_return_sequences=1, clean_up_tokenization_spaces=True) 
-                        for gen in range(len(results_trunk_step)):
-                            results_trunk[gen].append(results_trunk_step[gen])
-                        
-                results.extend(results_trunk)
+            if args.dpfuture:
+                for sent, label in zip(prompts, labels):
+                    contents_dpfuture = dpfuture_gen(sent, label, args.future_steps, args.candidates, \
+                                    args.test_beams, args.num_return_sequences, model_cls_dp)
+                    results.extend(contents_dpfuture)
+            else:
+                for i in range(0, ds.df_train.shape[0], args.trunk_size):
+                    torch.cuda.empty_cache() 
+                    prompts_trunk = prompts[i:i+args.trunk_size]
+                    labels_trunk = labels[i:i+args.trunk_size] 
+                    # prompts_trunk: list of prompts
+                    if args.genm == 'gpt':
+                        #return 32*8
+                        results_trunk = gen_nlp(prompts_trunk, max_length=64, do_sample=True, top_p=0.9, top_k=0, \
+                            repetition_penalty=1.0, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
+                    # results_trunk==> [[text0, text1, ..., text7], [text0, text1, ..., text7], ...] (32)
 
-                print('generate trunk==>', i, i+args.trunk_size, 'of', ds.df_train.shape[0])
+                    elif args.genm == 'ctrl':
+                        #return 32*8
+                        results_trunk = gen_nlp(prompts_trunk, max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1, \
+                            repetition_penalty=1.2, num_return_sequences=args.num_return_sequences, clean_up_tokenization_spaces=True, skip_special_tokens=True)
+                    elif args.genm == 't5':
+                        results_trunk =  [[] for _ in range(args.trunk_size)]
+                        for step in range(args.num_return_sequences):
+                            results_trunk_step = gen_nlp(prompts_trunk, max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                repetition_penalty=1.2, num_return_sequences=1, clean_up_tokenization_spaces=True) 
+                            for gen in range(len(results_trunk_step)):
+                                results_trunk[gen].append(results_trunk_step[gen])
+                            
+                    results.extend([[subtrunk['generated_text'] for subtrunk in trunk]  for trunk in results_trunk])
+
+                    print('generate trunk==>', i, i+args.trunk_size, 'of', ds.df_train.shape[0])
+
             assert len(results) == ds.df_train.shape[0]
 
             buffer = []
             for ii in range(ds.df_train.shape[0]):
-                for s in results[ii]:
-                    generated_text = s['generated_text']
-                    if not generated_text or len(tokenizer_bert.encode(generated_text))<= 20 :
+                for generated_text in results[ii]:
+                    if not generated_text or len(tokenizer_bert.encode(generated_text))<= 10 :
                         continue
                     label = labels[ii]
                     label_name = ds.df_train['label_name'].tolist()[ii]

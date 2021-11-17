@@ -185,7 +185,6 @@ def gengen_vs(sent, loss_ori, future_steps, candidates, test_beams, model_cls):
 
     df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], scores), \
                                         columns=['content','score'])
-    #df_future_ll.append(df_future)
     return df_future
 
 
@@ -208,8 +207,6 @@ for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
     print("eval_result_oris==>", eval_result_oris)
 
     torch.cuda.empty_cache()
-
-    df_future_ll = []
 
     df_future_threds = gengen_vs(sent, loss_ori, args.future_steps, args.candidates, args.test_beams, model_cls)
     df_future_threds.sort_values(by=['score'], ascending=False, inplace=True)
