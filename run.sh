@@ -1,13 +1,9 @@
-max_aug_times=${1} # parameter R
-samplecnt=${2} # simulate a low-data regime, where 32 samples per category are selected as anchor data
-abundance=${3} #parameter B 
-num_return_sequences=${4}
-gpu=${5}
+gpu=${1}
 while true
 do
 	seed=$RANDOM
 	#seed=$(date +"%T")
-	for dsn in ag uci nyt #yelp2 amazon2
+	for dsn in uci agt #yelp2 amazon2
 	do
 		# for aug in eda bt 
 		# do
@@ -26,16 +22,20 @@ do
 		###### no finetune
 		for genm in gpt #t5 #ctrl
 		do
-			for genft in no#ep #pp tc
+			for genft in no #ep #pp tc
 			do
-				#for filter in dvrl no
-				for filter in no cls #nli enc nsp
+				for dpfuture_switch in 1 0
 				do
-				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-				      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
-				      --valid_files_cnt 16  --threads 16 --testvalid test \
-				      --abundance ${abundance}  --num_return_sequences ${num_return_sequences} --gpu ${gpu} \
-				      > ./log_arxiv_ep/${dsn}.generate.${samplecnt}.max_aug_times.${max_aug_times}.genm.${genm}.genft.${genft}.filter.${filter}.abundance.${abundance}.num_return_sequences.${num_return_sequences}.${seed}.log 2>&1
+					for filter in no #dvrl #nli enc nsp
+					do
+					python -u augf.py --dsn ${dsn} --samplecnt 32 --max_aug_times 1 --aug generate \
+					      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
+					      --valid_files_cnt 16  --threads 16 --testvalid test \
+					      --dpfuture_switch ${dpfuture_switch} --dpfuture_cls_switch 1 \
+					      --candidates 128 --test_beams 64 --cls_score_thres 0.8 \
+					      --num_return_sequences 3 --gpu ${gpu} \
+	> ./log_arxiv_dpfuture_dvrl/${dsn}.generate.32.max_aug_times.1.genm.${genm}.genft.${genft}.dpfuture_switch.${dpfuture_switch}.filter.${filter}.${seed}.log 2>&1
+					done
 				done
 			done
 		done
