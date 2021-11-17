@@ -16,14 +16,11 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 
 
-nohup python -u augf.py --dsn yelp2 --samplecnt 128 --max_aug_times 1 --aug generate \
-                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2  --testbed 0 --valid_files_cnt 16  --threads 8 \
-                  --abundance 3  --num_return_sequences 8 --gpu 6,7  > test.dvrl.gpu.log & 
+python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1 --aug generate \
+                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2  --testbed 0 \
+                 --valid_files_cnt 16  --threads 8 --dpfuture_switch 1 --dpfuture_cls_switch 1 \
+                  --num_return_sequences 4 --gpu 6,7  > test.dvrl.gpu.log & 
 
-
-nohup python -u dpfuture.py --dsn uci --batch_size 16 --samplecnt 1024  --cls_score_thres 0.8 \
-      --candidates 256 --test_beams 256 --max_aug_times 1 \
-      --seed 3333 --gpu 0
 
 
 
@@ -50,6 +47,11 @@ nohup python -u aug_ppo.py > aug_ppo.log &
 
 nohup bash run_dp.sh uci 1 1024 256 256 0 &
 nohup bash run_dp.sh uci 1 1024 256 256 1 & 
+nohup bash run_dp.sh uci 1 1024 256 256 6 & 
+
+
+nohup python -u test_dpfuture.py --dsn uci --gpu 4 > test_dpfuture.uci.log & 
+nohup python -u test_dpfuture.py --dsn agt --gpu 7 > test_dpfuture.agt.log & 
 
 
 
