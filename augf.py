@@ -915,5 +915,5 @@ summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()
     ['acc_base:{} acc_aug:{} gain:{} '.format(acc_noaug, acc_aug, gain )]
 
 
-record_log('logb', summary)
+record_log('logb_dpfuture', summary)
 print('success', ' '.join(summary))
