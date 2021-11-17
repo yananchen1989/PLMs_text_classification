@@ -437,10 +437,9 @@ def dvrl_inner_join(files):
     return df_merge
 
 
-if args.dpfuture:
-    with tf.distribute.MirroredStrategy().scope():
-        model_cls_dp = get_model_bert(ds.df_test.label.unique().shape[0])
-    model_cls_dp.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
+with tf.distribute.MirroredStrategy().scope():
+    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 
 def dpfuture_gen(sent, label, label_name, future_steps, candidates, test_beams, dp_headcnt, model_cls,\
@@ -456,9 +455,11 @@ def dpfuture_gen(sent, label, label_name, future_steps, candidates, test_beams, 
 
     elif dpfuture_switch:
         #print("result_0 generated")
-        result_1 = gen_nlp([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], max_length=future_steps+future_steps, \
-                                      do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                    repetition_penalty=1.2, num_return_sequences=test_beams, clean_up_tokenization_spaces=True)
+        result_1 = gen_nlp([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], \
+                                    max_length=future_steps+future_steps, \
+                                    do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                    repetition_penalty=1.2, num_return_sequences=test_beams, \
+                                    clean_up_tokenization_spaces=True)
         #print("result_1 generated")
         assert len(result_1) * len(result_1[0]) == candidates * test_beams
 
@@ -552,7 +553,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             torch.cuda.empty_cache()
 
             df_tmp_dpfuture = dpfuture_gen(sent, label, label_name, args.future_steps, args.candidates, \
-                                args.test_beams, args.num_return_sequences, model_cls_dp, \
+                                args.test_beams, args.num_return_sequences, model_cls, \
                                 args.dpfuture_switch, args.dpfuture_cls_switch)
             df_dpfuture_ll.append(df_tmp_dpfuture)
 
