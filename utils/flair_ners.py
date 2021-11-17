@@ -21,7 +21,7 @@ def get_ners(text):
         return text
 
 
-'''
+
 from transformers import pipeline
 
 
@@ -29,11 +29,14 @@ from transformers import pipeline
 from transformers import T5Tokenizer, AutoModelWithLMHead
 tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
 print(tokenizer_t5)
-#t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-ft_model_path = 'ft_model_{}_{}'.format('t5', 'ep')
-checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
-list.sort(checkpoint_files)
-t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+
+t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+
+# ft_model_path = 'ft_model_{}_{}'.format('t5', 'ep')
+# checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
+# list.sort(checkpoint_files)
+# t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+
 gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
 sep = tokenizer_t5.eos_token
 
@@ -55,6 +58,25 @@ gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, dev
 sep = tokenizer_gpt2.sep_token
 
 
+from utils.load_data import * 
+ds = load_data(dataset='ag', samplecnt= -1)
+
+for ix, row in ds.df_train.sample(frac=1).iterrows():
+    content = row['content']
+    label_name = row['label_name']
+    print("ori==>", content)
+    print("==>", label_name)
+
+    result_ = gen_nlp([content], max_length=64 , \
+                                    do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                    repetition_penalty=1.2, num_return_sequences=8,\
+                                    clean_up_tokenization_spaces=True)
+    for ii in result_:
+        print("syn==>", ii['generated_text'])
+
+    print('\n')
+
+
 while True:
     row = ds.df_train.sample(1)
     print(row['content'].tolist()[0])
@@ -70,4 +92,3 @@ while True:
 
     print('\n')
 
-'''
