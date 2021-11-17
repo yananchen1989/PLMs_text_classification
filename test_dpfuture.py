@@ -27,7 +27,10 @@ import os,string,torch,math,time
 from utils.load_data import * 
 from utils.transblock import * 
 ds = load_data(dataset=args.dsn, samplecnt= -1)
-#ds, proper_len = process_ds(ds, 64)
+
+ds, proper_len = process_ds(ds, 64)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation).strip())
+ds.df_test['content'] = ds.df_test['content'].map(lambda x: x.strip(string.punctuation).strip())
 
 ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
@@ -45,7 +48,7 @@ def thread_testing(testvalid, df_train, df_test):
         threads = []
         for di in range(1):
             t = Thread(target=testbed_func[testvalid], \
-                        args=(df_train, df_test, best_test_accs, models, di + ddi*2, 100,  1))
+                        args=(df_train, df_test, best_test_accs, models, di + ddi*2, 100,  1, 32))
             t.start()
             threads.append(t)
 
@@ -84,15 +87,10 @@ for file in files:
 df = pd.DataFrame(infos, columns=['label_name', 'content', 'content_syn'])
 df['label'] = df['label_name'].map(lambda x: ixl_rev[x])
 
-ds = load_data(dataset=args.dsn, samplecnt= -1)
-
-ds, proper_len = process_ds(ds, 64)
-ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation).strip())
-ds.df_test['content'] = ds.df_test['content'].map(lambda x: x.strip(string.punctuation).strip())
 
 if args.dsn == 'uci':
     df_all = pd.concat([ds.df_train, ds.df_test])
-    df_test = df_all.loc[~df_all['content'].isin(df['content'].tolist())]
+    df_test = df_all.loc[~df_all['content'].isin(df['content'].tolist())].sample(10000)
     print(df_test.shape[0], df_all.shape[0])
 
 elif args.dsn == 'agt':

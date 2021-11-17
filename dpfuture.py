@@ -11,6 +11,8 @@ parser.add_argument("--candidates", default=64, type=int)
 parser.add_argument("--cls_score_thres", default=0.8, type=float)
 parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--seed", default=0, type=int)
+parser.add_argument("--genm", default="gpt2", type=str)
+parser.add_argument("--ft", default="no", type=str)
 parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 print('args==>', args)
@@ -96,22 +98,34 @@ model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))
 # gpt2
 from transformers import pipeline
 
-#if args.genm == 'gpt2':
-from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-#tokenizer_gpt2.padding_side = "left" 
-tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-tokenizer_gpt2.sep_token = '<|sep|>'
-#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
-print(tokenizer_gpt2)
-gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-gpt2.trainable = False
-gpt2.config.pad_token_id = 50256
-gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
+if args.genm == 'gpt2':
+    from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+    tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    #tokenizer_gpt2.padding_side = "left" 
+    tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+    tokenizer_gpt2.sep_token = '<|sep|>'
+    #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+    print(tokenizer_gpt2)
+    #if args.ft == 'no':
+    gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    #elif args.ft == 'ep':
 
+    gpt2.trainable = False
+    gpt2.config.pad_token_id = 50256
+    gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
-# elif args.genm == 't5':
+elif args.genm == 't5':
+    from transformers import T5Tokenizer, AutoModelWithLMHead
+    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    print(tokenizer_t5)
+    t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
 
+    # ft_model_path = 'ft_model_{}_{}'.format('t5', 'ep')
+    # checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
+    # list.sort(checkpoint_files)
+    # t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+
+    gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
 
 
 
