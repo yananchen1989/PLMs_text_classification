@@ -499,34 +499,32 @@ def dpfuture_gen(sent, label, label_name, future_steps, candidates, test_beams, 
         return df_future.sample(frac=1)\
                     .head(dp_headcnt)[['content','label','label_name']]
 
+def decorate_sent(genm, genft, content, label_name):
+    if genm == 'gpt':
+        if genft == 'lambda':
+            prompt = '[{}]'.format(label_name) +  ' '.join(content.split(' ')[:3] )
+
+        elif genft in ['tc', 'pp']:
+            prompt = '{} {}'.format(content, tokenizer_gpt2.sep_token)
+
+        elif genft in ['ep']:
+            prompt = get_ners(content) + tokenizer_gpt2.sep_token
+        else:
+            prompt = content
+
+    elif genm == 'ctrl':
+        prompt = "Links in {}. ".format(content)
+        
+    elif genm == 't5':
+        if genft in ['ep']:
+            prompt = get_ners(content) + tokenizer_t5.eos_token
+        else:
+            prompt = content + tokenizer_t5.eos_token
+
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
 
     if args.aug == 'generate':
-
-        # if args.genm == 'gpt':
-        #     if args.genft == 'lambda':
-        #         prompts = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
-        #                     + ds.df_train['content'].map(lambda x: ' '.join(x.split(' ')[:3] )) ).tolist()
-
-        #     elif args.genft in ['tc', 'pp']:
-        #         prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
-        #     elif args.genft in ['ep']:
-        #         prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
-        #                             .map(lambda x: '{}{}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
-        #     else:
-        #         prompts = ds.df_train['content'].tolist()
-
-        # elif args.genm == 'ctrl':
-        #     prompts = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
-
-        # elif args.genm == 't5':
-        #     if args.genft in ['ep']:
-        #         prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
-        #                             .map(lambda x: '{}{}'.format(x, tokenizer_t5.eos_token) ).tolist()
-        #     else:
-        #         prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
-
         # # nli config
         # if args.dsn in ['ag','uci', 'nyt']:
         #     ln_extend = {}

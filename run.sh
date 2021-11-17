@@ -24,9 +24,9 @@ do
 		# done
 
 		###### no finetune
-		for genm in gpt t5 #ctrl
+		for genm in gpt #t5 #ctrl
 		do
-			for genft in ep #pp tc
+			for genft in no#ep #pp tc
 			do
 				#for filter in dvrl no
 				for filter in no cls #nli enc nsp
