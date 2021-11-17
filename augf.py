@@ -471,7 +471,7 @@ def dpfuture_gen(sent, label, label_name, future_steps, candidates, test_beams, 
       
         x = np.array(all_results)
         #y = np.array([label] * x.shape[0])
-        preds = model_cls.predict(x,  batch_size=args.batch_size, verbose=0) 
+        preds = model_cls.predict(x,  batch_size=16, verbose=0) 
 
         losses = []
         for j in range(0, len(all_results), test_beams):
@@ -486,7 +486,7 @@ def dpfuture_gen(sent, label, label_name, future_steps, candidates, test_beams, 
         df_future.sort_values(by=['score'], ascending=True, inplace=True) 
 
     assert df_future.shape[0] == candidates
-    preds = model_cls.predict(df_future['content'].values, batch_size= args.batch_size, verbose=0)
+    preds = model_cls.predict(df_future['content'].values, batch_size= 16, verbose=0)
     df_future['cls_score'] = preds[:, label] 
     df_future['cls_label'] = preds.argmax(axis=1)
     df_future['label'] = label
@@ -504,45 +504,41 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
     if args.aug == 'generate':
 
-        labels = ds.df_train['label'].tolist()
-        if args.genm == 'gpt':
-            if args.genft == 'lambda':
-                prompts = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
-                            + ds.df_train['content'].map(lambda x: ' '.join(x.split(' ')[:3] )) ).tolist()
+        # if args.genm == 'gpt':
+        #     if args.genft == 'lambda':
+        #         prompts = (ds.df_train['label_name'].map(lambda x: '[{}]'.format(x) ) \
+        #                     + ds.df_train['content'].map(lambda x: ' '.join(x.split(' ')[:3] )) ).tolist()
 
-            elif args.genft in ['tc', 'pp']:
-                prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
-            elif args.genft in ['ep']:
-                prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
-                                    .map(lambda x: '{}{}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
-            else:
-                prompts = ds.df_train['content'].tolist()
+        #     elif args.genft in ['tc', 'pp']:
+        #         prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
+        #     elif args.genft in ['ep']:
+        #         prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
+        #                             .map(lambda x: '{}{}'.format(x, tokenizer_gpt2.sep_token) ).tolist()
+        #     else:
+        #         prompts = ds.df_train['content'].tolist()
 
-        elif args.genm == 'ctrl':
-            prompts = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
+        # elif args.genm == 'ctrl':
+        #     prompts = ds.df_train['content'].map(lambda x: "Links in {}. ".format(x)).tolist()
 
-        elif args.genm == 't5':
-            if args.genft in ['ep']:
-                prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
-                                    .map(lambda x: '{}{}'.format(x, tokenizer_t5.eos_token) ).tolist()
-            else:
-                prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
+        # elif args.genm == 't5':
+        #     if args.genft in ['ep']:
+        #         prompts = ds.df_train['content'].map(lambda x: get_ners(x))\
+        #                             .map(lambda x: '{}{}'.format(x, tokenizer_t5.eos_token) ).tolist()
+        #     else:
+        #         prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
 
-        # nli config
-        if args.dsn in ['ag','uci', 'nyt']:
-            ln_extend = {}
-            for l in ds.df_test['label_name'].unique():
-                ln_extend[l] = expand_label_nli[l]
-            ln_extend__rev = {}
-            for i, j in ln_extend.items():
-                for jj in j:
-                    ln_extend__rev[jj] = i
-            labels_candidates = set()
-            for v in ln_extend.values():
-                labels_candidates.update(v)
-
-        samples_syn_all = []
-        #for itr in range(100):     
+        # # nli config
+        # if args.dsn in ['ag','uci', 'nyt']:
+        #     ln_extend = {}
+        #     for l in ds.df_test['label_name'].unique():
+        #         ln_extend[l] = expand_label_nli[l]
+        #     ln_extend__rev = {}
+        #     for i, j in ln_extend.items():
+        #         for jj in j:
+        #             ln_extend__rev[jj] = i
+        #     labels_candidates = set()
+        #     for v in ln_extend.values():
+        #         labels_candidates.update(v)   
 
         df_dpfuture_ll = []
         for ix, row in ds.df_train.reset_index().iterrows():
