@@ -22,6 +22,11 @@ nohup python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1 --aug generate
                   --num_return_sequences 8 --gpu 6,7  augf.test.log & 
 
 
+python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1 --aug generate \
+                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2  --testbed 0 \
+                 --valid_files_cnt 16  --threads 8 --dpfuture_switch 0 --dpfuture_cls_switch 1 \
+                  --num_return_sequences 3 --gpu 0,1
+
 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop

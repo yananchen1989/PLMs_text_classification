@@ -550,12 +550,13 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             df_tmp_dpfuture = dpfuture_gen(sent, label, label_name, args.future_steps, args.candidates, \
                                 args.test_beams, args.num_return_sequences, model_cls, \
                                 args.dpfuture_switch, args.dpfuture_cls_switch)
-            print("dpfuture==>", ix, 'of', ds.df_train.shape[0], "get:", df_tmp_dpfuture.shape[0])
+            print("dpfuture==>", ix, 'of', ds.df_train.shape[0], \
+                    "get:", df_tmp_dpfuture.shape[0], "of ", args.num_return_sequences)
             df_dpfuture_ll.append(df_tmp_dpfuture)
 
         df_syn_tmp = pd.concat(df_dpfuture_ll)[ds.df_train.columns]
 
-        assert df_syn_tmp.shape[0] == ds.df_train.shape[0] * args.num_return_sequences
+        print("dpfuture generated==>", df_syn_tmp.shape[0], ds.df_train.shape[0] * args.num_return_sequences)
 
         # if 'no' in filter_list:
         #     buffer.append((generated_text, label, label_name, 0))
