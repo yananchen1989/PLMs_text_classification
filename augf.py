@@ -489,6 +489,7 @@ def dpfuture_gen(sent, label, label_name, future_steps, candidates, test_beams, 
     preds = model_cls.predict(df_future['content'].values, batch_size= 16, verbose=0)
     df_future['cls_score'] = preds[:, label] 
     df_future['cls_label'] = preds.argmax(axis=1)
+    df_future.sort_values(by=['cls_label'], ascending=False, inplace=True) 
     df_future['label'] = label
     df_future['label_name'] = label_name    
 
@@ -540,7 +541,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
         df_dpfuture_ll = []
         for ix, row in ds.df_train.reset_index().iterrows():
-            print("dpfuture==>", ix, 'of', ds.df_train.shape[0])
+            
             sent = row['content']
             label = row['label']
             label_name = row['label_name']
@@ -549,6 +550,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             df_tmp_dpfuture = dpfuture_gen(sent, label, label_name, args.future_steps, args.candidates, \
                                 args.test_beams, args.num_return_sequences, model_cls, \
                                 args.dpfuture_switch, args.dpfuture_cls_switch)
+            print("dpfuture==>", ix, 'of', ds.df_train.shape[0], "get:", df_tmp_dpfuture.shape[0])
             df_dpfuture_ll.append(df_tmp_dpfuture)
 
         df_syn_tmp = pd.concat(df_dpfuture_ll)[ds.df_train.columns]
