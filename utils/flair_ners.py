@@ -1,8 +1,11 @@
 import pandas as pd
+import time
 from flair.data import Sentence
 from flair.models import SequenceTagger
-#from utils.load_data import * 
 
+import torch, flair
+flair.device = torch.device('cpu')
+#flair.device = torch.device('cuda:0')
 #  note that get_ners can only run one single GPU !!! 
 tagger = SequenceTagger.load("flair/ner-english-fast")
 
@@ -15,16 +18,16 @@ def get_ners(text):
     sentence = Sentence(text)
     tagger.predict(sentence)
     ners = list(set([ii['text'] for ii in sentence.to_dict(tag_type='ner')['entities']]))
-    if ners or len(ners) >= 2:
-        return '<=>'.join(ners)
-    else:
-        return text
+    return ners
 
 
 
+
+
+
+
+'''
 from transformers import pipeline
-
-
 # t5
 from transformers import T5Tokenizer, AutoModelWithLMHead
 tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
@@ -48,47 +51,15 @@ tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endof
 tokenizer_gpt2.sep_token = '<|sep|>'
 #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
 print(tokenizer_gpt2)
-#gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_ft_ep')
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_ft_ep')
 
 gpt2.trainable = False
 gpt2.config.pad_token_id = 50256
-gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
 sep = tokenizer_gpt2.sep_token
+'''
 
 
-from utils.load_data import * 
-ds = load_data(dataset='ag', samplecnt= -1)
-
-for ix, row in ds.df_train.sample(frac=1).iterrows():
-    content = row['content']
-    label_name = row['label_name']
-    print("ori==>", content)
-    print("==>", label_name)
-
-    result_ = gen_nlp([content], max_length=64 , \
-                                    do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                    repetition_penalty=1.2, num_return_sequences=8,\
-                                    clean_up_tokenization_spaces=True)
-    for ii in result_:
-        print("syn==>", ii['generated_text'])
-
-    print('\n')
-
-
-while True:
-    row = ds.df_train.sample(1)
-    print(row['content'].tolist()[0])
-    print("===>", row['label_name'].tolist()[0])
-    ners = get_ners(row['content'].tolist()[0])
-    print("ners==>", ners)
-    result_ = gen_nlp([ners + sep], max_length=64 , \
-                                    do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                    repetition_penalty=1.2, num_return_sequences=32,\
-                                    clean_up_tokenization_spaces=True)
-    for ii in result_:
-        print(ii['generated_text'])
-
-    print('\n')
 

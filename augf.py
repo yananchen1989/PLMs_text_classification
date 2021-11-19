@@ -12,7 +12,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="generate", type=str)
-parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
+parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--samplecnt", default=32, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
@@ -50,7 +50,7 @@ parser.add_argument("--num_return_sequences", default=4, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="6,7", type=str)
+parser.add_argument("--gpu", default="", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -99,10 +99,9 @@ if gpus:
   except RuntimeError as e:
     print(e)
 
-if args.aug not in ['cgpt','cbert']:
-    assert gpus
+print("number of gpus==>", len(gpus))
 device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
-assert device0.type=='cuda' 
+#assert device0.type=='cuda' 
 
 from utils.load_data import * 
 from utils.transblock import * 
@@ -506,7 +505,9 @@ def decorate_sent(genm, genft, content, label_name):
             prompt = '{} {}'.format(content, tokenizer_gpt2.sep_token)
 
         elif genft in ['ep']:
-            prompt = get_ners(content) + tokenizer_gpt2.sep_token
+            ners = get_ners(content)
+            ners_join'<=>'.join(ners)
+            prompt = ners_join + tokenizer_gpt2.sep_token
         else:
             prompt = content
 
@@ -515,7 +516,9 @@ def decorate_sent(genm, genft, content, label_name):
         
     elif genm == 't5':
         if genft in ['ep']:
-            prompt = get_ners(content) + tokenizer_t5.eos_token
+            ners = get_ners(content)
+            ners_join'<=>'.join(ners)
+            prompt = ners_join + tokenizer_t5.eos_token
         else:
             prompt = content + tokenizer_t5.eos_token
 
