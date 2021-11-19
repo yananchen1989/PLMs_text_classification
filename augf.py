@@ -12,7 +12,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="generate", type=str)
-parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','nyt','yelp2','amazon2'])
+parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--samplecnt", default=32, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
