@@ -28,13 +28,16 @@ df = pd.DataFrame(infos)
 
 for col in ['samplecnt','dpfuture_switch','dpfuture_cls_switch','candidates','test_beams',\
             'future_steps','threads','valid_files_cnt','nli_switch', 'nsp_switch']:
-    df[col] = df[col].astype('int')
+    if col in df.columns:
+        df[col] = df[col].astype('int')
 
 for col in ['acc_base','acc_aug','gain']:
-    df[col] = df[col].astype('float')
+    if col in df.columns:
+        df[col] = df[col].astype('float')
+
 
 df.loc[(df['dsn']=='uci') & (df['samplecnt']==32) & (df['aug']=='generate') \
-        & (df['dpfuture_switch']==1) & (df['dpfuture_cls_switch']==1)][['acc_base','acc_aug','gain']]
+        & (df['dpfuture_switch']==0) & (df['dpfuture_cls_switch']==0)][['acc_base','acc_aug','gain']]['gain'].mean()
 
 
 
