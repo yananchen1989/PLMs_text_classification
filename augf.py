@@ -498,7 +498,7 @@ def dpfuture_gen(row, future_steps, candidates, test_beams, headcnt, model_cls,\
 def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, headcnt, candidates):
     ners = get_ners(row['content'])
     labels_candidates = [row['label_name']] + ners
-    print(row['content'])
+    print("ori====>", row['content'])
     print(labels_candidates)
 
     result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn] , \
@@ -511,8 +511,8 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, he
     nli_scores = [np.array(r['scores']).mean() for r in nli_result]    
 
     pairs = [[row['content'], sent] for sent in contents_syn]
-    pairs_ids = get_ids(pairs, 512, tokenizer_bert )
-    preds = model_cls_pair.predict(pairs_ids, batch_size=128)
+    pairs_ids = get_ids(pairs, 256, tokenizer_bert )
+    preds = model_cls_pair.predict(pairs_ids, batch_size=8)
     nsp_scores = preds[:,0]
 
     df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
@@ -582,7 +582,6 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         for ix, row in ds.df_train.reset_index().iterrows():
             torch.cuda.empty_cache()
             row['content'] = decorate_sent(row['content'], row['label_name'])
-            print("ori===>", row['content'])
             if 'mc' in args.filter:
                 df_tmp = dpfuture_gen(row, args.future_steps, args.candidates, \
                                 args.test_beams, args.num_return_sequences, model_cls, \
