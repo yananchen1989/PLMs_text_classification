@@ -25,13 +25,12 @@ do
 		###### no finetune
 		for genm in gpt t5 #ctrl
 		do
-
 			python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 					      --genft no  --genm ${genm} --filter nlinsp --seed ${seed} \
 					      --testvalid test \
 					      --candidates ${candidates} \
 					       --gpu ${gpu} \
-		> ./log_arxiv_nlinsp/${dsn}.generate.${samplecnt}.${max_aug_times}.${genm}no.filter.nlinsp.${seed}.log 2>&1
+		> ./log_arxiv_nlinsp/${dsn}.generate.${samplecnt}.${max_aug_times}.${genm}.no.nlinsp.${seed}.log 2>&1
 		done
         ## end 
 	done
