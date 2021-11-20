@@ -486,14 +486,18 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
                                     repetition_penalty=1.2, num_return_sequences= args.candidates,\
                                     clean_up_tokenization_spaces=True)
 
-    contents_syn = [ii['generated_text'].replace('\n',' ') for ii in result_gpt]
-    assert len(contents_syn) == args.candidates
+    contents_syn = [ii['generated_text'].replace('\n',' ') for ii in result_gpt if ii]
     # get nli score
     nli_scores = []
     fbs = 8
     for ix in range(0, len(contents_syn), fbs):
         contents_syn_ix = contents_syn[ix:ix+fbs]
-        nli_result = nli_nlp(contents_syn_ix,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        try:
+            nli_result = nli_nlp(contents_syn_ix,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        except:
+            print("NLIERROR")
+            print(contents_syn_ix)
+            continue
         nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
         nli_scores.extend(nli_scores_ix)
 
