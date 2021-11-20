@@ -266,7 +266,7 @@ if args.aug == 'generate':
 
     if 'nsp' in args.filter:
         with tf.distribute.MirroredStrategy().scope():
-            model_cls_pair  = get_model_nsp(256)
+            bert_nsp  = get_model_nsp(256)
     
     if 'enc' in args.filter or 'dvrl' in args.filter:
         enc = encoder('cmlm-large')
@@ -372,7 +372,7 @@ def nsp_classify(ds, generated_text, label_name):
          
         pairs = [[sent, generated_text] for sent in contents_ori]
         pairs_ids = get_ids(pairs, 512, tokenizer_bert )
-        preds = model_cls_pair.predict(pairs_ids, batch_size=128)
+        preds = bert_nsp.predict(pairs_ids, batch_size=128)
 
         nsp_score_reduce = preds[:,0].mean()
         result[l] = nsp_score_reduce
@@ -440,39 +440,39 @@ if 'mc' in args.filter:
     model_cls_full.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 
-def dpfuture_gen(row, future_steps, candidates, test_beams, headcnt, model_cls,  dpfuture_switch, dpfuture_cls_switch):
+def dpfuture_gen(row,  model_cls):
     # for each single sample
     tokens_len_ori = tokenizer_gpt2.encode(row['content'], return_tensors="pt").shape[1]
-    result_0 = gen_nlp([row['content']], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                repetition_penalty=1.2, num_return_sequences=candidates, clean_up_tokenization_spaces=True)
+    result_0 = gen_nlp([row['content']], max_length=tokens_len_ori + args.future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.2, num_return_sequences=args.candidates, clean_up_tokenization_spaces=True)
     
-    if not dpfuture_switch:
+    if not args.dpfuture_switch:
         df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], list(np.zeros(candidates))), \
                                             columns=['content','score'])
 
-    elif dpfuture_switch:
+    elif args.dpfuture_switch:
         #print("result_0 generated")
         result_1 = gen_nlp([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], \
-                                    max_length=future_steps+future_steps, \
+                                    max_length=args.future_steps*2, \
                                     do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                    repetition_penalty=1.2, num_return_sequences=test_beams, \
+                                    repetition_penalty=1.2, num_return_sequences= args.test_beams, \
                                     clean_up_tokenization_spaces=True)
         #print("result_1 generated")
-        assert len(result_1) * len(result_1[0]) == candidates * test_beams
+        assert len(result_1) * len(result_1[0]) == args.candidates * args.test_beams
 
         all_results = []
         for r in result_1:
             all_results.extend( [ii['generated_text'] for ii in r] )
 
-        assert len(all_results) == candidates * test_beams
+        assert len(all_results) == args.candidates * args.test_beams
       
         x = np.array(all_results)
         #y = np.array([label] * x.shape[0])
         preds = model_cls.predict(x,  batch_size=16, verbose=0) 
 
         losses = []
-        for j in range(0, len(all_results), test_beams):
-            preds_j = preds[j:j+test_beams]
+        for j in range(0, len(all_results), args.test_beams):
+            preds_j = preds[j:j+args.test_beams]
             y_j = np.array([row['label']] * preds_j.shape[0])
             loss = tf.keras.losses.sparse_categorical_crossentropy(y_j, preds_j)
             loss_mean = loss.numpy().mean()
@@ -482,7 +482,7 @@ def dpfuture_gen(row, future_steps, candidates, test_beams, headcnt, model_cls, 
                                             columns=['content','score'])
         df_future.sort_values(by=['score'], ascending=True, inplace=True) 
 
-    assert df_future.shape[0] == candidates
+    assert df_future.shape[0] == args.candidates
     preds = model_cls.predict(df_future['content'].values, batch_size= 16, verbose=0)
     df_future['cls_score'] = preds[:, row['label']] 
     df_future['cls_label'] = preds.argmax(axis=1)
@@ -490,26 +490,26 @@ def dpfuture_gen(row, future_steps, candidates, test_beams, headcnt, model_cls, 
     df_future['label'] = row['label']
     df_future['label_name'] = row['label_name']   
 
-    if dpfuture_cls_switch:
+    if args.dpfuture_cls_switch:
         return df_future.loc[(df_future['cls_label']==row['label']) & (df_future['cls_score']>=args.cls_score_thres)]\
-                    .head(headcnt)[['content','label','label_name']]
+                    .head(1)[['content','label','label_name']]
     else:
         return df_future.sample(frac=1)\
-                    .head(headcnt)[['content','label','label_name']]
+                    .head(1)[['content','label','label_name']]
 
 
-def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, headcnt, candidates):
+def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     ners = get_ners(row['content'])
     labels_candidates = [row['label_name']] + ners
     print(labels_candidates)
 
     result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn] , \
                                     do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                    repetition_penalty=1.2, num_return_sequences=candidates,\
+                                    repetition_penalty=1.2, num_return_sequences= args.candidates,\
                                     clean_up_tokenization_spaces=True)
 
     contents_syn = [ii['generated_text'] for ii in result_gpt]
-    assert len(contents_syn) == candidates
+    assert len(contents_syn) == args.candidates
     # get nli score
     nli_scores = []
     fbs = 8
@@ -522,23 +522,23 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, he
     # get nsp score
     pairs = [[row['content'], sent] for sent in contents_syn]
     pairs_ids = get_ids(pairs, 256, tokenizer_bert )
-    preds = model_cls_pair.predict(pairs_ids, batch_size=8)
+    preds = bert_nsp.predict(pairs_ids, batch_size=8)
     nsp_scores = preds[:,0]
 
     df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
 
     df_tmp['score'] = df_tmp['nli_score'].map(lambda x: math.log(x)) + df_tmp['nsp_score'].map(lambda x: math.log(x))
-    if nli_switch and nsp_switch:
+    if args.nli_switch and args.nsp_switch:
         df_tmp.sort_values(by=['score'], ascending=False, inplace=True) 
-    elif nli_switch and not nsp_switch:
+    elif args.nli_switch and not args.nsp_switch:
         df_tmp.sort_values(by=['nli_score'], ascending=False, inplace=True) 
-    elif not nli_switch and nsp_switch:
+    elif not args.nli_switch and args.nsp_switch:
         df_tmp.sort_values(by=['nsp_score'], ascending=False, inplace=True) 
     else:
         df_tmp = df_tmp.sample(frac=1)
     df_tmp['label'] = row['label']
     df_tmp['label_name'] = row['label_name']   
-    return df_tmp.head(headcnt)[['content','label','label_name']]
+    return df_tmp.head(1)[['content','label','label_name']]
 
 def decorate_sent(content, label_name):
     if args.genm == 'gpt':
@@ -567,11 +567,6 @@ def decorate_sent(content, label_name):
             prompt = content + tokenizer_t5.eos_token
     return prompt
 
-if 'dvrl' in args.filter:
-    args.num_return_sequences = 3
-else:
-    args.num_return_sequences = 1
-
 def synthesize(ds, proper_len, syn_df_ll, seed):
 
     if args.aug == 'generate':
@@ -594,13 +589,10 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             print("ori====>", row['content'], "<===", row['label_name'])
             row['content'] = decorate_sent(row['content'], row['label_name'])
             if 'mc' in args.filter:
-                df_tmp = dpfuture_gen(row, args.future_steps, args.candidates, \
-                                args.test_beams, args.num_return_sequences, model_cls_full, \
-                                args.dpfuture_switch, args.dpfuture_cls_switch)
+                df_tmp = dpfuture_gen(row, model_cls_full)
 
             elif 'nli' in args.filter and 'nsp' in args.filter:
-                df_tmp = nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, \
-                                    args.nli_switch, args.nsp_switch, args.num_return_sequences, args.candidates)
+                df_tmp = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
 
             print("gen===>", df_tmp['content'].tolist() )
             print("gen==>", ix, 'of', ds.df_train.shape[0],  "get:", df_tmp.shape[0], "of ", args.num_return_sequences, '\n')
@@ -962,5 +954,5 @@ summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()
     ['acc_base:{} acc_aug:{} gain:{} '.format(acc_noaug, acc_aug, gain )]
 
 
-record_log('logb_dpfuture', summary)
+record_log('log__{}'.format("_".join(args.filter)), summary)
 print('success', ' '.join(summary))

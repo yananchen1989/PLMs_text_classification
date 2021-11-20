@@ -17,27 +17,30 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 
 python -u augf.py --dsn uci --samplecnt 32 --max_aug_times 1 --aug generate \
-                     --genft no  --genm gpt --filter no --seed 0 \
+                     --genft no  --genm gpt --filter mc --seed 0 \
                      --valid_files_cnt 16  --threads 16 --testvalid test \
                      --dpfuture_switch 1 --dpfuture_cls_switch 1 \
-                     --candidates 128 --test_beams 64 --cls_score_thres 0.8 \
-                     --num_return_sequences 3 --gpu 0,1 
+                     --candidates 128 --test_beams 64  \
+                     --testbed 0 \
+                     --num_return_sequences 3 --gpu 6,7 
 
 
-python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 --aug generate \
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
                      --genft no  --genm gpt --filter nsp,nli --seed 0 \
                      --valid_files_cnt 16  --threads 16 --testvalid test \
                      --nli_switch 1 --nsp_switch 1 \
                      --candidates 128 --test_beams 64 --cls_score_thres 0.8 \
                      --testbed 0 \
-                     --num_return_sequences 1 
+                     --num_return_sequences 1 --gpu 0,1
+
+
 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
-nohup bash run.sh  0,1 &
-nohup bash run.sh  2,3 &
-nohup bash run.sh  4,5 &
-nohup bash run.sh  6,7 &
+nohup bash run_mc.sh  0,1 &
+nohup bash run_mc.sh  2,3 &
+nohup bash run_nlinsp.sh  4,5 &
+nohup bash run_nlinsp.sh  6,7 &
 
 
 
@@ -51,8 +54,6 @@ nohup python -u rltoken.py  --gpu 4,5  --alpha 0.1 --future_steps 32 --beams 128
 nohup python -u aug_ppo.py > aug_ppo.log & 
 
 
-nohup python -u test_dpfuture.py --dsn uci --gpu 4 > test_dpfuture.uci.log & 
-nohup python -u test_dpfuture.py --dsn agt --gpu 7 > test_dpfuture.agt.log & 
 
 
 
@@ -60,7 +61,7 @@ nohup python -u test_dpfuture.py --dsn agt --gpu 7 > test_dpfuture.agt.log &
 
 ############################################################################################################################################
 ps aux|grep "dpfuture"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "run_dp.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
 ps aux|grep "dvrl_iter"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "dvrl_iter"|grep "3762"|grep -v grep | awk '{print $2}'|xargs kill -9
