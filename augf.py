@@ -454,22 +454,18 @@ def dpfuture_gen(row,  model_cls):
 
     df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], losses), \
                                         columns=['content','dp_score'])
-     
 
-    preds_cls = model_cls.predict(df_future['content'].values, batch_size= 16, verbose=0)
-    df_future['cls_score'] = preds_cls[:, row['label']] 
-    df_future['cls_label'] = preds_cls.argmax(axis=1)
-    df_future['label'] = row['label']
-    df_future['label_name'] = row['label_name']   
+    # preds_cls = model_cls.predict(df_future['content'].values, batch_size= 16, verbose=0)
+    # df_future['cls_score'] = preds_cls[:, row['label']] 
+    # df_future['cls_label'] = preds_cls.argmax(axis=1)
 
     assert df_future.shape[0] == args.candidates
-    df_future.sort_values(by=['dp_score'], ascending=True, inplace=True)
 
     # dp:1 cls:1
     #content_syn_1_0 = df_future.loc[(df_future['cls_label']==row['label']) & (df_future['cls_score']>=args.cls_score_thres)]\
     #                .head(1)['content'].tolist()[0]
     # dp:1 cls:0
-    content_syn_1 = df_future.head(1)['content'].tolist()[0]
+    content_syn_1 = df_future.sort_values(by=['dp_score'], ascending=True).head(1)['content'].tolist()[0]
 
     # dp:0 cls:1 
     #content_syn_0_1 = df_future.loc[df_future['cls_label']==row['label']]\
@@ -636,10 +632,10 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             print("dvrl_cost_sec:", (t1-t0)/3600, "hour" )
             df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
 
-        assert df_synthesize['fmark', 'label_name'].value_counts().min() >= args.samplecnt
+        assert df_synthesize.loc[df_synthesize['fmark']=='11','label_name'].value_counts().min() >= args.samplecnt
         #df_syn_balance = sample_stratify(df_syn_tmp, args.samplecnt )
         print("samplecnt==> {}".format(args.samplecnt) )
-        print(df_synthesize['fmark', 'label_name'].value_counts())
+        print(df_synthesize.loc[df_synthesize['fmark']=='11', 'label_name'].value_counts())
 
     
     elif args.aug == 'eda':
