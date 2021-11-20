@@ -30,7 +30,7 @@ do
 					      --testvalid test \
 					      --candidates ${candidates} \
 					       --gpu ${gpu} \
-		> ./log_arxiv_nlinsp/${dsn}.generate.${samplecnt}.${max_aug_times}.${genm}.no.nlinsp.${seed}.log 2>&1
+		> ./log_arxiv_nlinsp/${dsn}.generate.${samplecnt}.${max_aug_times}.${candidates}.${genm}.no.${seed}.log 2>&1
 		done
         ## end 
 	done
