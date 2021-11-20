@@ -67,7 +67,7 @@ parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 print('args==>', args)
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-args.filter = args.filter.split(',')
+#args.filter = args.filter.split(',')
 
 import numpy as np
 import tensorflow as tf
@@ -255,14 +255,14 @@ if args.aug == 'generate':
     dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
     ####################### filter setting ######################
-    if 'nli' in args.filter: 
+    if 'nlinsp' in args.filter: 
         #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=1) #  1.8.1+cu102
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
         model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
-    if 'nsp' in args.filter:
+    #if 'nsp' in args.filter:
         with tf.distribute.MirroredStrategy().scope():
             bert_nsp  = get_model_nsp(256)
     

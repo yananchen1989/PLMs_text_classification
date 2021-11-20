@@ -26,7 +26,7 @@ python -u augf.py --dsn uci --samplecnt 32 --max_aug_times 1 --aug generate \
 
 
 python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                     --genft no  --genm gpt --filter nsp,nli --seed 0 \
+                     --genft no  --genm gpt --filter nlinsp --seed 0 \
                      --valid_files_cnt 16  --threads 16 --testvalid test \
                      --nli_switch 1 --nsp_switch 1 \
                      --candidates 128 --test_beams 64 --cls_score_thres 0.8 \
@@ -37,6 +37,7 @@ python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
+
 nohup bash run_nlinsp.sh  0,1 &
 nohup bash run_nlinsp.sh  2,3 &
 nohup bash run_nlinsp.sh  4,5 &
@@ -60,8 +61,8 @@ nohup python -u aug_ppo.py > aug_ppo.log &
 
 
 ############################################################################################################################################
-ps aux|grep "dpfuture"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "augf.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run_nlinsp.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
 ps aux|grep "dvrl_iter"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "dvrl_iter"|grep "3762"|grep -v grep | awk '{print $2}'|xargs kill -9
