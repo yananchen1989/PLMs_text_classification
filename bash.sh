@@ -37,8 +37,8 @@ python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
-nohup bash run_mc.sh  0,1 &
-nohup bash run_mc.sh  2,3 &
+nohup bash run_nlinsp.sh  0,1 &
+nohup bash run_nlinsp.sh  2,3 &
 nohup bash run_nlinsp.sh  4,5 &
 nohup bash run_nlinsp.sh  6,7 &
 

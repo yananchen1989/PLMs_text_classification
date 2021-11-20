@@ -37,7 +37,7 @@ do
 					      --nsp_switch ${nsp_switch} --nli_switch ${nli_switch} \
 					      --candidates ${candidates} \
 					       --gpu ${gpu} \
-		> ./log_arxiv_nlinsp/${dsn}.generate.3${samplecnt}.max_aug_times.${max_aug_times}.genm.${genm}.genft.${genft}.dpfuture_switch.${dpfuture_switch}.dpfuture_cls_switch.${dpfuture_cls_switch}.filter.${filter}.${seed}.log 2>&1
+		> ./log_arxiv_nlinsp/${dsn}.generate.${samplecnt}.${max_aug_times}.${genm}.${genft}.nli_switch.${nli_switch}.nsp_switch.${nsp_switch}.filter.nlinsp.${seed}.log 2>&1
 						
 					done
 				done
