@@ -1,7 +1,7 @@
-gpu=${1}
-samplecnt=32
 max_aug_times=1
-candidates=128
+samplecnt=${1}
+candidates=${2}
+gpu=${3}
 for i in {1..10}
 do
 	seed=$RANDOM
