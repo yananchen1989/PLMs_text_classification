@@ -363,25 +363,6 @@ def enc_classify(content, ori_label, enc_dic):
     else:
         return 0,  result[pred_label]
 
-def nsp_classify(ds, generated_text, label_name):
-    result = {}
-    for l in ds.df_test['label_name'].unique():
-        contents_ori = ds.df_train.loc[ds.df_train['label_name']==l].sample(32)['content'].tolist()
-         
-        pairs = [[sent, generated_text] for sent in contents_ori]
-        pairs_ids = get_ids(pairs, 512, tokenizer_bert )
-        preds = bert_nsp.predict(pairs_ids, batch_size=128)
-
-        nsp_score_reduce = preds[:,0].mean()
-        result[l] = nsp_score_reduce
-
-    pred_label = max(result, key=result.get)
-
-    if pred_label == label_name:
-        nsp_check, nsp_score = 1, result[pred_label]
-    else:
-        nsp_check, nsp_score = 0, result[pred_label]
-    return nsp_check, nsp_score
 
 def bertcls_classify(generated_text, label_name):
     pred = model_cls.predict([generated_text], batch_size=1, verbose=0)  
@@ -432,10 +413,10 @@ def dvrl_inner_join(files):
 
     return df_merge
 
-if 'mc' in args.filter:
-    with tf.distribute.MirroredStrategy().scope():
-        model_cls_full = get_model_bert(ds.df_test.label.unique().shape[0])
-    model_cls_full.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
+# if 'mc' in args.filter:
+#     with tf.distribute.MirroredStrategy().scope():
+#         model_cls_full = get_model_bert(ds.df_test.label.unique().shape[0])
+#     model_cls_full.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 
 def dpfuture_gen(row,  model_cls):
@@ -444,57 +425,60 @@ def dpfuture_gen(row,  model_cls):
     result_0 = gen_nlp([row['content']], max_length=tokens_len_ori + args.future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                                 repetition_penalty=1.2, num_return_sequences=args.candidates, clean_up_tokenization_spaces=True)
     
-    if not args.dpfuture_switch:
-        df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], list(np.zeros(candidates))), \
-                                            columns=['content','score'])
+    #print("result_0 generated")
+    result_1 = gen_nlp([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], \
+                                max_length=args.future_steps*2, \
+                                do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+                                repetition_penalty=1.2, num_return_sequences= args.test_beams, \
+                                clean_up_tokenization_spaces=True)
+    #print("result_1 generated")
+    assert len(result_1) * len(result_1[0]) == args.candidates * args.test_beams
 
-    elif args.dpfuture_switch:
-        #print("result_0 generated")
-        result_1 = gen_nlp([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], \
-                                    max_length=args.future_steps*2, \
-                                    do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                    repetition_penalty=1.2, num_return_sequences= args.test_beams, \
-                                    clean_up_tokenization_spaces=True)
-        #print("result_1 generated")
-        assert len(result_1) * len(result_1[0]) == args.candidates * args.test_beams
+    all_results = []
+    for r in result_1:
+        all_results.extend([ii['generated_text'].replace('\n',' ') for ii in r] )
 
-        all_results = []
-        for r in result_1:
-            all_results.extend( [ii['generated_text'] for ii in r] )
+    assert len(all_results) == args.candidates * args.test_beams
+  
+    x = np.array(all_results)
+    #y = np.array([label] * x.shape[0])
+    preds = model_cls.predict(x,  batch_size=16, verbose=0) 
 
-        assert len(all_results) == args.candidates * args.test_beams
-      
-        x = np.array(all_results)
-        #y = np.array([label] * x.shape[0])
-        preds = model_cls.predict(x,  batch_size=16, verbose=0) 
+    losses = []
+    for j in range(0, len(all_results), args.test_beams):
+        preds_j = preds[j:j+args.test_beams]
+        y_j = np.array([row['label']] * preds_j.shape[0])
+        loss = tf.keras.losses.sparse_categorical_crossentropy(y_j, preds_j)
+        loss_mean = loss.numpy().mean()
+        losses.append(loss_mean)
 
-        losses = []
-        for j in range(0, len(all_results), args.test_beams):
-            preds_j = preds[j:j+args.test_beams]
-            y_j = np.array([row['label']] * preds_j.shape[0])
-            loss = tf.keras.losses.sparse_categorical_crossentropy(y_j, preds_j)
-            loss_mean = loss.numpy().mean()
-            losses.append(loss_mean)
+    df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], losses), \
+                                        columns=['content','dp_score'])
+     
 
-        df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], losses), \
-                                            columns=['content','score'])
-        df_future.sort_values(by=['score'], ascending=True, inplace=True) 
-
-    assert df_future.shape[0] == args.candidates
-    preds = model_cls.predict(df_future['content'].values, batch_size= 16, verbose=0)
-    df_future['cls_score'] = preds[:, row['label']] 
-    df_future['cls_label'] = preds.argmax(axis=1)
-    df_future.sort_values(by=['cls_label'], ascending=False, inplace=True) 
+    preds_cls = model_cls.predict(df_future['content'].values, batch_size= 16, verbose=0)
+    df_future['cls_score'] = preds_cls[:, row['label']] 
+    df_future['cls_label'] = preds_cls.argmax(axis=1)
     df_future['label'] = row['label']
     df_future['label_name'] = row['label_name']   
 
-    if args.dpfuture_cls_switch:
-        return df_future.loc[(df_future['cls_label']==row['label']) & (df_future['cls_score']>=args.cls_score_thres)]\
-                    .head(1)[['content','label','label_name']]
-    else:
-        return df_future.sample(frac=1)\
-                    .head(1)[['content','label','label_name']]
+    assert df_future.shape[0] == args.candidates
+    df_future.sort_values(by=['dp_score'], ascending=True, inplace=True)
 
+    # dp:1 cls:1
+    #content_syn_1_0 = df_future.loc[(df_future['cls_label']==row['label']) & (df_future['cls_score']>=args.cls_score_thres)]\
+    #                .head(1)['content'].tolist()[0]
+    # dp:1 cls:0
+    content_syn_1 = df_future.head(1)['content'].tolist()[0]
+
+    # dp:0 cls:1 
+    #content_syn_0_1 = df_future.loc[df_future['cls_label']==row['label']]\
+    #                .sort_values(by=['cls_score'], ascending=False).head(1)['content'].tolist()[0]
+
+    # dp:0 cls:0
+    content_syn_0 = df_future.sample(1)['content'].tolist()[0]
+
+    return content_syn_1, content_syn_0
 
 def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     ners = get_ners(row['content'])
@@ -506,7 +490,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
                                     repetition_penalty=1.2, num_return_sequences= args.candidates,\
                                     clean_up_tokenization_spaces=True)
 
-    contents_syn = [ii['generated_text'] for ii in result_gpt]
+    contents_syn = [ii['generated_text'].replace('\n',' ') for ii in result_gpt]
     assert len(contents_syn) == args.candidates
     # get nli score
     nli_scores = []
@@ -526,17 +510,17 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
 
     df_tmp['score'] = df_tmp['nli_score'].map(lambda x: math.log(x)) + df_tmp['nsp_score'].map(lambda x: math.log(x))
+
     if args.nli_switch and args.nsp_switch:
-        df_tmp.sort_values(by=['score'], ascending=False, inplace=True) 
+        content_syn_1_1 = df_tmp.sort_values(by=['score'], ascending=False).head(1)['content'].tolist()[0] 
     elif args.nli_switch and not args.nsp_switch:
-        df_tmp.sort_values(by=['nli_score'], ascending=False, inplace=True) 
+        content_syn_1_0 = df_tmp.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
     elif not args.nli_switch and args.nsp_switch:
-        df_tmp.sort_values(by=['nsp_score'], ascending=False, inplace=True) 
+        content_syn_0_1 = df_tmp.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
     else:
-        df_tmp = df_tmp.sample(frac=1)
-    df_tmp['label'] = row['label']
-    df_tmp['label_name'] = row['label_name']   
-    return df_tmp.head(1)[['content','label','label_name']]
+        content_syn_0_0 = df_tmp.sample(1)['content'].tolist()[0] 
+
+    return content_syn_1_1, content_syn_1_0, content_syn_0_1, content_syn_0_0
 
 def decorate_sent(content, label_name):
     if args.genm == 'gpt':
@@ -581,56 +565,31 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         #     for v in ln_extend.values():
         #         labels_candidates.update(v)   
 
-        df_ll = []
+        infos = []
         for ix, row in ds.df_train.reset_index().iterrows():
             torch.cuda.empty_cache()
-            print("ori====>", row['content'], "<===", row['label_name'])
+            print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
             row['content'] = decorate_sent(row['content'], row['label_name'])
             if 'mc' in args.filter:
-                df_tmp = dpfuture_gen(row, model_cls_full)
+                content_syn_1, content_syn_0 = dpfuture_gen(row, model_cls)
 
-            elif 'nli' in args.filter and 'nsp' in args.filter:
-                df_tmp = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
+            elif 'nlinsp' in args.filter:
+                content_syn_1_1, content_syn_1_0, content_syn_0_1, content_syn_0_0 = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
 
-            print("gen===>", df_tmp['content'].tolist() )
-            print("gen==>", ix, 'of', ds.df_train.shape[0], "get df_tmp:", df_tmp.shape[0], '\n')
-            
-            df_ll.append(df_tmp)
+                print("gen===>")
+                print("1:1 ==>", content_syn_1_1)
+                print("1:0 ==>", content_syn_1_0)
+                print("0:1 ==>", content_syn_0_1)
+                print("0:0 ==>", content_syn_0_0)
 
-        df_syn_tmp = pd.concat(df_ll)[ds.df_train.columns]
+                infos.append((content_syn_1_1, row['label_name'], row['label'], '11'))
+                infos.append((content_syn_1_0, row['label_name'], row['label'], '10'))
+                infos.append((content_syn_0_1, row['label_name'], row['label'], '01'))
+                infos.append((content_syn_0_0, row['label_name'], row['label'], '00'))
 
-        print("final generated==>", df_syn_tmp.shape[0], ds.df_train.shape[0])
+        df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
 
-        # if 'no' in filter_list:
-        #     buffer.append((generated_text, label, label_name, 0))
-        # else:                    
-        #     if 'nli' in filter_list:
-        #         nli_check, nli_score = nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev)
-        #     else:
-        #         nli_check, nli_score = 1, 1
-
-        #     if 'cls' in filter_list:  
-        #         cls_check, cls_score =  bertcls_classify(generated_text, label_name)  
-        #     else:
-        #         cls_check, cls_score = 1, 1            
-                    
-        #     if 'enc' in filter_list: # acc: 0.82
-        #         enc_check, enc_score = enc_classify(generated_text, label, enc_dic)
-        #     else:
-        #         enc_check, enc_score = 1, 1
-
-        #     if 'nsp' in filter_list:
-        #         nsp_check, nsp_score = nsp_classify(ds, generated_text, label_name)
-        #     else:
-        #         nsp_check, nsp_score = 1, 1
-
-        #     if nli_check and cls_check and enc_check and nsp_check:
-        #         buffer.append((generated_text, label, label_name, \
-        #                         nli_score * cls_score * enc_score * nsp_score ))
-        #     print("\nfiltering {}==>".format(ii), generated_text.replace('\n',' '), '\n', \
-        #         'label==>', label_name, '\n', \
-        #         'judge==>nli{}-cls{}-enc{}-nsp{}____{}-{}-{}-{}'\
-        #         .format(nli_check, cls_check, enc_check, nsp_check, nli_score, cls_score, enc_score, nsp_score),'\n' )
+        print("final generated==>", df_synthesize.shape[0], ds.df_train.shape[0], df_synthesize.shape[0]/ds.df_train.shape[0])
 
         if 'dvrl' in args.filter:
             # trim to balance the samples
@@ -680,12 +639,11 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             print("dvrl_cost_sec:", (t1-t0)/3600, "hour" )
             df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
 
-        assert df_syn_tmp['label'].value_counts().min() >= args.samplecnt
-        df_syn_balance = sample_stratify(df_syn_tmp, args.samplecnt )
-        print("df_syn_balance ==> of {}".format(args.samplecnt) )
-        print(df_syn_balance['label_name'].value_counts())
-        samples_syn = df_syn_balance[['content','label']].values
-            
+        assert df_synthesize['fmark', 'label_name'].value_counts().min() >= args.samplecnt
+        #df_syn_balance = sample_stratify(df_syn_tmp, args.samplecnt )
+        print("samplecnt==> {}".format(args.samplecnt) )
+        print(df_synthesize['fmark', 'label_name'].value_counts())
+
     
     elif args.aug == 'eda':
         aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
@@ -909,14 +867,16 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         samples_syn.append((new_str, int(label_list[seg[0].item()])  ))
         
     else:
-        raise KeyError("args.aug model illegal!")        
-    print('samples_syn done...')
-    df_synthesize = pd.DataFrame(samples_syn, columns = ['content','label'])
-    df_synthesize['label'] = df_synthesize['label'].astype(int)
-    aug_ratio_actual = df_synthesize.shape[0] / ds.df_train.shape[0] 
-    print("aug_ratio_actual==>", aug_ratio_actual)
-    for ix, row in df_synthesize.iterrows():
-        print('final_sample {}==> {}'.format(ixl[row['label']], row['content'].strip().replace('\n',' ') ) )
+        raise KeyError("args.aug model illegal!")   
+
+    
+    # print('samples_syn done...')
+    # df_synthesize = pd.DataFrame(samples_syn, columns = ['content','label'])
+    # df_synthesize['label'] = df_synthesize['label'].astype(int)
+    # aug_ratio_actual = df_synthesize.shape[0] / ds.df_train.shape[0] 
+    # print("aug_ratio_actual==>", aug_ratio_actual)
+        #for ix, row in df_synthesize.iterrows():
+         #   print('final_sample {}==> {}'.format(ixl[row['label']], row['content'].strip().replace('\n',' ') ) )
     return df_synthesize 
 
 
@@ -930,27 +890,24 @@ for augi in range(args.max_aug_times):
     df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
     syn_df_ll.append(df_synthesize)
 
+
+ds.df_train['fmark'] = '9'
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
 
 
-acc_aug, _ = thread_testing(args.testvalid, df_train_aug, ds.df_test)
+for fmark in ['11','10','01','00']:
+    acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['9',fmark])], ds.df_test)
+
+    if acc_noaug > 0:
+        gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
+    else:
+        gain = -1
 
 
+    summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
+        ['fmark:{} acc_base:{} acc_aug:{} gain:{} '.format(fmark, acc_noaug, acc_aug, gain )]
 
 
-
-
-
-if acc_noaug > 0:
-    gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
-else:
-    gain = -1
-
-
-summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-    ['acc_base:{} acc_aug:{} gain:{} '.format(acc_noaug, acc_aug, gain )]
-
-
-record_log('log__{}'.format("_".join(args.filter)), summary)
-print('success', ' '.join(summary))
+    record_log('log__{}'.format("_".join(args.filter)), summary)
+    print('success', ' '.join(summary))

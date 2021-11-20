@@ -28,21 +28,14 @@ do
 		do
 			for genft in no #ep #pp tc
 			do
-				for dpfuture_switch in 1 0
+				for filter in mc #mc,dvrl #nli enc nsp
 				do
-					for dpfuture_cls_switch in 1 0 
-					do
-						for filter in mc #mc,dvrl #nli enc nsp
-						do
-						python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${samplecnt} --aug generate \
-						      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
-						      --valid_files_cnt 16  --threads 16 --testvalid test \
-						      --dpfuture_switch ${dpfuture_switch} --dpfuture_cls_switch ${dpfuture_cls_switch} \
-						      --candidates ${candidates} --test_beams ${test_beams} --cls_score_thres 0.8 \
-						       --gpu ${gpu} \
-		> ./log_arxiv_dpfuture_dvrl/${dsn}.generate.${samplecnt}.max_aug_times.${samplecnt}.genm.${genm}.genft.${genft}.dpfuture_switch.${dpfuture_switch}.dpfuture_cls_switch.${dpfuture_cls_switch}.filter.${filter}.${seed}.log 2>&1
-						done
-					done
+				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+				      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
+				      --valid_files_cnt 16  --threads 16 --testvalid test \
+				      --candidates ${candidates} --test_beams ${test_beams} --cls_score_thres 0.8 \
+				       --gpu ${gpu} \
+> ./log_arxiv_dpfuture_dvrl/${dsn}.generate.${samplecnt}.${max_aug_times}.${genm}.${genft}.filter.${filter}.${seed}.log 2>&1
 				done
 			done
 		done

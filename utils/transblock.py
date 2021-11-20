@@ -293,8 +293,8 @@ def do_train_test_thread(df_train, df_test,  best_test_accs, models, di,  epochs
     x_train, y_train = get_keras_data(df_train)
     x_test, y_test = get_keras_data(df_test)
 
-    with tf.distribute.MirroredStrategy().scope():
-    #with tf.device('/GPU:0'):
+    #with tf.distribute.MirroredStrategy().scope():
+    with tf.device('/GPU:0'):
         if model_name == 'albert':
             model = get_model_bert(df_test.label.unique().shape[0])
             

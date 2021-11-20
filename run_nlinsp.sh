@@ -27,20 +27,14 @@ do
 		do
 			for genft in no #ep #pp tc
 			do
-				for nli_switch in 1 0
-				do
-					for nsp_switch in 1 0 
-					do
-					python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-					      --genft ${genft}  --genm ${genm} --filter nli,nsp --seed ${seed} \
+				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+					      --genft ${genft}  --genm ${genm} --filter nlinsp --seed ${seed} \
 					      --testvalid test \
-					      --nsp_switch ${nsp_switch} --nli_switch ${nli_switch} \
 					      --candidates ${candidates} \
 					       --gpu ${gpu} \
-		> ./log_arxiv_nlinsp/${dsn}.generate.${samplecnt}.${max_aug_times}.${genm}.${genft}.nli_switch.${nli_switch}.nsp_switch.${nsp_switch}.filter.nlinsp.${seed}.log 2>&1
+		> ./log_arxiv_nlinsp/${dsn}.generate.${samplecnt}.${max_aug_times}.${genm}.${genft}.filter.nlinsp.${seed}.log 2>&1
 						
-					done
-				done
+
 			done
 		done
         ## end 
