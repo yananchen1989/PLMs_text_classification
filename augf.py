@@ -498,8 +498,8 @@ def dpfuture_gen(row, future_steps, candidates, test_beams, headcnt, model_cls,\
 def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, headcnt, candidates):
     ners = get_ners(row['content'])
     labels_candidates = [row['label_name']] + ners
-    #print(row['content'])
-    #print(labels_candidates)
+    print(row['content'])
+    print(labels_candidates)
 
     result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn] , \
                                     do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
@@ -507,7 +507,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, he
                                     clean_up_tokenization_spaces=True)
 
     contents_syn = [ii['generated_text'] for ii in result_gpt]
-    nli_result = nli_nlp(contents_syn,  list(labels_candidates), multi_label=True, hypothesis_template="This text is about {}.")
+    nli_result = nli_nlp(contents_syn,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
     nli_scores = [np.array(r['scores']).mean() for r in nli_result]    
 
     pairs = [[row['content'], sent] for sent in contents_syn]
