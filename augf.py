@@ -434,14 +434,13 @@ def dvrl_inner_join(files):
 
     return df_merge
 
+if 'mc' in args.filter:
+    with tf.distribute.MirroredStrategy().scope():
+        model_cls_full = get_model_bert(ds.df_test.label.unique().shape[0])
+    model_cls_full.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
-with tf.distribute.MirroredStrategy().scope():
-    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
-
-def dpfuture_gen(row, future_steps, candidates, test_beams, headcnt, model_cls,\
-                 dpfuture_switch, dpfuture_cls_switch):
+def dpfuture_gen(row, future_steps, candidates, test_beams, headcnt, model_cls,  dpfuture_switch, dpfuture_cls_switch):
     # for each single sample
     tokens_len_ori = tokenizer_gpt2.encode(row['content'], return_tensors="pt").shape[1]
     result_0 = gen_nlp([row['content']], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
@@ -502,7 +501,6 @@ def dpfuture_gen(row, future_steps, candidates, test_beams, headcnt, model_cls,\
 def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, headcnt, candidates):
     ners = get_ners(row['content'])
     labels_candidates = [row['label_name']] + ners
-    print("ori====>", row['content'])
     print(labels_candidates)
 
     result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn] , \
@@ -593,17 +591,19 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         df_ll = []
         for ix, row in ds.df_train.reset_index().iterrows():
             torch.cuda.empty_cache()
+            print("ori====>", row['content'], "<===", row['label_name'])
             row['content'] = decorate_sent(row['content'], row['label_name'])
             if 'mc' in args.filter:
                 df_tmp = dpfuture_gen(row, args.future_steps, args.candidates, \
-                                args.test_beams, args.num_return_sequences, model_cls, \
+                                args.test_beams, args.num_return_sequences, model_cls_full, \
                                 args.dpfuture_switch, args.dpfuture_cls_switch)
 
             elif 'nli' in args.filter and 'nsp' in args.filter:
                 df_tmp = nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, \
                                     args.nli_switch, args.nsp_switch, args.num_return_sequences, args.candidates)
 
-            print("dp gen==>", ix, 'of', ds.df_train.shape[0],  "get:", df_tmp.shape[0], "of ", args.num_return_sequences)
+            print("gen===>", df_tmp['content'].tolist() )
+            print("gen==>", ix, 'of', ds.df_train.shape[0],  "get:", df_tmp.shape[0], "of ", args.num_return_sequences, '\n')
             
             df_ll.append(df_tmp)
 
