@@ -258,11 +258,11 @@ if args.aug == 'generate':
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
         model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
-        nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
+        nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-2)
 
     if 'nsp' in args.filter:
         with tf.distribute.MirroredStrategy().scope():
-            model_cls_pair  = get_model_nsp(512)
+            model_cls_pair  = get_model_nsp(256)
     
     if 'enc' in args.filter or 'dvrl' in args.filter:
         enc = encoder('cmlm-large')
