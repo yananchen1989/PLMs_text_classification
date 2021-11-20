@@ -40,7 +40,7 @@ do
 						      --dpfuture_switch ${dpfuture_switch} --dpfuture_cls_switch ${dpfuture_cls_switch} \
 						      --candidates ${candidates} --test_beams ${test_beams} --cls_score_thres 0.8 \
 						       --gpu ${gpu} \
-		> ./log_arxiv_dpfuture_dvrl/${dsn}.generate.${samplecnt}.max_aug_times.${samplecnt} .genm.${genm}.genft.${genft}.dpfuture_switch.${dpfuture_switch}.dpfuture_cls_switch.${dpfuture_cls_switch}.filter.${filter}.${seed}.log 2>&1
+		> ./log_arxiv_dpfuture_dvrl/${dsn}.generate.${samplecnt}.max_aug_times.${samplecnt}.genm.${genm}.genft.${genft}.dpfuture_switch.${dpfuture_switch}.dpfuture_cls_switch.${dpfuture_cls_switch}.filter.${filter}.${seed}.log 2>&1
 						done
 					done
 				done
