@@ -37,16 +37,16 @@ parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't
 parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
 
 # dpfuture
-parser.add_argument("--dpfuture_switch", default=0, type=int)
-parser.add_argument("--dpfuture_cls_switch", default=0, type=int)
+#parser.add_argument("--dpfuture_switch", default=0, type=int)
+#parser.add_argument("--dpfuture_cls_switch", default=0, type=int)
 parser.add_argument("--future_steps", default=64, type=int)
 parser.add_argument("--test_beams", default=64, type=int)
 parser.add_argument("--candidates", default=64, type=int)
 parser.add_argument("--cls_score_thres", default=0.8, type=float)
 
 # nsp nli
-parser.add_argument("--nli_switch", default=0, type=int)
-parser.add_argument("--nsp_switch", default=0, type=int)
+# parser.add_argument("--nli_switch", default=0, type=int)
+# parser.add_argument("--nsp_switch", default=0, type=int)
 
 #parser.add_argument("--num_return_sequences", default=4, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
@@ -511,14 +511,11 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     df_tmp['score'] = df_tmp['nli_score'].map(lambda x: math.log(x)) + df_tmp['nsp_score'].map(lambda x: math.log(x))
 
-    if args.nli_switch and args.nsp_switch:
-        content_syn_1_1 = df_tmp.sort_values(by=['score'], ascending=False).head(1)['content'].tolist()[0] 
-    elif args.nli_switch and not args.nsp_switch:
-        content_syn_1_0 = df_tmp.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
-    elif not args.nli_switch and args.nsp_switch:
-        content_syn_0_1 = df_tmp.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
-    else:
-        content_syn_0_0 = df_tmp.sample(1)['content'].tolist()[0] 
+
+    content_syn_1_1 = df_tmp.sort_values(by=['score'], ascending=False).head(1)['content'].tolist()[0] 
+    content_syn_1_0 = df_tmp.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
+    content_syn_0_1 = df_tmp.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
+    content_syn_0_0 = df_tmp.sample(1)['content'].tolist()[0] 
 
     return content_syn_1_1, content_syn_1_0, content_syn_0_1, content_syn_0_0
 
