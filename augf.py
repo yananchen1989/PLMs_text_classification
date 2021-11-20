@@ -583,7 +583,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             
             row['content'] = decorate_sent(args.genm, args.genft, row['content'], row['label_name'])
             torch.cuda.empty_cache()
-
+            print("ori===>", row['content'])
             if 'mc' in args.filter:
                 df_tmp = dpfuture_gen(row, args.future_steps, args.candidates, \
                                 args.test_beams, args.num_return_sequences, model_cls, \

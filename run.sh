@@ -1,5 +1,5 @@
 gpu=${1}
-while true
+for i in {1..10}
 do
 	seed=$RANDOM
 	#seed=$(date +"%T")
