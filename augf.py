@@ -595,13 +595,13 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                 df_tmp = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
 
             print("gen===>", df_tmp['content'].tolist() )
-            print("gen==>", ix, 'of', ds.df_train.shape[0],  "get:", df_tmp.shape[0], "of ", args.num_return_sequences, '\n')
+            print("gen==>", ix, 'of', ds.df_train.shape[0], "get df_tmp:", df_tmp.shape[0], '\n')
             
             df_ll.append(df_tmp)
 
         df_syn_tmp = pd.concat(df_ll)[ds.df_train.columns]
 
-        print("dpfuture generated==>", df_syn_tmp.shape[0], ds.df_train.shape[0] * args.num_return_sequences)
+        print("final generated==>", df_syn_tmp.shape[0], ds.df_train.shape[0])
 
         # if 'no' in filter_list:
         #     buffer.append((generated_text, label, label_name, 0))

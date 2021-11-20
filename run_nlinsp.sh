@@ -31,16 +31,14 @@ do
 				do
 					for nsp_switch in 1 0 
 					do
-						for filter in nli,nsp #dvrl #nli enc nsp
-						do
-						python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-						      --genft ${genft}  --genm ${genm} --filter ${filter} --seed ${seed} \
-						      --testvalid test \
-						      --nsp_switch ${nsp_switch} --nli_switch ${nli_switch} \
-						      --candidates ${candidates} \
-						      --num_return_sequences 1 --gpu ${gpu} \
-		> ./log_arxiv_dpfuture_dvrl/${dsn}.generate.3${samplecnt}.max_aug_times.${max_aug_times}.genm.${genm}.genft.${genft}.dpfuture_switch.${dpfuture_switch}.dpfuture_cls_switch.${dpfuture_cls_switch}.filter.${filter}.${seed}.log 2>&1
-						done
+					python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+					      --genft ${genft}  --genm ${genm} --filter nli,nsp --seed ${seed} \
+					      --testvalid test \
+					      --nsp_switch ${nsp_switch} --nli_switch ${nli_switch} \
+					      --candidates ${candidates} \
+					       --gpu ${gpu} \
+		> ./log_arxiv_nlinsp/${dsn}.generate.3${samplecnt}.max_aug_times.${max_aug_times}.genm.${genm}.genft.${genft}.dpfuture_switch.${dpfuture_switch}.dpfuture_cls_switch.${dpfuture_cls_switch}.filter.${filter}.${seed}.log 2>&1
+						
 					done
 				done
 			done
