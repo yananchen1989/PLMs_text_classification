@@ -501,7 +501,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, he
     #print(row['content'])
     #print(labels_candidates)
 
-    result_gpt = gen_nlp([row['content']], max_length=args.dsn_maxlen[args.dsn] , \
+    result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn] , \
                                     do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                     repetition_penalty=1.2, num_return_sequences=candidates,\
                                     clean_up_tokenization_spaces=True)
