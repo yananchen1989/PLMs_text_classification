@@ -580,7 +580,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
         df_ll = []
         for ix, row in ds.df_train.reset_index().iterrows():
-            
+            print("ori===>", row['content'])
             row['content'] = decorate_sent(args.genm, args.genft, row['content'], row['label_name'])
             torch.cuda.empty_cache()
             print("ori===>", row['content'])
