@@ -574,7 +574,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                 print("1:0 ==>", content_syn_1_0)
                 print("0:1 ==>", content_syn_0_1)
                 print("0:0 ==>", content_syn_0_0)
-
+                print('\n')
                 infos.append((content_syn_1_1, row['label_name'], row['label'], '11'))
                 infos.append((content_syn_1_0, row['label_name'], row['label'], '10'))
                 infos.append((content_syn_0_1, row['label_name'], row['label'], '01'))

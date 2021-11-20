@@ -16,25 +16,25 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 
 
-python -u augf.py --dsn uci --samplecnt 32 --max_aug_times 1 --aug generate \
-                     --genft no  --genm gpt --filter mc --seed 0 \
-                     --valid_files_cnt 16  --threads 16 --testvalid test \
-                     --dpfuture_switch 1 --dpfuture_cls_switch 1 \
-                     --candidates 128 --test_beams 64  \
-                     --testbed 0 \
-                     --num_return_sequences 3 --gpu 6,7 
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+                     --genft no  --genm t5 --filter nlinsp --seed 87 \
+                     --testvalid test \
+                     --candidates 128 \
+                      --gpu 2,3 --epochs 1
 
 
 python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                     --genft no  --genm gpt --filter nlinsp --seed 0 \
-                     --valid_files_cnt 16  --threads 16 --testvalid test \
-                     --nli_switch 1 --nsp_switch 1 \
-                     --candidates 128 --test_beams 64 --cls_score_thres 0.8 \
-                     --testbed 0 \
-                     --num_return_sequences 1 --gpu 0,1
+                     --genft no  --genm gpt --filter nlinsp --seed 87 \
+                     --testvalid test \
+                     --candidates 128 \
+                      --gpu 0,1 --epochs 3
 
 
-
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+                     --genft no  --genm t5 --filter nlinsp --seed 87 \
+                     --testvalid test \
+                     --candidates 128 \
+                      --gpu 5,6 --epochs 3
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 
