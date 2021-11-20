@@ -530,32 +530,32 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, he
     df_tmp['label_name'] = row['label_name']   
     return df_tmp.head(headcnt)[['content','label','label_name']]
 
-def decorate_sent(genm, genft, content, label_name):
-    if genm == 'gpt':
-        if genft == 'lambda':
+def decorate_sent(content, label_name):
+    if args.genm == 'gpt':
+        if args.genft == 'lambda':
             prompt = '[{}]'.format(label_name) +  ' '.join(content.split(' ')[:3] )
 
-        elif genft in ['tc', 'pp']:
+        elif args.genft in ['tc', 'pp']:
             prompt = '{} {}'.format(content, tokenizer_gpt2.sep_token)
 
-        elif genft in ['ep']:
+        elif args.genft in ['ep']:
             ners = get_ners(content)
             ners_join = '<=>'.join(ners)
             prompt = ners_join + tokenizer_gpt2.sep_token
         else:
             prompt = content
 
-    elif genm == 'ctrl':
+    elif args.genm == 'ctrl':
         prompt = "Links in {}. ".format(content)
         
-    elif genm == 't5':
-        if genft in ['ep']:
+    elif args.genm == 't5':
+        if args.genft in ['ep']:
             ners = get_ners(content)
             ners_join = '<=>'.join(ners)
             prompt = ners_join + tokenizer_t5.eos_token
         else:
             prompt = content + tokenizer_t5.eos_token
-
+    return prompt
 
 if 'dvrl' in args.filter:
     args.num_return_sequences = 3
@@ -580,9 +580,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
         df_ll = []
         for ix, row in ds.df_train.reset_index().iterrows():
-            print("ori===>", row['content'])
-            row['content'] = decorate_sent(args.genm, args.genft, row['content'], row['label_name'])
             torch.cuda.empty_cache()
+            row['content'] = decorate_sent(row['content'], row['label_name'])
             print("ori===>", row['content'])
             if 'mc' in args.filter:
                 df_tmp = dpfuture_gen(row, args.future_steps, args.candidates, \
