@@ -258,7 +258,7 @@ if args.aug == 'generate':
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
         model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
-        nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-2)
+        nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
     if 'nsp' in args.filter:
         with tf.distribute.MirroredStrategy().scope():
@@ -507,9 +507,17 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, he
                                     clean_up_tokenization_spaces=True)
 
     contents_syn = [ii['generated_text'] for ii in result_gpt]
-    nli_result = nli_nlp(contents_syn,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-    nli_scores = [np.array(r['scores']).mean() for r in nli_result]    
-
+    assert len(contents_syn) == candidates
+    # get nli score
+    nli_scores = []
+    fbs = 8
+    for ix in range(0, len(contents_syn), fbs):
+        contents_syn_ix = contents_syn[ix:ix+fbs]
+        nli_result = nli_nlp(contents_syn_ix,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
+        nli_scores.extend(nli_scores_ix)
+        
+    # get nsp score
     pairs = [[row['content'], sent] for sent in contents_syn]
     pairs_ids = get_ids(pairs, 256, tokenizer_bert )
     preds = model_cls_pair.predict(pairs_ids, batch_size=8)
