@@ -45,6 +45,10 @@ parser.add_argument("--test_beams", default=64, type=int)
 parser.add_argument("--candidates", default=64, type=int)
 parser.add_argument("--cls_score_thres", default=0.8, type=float)
 
+# nsp nli
+parser.add_argument("--nli_switch", default=0, type=int)
+parser.add_argument("--nsp_switch", default=0, type=int)
+
 parser.add_argument("--num_return_sequences", default=4, type=int)
 
 #parser.add_argument("--abundance", default=1, type=int)
@@ -65,7 +69,7 @@ parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 print('args==>', args)
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-
+args.filter = args.filter.split(',')
 
 import numpy as np
 import tensorflow as tf
@@ -79,16 +83,12 @@ from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
 from threading import Thread
-
-
 #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
 #tf.keras.backend.set_floatx('float16')
 import nltk 
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
 #nltk.download('wordnet')
 gpus = tf.config.list_physical_devices('GPU')
-
-
 print('======>',gpus,'<=======')
 if gpus:
   try:
@@ -108,6 +108,7 @@ from utils.transblock import *
 from utils.encoders import *
 from utils.cbert_cgpt_config import * 
 #from utils.dpp_model import * 
+from utils.flair_ners import *
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 ds, proper_len = process_ds(ds, 128)
@@ -120,9 +121,6 @@ ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplica
 #seed = random.sample(list(range(10000)), 1)[0]
 
 testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
-
-
-
 def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
@@ -252,21 +250,21 @@ if args.aug == 'generate':
 
     print('generate model loaded ==>{}'.format(args.genm))
 
-    dsn_maxlen = {'uci':64, 'ag':args.maxlen, 'nyt':args.maxlen, 'amazon2':args.maxlen, 'yelp2':args.maxlen}
+    dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
     ####################### filter setting ######################
-    if 'nli' == args.filter: 
+    if 'nli' in args.filter: 
         #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=1) #  1.8.1+cu102
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
         model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
-    if 'nsp' == args.filter:
+    if 'nsp' in args.filter:
         with tf.distribute.MirroredStrategy().scope():
             model_cls_pair  = get_model_nsp(512)
     
-    if 'enc' == args.filter or 'dvrl' == args.filter:
+    if 'enc' in args.filter or 'dvrl' in args.filter:
         enc = encoder('cmlm-large')
         enc_dic = {}
         for l in ds.df_train['label'].unique():
@@ -274,7 +272,7 @@ if args.aug == 'generate':
             embeds = enc.infer(contents_)
             enc_dic[l] = embeds
 
-    if 'dvrl' == args.filter:
+    if 'dvrl' in args.filter:
         os.makedirs('dvrl_np_array', exist_ok=True)
         
     print('filter==> {} model loaded'.format(args.filter))
@@ -438,11 +436,11 @@ with tf.distribute.MirroredStrategy().scope():
 model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 
-def dpfuture_gen(sent, label, label_name, future_steps, candidates, test_beams, dp_headcnt, model_cls,\
+def dpfuture_gen(row, future_steps, candidates, test_beams, headcnt, model_cls,\
                  dpfuture_switch, dpfuture_cls_switch):
     # for each single sample
-    tokens_len_ori = tokenizer_gpt2.encode(sent, return_tensors="pt").shape[1]
-    result_0 = gen_nlp([sent], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+    tokens_len_ori = tokenizer_gpt2.encode(row['content'], return_tensors="pt").shape[1]
+    result_0 = gen_nlp([row['content']], max_length=tokens_len_ori + future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                                 repetition_penalty=1.2, num_return_sequences=candidates, clean_up_tokenization_spaces=True)
     
     if not dpfuture_switch:
@@ -472,7 +470,7 @@ def dpfuture_gen(sent, label, label_name, future_steps, candidates, test_beams, 
         losses = []
         for j in range(0, len(all_results), test_beams):
             preds_j = preds[j:j+test_beams]
-            y_j = np.array([label] * preds_j.shape[0])
+            y_j = np.array([row['label']] * preds_j.shape[0])
             loss = tf.keras.losses.sparse_categorical_crossentropy(y_j, preds_j)
             loss_mean = loss.numpy().mean()
             losses.append(loss_mean)
@@ -483,18 +481,54 @@ def dpfuture_gen(sent, label, label_name, future_steps, candidates, test_beams, 
 
     assert df_future.shape[0] == candidates
     preds = model_cls.predict(df_future['content'].values, batch_size= 16, verbose=0)
-    df_future['cls_score'] = preds[:, label] 
+    df_future['cls_score'] = preds[:, row['label']] 
     df_future['cls_label'] = preds.argmax(axis=1)
     df_future.sort_values(by=['cls_label'], ascending=False, inplace=True) 
-    df_future['label'] = label
-    df_future['label_name'] = label_name    
+    df_future['label'] = row['label']
+    df_future['label_name'] = row['label_name']   
 
     if dpfuture_cls_switch:
-        return df_future.loc[(df_future['cls_label']==label) & (df_future['cls_score']>=args.cls_score_thres)]\
-                    .head(dp_headcnt)[['content','label','label_name']]
+        return df_future.loc[(df_future['cls_label']==row['label']) & (df_future['cls_score']>=args.cls_score_thres)]\
+                    .head(headcnt)[['content','label','label_name']]
     else:
         return df_future.sample(frac=1)\
-                    .head(dp_headcnt)[['content','label','label_name']]
+                    .head(headcnt)[['content','label','label_name']]
+
+
+def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, headcnt, candidates):
+    ners = get_ners(row['content'])
+    labels_candidates = [row['label_name']] + ners
+    #print(row['content'])
+    #print(labels_candidates)
+
+    result_gpt = gen_nlp([row['content']], max_length=args.dsn_maxlen[args.dsn] , \
+                                    do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                    repetition_penalty=1.2, num_return_sequences=candidates,\
+                                    clean_up_tokenization_spaces=True)
+
+    contents_syn = [ii['generated_text'] for ii in result_gpt]
+    nli_result = nli_nlp(contents_syn,  list(labels_candidates), multi_label=True, hypothesis_template="This text is about {}.")
+    nli_scores = [np.array(r['scores']).mean() for r in nli_result]    
+
+    pairs = [[row['content'], sent] for sent in contents_syn]
+    pairs_ids = get_ids(pairs, 512, tokenizer_bert )
+    preds = model_cls_pair.predict(pairs_ids, batch_size=128)
+    nsp_scores = preds[:,0]
+
+    df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
+
+    df_tmp['score'] = df_tmp['nli_score'].map(lambda x: math.log(x)) + df_tmp['nsp_score'].map(lambda x: math.log(x))
+    if nli_switch and nsp_switch:
+        df_tmp.sort_values(by=['score'], ascending=False, inplace=True) 
+    elif nli_switch and not nsp_switch:
+        df_tmp.sort_values(by=['nli_score'], ascending=False, inplace=True) 
+    elif not nli_switch and nsp_switch:
+        df_tmp.sort_values(by=['nsp_score'], ascending=False, inplace=True) 
+    else:
+        df_tmp = df_tmp.sample(frac=1)
+    df_tmp['label'] = row['label']
+    df_tmp['label_name'] = row['label_name']   
+    return df_tmp.head(headcnt)[['content','label','label_name']]
 
 def decorate_sent(genm, genft, content, label_name):
     if genm == 'gpt':
@@ -506,7 +540,7 @@ def decorate_sent(genm, genft, content, label_name):
 
         elif genft in ['ep']:
             ners = get_ners(content)
-            ners_join'<=>'.join(ners)
+            ners_join = '<=>'.join(ners)
             prompt = ners_join + tokenizer_gpt2.sep_token
         else:
             prompt = content
@@ -517,11 +551,16 @@ def decorate_sent(genm, genft, content, label_name):
     elif genm == 't5':
         if genft in ['ep']:
             ners = get_ners(content)
-            ners_join'<=>'.join(ners)
+            ners_join = '<=>'.join(ners)
             prompt = ners_join + tokenizer_t5.eos_token
         else:
             prompt = content + tokenizer_t5.eos_token
 
+
+if 'dvrl' in args.filter:
+    args.num_return_sequences = 3
+else:
+    args.num_return_sequences = 1
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
 
@@ -539,22 +578,26 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         #     for v in ln_extend.values():
         #         labels_candidates.update(v)   
 
-        df_dpfuture_ll = []
+        df_ll = []
         for ix, row in ds.df_train.reset_index().iterrows():
             
-            sent = row['content']
-            label = row['label']
-            label_name = row['label_name']
+            row['content'] = decorate_sent(args.genm, args.genft, row['content'], row['label_name'])
             torch.cuda.empty_cache()
 
-            df_tmp_dpfuture = dpfuture_gen(sent, label, label_name, args.future_steps, args.candidates, \
+            if 'mc' in args.filter:
+                df_tmp = dpfuture_gen(row, args.future_steps, args.candidates, \
                                 args.test_beams, args.num_return_sequences, model_cls, \
                                 args.dpfuture_switch, args.dpfuture_cls_switch)
-            print("dpfuture==>", ix, 'of', ds.df_train.shape[0], \
-                    "get:", df_tmp_dpfuture.shape[0], "of ", args.num_return_sequences)
-            df_dpfuture_ll.append(df_tmp_dpfuture)
 
-        df_syn_tmp = pd.concat(df_dpfuture_ll)[ds.df_train.columns]
+            elif 'nli' in args.filter and 'nsp' in args.filter:
+                df_tmp = nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, \
+                                    args.nli_switch, args.nsp_switch, args.num_return_sequences, args.candidates)
+
+            print("gen==>", ix, 'of', ds.df_train.shape[0], \
+                    "get:", df_tmp.shape[0], "of ", args.num_return_sequences)
+            df_ll.append(df_tmp)
+
+        df_syn_tmp = pd.concat(df_ll)[ds.df_train.columns]
 
         print("dpfuture generated==>", df_syn_tmp.shape[0], ds.df_train.shape[0] * args.num_return_sequences)
 
@@ -589,16 +632,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         #         'judge==>nli{}-cls{}-enc{}-nsp{}____{}-{}-{}-{}'\
         #         .format(nli_check, cls_check, enc_check, nsp_check, nli_score, cls_score, enc_score, nsp_score),'\n' )
 
-
-        # samples_syn_all.extend(buffer)
-        # print('gen_itr:', itr , 'filter_ratio:', len(buffer) / (ds.df_train.shape[0]*args.num_return_sequences) )
-
-        # df_syn_tmp = pd.DataFrame(samples_syn_all, columns=['content','label','label_name','score'])
-        # print(df_syn_tmp['label_name'].value_counts())
-
-        #if df_syn_tmp['label_name'].value_counts().values.min() >= args.samplecnt * args.abundance:
-            
-        if 'dvrl' == args.filter:
+        if 'dvrl' in args.filter:
             # trim to balance the samples
             #df_syn_tmp = sample_stratify(df_syn_tmp, args.samplecnt * args.abundance)
 

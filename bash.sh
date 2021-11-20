@@ -16,24 +16,29 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 
 
-nohup python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1 --aug generate \
-                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2  --testbed 0 \
-                 --valid_files_cnt 16  --threads 8 --dpfuture_switch 1 --dpfuture_cls_switch 1 \
-                  --num_return_sequences 8 --gpu 6,7  augf.test.log & 
+python -u augf.py --dsn uci --samplecnt 32 --max_aug_times 1 --aug generate \
+                     --genft no  --genm gpt --filter no --seed 0 \
+                     --valid_files_cnt 16  --threads 16 --testvalid test \
+                     --dpfuture_switch 1 --dpfuture_cls_switch 1 \
+                     --candidates 128 --test_beams 64 --cls_score_thres 0.8 \
+                     --num_return_sequences 3 --gpu 0,1 
 
 
-python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1 --aug generate \
-                 --genft no  --genm gpt --filter dvrl --seed 0  --epochs 2  --testbed 0 \
-                 --valid_files_cnt 16  --threads 8 --dpfuture_switch 0 --dpfuture_cls_switch 1 \
-                  --num_return_sequences 3 --gpu 0,1
-
+python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 --aug generate \
+                     --genft no  --genm gpt --filter nsp,nli --seed 0 \
+                     --valid_files_cnt 16  --threads 16 --testvalid test \
+                     --nli_switch 1 --nsp_switch 1 \
+                     --candidates 128 --test_beams 64 --cls_score_thres 0.8 \
+                     --testbed 0 \
+                     --num_return_sequences 1 
 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
-nohup bash run.sh 1 128 3 8 0,1 &
-nohup bash run.sh 1 128 3 8 2,3 &
-nohup bash run.sh 1 128 3 8 4,5 &
-nohup bash run.sh 1 128 3 8 6,7 &
+nohup bash run.sh  0,1 &
+nohup bash run.sh  2,3 &
+nohup bash run.sh  4,5 &
+nohup bash run.sh  6,7 &
+
 
 
 
@@ -44,15 +49,6 @@ nohup python -u rltoken.py  --gpu 2,3  --alpha 0.5 --future_steps 32 --beams 128
 nohup python -u rltoken.py  --gpu 4,5  --alpha 0.1 --future_steps 32 --beams 128 > rltoken.0p1.log &
 
 nohup python -u aug_ppo.py > aug_ppo.log & 
-
-
-
-
-
-
-nohup bash run_dp.sh uci 1 1024 256 256 0 &
-nohup bash run_dp.sh uci 1 1024 256 256 1 & 
-nohup bash run_dp.sh uci 1 1024 256 256 6 & 
 
 
 nohup python -u test_dpfuture.py --dsn uci --gpu 4 > test_dpfuture.uci.log & 

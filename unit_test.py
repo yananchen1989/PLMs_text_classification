@@ -38,13 +38,22 @@ sent = "Virus to cause spike in pork prices"
 ############## whole token generation ############  
 
 
+from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+tokenizer_gpt2.sep_token = '<|sep|>'
+#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+print(tokenizer_gpt2)
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_ft_ep')
+
+gpt2.trainable = False
+gpt2.config.pad_token_id = 50256
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
 
-
-
-
-
-
+ds = load_data(dataset='uci', samplecnt= -1)
 
 
 
