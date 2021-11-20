@@ -111,6 +111,10 @@ from utils.cbert_cgpt_config import *
 from utils.flair_ners import *
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+
+if args.dsn in ['ag', 'agt']:
+    ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
+
 ds, proper_len = process_ds(ds, 128)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.punctuation))
 
@@ -516,7 +520,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, nli_switch, nsp_switch, he
         nli_result = nli_nlp(contents_syn_ix,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
         nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
         nli_scores.extend(nli_scores_ix)
-        
+
     # get nsp score
     pairs = [[row['content'], sent] for sent in contents_syn]
     pairs_ids = get_ids(pairs, 256, tokenizer_bert )
@@ -599,8 +603,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                 df_tmp = nlinsp_gen(row, gen_nlp, nli_nlp, model_cls_pair, \
                                     args.nli_switch, args.nsp_switch, args.num_return_sequences, args.candidates)
 
-            print("gen==>", ix, 'of', ds.df_train.shape[0], \
-                    "get:", df_tmp.shape[0], "of ", args.num_return_sequences)
+            print("dp gen==>", ix, 'of', ds.df_train.shape[0],  "get:", df_tmp.shape[0], "of ", args.num_return_sequences)
+            
             df_ll.append(df_tmp)
 
         df_syn_tmp = pd.concat(df_ll)[ds.df_train.columns]

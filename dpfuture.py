@@ -70,15 +70,6 @@ def thread_testing(testvalid, df_train, df_test):
 
 
 
-def remove_str(sent):
-    rml = ['(AP)', '(Reuters)', '(Canadian Press)', '&lt;b&gt;...&lt;/b&gt', '(AFP)', '(washingtonpost.com)', \
-                '(NewsFactor)', '(USATODAY.com)', '(Ziff Davis)', '#39;' ]
-    for word in rml:
-        sent = sent.replace(word,'')
-
-    sent.replace(' #39;', "'")
-    return sent.strip(string.punctuation).strip()
-
 if args.dsn =='agt':
     ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 

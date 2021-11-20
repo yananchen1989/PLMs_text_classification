@@ -25,7 +25,15 @@ def noisy_label(l, unique_labels):
     assert l not in unique_labels_
     return random.sample(unique_labels_, 1)[0]
     
+def remove_str(sent):
+    rml = ['(AP)', '(Reuters)', '(Canadian Press)', '&lt;b&gt;...&lt;/b&gt', '(AFP)', '(washingtonpost.com)', \
+                '(NewsFactor)', '(USATODAY.com)', '(Ziff Davis)', '#39;' ]
+    for word in rml:
+        sent = sent.replace(word,'')
 
+    sent.replace(' #39;', "'")
+    return sent.strip(string.punctuation).strip()
+    
 cap = 600
 
 def sample_stratify(df, samplecnt):
