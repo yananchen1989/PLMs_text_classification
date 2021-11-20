@@ -28,8 +28,7 @@ parser.add_argument("--epochs", default=100, type=int)
 #parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 parser.add_argument("--testvalid", default='valid', type=str)
-parser.add_argument("--maxlen", default=256, type=int)
-parser.add_argument("--filter", default="dvrl", type=str)
+parser.add_argument("--filter", default="mc", type=str)
 
 parser.add_argument("--valid_files_cnt", default=16, type=int)
 parser.add_argument("--threads", default=64, type=int)
@@ -49,8 +48,7 @@ parser.add_argument("--cls_score_thres", default=0.8, type=float)
 parser.add_argument("--nli_switch", default=0, type=int)
 parser.add_argument("--nsp_switch", default=0, type=int)
 
-parser.add_argument("--num_return_sequences", default=4, type=int)
-
+#parser.add_argument("--num_return_sequences", default=4, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)

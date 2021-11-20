@@ -10,7 +10,7 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 import pandas as pd 
 infos = []
-for file in ['logb']:
+for file in ['log__mc']:
     with open(file,'r') as f: 
         for line in f:
             if 'summary===>' not in line:
@@ -20,15 +20,24 @@ for file in ['logb']:
             #     continue 
             tokens = line.strip().replace('"','').split(' ') 
             dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens if ':' in ii}
-            if dic['model']!='albert'  or int(dic['testbed'])!=1 or int(dic['samplecnt'])!=32 or int(dic['epochs'])<=10 :
-                continue
-            infos.append((dic['dsn'], dic['aug'], int(dic['max_aug_times']), dic.get('genm','*'), dic.get('genft', '*'), \
-                dic.get('filter', '*'), int(dic.get('valid_files_cnt', -1)), \
-                float(dic['acc_base']), float(dic['acc_aug']), float(dic['gain'].replace('"','')) ))
-                # infos.append((dic['dsn'], dic.get('aug','*'), \
-                # float(dic['acc_base']), float(dic['acc_aug'])))
-df = pd.DataFrame(infos, columns=['dsn','aug', 'max_aug_times', 'genm','genft', 'filter', 
-                    'valid_files_cnt', 'acc_base', 'acc_aug', 'gain'])
+            infos.append(dic)
+
+
+df = pd.DataFrame(infos)
+
+
+for col in ['samplecnt','dpfuture_switch','dpfuture_cls_switch','candidates','test_beams',\
+            'future_steps','threads','valid_files_cnt','nli_switch', 'nsp_switch']:
+    df[col] = df[col].astype('int')
+
+for col in ['acc_base','acc_aug','gain']:
+    df[col] = df[col].astype('float')
+
+df.loc[(df['dsn']=='uci') & (df['samplecnt']==32) & (df['aug']=='generate') \
+        & (df['dpfuture_switch']==1) & (df['dpfuture_cls_switch']==1)][['acc_base','acc_aug','gain']]
+
+
+
 
 print(df.max_aug_times.value_counts())
 max_aug_times_sel = [1]
