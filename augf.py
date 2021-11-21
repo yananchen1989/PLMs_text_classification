@@ -431,7 +431,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
             contents_syn.extend(contents_syn_tmp)
 
         contents_syn_mc_trunk = []
-        fbs_mc = 16
+        fbs_mc = 8
         for ii in range(0, len(contents_syn), fbs_mc):
             result_mc = gen_nlp(contents_syn[ii:ii+fbs_mc], max_length=dsn_maxlen[args.dsn], \
                                             do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
