@@ -52,7 +52,7 @@ parser.add_argument("--candidates", default=64, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="6,7", type=str)
+parser.add_argument("--gpu", default="", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -109,6 +109,7 @@ from utils.cbert_cgpt_config import *
 from utils.flair_ners import *
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 ds, proper_len = process_ds(ds, 128)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
@@ -432,16 +433,19 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
         contents_syn_mc_trunk = []
         fbs_mc = 8
+
         for ii in range(0, len(contents_syn), fbs_mc):
             result_mc = gen_nlp(contents_syn[ii:ii+fbs_mc], max_length=dsn_maxlen[args.dsn], \
                                             do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                             repetition_penalty=1.2, num_return_sequences= args.test_beams,\
                                             clean_up_tokenization_spaces=True)
-            for s in result_mc:
-                samples = [ss['generated_text'] for ss in s ]
-                contents_syn_mc_trunk.extend(samples)
-            #print(len(result_mc))
-
+            if args.genm == 'gpt':
+                for s in result_mc:
+                    samples = [ss['generated_text'] for ss in s ]
+                    contents_syn_mc_trunk.extend(samples)
+            elif args.genm == 't5':
+                contents_syn_mc_trunk.extend([s['generated_text'] for s in result_mc ])
+            
         assert len(contents_syn_mc_trunk) == len(contents_syn) * args.test_beams
         preds = model_cls.predict(np.array(contents_syn_mc_trunk),  batch_size=32, verbose=0) 
 
