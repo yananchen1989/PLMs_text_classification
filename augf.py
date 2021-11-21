@@ -613,8 +613,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             row['content'] = decorate_sent(row['content'], row['label_name'])
 
             content_syn_1_1_1, content_syn_1_1_0, content_syn_1_0_1, content_syn_1_0_0, 
-            content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0
-                                                    = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
+            content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0  = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
 
             print("gen===>")
             print("1::1:1 ==>", content_syn_1_1_1)
