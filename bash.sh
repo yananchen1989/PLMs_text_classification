@@ -9,39 +9,26 @@ nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pa
 
 CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4 \
    --maxlen 256 --ccsample 1 --ftepochs 4 --batch_size 4 > ft.t5.ep.log & 
-
-
-
 nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pattern summary --ccsample 0.1 --gpu 0
 
 
 
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                     --genft no  --genm t5 --filter nlinsp --seed 87 \
-                     --testvalid test \
-                     --candidates 128 \
-                      --gpu 2,3 --epochs 1
 
 
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                     --genft no  --genm gpt --filter nlinsp --seed 87 \
-                     --testvalid test \
-                     --candidates 128 \
-                      --gpu 0,1 --epochs 3
 
 
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                     --genft no  --genm t5 --filter nlinsp --seed 87 \
-                     --testvalid test \
-                     --candidates 128 \
-                      --gpu 5,6 --epochs 3
+nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+                     --genft no  --genm gpt --filter nlinsp --seed 0 \
+                     --testvalid test  --testbed 0 \
+                     --candidates 64 \
+                      --gpu 6,7 > augf.test.log & 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 
 nohup bash run_nlinsp.sh  32 128  0,1 &
 nohup bash run_nlinsp.sh  32 128  2,3 &
-nohup bash run_nlinsp.sh  32 256  4,5 &
-nohup bash run_nlinsp.sh  32 256  6,7 &
+nohup bash run_nlinsp.sh  32 128  4,5 &
+nohup bash run_nlinsp.sh  32 128  6,7 &
 
 
 
