@@ -27,8 +27,8 @@ parser.add_argument("--trunk_size", default=32, type=int)
 parser.add_argument("--epochs", default=100, type=int)
 #parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
-parser.add_argument("--testvalid", default='valid', type=str)
-parser.add_argument("--filter", default="mc", type=str)
+parser.add_argument("--testvalid", default='test', type=str)
+parser.add_argument("--filter", default="nlinsp", type=str)
 
 parser.add_argument("--valid_files_cnt", default=16, type=int)
 parser.add_argument("--threads", default=64, type=int)
@@ -39,10 +39,10 @@ parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','e
 # dpfuture
 #parser.add_argument("--dpfuture_switch", default=0, type=int)
 #parser.add_argument("--dpfuture_cls_switch", default=0, type=int)
-parser.add_argument("--future_steps", default=64, type=int)
+#parser.add_argument("--future_steps", default=64, type=int)
 parser.add_argument("--test_beams", default=64, type=int)
 parser.add_argument("--candidates", default=64, type=int)
-parser.add_argument("--cls_score_thres", default=0.8, type=float)
+#parser.add_argument("--cls_score_thres", default=0.8, type=float)
 
 # nsp nli
 # parser.add_argument("--nli_switch", default=0, type=int)

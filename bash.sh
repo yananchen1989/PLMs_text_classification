@@ -18,10 +18,10 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 
 nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                     --genft no  --genm gpt --filter nlinsp --seed 0 \
-                     --testvalid test  --testbed 0 \
-                     --candidates 64 \
-                      --gpu 6,7 > augf.test.log & 
+                     --genft no  --genm t5 --filter nlinsp --seed 0 \
+                     --testvalid test --testbed 0 \
+                     --candidates 64 --test_beams 64  \
+                      --gpu 0,1 > augf.test.log & 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 
