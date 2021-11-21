@@ -10,7 +10,7 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 import pandas as pd 
 infos = []
-for file in ['log__mc']:
+for file in ['log__n_l_i_n_s_p']:
     with open(file,'r') as f: 
         for line in f:
             if 'summary===>' not in line:
@@ -26,8 +26,8 @@ for file in ['log__mc']:
 df = pd.DataFrame(infos)
 
 
-for col in ['samplecnt','dpfuture_switch','dpfuture_cls_switch','candidates','test_beams',\
-            'future_steps','threads','valid_files_cnt','nli_switch', 'nsp_switch']:
+for col in ['samplecnt','candidates','max_aug_times','candidates', 'test_beams',\
+            'future_steps','threads','valid_files_cnt']:
     if col in df.columns:
         df[col] = df[col].astype('int')
 
@@ -35,9 +35,15 @@ for col in ['acc_base','acc_aug','gain']:
     if col in df.columns:
         df[col] = df[col].astype('float')
 
+for dsn in ['uci','ag']:
+    for genm in ['gpt', 't5']:
+        for fmark in ['11', '10', '01', '00']:
+            dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==32) & (df['aug']=='generate') & (df['genm']==genm) \
+                & (df['fmark']==fmark)][['acc_base','acc_aug','gain']]
+            print(dsn, genm, fmark, dfi['acc_base'].mean(), dfi['acc_aug'].mean(), dfi['gain'].mean(), dfi.shape[0])
+    print('\n')
 
-df.loc[(df['dsn']=='uci') & (df['samplecnt']==32) & (df['aug']=='generate') \
-        & (df['dpfuture_switch']==0) & (df['dpfuture_cls_switch']==0)][['acc_base','acc_aug','gain']]['gain'].mean()
+
 
 
 
@@ -70,22 +76,6 @@ for dsn in ['ag', 'uci', 'yelp2', 'amazon2']:
 
 
 
-
-
-import glob, os 
-
-files = sorted(glob.glob('*.log'), key=os.path.getmtime)
-
-for file in files:
-    with open(file, 'r') as f:
-        fail = 0 
-        for line in f:
-            if 'RuntimeError: CUDA out of memory' in line or 'ERROR' in line :
-                print(line)
-                #print("CUDA out of memory==>")
-                fail += 1
-    if fail > 0:
-        print(file,'\n')
 
 
 #################### test_valid ############################

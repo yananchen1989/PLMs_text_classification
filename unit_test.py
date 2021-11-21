@@ -34,6 +34,16 @@ sent = "Virus to cause spike in pork prices"
 # loss = outputs.loss
 # logits = outputs.logits
 
+contents_syn_ix = [' that allow company managers scheduling 30 full days without security clearances!', ' review.. Talks began years ago through Editorial Board Chairman Sullivan Longweatherhill (I-La.). Blanket announced at teleconference Friday he wlf know Senator Edmund Day while being accompanied there by White House Communications Director Richard Worden Called Lockhart TE during his long public Eureka impeachment tirade Thursday evening Calls first panel head Holder later Tuesday JR took part in panels sponsored by former', ' requirements. Democrats started backjumping trying many times last year long causing major edge because some employees were half paid (and unemployment rate was at 4 percent as I wrote yesterday) #wisconsin Fires Group Surprises Warnings.. YES it Feels That Way Time Attendred Done Count 9 out for Ave night 5 fleewatch bay clinic talks stoppek 66 FI llor COVER FAST', ' until they remove such details from holiday bonuses instituted amid fighting over Iraq aid -- a shift pursued by Norris escalation procslowed at Saratoga Naval Base this summer following battles in Sacramento district seven caused severe losses. PD became assistant chief when Dan Gallagher approached Former Reposauce Marcos-Pres Lindquist wanted security \u200bseparated... The Kellogg Sodag usiing', ' raises rue aggressive conservative in-state politics attempt something sexy local politicians stand up their fists!!!!! -- Shed Avianious Carrying Chicken To Nowbeans Chicken greens... Andy Hitchcock looked at segregation protection from Jeff Bell until he moved; they should be opened anyway Phil Tully sliced chicken pizza hole Neil Mitchell talked Net $100 JakaClinicLathering Gen Hank Huh talks', ' days even as Republicans tilted GOP while Holder asserted intense skepticism). but attack Coloradans were ag! h5 sp </th><Section Id="1173">fi God Linson Believes Palin Can Honor HERO Act 1961</s> Products in trouble Lolz 3 20383 10 -->FOLLOW Mike Printi --@uangelo printish Prostitutes Spread Degenerate Selling', ' relief during extramarital affairs into Sunday, according just c h sons timers May 27 16:42 Proprietary bills w others indicate cloture victories BBC Deawissa Schaible 24 07 pages 2001 tight forecast Similar error 3 mean 94 Albert Sorel Chicago National Shooting Ce conf np(7) 1435706 30004 ( 34 ) Brunswick 788733 13312 359', ' that threaten interstate workers fighting retribution after striking at work Sept 22." In other words GOP candidate Govudd Douglas Ducey took credit out in hot butter speech a 12-inning delayed debate coinaded \'Jerry Neiberg credited away Joe wants wheels into weld breaker.\' Unfortunately rich South Dakota Legislatureive only gets money now several years later throughout UCA./JERSEYG Nader']
+labels_candidates = ['Business', 'Democratic', 'Bush', 'Wis', 'John Edwards', 'Wisconsin', 'Edwards Hits Bush on Overtime Pay Rules RACINE']
+
+
+t0 = time.time()
+nli_result = nli_nlp([s.replace('</s>','')for s in contents_syn_ix],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+t1 = time.time()
+print(t1 - t0)
+
+
 
 ############## whole token generation ############  
 

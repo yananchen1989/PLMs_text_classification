@@ -2,7 +2,7 @@ max_aug_times=1
 samplecnt=${1}
 candidates=${2}
 gpu=${3}
-for i in {1..10}
+for i in {1..100}
 do
 	seed=$RANDOM
 	#seed=$(date +"%T")
