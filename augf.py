@@ -547,17 +547,17 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     df_tmp_nomc = df_tmp.sample(args.candidates)
     df_tmp_mc = df_tmp.loc[df_tmp['mc_score']>=0.8].sort_values(by=['mc_score'], ascending=False).head(args.candidates)
-    assert df_tmp_mc.shape[0] >= args.candidates
+    assert df_tmp_mc.shape[0] == args.candidates and df_tmp_nomc.shape[0] == args.candidates
 
-    content_syn_1_1_1 = df_tmp_nomc.sort_values(by=['nlinsp_score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_1_1_0 = df_tmp_nomc.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_1_0_1 = df_tmp_nomc.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
-    content_syn_1_0_0 = df_tmp_nomc.sample(1)['content'].tolist()[0] 
+    content_syn_1_1_1 = df_tmp_mc.sort_values(by=['nlinsp_score'], ascending=False).head(1)['content'].tolist()[0] 
+    content_syn_1_1_0 = df_tmp_mc.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
+    content_syn_1_0_1 = df_tmp_mc.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
+    content_syn_1_0_0 = df_tmp_mc.sample(1)['content'].tolist()[0] 
 
-    content_syn_0_1_1 = df_tmp_mc.sort_values(by=['nlinsp_score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_0_1_0 = df_tmp_mc.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_0_0_1 = df_tmp_mc.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
-    content_syn_0_0_0 = df_tmp_mc.sample(1)['content'].tolist()[0] 
+    content_syn_0_1_1 = df_tmp_nomc.sort_values(by=['nlinsp_score'], ascending=False).head(1)['content'].tolist()[0] 
+    content_syn_0_1_0 = df_tmp_nomc.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
+    content_syn_0_0_1 = df_tmp_nomc.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
+    content_syn_0_0_0 = df_tmp_nomc.sample(1)['content'].tolist()[0] 
 
     return content_syn_1_1_1, content_syn_1_1_0, content_syn_1_0_1, content_syn_1_0_0, \
            content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0
