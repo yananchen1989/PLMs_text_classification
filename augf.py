@@ -52,7 +52,7 @@ parser.add_argument("--cls_score_thres", default=0.8, type=float)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="6,7", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -414,66 +414,6 @@ if not args.testbed:
     model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 
-def dpfuture_gen(row,  model_cls):
-    # for each single sample
-    tokens_len_ori = tokenizer_gpt2.encode(row['content'], return_tensors="pt").shape[1]
-    result_0 = gen_nlp([row['content']], max_length=tokens_len_ori + args.future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                repetition_penalty=1.2, num_return_sequences=args.candidates, clean_up_tokenization_spaces=True)
-    
-    #print("result_0 generated")
-    result_1 = gen_nlp([ ii['generated_text'].strip().replace('\n',' ') for ii in result_0], \
-                                max_length=args.future_steps*2, \
-                                do_sample=True, top_p=0.9, top_k=0, temperature=1,\
-                                repetition_penalty=1.2, num_return_sequences= args.test_beams, \
-                                clean_up_tokenization_spaces=True)
-    #print("result_1 generated")
-    assert len(result_1) * len(result_1[0]) == args.candidates * args.test_beams
-
-    all_results = []
-    for r in result_1:
-        all_results.extend([ii['generated_text'].replace('\n',' ') for ii in r] )
-
-    assert len(all_results) == args.candidates * args.test_beams
-  
-    x = np.array(all_results)
-    #y = np.array([label] * x.shape[0])
-    preds = model_cls.predict(x,  batch_size=16, verbose=0) 
-
-    losses = []
-    for j in range(0, len(all_results), args.test_beams):
-        preds_j = preds[j:j+args.test_beams]
-        y_j = np.array([row['label']] * preds_j.shape[0])
-        loss = tf.keras.losses.sparse_categorical_crossentropy(y_j, preds_j)
-        loss_mean = loss.numpy().mean()
-        losses.append(loss_mean)
-
-    df_future = pd.DataFrame(zip([ ii['generated_text'].strip().replace('\n', ' ') for ii in result_0], losses), \
-                                        columns=['content','dp_score'])
-
-    # preds_cls = model_cls.predict(df_future['content'].values, batch_size= 16, verbose=0)
-    # df_future['cls_score'] = preds_cls[:, row['label']] 
-    # df_future['cls_label'] = preds_cls.argmax(axis=1)
-
-    assert df_future.shape[0] == args.candidates
-
-    # dp:1 cls:1
-    #content_syn_1_0 = df_future.loc[(df_future['cls_label']==row['label']) & (df_future['cls_score']>=args.cls_score_thres)]\
-    #                .head(1)['content'].tolist()[0]
-    # dp:1 cls:0
-    content_syn_1 = df_future.sort_values(by=['dp_score'], ascending=True).head(1)['content'].tolist()[0]
-
-    # dp:0 cls:1 
-    #content_syn_0_1 = df_future.loc[df_future['cls_label']==row['label']]\
-    #                .sort_values(by=['cls_score'], ascending=False).head(1)['content'].tolist()[0]
-
-    # dp:0 cls:0
-    content_syn_0 = df_future.sample(1)['content'].tolist()[0]
-
-    return content_syn_1, content_syn_0
-
-
-
-
 def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     # get mc scores
     df_future_sel_ll = []
@@ -497,9 +437,12 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
                                             do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                             repetition_penalty=1.2, num_return_sequences= args.test_beams,\
                                             clean_up_tokenization_spaces=True)
-            contents_syn_mc_trunk.extend([s['generated_text'] for s in result_mc if s['generated_text']])
-            print(len(result_mc))
+            for s in result_mc:
+                samples = [ss['generated_text'] for ss in s ]
+                contents_syn_mc_trunk.extend(samples)
+            #print(len(result_mc))
 
+        assert len(contents_syn_mc_trunk) == len(contents_syn) * args.test_beams
         preds = model_cls.predict(np.array(contents_syn_mc_trunk),  batch_size=32, verbose=0) 
 
         mc_scores_tmp = []
