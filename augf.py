@@ -956,6 +956,6 @@ for fmark in df_synthesize['fmark'].unique():
     summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
         ['fmark:{} acc_base:{} acc_aug:{} gain:{} '.format(fmark, acc_noaug, acc_aug, gain )]
 
-
-    record_log('log__{}'.format(args.filter), summary)
+    if args.testbed and args.epochs > 10 and gain != -1 :
+        record_log('log__{}'.format(args.filter), summary)
     print('success', ' '.join(summary))
