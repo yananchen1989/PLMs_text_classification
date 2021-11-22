@@ -1,8 +1,8 @@
 max_aug_times=1
 samplecnt=${1}
 candidates=${2}
-test_beams=${3}
-gpu=${4}
+test_beams=8
+gpu=${3}
 for i in {1..10}
 do
 	seed=$RANDOM

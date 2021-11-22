@@ -416,6 +416,46 @@ if not args.testbed:
 
 
 def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
+    contents_syn = []
+    fbs_gen = 64
+    for _ in range(0, args.candidates//fbs_gen):
+        torch.cuda.empty_cache()
+        result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn], \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= fbs_gen,\
+                                        clean_up_tokenization_spaces=True)
+
+        contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
+        contents_syn.extend(contents_syn_tmp)
+
+    # get nli score
+    ners = get_ners(row['content'])
+    labels_candidates = [row['label_name']] + ners
+    print(labels_candidates)
+    nli_scores = []
+    fbs = 16
+    for ix in range(0, len(contents_syn), fbs):
+        contents_syn_ix = contents_syn[ix:ix+fbs]
+        nli_result = nli_nlp(contents_syn_ix,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
+        nli_scores.extend(nli_scores_ix)
+    preds = bert_nsp.predict(pairs_ids, batch_size=8)
+    nsp_scores = preds[:,0]
+
+    df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
+
+    df_tmp['score'] = df_tmp['nli_score'].map(lambda x: math.log(x)) + df_tmp['nsp_score'].map(lambda x: math.log(x))
+
+    content_syn_1_1 = df_tmp.sort_values(by=['score'], ascending=False).head(1)['content'].tolist()[0] 
+    content_syn_1_0 = df_tmp.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
+    content_syn_0_1 = df_tmp.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
+    content_syn_0_0 = df_tmp.sample(1)['content'].tolist()[0] 
+
+    return content_syn_1_1, content_syn_1_0, content_syn_0_1, content_syn_0_0
+
+
+
+def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     # get mc scores
     df_future_sel_ll = []
     while True:
@@ -510,6 +550,8 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
            content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0
 
 
+
+
 def decorate_sent(content, label_name):
     if args.genm == 'gpt':
         if args.genft == 'lambda':
@@ -560,10 +602,10 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             row['content'] = decorate_sent(row['content'], row['label_name'])
 
             t0 = time.time()
+            '''
             content_syn_1_1_1, content_syn_1_1_0, content_syn_1_0_1, content_syn_1_0_0, \
-            content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0  = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
-            t1 = time.time()
-            print("timecost:", (t1-t0)/60 )
+            content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0  = mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
+
 
             print("gen===>")
             print("1::1:1 ==>", content_syn_1_1_1)
@@ -584,11 +626,27 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             infos.append((content_syn_0_1_0, row['label_name'], row['label'], '010'))
             infos.append((content_syn_0_0_1, row['label_name'], row['label'], '001'))
             infos.append((content_syn_0_0_0, row['label_name'], row['label'], '000'))
+            '''
+            content_syn_1_1, content_syn_1_0, content_syn_0_1, content_syn_0_0 = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
+            print("gen===>")
+            print("1:1 ==>", content_syn_1_1)
+            print("1:0 ==>", content_syn_1_0)
+            print("0:1 ==>", content_syn_0_1)
+            print("0:0 ==>", content_syn_0_0)
+            print('\n')
+            infos.append((content_syn_1_1, row['label_name'], row['label'], '11'))
+            infos.append((content_syn_1_0, row['label_name'], row['label'], '10'))
+            infos.append((content_syn_0_1, row['label_name'], row['label'], '01'))
+            infos.append((content_syn_0_0, row['label_name'], row['label'], '00'))
+
+            t1 = time.time()
+            print("timecost:", (t1-t0)/60 )
+
 
         df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
 
         print("final generated==>", df_synthesize.shape[0], ds.df_train.shape[0], df_synthesize.shape[0]/ds.df_train.shape[0])
-
+        '''
         if 'dvrl' in args.filter:
             # trim to balance the samples
             #df_syn_tmp = sample_stratify(df_syn_tmp, args.samplecnt * args.abundance)
@@ -636,7 +694,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             t1 = time.time()
             print("dvrl_cost_sec:", (t1-t0)/3600, "hour" )
             df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
-
+        '''
         assert df_synthesize.loc[df_synthesize['fmark']=='11','label_name'].value_counts().min() >= args.samplecnt
         #df_syn_balance = sample_stratify(df_syn_tmp, args.samplecnt )
         print("samplecnt==> {}".format(args.samplecnt) )
