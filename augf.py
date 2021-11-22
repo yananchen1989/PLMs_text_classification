@@ -151,7 +151,6 @@ else:
     acc_noaug = -1
 
 
-
 if args.aug == 'generate' and args.genft == 'ep':
     from utils.flair_ners import * 
     
@@ -439,6 +438,10 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
         nli_result = nli_nlp(contents_syn_ix,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
         nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
         nli_scores.extend(nli_scores_ix)
+
+    # get nsp score
+    pairs = [[row['content'], sent] for sent in contents_syn]
+    pairs_ids = get_ids(pairs, 256, tokenizer_bert )
     preds = bert_nsp.predict(pairs_ids, batch_size=8)
     nsp_scores = preds[:,0]
 
