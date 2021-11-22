@@ -29,7 +29,7 @@ do
 			python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 					      --genft no  --genm ${genm} --filter nlinsp --seed ${seed} \
 					      --testvalid test \
-					      --candidates ${candidates} --test_beams ${test_beams} \
+					      --candidates ${candidates} \
 					       --gpu ${gpu} \
 		> ./log_arxiv_nlinsp/${dsn}.generate.${samplecnt}.${max_aug_times}.${candidates}.${genm}.no.${seed}.log 2>&1
 		done
