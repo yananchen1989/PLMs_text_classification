@@ -559,8 +559,11 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
             row['content'] = decorate_sent(row['content'], row['label_name'])
 
+            t0 = time.time()
             content_syn_1_1_1, content_syn_1_1_0, content_syn_1_0_1, content_syn_1_0_0, \
             content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0  = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
+            t1 = time.time()
+            print("timecost:", (t1-t0)/60 )
 
             print("gen===>")
             print("1::1:1 ==>", content_syn_1_1_1)
