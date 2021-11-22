@@ -28,7 +28,7 @@ def noisy_label(l, unique_labels):
 def remove_str(sent):
     rml = ['(AP)', '(Reuters)', '(Canadian Press)', '&lt;b&gt;...&lt;/b&gt', '(AFP)', '(washingtonpost.com)', \
                 '(NewsFactor)', '(USATODAY.com)', '(Ziff Davis)', '#39;', '</s>', '<unk>', '<pad>', \
-                '[UNK]',  '[SEP]', '[PAD]', '[CLS]', '[MASK]', '\n', '\t']
+                '[UNK]',  '[SEP]', '[PAD]', '[CLS]', '[MASK]', '\n', '\t' , 'p & gt ;', '& lt ;', '\\']
     for word in rml:
         sent = sent.replace(word,'')
     return sent.strip(string.punctuation).strip()

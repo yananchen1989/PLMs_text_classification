@@ -37,16 +37,9 @@ parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't
 parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
 
 # dpfuture
-#parser.add_argument("--dpfuture_switch", default=0, type=int)
-#parser.add_argument("--dpfuture_cls_switch", default=0, type=int)
 #parser.add_argument("--future_steps", default=64, type=int)
-parser.add_argument("--test_beams", default=64, type=int)
+#parser.add_argument("--test_beams", default=64, type=int)
 parser.add_argument("--candidates", default=64, type=int)
-#parser.add_argument("--cls_score_thres", default=0.8, type=float)
-
-# nsp nli
-# parser.add_argument("--nli_switch", default=0, type=int)
-# parser.add_argument("--nsp_switch", default=0, type=int)
 
 #parser.add_argument("--num_return_sequences", default=4, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
@@ -457,7 +450,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     return content_syn_1_1, content_syn_1_0, content_syn_0_1, content_syn_0_0
 
 
-
+'''
 def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     # get mc scores
     df_future_sel_ll = []
@@ -551,7 +544,7 @@ def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     return content_syn_1_1_1, content_syn_1_1_0, content_syn_1_0_1, content_syn_1_0_0, \
            content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0
-
+'''
 
 
 

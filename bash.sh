@@ -14,21 +14,25 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 
 
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+                     --genft no  --genm gpt --filter nlinsp --seed 1 \
+                     --testvalid test --testbed 0 \
+                     --candidates 256 --test_beams 32  \
+                      --gpu 6,7
 
 
-
-nohup python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
                      --genft no  --genm t5 --filter nlinsp --seed 0 \
                      --testvalid test --testbed 0 \
                      --candidates 256 --test_beams 32  \
-                      --gpu 0,1 > augf.test.log & 
+                      --gpu 0,1 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 
-nohup bash run_nlinsp.sh  32 256   0,1 &
-nohup bash run_nlinsp.sh  32 256   2,3 &
-nohup bash run_nlinsp.sh  32 256   4,5 &
-nohup bash run_nlinsp.sh  32 256   6,7 &
+nohup bash run.sh  32 128    0,1 &
+nohup bash run.sh  32 256    2,3 &
+nohup bash run.sh  32 512    4,5 &
+nohup bash run.sh  32 1024   6,7 &
 
 
 
