@@ -196,7 +196,7 @@ if args.aug == 'generate':
                     --per_device_eval_batch_size 8 \
                     --output_dir {} \
                     --preprocessing_num_workers 8 --overwrite_cache True \
-                    --block_size {}".format(len(gpus)-1, 20, train_file, validation_file, model_output_path, 64) ) 
+                    --block_size {}".format(len(gpus)-1, 12, train_file, validation_file, model_output_path, 64) ) 
             gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
 
         # elif args.genft == 'cc':
@@ -872,5 +872,5 @@ for fmark in df_synthesize['fmark'].unique():
         ['fmark:{} acc_base:{} acc_aug:{} gain:{} '.format(fmark, acc_noaug, acc_aug, gain )]
 
     if args.testbed and args.epochs > 10 and gain != -1 :
-        record_log('log__{}'.format(args.filter), summary)
+        record_log('log__baselines', summary)
     print('success', ' '.join(summary))
