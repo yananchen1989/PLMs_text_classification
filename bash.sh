@@ -33,8 +33,10 @@ envcbert/bin/python -u augf.py --dsn ag --samplecnt 32 --aug cbert \
                --max_aug_times 1 --seed 3333 --testvalid test --epochs 1
 
 python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug eda \
-                --seed 0 --testvalid test --epochs 1
+                --seed 0 --testvalid test --epochs 1 --gpu 7 --verbose 1 
 
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug bt \
+                --seed 1 --testvalid test --epochs 1 --gpu 1 --verbose 1 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 
