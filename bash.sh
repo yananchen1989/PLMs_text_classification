@@ -31,7 +31,7 @@ python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
 
 python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
                   --genft lambda  --genm gpt --filter clsembed --seed 0 \
-                  --testvalid test --candidates 128 --gpu 6,7
+                  --testvalid test --candidates 128 --gpu 6,7 --epochs 2 --verbose 1
 
 
 
@@ -49,7 +49,8 @@ python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug bt \
 nohup bash run.sh  32 128    0,1 &
 nohup bash run.sh  32 256    2,3 &
 nohup bash run.sh  32 512    4,5 &
-nohup bash run.sh  32 1024   6,7 &
+
+nohup bash run_base.sh  32 256   6,7 &
 
 
 
