@@ -246,6 +246,7 @@ if args.aug == 'generate':
     ####################### filter setting ######################
     if 'nlinsp' in args.filter: 
         #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=1) #  1.8.1+cu102
+        # vicgalle/xlm-roberta-large-xnli-anli joeddav/xlm-roberta-large-xnli 
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
         model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
         tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
@@ -425,7 +426,11 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     labels_candidates = [row['label_name']] + ners
     print(labels_candidates)
     nli_scores = []
-    fbs = 16
+
+    if args.genm == 't5' and args.dsn in ['ag','nyt']:
+        fbs = 8 
+    else:
+        fbs = 16
     for ix in range(0, len(contents_syn), fbs):
         contents_syn_ix = contents_syn[ix:ix+fbs]
         nli_result = nli_nlp(contents_syn_ix,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
@@ -450,7 +455,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     return content_syn_1_1, content_syn_1_0, content_syn_0_1, content_syn_0_0
 
 
-'''
+
 def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     # get mc scores
     df_future_sel_ll = []
@@ -544,7 +549,7 @@ def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     return content_syn_1_1_1, content_syn_1_1_0, content_syn_1_0_1, content_syn_1_0_0, \
            content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0
-'''
+
 
 
 
