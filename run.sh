@@ -9,19 +9,25 @@ do
 	#seed=$(date +"%T")
 	for dsn in ag uci #yelp2 amazon2
 	do
-		# for aug in eda bt 
-		# do
-		# 	python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug ${aug} \
-		# 	      --gpu ${gpu} --seed ${seed} --testvalid test  \
-		# 	   > ./log_arxiv_32/${dsn}.${aug}.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
-		# done
+		for aug in eda bt 
+		do
+			python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug ${aug} \
+			       --seed ${seed} --testvalid test  \
+			   > ./log_baselines/${dsn}.${aug}.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
+		done
 
-		# for aug in cbert
-		# do
-		# 	envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug ${aug} \
-		# 	      --max_aug_times ${max_aug_times} \
-		# 	 > ${dsn}.${aug}.${samplecnt}.${seed}.log 2>&1
-		# done
+		envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug cbert \
+		      --max_aug_times ${max_aug_times} --seed ${seed} --testvalid test  \
+		 > ${dsn}.cbert.${samplecnt}.${seed}.log 2>&1
+		
+
+		# lambda
+		for filter in cls embed
+		do
+			python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+					      --genft lambda  --genm gpt --filter ${filter} --seed ${seed} \
+					      --testvalid test --candidates ${candidates}  --gpu ${gpu}
+		done
 
 		###### no finetune
 		for genm in gpt t5

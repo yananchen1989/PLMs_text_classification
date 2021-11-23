@@ -163,7 +163,7 @@ if args.aug == 'generate':
         if args.genft == 'no':
             gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 
-        elif args.genft in ['entire', 'lambda']:
+        elif args.genft == 'lambda' :
             if not os.path.exists('ft_tmp'):
                 os.makedirs('ft_tmp')
 
@@ -173,22 +173,14 @@ if args.aug == 'generate':
             df_train_ft = ds.df_train.copy()
             df_test_ft = ds.df_test.copy()
 
-            if args.genft == 'lambda':
-                df_train_ft['ctrl'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) )
-                df_train_ft['text'] = df_train_ft['ctrl'] + df_train_ft['content']
-
-                df_test_ft['ctrl'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) )
-                df_test_ft['text'] = df_test_ft['ctrl'] + df_test_ft['content']
-
-            elif args.genft == 'entire':
-                df_train_ft['text'] = df_train_ft['content']
-                df_test_ft['text'] = df_test_ft['content']
+            df_train_ft['text'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_train_ft['content']
+            df_test_ft['text'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_test_ft['content']
 
             with open (train_file, 'w') as f:
-                f.write(" {} ".format(tokenizer_gpt2.eos_token).join(df_train_ft['text'].tolist()))
+                f.write(tokenizer_gpt2.eos_token.join(df_train_ft['text'].tolist()))
 
             with open (validation_file, 'w') as f:
-                f.write(" {} ".format(tokenizer_gpt2.eos_token).join(df_test_ft['text'].tolist()))
+                f.write(tokenizer_gpt2.eos_token.join(df_test_ft['text'].tolist()))
 
             model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
             os.system(
@@ -210,6 +202,8 @@ if args.aug == 'generate':
         elif args.genft in ['tc', 'pp', 'ep']:
             gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format(args.genm, args.genft) )
 
+        else:
+            raise KeyError("args.genft illegal!")
         gpt2.trainable = False
         gpt2.config.pad_token_id=50256
         gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
@@ -225,6 +219,9 @@ if args.aug == 'generate':
             checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
             list.sort(checkpoint_files)
             t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+        else:
+            raise KeyError("args.genft illegal!")
+
         gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
 
     elif args.genm == 'ctrl':
@@ -401,10 +398,10 @@ def dvrl_inner_join(files):
 
     return df_merge
 
-if not args.testbed:
-    with tf.distribute.MirroredStrategy().scope():
-        model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-    model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
+# if not args.testbed:
+#     with tf.distribute.MirroredStrategy().scope():
+#         model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+#     model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 
 def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
@@ -726,7 +723,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
         temp_path = "augf__{}_{}".format(args.dsn, args.aug)
         temp_path_ft = "augf__{}_{}_ft".format(args.dsn, args.aug)
-        
+
         write_for_cbert(ds.df_train, ds.df_test, temp_path, 0)
         write_for_cbert(ds.df_train, ds.df_test, temp_path_ft, 0)
 
@@ -777,18 +774,15 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                               'token_type_ids': batch[3],
                               'masked_lm_labels': batch[4] # yanan
                               }
-
                     outputs = model(**inputs)
                     loss = outputs[0]
                     optimizer.zero_grad()
                     loss.backward()
                     avg_loss += loss.item()
                     optimizer.step()
-
                     if (step + 1) % 50 == 0:
                         print("avg_loss: {}".format(avg_loss / 50))
                     avg_loss = 0.
-
                 # eval on dev after every epoch
                 dev_loss = compute_dev_loss(model, dev_dataloader)
                 print("Epoch {}, Dev loss {}".format(epoch, dev_loss))
@@ -820,11 +814,9 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             inputs = {'input_ids': init_ids,
                       'attention_mask': input_mask,
                       'token_type_ids': segment_ids}
-
             outputs = model(**inputs)
             predictions = outputs[0]  # model(init_ids, segment_ids, input_mask)
             predictions = F.softmax(predictions / args.temp, dim=2)
-
             for ids, idx, preds, seg in zip(init_ids, masked_idx, predictions, segment_ids):
                 preds = torch.multinomial(preds, 1, replacement=True)[idx]
                 if len(preds.size()) == 2:
@@ -833,7 +825,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                     ids[idx] = pred
                     new_str = tokenizer.convert_ids_to_tokens(ids.cpu().numpy())
                     new_str = rev_wordpiece(new_str)
-                    contents_syn.append((new_str, int(label_list[seg[0].item()])  ))
+                    #contents_syn.append((new_str, int(label_list[seg[0].item()])  ))
+                    contents_syn.append(new_str)
         
     else:
         raise KeyError("args.aug model illegal!")   
