@@ -192,11 +192,11 @@ if args.aug == 'generate':
                     --train_file {} \
                     --validation_file {} \
                     --model_name_or_path gpt2 \
-                    --per_device_train_batch_size 16 \
-                    --per_device_eval_batch_size 16 \
+                    --per_device_train_batch_size 8 \
+                    --per_device_eval_batch_size 8 \
                     --output_dir {} \
-                    --preprocessing_num_workers 16 --overwrite_cache True \
-                    --block_size {}".format(0, 20, train_file, validation_file, model_output_path, 128) ) 
+                    --preprocessing_num_workers 8 --overwrite_cache True \
+                    --block_size {}".format(0, 20, train_file, validation_file, model_output_path, 64) ) 
             gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
 
         # elif args.genft == 'cc':
