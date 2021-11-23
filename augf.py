@@ -27,13 +27,13 @@ parser.add_argument("--epochs", default=100, type=int)
 #parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 parser.add_argument("--testvalid", default='test', type=str)
-parser.add_argument("--filter", default="nlinsp", type=str)
+parser.add_argument("--filter", default="nlinsp", type=str, choices=['nlinsp', 'clsembed'])
 
 parser.add_argument("--valid_files_cnt", default=16, type=int)
 parser.add_argument("--threads", default=64, type=int)
 
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
-parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','entire','tc','pp', 'ep'])
+parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','tc','pp', 'ep'])
 
 # dpfuture
 #parser.add_argument("--future_steps", default=64, type=int)
@@ -117,29 +117,20 @@ def thread_testing(testvalid, df_train, df_test):
     models = []
 
     if gpus:
-        for ddi in range(1):
-            threads = []
-            for di in range(3):
-                t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
-                                  args.epochs,  args.verbose, 'albert', 8))
-                t.start()
-                threads.append(t)
-
-            # join all threads
-            for t in threads:
-                t.join()
+        outer_loop, inner_loop = 1, 3 
     else:
-        for ddi in range(3):
-            threads = []
-            for di in range(1):
-                t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
-                                  args.epochs,  args.verbose, 'albert', 8))
-                t.start()
-                threads.append(t)
-            # join all threads
-            for t in threads:
-                t.join()
-                
+        outer_loop, inner_loop = 3, 1
+    for ddi in range(outer_loop):
+        threads = []
+        for di in range(inner_loop):
+            t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
+                              args.epochs,  args.verbose, 'albert', 8))
+            t.start()
+            threads.append(t)
+        # join all threads
+        for t in threads:
+            t.join() 
+
     if args.basemode == 'mean':
         acc = round(np.array(best_test_accs).mean(), 4)
     elif args.basemode == 'max':
@@ -263,13 +254,14 @@ if args.aug == 'generate':
         with tf.distribute.MirroredStrategy().scope():
             bert_nsp  = get_model_nsp(256)
     
-    if 'enc' in args.filter or 'dvrl' in args.filter:
-        enc = encoder('cmlm-large')
+    if 'clsembed' == args.filter or 'dvrl' in args.filter:
+        enc = encoder('cmlm-base')
         enc_dic = {}
         for l in ds.df_train['label'].unique():
             contents_ = ds.df_train.loc[ds.df_train['label']==l]['content'].values
             embeds = enc.infer(contents_)
-            enc_dic[l] = embeds
+            centroid = embeds.mean(axis=0).reshape(1, -1) 
+            enc_dic[l] = centroid
 
     if 'dvrl' in args.filter:
         os.makedirs('dvrl_np_array', exist_ok=True)
@@ -284,8 +276,8 @@ if args.aug == 'bt':
     model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
     tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
     model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
-    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=-1)
-    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=-1)
+    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=len(gpus)-1)
+    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=len(gpus)-1)
     print('bt model loaded')
 
 # if args.aug == 'fillin':
@@ -297,7 +289,7 @@ if args.aug == 'cbert':
     if label_list_len > 2:
         model.bert.embeddings.token_type_embeddings = torch.nn.Embedding(label_list_len, 768)
         model.bert.embeddings.token_type_embeddings.weight.data.normal_(mean=0.0, std=0.02)
-    model.to(torch.device("cuda:cpu"))
+    model.to(torch.device("cpu"))
 
 # if args.aug == 'cgpt':
 #     from utils.cgpt_config import * 
@@ -360,7 +352,6 @@ def enc_classify(content, ori_label, enc_dic):
     else:
         return 0,  result[pred_label]
 
-
 def bertcls_classify(generated_text, label_name):
     pred = model_cls.predict([generated_text], batch_size=1, verbose=0)  
 
@@ -415,13 +406,44 @@ def dvrl_inner_join(files):
 #         model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 #     model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
-
-def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
+def lambda_gen(row, gen_nlp, enc, model_cls):
+    prompt = decorate_sent(row['content'], row['label_name'])
     contents_syn = []
     fbs_gen = 64
     for _ in range(0, args.candidates//fbs_gen):
         torch.cuda.empty_cache()
-        result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn], \
+        result_gpt = gen_nlp([prompt], max_length=dsn_maxlen[args.dsn], \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= fbs_gen,\
+                                        clean_up_tokenization_spaces=True)
+
+        contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
+        contents_syn.extend(contents_syn_tmp)
+    torch.cuda.empty_cache()
+
+    embeds_syn = enc.infer(contents_syn)
+    embeds_score = cosine_similarity(embeds_syn, enc_dic[row['label']])
+
+    preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
+    cls_score = preds[:, row['label'] ]
+
+    df_tmp = pd.DataFrame(zip(contents_syn, list(embeds_score.reshape(-1)), list(cls_score)),\
+                 columns=['content', 'embed_score', 'cls_score'])
+
+    result_syn = {}
+    result_syn['cls'] = df_tmp.sort_values(by=['cls_score'], ascending=False).head(1)['content'].tolist()[0] 
+    result_syn['embed'] = df_tmp.sort_values(by=['embed_score'], ascending=False).head(1)['content'].tolist()[0] 
+    return result_syn
+
+
+def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
+    prompt = decorate_sent(row['content'], row['label_name'])
+            
+    contents_syn = []
+    fbs_gen = 64
+    for _ in range(0, args.candidates//fbs_gen):
+        torch.cuda.empty_cache()
+        result_gpt = gen_nlp([prompt], max_length=dsn_maxlen[args.dsn], \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                         repetition_penalty=1.2, num_return_sequences= fbs_gen,\
                                         clean_up_tokenization_spaces=True)
@@ -457,13 +479,13 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     df_tmp['score'] = df_tmp['nli_score'].map(lambda x: math.log(x)) + df_tmp['nsp_score'].map(lambda x: math.log(x))
 
-    content_syn_1_1 = df_tmp.sort_values(by=['score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_1_0 = df_tmp.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_0_1 = df_tmp.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
-    content_syn_0_0 = df_tmp.sample(1)['content'].tolist()[0] 
+    result_syn = {}
+    result_syn['11'] = df_tmp.sort_values(by=['score'], ascending=False).head(1)['content'].tolist()[0] 
+    result_syn['10'] = df_tmp.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
+    result_syn['01'] = df_tmp.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
+    result_syn['00'] = df_tmp.sample(1)['content'].tolist()[0] 
 
-    return content_syn_1_1, content_syn_1_0, content_syn_0_1, content_syn_0_0
-
+    return result_syn
 
 
 def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
@@ -605,54 +627,25 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         #     labels_candidates = set()
         #     for v in ln_extend.values():
         #         labels_candidates.update(v)   
-
+        
         infos = []
         for ix, row in ds.df_train.reset_index().iterrows():
             torch.cuda.empty_cache()
             print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
-            row['content'] = decorate_sent(row['content'], row['label_name'])
 
             t0 = time.time()
-            '''
-            content_syn_1_1_1, content_syn_1_1_0, content_syn_1_0_1, content_syn_1_0_0, \
-            content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0  = mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
-
+            if args.filter == 'nlinsp':
+                result_syn = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
+            elif args.filter == 'clsembed':
+                result_syn = lambda_gen(row, gen_nlp, enc, model_cls)
 
             print("gen===>")
-            print("1::1:1 ==>", content_syn_1_1_1)
-            print("1::1:0 ==>", content_syn_1_1_0)
-            print("1::0:1 ==>", content_syn_1_0_1)
-            print("1::0:0 ==>", content_syn_1_0_0)
-            print("0::1:1 ==>", content_syn_0_1_1)
-            print("0::1:0 ==>", content_syn_0_1_0)
-            print("0::0:1 ==>", content_syn_0_0_1)
-            print("0::0:0 ==>", content_syn_0_0_0)
+            for fmark, content in result_syn.items():
+                print("{} ==>{}".format(fmark, content) )
+                infos.append((content, row['label_name'], row['label'], fmark))
             print('\n')
-            infos.append((content_syn_1_1_1, row['label_name'], row['label'], '111'))
-            infos.append((content_syn_1_1_0, row['label_name'], row['label'], '110'))
-            infos.append((content_syn_1_0_1, row['label_name'], row['label'], '101'))
-            infos.append((content_syn_1_0_0, row['label_name'], row['label'], '100'))
-
-            infos.append((content_syn_0_1_1, row['label_name'], row['label'], '011'))
-            infos.append((content_syn_0_1_0, row['label_name'], row['label'], '010'))
-            infos.append((content_syn_0_0_1, row['label_name'], row['label'], '001'))
-            infos.append((content_syn_0_0_0, row['label_name'], row['label'], '000'))
-            '''
-            content_syn_1_1, content_syn_1_0, content_syn_0_1, content_syn_0_0 = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
-            print("gen===>")
-            print("1:1 ==>", content_syn_1_1)
-            print("1:0 ==>", content_syn_1_0)
-            print("0:1 ==>", content_syn_0_1)
-            print("0:0 ==>", content_syn_0_0)
-            print('\n')
-            infos.append((content_syn_1_1, row['label_name'], row['label'], '11'))
-            infos.append((content_syn_1_0, row['label_name'], row['label'], '10'))
-            infos.append((content_syn_0_1, row['label_name'], row['label'], '01'))
-            infos.append((content_syn_0_0, row['label_name'], row['label'], '00'))
-
             t1 = time.time()
             print("timecost:", (t1-t0)/60 )
-
 
         df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
 
@@ -706,12 +699,12 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             print("dvrl_cost_sec:", (t1-t0)/3600, "hour" )
             df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
         '''
-        assert df_synthesize.loc[df_synthesize['fmark']=='11','label_name'].value_counts().min() >= args.samplecnt
-        #df_syn_balance = sample_stratify(df_syn_tmp, args.samplecnt )
-        print("samplecnt==> {}".format(args.samplecnt) )
-        print(df_synthesize.loc[df_synthesize['fmark']=='11', 'label_name'].value_counts())
+        assert df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0],'label_name'].value_counts().min() >= args.samplecnt
+        print(df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0], 'label_name'].value_counts())
 
-    
+
+
+
     elif args.aug == 'eda':
         aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
                                    alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
@@ -729,7 +722,6 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                         do_sample=True, max_length=256, temperature=0.9, num_return_sequences=1 )
             contents_syn.extend([ii['translation_text'] for ii in content__])
             print('translate trunk==>', i, i+fbs, 'of', ds.df_train.shape[0])
-
 
     elif args.aug == 'cbert':
 
@@ -862,13 +854,13 @@ for augi in range(args.max_aug_times):
     syn_df_ll.append(df_synthesize)
 
 
-ds.df_train['fmark'] = '9'
+ds.df_train['fmark'] = 'ori'
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
 
 
 for fmark in df_synthesize['fmark'].unique():
-    acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['9',fmark])], ds.df_test)
+    acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
 
     if acc_noaug > 0:
         gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)

@@ -1,7 +1,7 @@
 max_aug_times=1
 samplecnt=${1}
 candidates=${2}
-test_beams=8
+#test_beams=8
 gpu=${3}
 for i in {1..10}
 do
@@ -16,27 +16,23 @@ do
 			   > ./log_baselines/${dsn}.${aug}.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
 		done
 
-		envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug cbert \
-		      --max_aug_times ${max_aug_times} --seed ${seed} --testvalid test  \
-		 > ${dsn}.cbert.${samplecnt}.${seed}.log 2>&1
+		# envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug cbert \
+		#       --max_aug_times ${max_aug_times} --seed ${seed} --testvalid test  \
+		#  > ./log_baselines/${dsn}.cbert.${samplecnt}.${seed}.log 2>&1
 		
-
 		# lambda
-		for filter in cls embed
-		do
-			python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
-					      --genft lambda  --genm gpt --filter ${filter} --seed ${seed} \
-					      --testvalid test --candidates ${candidates}  --gpu ${gpu}
-		done
+		python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+				      --genft lambda  --genm gpt --filter clsembed --seed ${seed} \
+				      --testvalid test --candidates ${candidates} --gpu ${gpu} \
+		> ./log_baselines/${dsn}.generate.${samplecnt}.${max_aug_times}.${candidates}.gpt.lambda.clsembed.${seed}.log 2>&1	
+		
 
 		###### no finetune
 		for genm in gpt t5
 		do
 			python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 					      --genft no  --genm ${genm} --filter nlinsp --seed ${seed} \
-					      --testvalid test \
-					      --candidates ${candidates} \
-					       --gpu ${gpu} \
+					      --testvalid test --candidates ${candidates} --gpu ${gpu} \
 		> ./log_arxiv_nlinsp/${dsn}.generate.${samplecnt}.${max_aug_times}.${candidates}.${genm}.no.${seed}.log 2>&1
 		done
         ## end 

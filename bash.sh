@@ -29,11 +29,17 @@ python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
 
 
 
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+                  --genft lambda  --genm gpt --filter clsembed --seed 0 \
+                  --testvalid test --candidates 128 --gpu 6,7
+
+
+
 envcbert/bin/python -u augf.py --dsn ag --samplecnt 32 --aug cbert \
-               --max_aug_times 1 --seed 3333 --testvalid test --epochs 1
+               --max_aug_times 1 --seed 3333 --testvalid test --epochs 2
 
 python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug eda \
-                --seed 0 --testvalid test --epochs 1 --gpu 7 --verbose 1 
+                --seed 0 --testvalid test --epochs 2  --verbose 1 
 
 python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug bt \
                 --seed 1 --testvalid test --epochs 1 --gpu 1 --verbose 1 

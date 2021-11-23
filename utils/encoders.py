@@ -16,21 +16,21 @@ class encoder():
         print('loading m:', self.m)
         text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
         #with tf.device('/GPU:{}'.format(1)):
-        #with tf.device('/cpu:0'):
-        #with tf.distribute.MirroredStrategy().scope():
-        if self.m == 'dan':
-            # https://tfhub.dev/google/universal-sentence-encoder/4
-            # https://tfhub.dev/google/universal-sentence-encoder-lite/2
-            encoder = hub.KerasLayer("./resource/universal-sentence-encoder_4")
-            embed = encoder(text_input)
-        elif self.m.startswith('cmlm'):    
-            # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
-            encoder = hub.KerasLayer("./resource/universal-sentence-encoder-cmlm_en-{}_1".format(self.m.split('-')[-1]))
-            preprocessor = hub.KerasLayer("./resource/bert_en_uncased_preprocess_3")
-            embed = encoder(preprocessor(text_input))["default"] # base:768 large:1024
-        # else:
-        #     from sentence_transformers import SentenceTransformer
-        #     self.model = SentenceTransformer(self.m, device=self.device, cache_folder='./sentberts')
+        with tf.device('/cpu:0'):
+            #with tf.distribute.MirroredStrategy().scope():
+            if self.m == 'dan':
+                # https://tfhub.dev/google/universal-sentence-encoder/4
+                # https://tfhub.dev/google/universal-sentence-encoder-lite/2
+                encoder = hub.KerasLayer("./resource/universal-sentence-encoder_4")
+                embed = encoder(text_input)
+            elif self.m.startswith('cmlm'):    
+                # https://tfhub.dev/google/universal-sentence-encoder-cmlm/en-base/1 
+                encoder = hub.KerasLayer("./resource/universal-sentence-encoder-cmlm_en-{}_1".format(self.m.split('-')[-1]))
+                preprocessor = hub.KerasLayer("./resource/bert_en_uncased_preprocess_3")
+                embed = encoder(preprocessor(text_input))["default"] # base:768 large:1024
+            # else:
+            #     from sentence_transformers import SentenceTransformer
+            #     self.model = SentenceTransformer(self.m, device=self.device, cache_folder='./sentberts')
 
         #if self.m in ['dan'] or self.m.startswith('cmlm'):
         self.model = tf.keras.Model(inputs=text_input, outputs=embed)
