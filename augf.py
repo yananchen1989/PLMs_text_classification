@@ -13,7 +13,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="generate", type=str)
 parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
-parser.add_argument("--samplecnt", default=32, type=int)
+parser.add_argument("--samplecnt", default=8, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
 parser.add_argument("--temp", default=1.0, type=float)
@@ -23,7 +23,6 @@ parser.add_argument("--basemode", default="max", type=str) # rank or thres
 
 #parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--epochs_ft", default=3, type=int)
-parser.add_argument("--trunk_size", default=32, type=int)
 parser.add_argument("--epochs", default=100, type=int)
 #parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
@@ -291,8 +290,8 @@ if args.aug == 'cbert':
         model.bert.embeddings.token_type_embeddings.weight.data.normal_(mean=0.0, std=0.02)
     model.to(device0)
 
-if args.aug == 'cgpt':
-    from utils.cgpt_config import * 
+# if args.aug == 'cgpt':
+#     from utils.cgpt_config import * 
 
 # def nli_classify(generated_text, label_name, expand_label_nli):
 #     assert label_name and  expand_label_nli
@@ -420,6 +419,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
         contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
         contents_syn.extend(contents_syn_tmp)
+    torch.cuda.empty_cache()
 
     # get nli score
     ners = get_ners(row['content'])
@@ -437,6 +437,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
         nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
         nli_scores.extend(nli_scores_ix)
 
+    torch.cuda.empty_cache()
     # get nsp score
     pairs = [[row['content'], sent] for sent in contents_syn]
     pairs_ids = get_ids(pairs, 256, tokenizer_bert )
@@ -706,27 +707,22 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
                                    alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
         assert len(aug_sentences) == ds.df_train.shape[0]
-        samples_syn = []
-        for ii in range(len(aug_sentences)):
-            for sent in aug_sentences[ii]:
-                samples_syn.append((sent, ds.df_train['label'].tolist()[ii]))
+        contents_syn = [ii[0] for ii in aug_sentences]
 
     elif args.aug == 'bt':
-        args.trunk_size = 8
-        samples_syn = []
-        for i in range(0, ds.df_train.shape[0], args.trunk_size):
-            contents_trunk = ds.df_train['content'].tolist()[i:i+args.trunk_size]
-            labels_trunk = ds.df_train['label'].tolist()[i:i+args.trunk_size]
-
+        contents_syn = []
+        fbs = 8
+        for i in range(0, ds.df_train.shape[0], fbs):
+            contents_trunk = ds.df_train['content'].tolist()[i:i+fbs]
             content_ =  nlp_forward(contents_trunk, truncation=True, \
-                       do_sample=True, temperature=0.9, max_length=512, num_return_sequences=1)
+                       do_sample=True, temperature=0.9, max_length=256, num_return_sequences=1)
             content__ =  nlp_backward([ii['translation_text'] for ii in content_], truncation=True, \
-                        do_sample=True, max_length=512, temperature=0.9, num_return_sequences=1 )
-            infos_trunk = list(zip([ii['translation_text'] for ii in content__], labels_trunk ))
-            samples_syn.extend(infos_trunk)
-            print('translate trunk==>', i, i+args.trunk_size, 'of', ds.df_train.shape[0])
+                        do_sample=True, max_length=256, temperature=0.9, num_return_sequences=1 )
+            contents_syn.extend([ii['translation_text'] for ii in content__])
+            print('translate trunk==>', i, i+fbs, 'of', ds.df_train.shape[0])
 
-    elif args.aug in ['cgpt','cbert']:
+
+    elif args.aug == 'cbert':
 
         temp_path = "augf__{}_{}".format(args.dsn, args.aug)
         temp_path_ft = "augf__{}_{}_ft".format(args.dsn, args.aug)
@@ -745,15 +741,9 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
         cbertgpt_batct_size = 8
 
-        if args.aug == 'cgpt':
-            train_features =    convert_examples_to_features(train_examples, block_size, tokenizer, seed)
-            train_features_ft = convert_examples_to_features(train_examples_ft, block_size, tokenizer, seed)
-            dev_features =      convert_examples_to_features(dev_examples, block_size, tokenizer, seed)
-
-        if args.aug == 'cbert':
-            train_features =    convert_examples_to_features(train_examples, label_list, proper_len, tokenizer, seed)
-            train_features_ft = convert_examples_to_features(train_examples_ft, label_list, proper_len, tokenizer, seed)
-            dev_features =      convert_examples_to_features(dev_examples, label_list, proper_len, tokenizer, seed)
+        train_features =    convert_examples_to_features(train_examples, label_list, proper_len, tokenizer, seed)
+        train_features_ft = convert_examples_to_features(train_examples_ft, label_list, proper_len, tokenizer, seed)
+        dev_features =      convert_examples_to_features(dev_examples, label_list, proper_len, tokenizer, seed)
 
         # train data
         train_data = prepare_data(train_features)
@@ -775,165 +765,84 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
         best_dev_loss = float('inf')
         #model_name = './{}_{}_best_{}.pt'.format(args.dsn, seed, args.aug)
+        # finetune
+        if not syn_df_ll:
+            for epoch in trange(args.epochs_ft, desc="Epoch"):
+                avg_loss = 0.
+                model.train()
+                for step, batch in enumerate(train_dataloader_ft):
+                    batch = tuple(t.to(device0) for t in batch)
+                    inputs = {'input_ids': batch[1],
+                              'attention_mask': batch[2],
+                              'token_type_ids': batch[3],
+                              'masked_lm_labels': batch[4] # yanan
+                              }
 
-        if args.aug == 'cgpt':
-            # finetune
-            if not syn_df_ll:
-                for epoch in trange(args.epochs_ft, desc="Epoch"):
+                    outputs = model(**inputs)
+                    loss = outputs[0]
+                    optimizer.zero_grad()
+                    loss.backward()
+                    avg_loss += loss.item()
+                    optimizer.step()
+
+                    if (step + 1) % 50 == 0:
+                        print("avg_loss: {}".format(avg_loss / 50))
                     avg_loss = 0.
-                    model.train()
-                    for step, batch in enumerate(train_dataloader_ft):
-                        batch = tuple(t.to(device0) for t in batch)
 
-                        inputs = {'input_ids': batch[0],
-                                  'labels': batch[1]}
+                # eval on dev after every epoch
+                dev_loss = compute_dev_loss(model, dev_dataloader)
+                print("Epoch {}, Dev loss {}".format(epoch, dev_loss))
+                if dev_loss < best_dev_loss:
+                    best_dev_loss = dev_loss
+                    print("Saving model. Best dev so far {}".format(best_dev_loss))
+                    #torch.save(model.state_dict(), model_name)
 
-                        outputs = model(**inputs)
-                        loss = outputs[0]
-                        # loss = model(input_ids, segment_ids, input_mask, masked_ids)
-                        optimizer.zero_grad()
-                        loss.backward()
-                        avg_loss += loss.item()
-                        optimizer.step()
-                        model.zero_grad()
-                        if (step + 1) % 50 == 0:
-                            print("avg_loss: {}".format(avg_loss / 50))
-                        # avg_loss = 0.
+        train_sampler = SequentialSampler(train_data)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=cbertgpt_batct_size)
+        #model.load_state_dict(torch.load(model_name))
 
-                    # eval on dev after every epoch
-                    dev_loss = compute_dev_loss(model, dev_dataloader)
-                    print("Epoch {}, Dev loss {}".format(epoch, dev_loss))
-                    if dev_loss < best_dev_loss:
-                        best_dev_loss = dev_loss
-                        print("Saving model. Best dev so far {}".format(best_dev_loss))
-                        #torch.save(model.state_dict(), model_name)     
+        print("generate augmentated samples")
+        MASK_id = tokenizer.convert_tokens_to_ids(['[MASK]'])[0]
+        cbert_sample_ratio = 0.3 # tune
+        #tsv_writer = csv.writer(save_train_file, delimiter='\t')
+        contents_syn = []
+        for step, batch in enumerate(train_dataloader):
+            model.eval()
+            batch = tuple(t.to(device0) for t in batch)
+            init_ids, _, input_mask, segment_ids, _ = batch
+            input_lens = [sum(mask).item() for mask in input_mask]
+            masked_idx = np.squeeze(
+                [np.random.randint(0, l, max( int(l * cbert_sample_ratio), 1) ) for l in input_lens])
+            for ids, idx in zip(init_ids, masked_idx):
+                ids[idx] = MASK_id
+            # print('mask tokens', [ii.shape[0] for ii in masked_idx])
+            # print('ori tokens', input_lens )
+            inputs = {'input_ids': init_ids,
+                      'attention_mask': input_mask,
+                      'token_type_ids': segment_ids}
 
-            print("generate augmentated samples")
-            samples_syn = [] 
-            prefix_size = prefix      
-            prefix_text = None
-            for ex_index, example in enumerate(train_examples):
-                model.eval()
-                if prefix_size > 0:
-                    prefix_text = " ".join(example.text_a.split(' ')[:prefix_size])
-                    prompt = example.label + SEP_TOKEN + prefix_text
-                else:
-                    prompt = example.label + SEP_TOKEN
-                # print('cgpt example.text_a ==>', example.text_a)
-                # print('cgpt prompt==>', prompt)
-                context_tokens = tokenizer.encode(prompt, return_tensors='pt').to(device0)
-                out = model.generate(
-                    input_ids=context_tokens,
-                    max_length=min(proper_len, tokenizer.model_max_length),
-                    num_return_sequences=1,
-                    do_sample=True,
-                    temperature=args.temp,
-                    top_k=0,
-                    top_p=0.9,
-                    repetition_penalty=1.0,
-                    pad_token_id=50256
-                )
+            outputs = model(**inputs)
+            predictions = outputs[0]  # model(init_ids, segment_ids, input_mask)
+            predictions = F.softmax(predictions / args.temp, dim=2)
 
-                out = out[:, len(context_tokens):].tolist()
-                #for o in out:
-                text = tokenizer.decode(out[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
-                aug_text = text.split(SEP_TOKEN.lower() )[-1]
-                # eosn_index = 128
-                # for stop_token in STOP_TOKENS:
-                #     idx = text.find(stop_token)
-                #     if idx > 0:
-                #         eosn_index = min(eosn_index, idx)
-                # text = text[: eosn_index]
-                # text = text.replace("\n", " ").replace(EOS_TOKEN, ' ').strip()
-                # if prefix_size > 0:
-                #     text = prefix_text + " " + text
-                samples_syn.append((aug_text, int(example.label)) )
-                #print('cgpt samples_syn==>', aug_text, '<==', example.label, '\n')
-
-
-        if args.aug == 'cbert':
-
-            # finetune
-            if not syn_df_ll:
-                for epoch in trange(args.epochs_ft, desc="Epoch"):
-                    avg_loss = 0.
-                    model.train()
-                    for step, batch in enumerate(train_dataloader_ft):
-                        batch = tuple(t.to(device0) for t in batch)
-                        inputs = {'input_ids': batch[1],
-                                  'attention_mask': batch[2],
-                                  'token_type_ids': batch[3],
-                                  'masked_lm_labels': batch[4] # yanan
-                                  }
-
-                        outputs = model(**inputs)
-                        loss = outputs[0]
-                        optimizer.zero_grad()
-                        loss.backward()
-                        avg_loss += loss.item()
-                        optimizer.step()
-
-                        if (step + 1) % 50 == 0:
-                            print("avg_loss: {}".format(avg_loss / 50))
-                        avg_loss = 0.
-
-                    # eval on dev after every epoch
-                    dev_loss = compute_dev_loss(model, dev_dataloader)
-                    print("Epoch {}, Dev loss {}".format(epoch, dev_loss))
-                    if dev_loss < best_dev_loss:
-                        best_dev_loss = dev_loss
-                        print("Saving model. Best dev so far {}".format(best_dev_loss))
-                        #torch.save(model.state_dict(), model_name)
-
-            train_sampler = SequentialSampler(train_data)
-            train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=cbertgpt_batct_size)
-            #model.load_state_dict(torch.load(model_name))
-
-            print("generate augmentated samples")
-            MASK_id = tokenizer.convert_tokens_to_ids(['[MASK]'])[0]
-            cbert_sample_ratio = 0.3 # tune
-            #tsv_writer = csv.writer(save_train_file, delimiter='\t')
-            samples_syn = []
-            for step, batch in enumerate(train_dataloader):
-                model.eval()
-                batch = tuple(t.to(device0) for t in batch)
-                init_ids, _, input_mask, segment_ids, _ = batch
-                input_lens = [sum(mask).item() for mask in input_mask]
-                masked_idx = np.squeeze(
-                    [np.random.randint(0, l, max( int(l * cbert_sample_ratio), 1) ) for l in input_lens])
-                for ids, idx in zip(init_ids, masked_idx):
-                    ids[idx] = MASK_id
-                # print('mask tokens', [ii.shape[0] for ii in masked_idx])
-                # print('ori tokens', input_lens )
-                inputs = {'input_ids': init_ids,
-                          'attention_mask': input_mask,
-                          'token_type_ids': segment_ids}
-
-                outputs = model(**inputs)
-                predictions = outputs[0]  # model(init_ids, segment_ids, input_mask)
-                predictions = F.softmax(predictions / args.temp, dim=2)
-
-                for ids, idx, preds, seg in zip(init_ids, masked_idx, predictions, segment_ids):
-                    preds = torch.multinomial(preds, 1, replacement=True)[idx]
-                    if len(preds.size()) == 2:
-                        preds = torch.transpose(preds, 0, 1)
-                    for pred in preds:
-                        ids[idx] = pred
-                        new_str = tokenizer.convert_ids_to_tokens(ids.cpu().numpy())
-                        new_str = rev_wordpiece(new_str)
-                        samples_syn.append((new_str, int(label_list[seg[0].item()])  ))
+            for ids, idx, preds, seg in zip(init_ids, masked_idx, predictions, segment_ids):
+                preds = torch.multinomial(preds, 1, replacement=True)[idx]
+                if len(preds.size()) == 2:
+                    preds = torch.transpose(preds, 0, 1)
+                for pred in preds:
+                    ids[idx] = pred
+                    new_str = tokenizer.convert_ids_to_tokens(ids.cpu().numpy())
+                    new_str = rev_wordpiece(new_str)
+                    contents_syn.append((new_str, int(label_list[seg[0].item()])  ))
         
     else:
         raise KeyError("args.aug model illegal!")   
 
-    
-    # print('samples_syn done...')
-    # df_synthesize = pd.DataFrame(samples_syn, columns = ['content','label'])
-    # df_synthesize['label'] = df_synthesize['label'].astype(int)
-    # aug_ratio_actual = df_synthesize.shape[0] / ds.df_train.shape[0] 
-    # print("aug_ratio_actual==>", aug_ratio_actual)
-        #for ix, row in df_synthesize.iterrows():
-         #   print('final_sample {}==> {}'.format(ixl[row['label']], row['content'].strip().replace('\n',' ') ) )
+    if args.aug in ['eda','bt','cbert']:
+        df_synthesize = ds.df_train[['label_name','label']]
+        df_synthesize['content'] = contents_syn
+        df_synthesize['fmark'] = args.aug
+
     return df_synthesize 
 
 
