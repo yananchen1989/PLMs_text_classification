@@ -1,7 +1,7 @@
 max_aug_times=1
 #samplecnt=${1}
-candidates=${2}
-gpu=${3}
+candidates=256
+gpu=${1}
 
 for samplecnt in 32 64 128 
 do
