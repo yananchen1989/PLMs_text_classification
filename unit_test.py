@@ -48,15 +48,19 @@ tokenizer_gpt2.sep_token = '<|sep|>'
 print(tokenizer_gpt2)
 gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 #gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_ft_ep')
-
+from transformers import pipeline
 gpt2.trainable = False
 gpt2.config.pad_token_id = 50256
-gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
 
 
-ds = load_data(dataset='uci', samplecnt= -1)
-
-
+sent = '''
+Wizards welcome Bobcats to NBA Basketball returned to Charlotte as the Bobcats opened their first season Thursday night with a 103 - 96 loss to the Wizards. Replacing the Hornets after they moved to New Orleans
+'''
+result_gpt = gen_nlp([sent], max_length=128, \
+                                            do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                            repetition_penalty=1.2, num_return_sequences= 36,\
+                                            clean_up_tokenization_spaces=True)
 
 
 

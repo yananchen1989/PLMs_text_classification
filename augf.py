@@ -16,13 +16,11 @@ parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','
 parser.add_argument("--samplecnt", default=8, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
-parser.add_argument("--temp", default=1.0, type=float)
 parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--verbose", default=0, type=int)
 parser.add_argument("--basemode", default="max", type=str) # rank or thres
 
 #parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
-parser.add_argument("--epochs_ft", default=3, type=int)
 parser.add_argument("--epochs", default=100, type=int)
 #parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
@@ -768,7 +766,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         #model_name = './{}_{}_best_{}.pt'.format(args.dsn, seed, args.aug)
         # finetune
         if not syn_df_ll:
-            for epoch in trange(args.epochs_ft, desc="Epoch"):
+            for epoch in trange(3, desc="Epoch"):
                 avg_loss = 0.
                 model.train()
                 for step, batch in enumerate(train_dataloader_ft):
@@ -820,7 +818,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
                       'token_type_ids': segment_ids}
             outputs = model(**inputs)
             predictions = outputs[0]  # model(init_ids, segment_ids, input_mask)
-            predictions = F.softmax(predictions / args.temp, dim=2)
+            predictions = F.softmax(predictions / 1.0, dim=2)
             for ids, idx, preds, seg in zip(init_ids, masked_idx, predictions, segment_ids):
                 preds = torch.multinomial(preds, 1, replacement=True)[idx]
                 if len(preds.size()) == 2:
@@ -871,6 +869,6 @@ for fmark in df_synthesize['fmark'].unique():
     summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
         ['fmark:{} acc_base:{} acc_aug:{} gain:{} '.format(fmark, acc_noaug, acc_aug, gain )]
 
-    if args.testbed and args.epochs > 10 and gain != -1 :
-        record_log('log__baselines', summary)
+    # if args.testbed and args.epochs > 10 and gain != -1 :
+    #     record_log('log__baselines', summary)
     print('success', ' '.join(summary))

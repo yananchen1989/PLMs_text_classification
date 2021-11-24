@@ -46,22 +46,21 @@ python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug bt \
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 
-nohup bash run.sh  32 128    0,1 &
+nohup bash run.sh  32 256    0,1 &
 nohup bash run.sh  32 256    2,3 &
-nohup bash run.sh  32 512    4,5 &
-
-nohup bash run_base.sh  32 256   6,7 &
-
+nohup bash run.sh  32 256    4,5 &
+nohup bash run.sh  32 256   6,7 &
 
 
 
 
 
-nohup python -u rltoken.py  --gpu 0,1  --alpha 0.9 --future_steps 32 --beams 128 > rltoken.0p9.log &
-nohup python -u rltoken.py  --gpu 2,3  --alpha 0.5 --future_steps 32 --beams 128 > rltoken.0p5.log &
-nohup python -u rltoken.py  --gpu 4,5  --alpha 0.1 --future_steps 32 --beams 128 > rltoken.0p1.log &
 
-nohup python -u aug_ppo.py > aug_ppo.log & 
+# nohup python -u rltoken.py  --gpu 0,1  --alpha 0.9 --future_steps 32 --beams 128 > rltoken.0p9.log &
+# nohup python -u rltoken.py  --gpu 2,3  --alpha 0.5 --future_steps 32 --beams 128 > rltoken.0p5.log &
+# nohup python -u rltoken.py  --gpu 4,5  --alpha 0.1 --future_steps 32 --beams 128 > rltoken.0p1.log &
+
+# nohup python -u aug_ppo.py > aug_ppo.log & 
 
 
 
