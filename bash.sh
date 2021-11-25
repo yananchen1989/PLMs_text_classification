@@ -52,7 +52,7 @@ do
 done
 
 
-
+nohup bash run_cbert.sh & 
 
 
 
