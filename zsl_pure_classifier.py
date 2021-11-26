@@ -21,7 +21,7 @@ nli_nlp_dic = {}
 acc_dic = {}
 time_dic = {}
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-for nli_model_name in[ 'facebook/bart-large-mnli', "vicgalle/xlm-roberta-large-xnli-anli"]: # , 'joeddav/xlm-roberta-large-xnli'
+for nli_model_name in[ 'facebook/bart-large-mnli', "vicgalle/xlm-roberta-large-xnli-anli", 'joeddav/xlm-roberta-large-xnli']: # 
     model_nli = AutoModelForSequenceClassification.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
     tokenizer_nli = AutoTokenizer.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
     nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=-1)
