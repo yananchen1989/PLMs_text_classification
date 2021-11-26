@@ -11,7 +11,9 @@ They are fed up with slow speeds, high prices and the level of customer service 
 import pandas as pd
 import glob 
 infos = []
-files = glob.glob("./log_arxiv_nlinsp/*.log")
+#folder = "log_arxiv_nlinsp"
+folder = "log_baselines"
+files = glob.glob("./{}/*.log".format(folder))
 for file in files:
     with open(file,'r') as f: 
         for line in f:

@@ -489,96 +489,55 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     # get mc scores
     df_future_sel_ll = []
-    while True:
-        contents_syn = []
-        fbs_gen = 32
-        for _ in range(0, args.candidates//fbs_gen):
-            torch.cuda.empty_cache()
-            result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn], \
-                                            do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                            repetition_penalty=1.2, num_return_sequences= fbs_gen,\
-                                            clean_up_tokenization_spaces=True)
+    contents_syn = []
+    fbs_gen = 32
+    mc_candidates = args.candidates * 2
+    for _ in range(0, mc_candidates * //fbs_gen):
+        torch.cuda.empty_cache()
+        result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn], \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= fbs_gen,\
+                                        clean_up_tokenization_spaces=True)
 
-            contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
-            contents_syn.extend(contents_syn_tmp)
+        contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
+        contents_syn.extend(contents_syn_tmp)
 
-        contents_syn_mc_trunk = []
-        fbs_mc = 8
+    contents_syn_mc_trunk = []
+    fbs_mc = 8
 
-        for ii in range(0, len(contents_syn), fbs_mc):
-            result_mc = gen_nlp(contents_syn[ii:ii+fbs_mc], max_length=dsn_maxlen[args.dsn], \
-                                            do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                            repetition_penalty=1.2, num_return_sequences= args.test_beams,\
-                                            clean_up_tokenization_spaces=True)
-            if args.genm == 'gpt':
-                for s in result_mc:
-                    samples = [ss['generated_text'] for ss in s ]
-                    contents_syn_mc_trunk.extend(samples)
-            elif args.genm == 't5':
-                contents_syn_mc_trunk.extend([s['generated_text'] for s in result_mc ])
-            
-        assert len(contents_syn_mc_trunk) == len(contents_syn) * args.test_beams
-        preds = model_cls.predict(np.array(contents_syn_mc_trunk),  batch_size=32, verbose=0) 
+    for ii in range(0, len(contents_syn), fbs_mc):
+        result_mc = gen_nlp(contents_syn[ii:ii+fbs_mc], max_length=dsn_maxlen[args.dsn], \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= args.test_beams,\
+                                        clean_up_tokenization_spaces=True)
+        if args.genm == 'gpt':
+            for s in result_mc:
+                samples = [ss['generated_text'] for ss in s ]
+                contents_syn_mc_trunk.extend(samples)
+        elif args.genm == 't5':
+            contents_syn_mc_trunk.extend([s['generated_text'] for s in result_mc ])
+        
+    assert len(contents_syn_mc_trunk) == len(contents_syn) * args.test_beams
+    preds = model_cls.predict(np.array(contents_syn_mc_trunk),  batch_size=32, verbose=0) 
 
-        mc_scores_tmp = []
-        for j in range(0, len(contents_syn_mc_trunk), args.test_beams):
-            pred_mean = preds[j:j+args.test_beams, row['label']].mean()
-            mc_scores_tmp.append(pred_mean)
-        assert len(mc_scores_tmp) == len(contents_syn)
+    mc_scores_tmp = []
+    for j in range(0, len(contents_syn_mc_trunk), args.test_beams):
+        pred_mean = preds[j:j+args.test_beams, row['label']].mean()
+        mc_scores_tmp.append(pred_mean)
+    assert len(mc_scores_tmp) == len(contents_syn)
 
-        df_future = pd.DataFrame(zip(contents_syn, mc_scores_tmp), columns=['content','mc_score'])
-        df_future_sel_ll.append(df_future)
+    df_future = pd.DataFrame(zip(contents_syn, mc_scores_tmp), columns=['content','mc_score'])
+    df_future_sel_ll.append(df_future)
 
-        df_future_all = pd.concat(df_future_sel_ll)
-        if df_future_all.loc[df_future_all['mc_score'] >= 0.8].shape[0] >= args.candidates:
-            break 
+    df_future_all = pd.concat(df_future_sel_ll)
+    df_future_sel = df_future_all.sort_values(by=['mc_score'], ascending=False).head(args.candidates)
 
-    contents_syn = df_future_all['content'].tolist()
-    mc_scores = df_future_all['mc_score'].tolist()
-    print("mc done:", df_future_all.shape[0], df_future_all.loc[df_future_all['mc_score'] >= 0.8].shape[0])
+    contents_syn = df_future_sel['content'].tolist()
+
+    print("mc done:", len(contents_syn))
+    return contents_syn
 
 
-
-    # get nli score
-    ners = get_ners(row['content'])
-    labels_candidates = [row['label_name']] + ners
-    print(labels_candidates)
-
-    nli_scores = []
-    fbs_nli = 8
-    for ix in range(0, len(contents_syn), fbs_nli):
-        contents_syn_ix = contents_syn[ix:ix+fbs_nli]
-        nli_result = nli_nlp(contents_syn_ix,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-        nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
-        nli_scores.extend(nli_scores_ix)
-
-    # get nsp score
-    pairs = [[row['content'], sent] for sent in contents_syn]
-    pairs_ids = get_ids(pairs, 256, tokenizer_bert )
-    preds = bert_nsp.predict(pairs_ids, batch_size=8)
-    nsp_scores = preds[:,0]
-
-    # merge scores
-    df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores, mc_scores), \
-                        columns=['content','nli_score', 'nsp_score', 'mc_score'])
-    df_tmp['nlinsp_score'] = df_tmp['nli_score'].map(lambda x: math.log(x)) + df_tmp['nsp_score'].map(lambda x: math.log(x)) 
-
-    df_tmp_nomc = df_tmp.sample(args.candidates)
-    df_tmp_mc = df_tmp.loc[df_tmp['mc_score']>=0.8].sort_values(by=['mc_score'], ascending=False).head(args.candidates)
-    assert df_tmp_mc.shape[0] == args.candidates and df_tmp_nomc.shape[0] == args.candidates
-
-    content_syn_1_1_1 = df_tmp_mc.sort_values(by=['nlinsp_score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_1_1_0 = df_tmp_mc.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_1_0_1 = df_tmp_mc.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
-    content_syn_1_0_0 = df_tmp_mc.sample(1)['content'].tolist()[0] 
-
-    content_syn_0_1_1 = df_tmp_nomc.sort_values(by=['nlinsp_score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_0_1_0 = df_tmp_nomc.sort_values(by=['nli_score'], ascending=False).head(1)['content'].tolist()[0] 
-    content_syn_0_0_1 = df_tmp_nomc.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
-    content_syn_0_0_0 = df_tmp_nomc.sample(1)['content'].tolist()[0] 
-
-    return content_syn_1_1_1, content_syn_1_1_0, content_syn_1_0_1, content_syn_1_0_0, \
-           content_syn_0_1_1, content_syn_0_1_0, content_syn_0_0_1, content_syn_0_0_0
 
 
 
