@@ -45,7 +45,7 @@ for ix, row in ds.df_test.reset_index().iterrows():
         else:
             acc_dic[nli_model_name].append(0)
 
-    if ix % 5 == 0:
+    if ix % 50 == 0:
         print(ix)
         for nli_model_name in nli_nlp_dic.keys():
             print(nli_model_name)
