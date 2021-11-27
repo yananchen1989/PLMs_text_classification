@@ -38,7 +38,6 @@ sent = "Virus to cause spike in pork prices"
 
 ############## whole token generation ############  
 
-
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 #tokenizer_gpt2.padding_side = "left" 
