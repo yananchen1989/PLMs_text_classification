@@ -245,8 +245,8 @@ if args.aug == 'generate':
         #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=1) #  1.8.1+cu102
         # vicgalle/xlm-roberta-large-xnli-anli joeddav/xlm-roberta-large-xnli 
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
-        model_nli = AutoModelForSequenceClassification.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
-        tokenizer_nli = AutoTokenizer.from_pretrained('facebook/bart-large-mnli', cache_dir='./cache', local_files_only=True)
+        model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+        tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
         nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
         with tf.distribute.MirroredStrategy().scope():
@@ -485,14 +485,14 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     return result_syn
 
-
+'''
 def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     # get mc scores
     df_future_sel_ll = []
     contents_syn = []
     fbs_gen = 32
     mc_candidates = args.candidates * 2
-    for _ in range(0, mc_candidates * //fbs_gen):
+    for _ in range(0, mc_candidates //fbs_gen):
         torch.cuda.empty_cache()
         result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn], \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
@@ -536,7 +536,7 @@ def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     print("mc done:", len(contents_syn))
     return contents_syn
-
+'''
 
 
 

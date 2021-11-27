@@ -3,25 +3,14 @@ max_aug_times=1
 candidates=256
 gpu=${1}
 
-for samplecnt in 32 64 128 
+for samplecnt in 64 128 32
 do
 	for i in {1..12}
 	do
 		seed=$RANDOM
 		#seed=$(date +"%T")
 		for dsn in ag uci nyt #yelp2 amazon2
-		do
-			for aug in eda bt 
-			do
-				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug ${aug} \
-				       --seed ${seed} --testvalid test  --gpu ${gpu} \
-				   > ./log_baselines/${dsn}.${aug}.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
-			done
-
-			# envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug cbert \
-			#       --max_aug_times ${max_aug_times} --seed ${seed} --testvalid test  \
-			#  > ./log_baselines/${dsn}.cbert.${samplecnt}.${seed}.log 2>&1
-			
+		do	
 			# lambda
 			python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
 					      --genft lambda  --genm gpt --filter clsembed --seed ${seed} \

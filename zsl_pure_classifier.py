@@ -17,6 +17,7 @@ ds = load_data(dataset=args.dsn, samplecnt=-1)
 ds, proper_len = process_ds(ds, 256)
 
 
+
 nli_nlp_dic = {}
 acc_dic = {}
 time_dic = {}
@@ -52,6 +53,50 @@ for ix, row in ds.df_test.reset_index().iterrows():
             print("acc:", np.array(acc_dic[nli_model_name]).mean())
             print("time cost:", np.array(time_dic[nli_model_name]).mean())
         print('\n') 
+
+'''
+ag:
+facebook/bart-large-mnli
+acc: 0.7199046483909416
+time cost: 2.5168240070343018
+
+vicgalle/xlm-roberta-large-xnli-anli
+acc: 0.7612236789829162
+time cost: 2.5296759605407715
+
+joeddav/xlm-roberta-large-xnli
+acc: 0.6893126738180373
+time cost: 2.215322971343994
+
+
+
+uci:
+
+facebook/bart-large-mnli
+acc: 0.6745514798308765
+time cost: 0.43288516998291016
+
+vicgalle/xlm-roberta-large-xnli-anli
+acc: 0.7370586218717861
+time cost: 0.6152443885803223
+
+joeddav/xlm-roberta-large-xnli
+acc: 0.6927208319049252
+time cost: 0.3963637351989746
+'''
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
