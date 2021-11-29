@@ -8,6 +8,23 @@ They are fed up with slow speeds, high prices and the level of customer service 
 
 
 
+
+
+import glob
+error_files = []
+folder = "log_baselines"
+files = glob.glob("./{}/*.log".format(folder))
+for file in files:
+    with open(file,'r') as f: 
+        for line in f:
+            if "SyntaxError: invalid syntax" in line:
+                error_files.append(file)
+                break 
+
+import os 
+for file in error_files:
+    os.system("rm {}".format(file))
+
 import pandas as pd
 import glob 
 infos = []
