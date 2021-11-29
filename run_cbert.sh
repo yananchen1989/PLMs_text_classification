@@ -1,7 +1,8 @@
 max_aug_times=1
-for samplecnt in 64 128 32
+
+for i in {1..12}
 do
-	for i in {1..12}
+	for samplecnt in 64 128 32
 	do
 		seed=$RANDOM
 		#seed=$(date +"%T")

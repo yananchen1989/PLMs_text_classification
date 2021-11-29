@@ -84,10 +84,12 @@ alias wn='watch -n 1 nvidia-smi'
 
 # 解压
 unzip -o -d /home/sunny myfile.zip
+tar -zxvf resource.tar.gz
 
-# 压缩 torch_ds resource cache
 
-for file in  cache_cbert
+
+
+for file in resource torch_ds cache_cbert
 do
 	#tar -zcvf ${file}.tar.gz ${file}
 	tar -xvzf ${file}.tar.gz  -C ${file}

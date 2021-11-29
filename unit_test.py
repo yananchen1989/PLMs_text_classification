@@ -1,3 +1,6 @@
+from google.colab import drive
+drive.mount('/content/gdrive')
+
 sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
 
 sent = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
@@ -34,7 +37,9 @@ sent = "Virus to cause spike in pork prices"
 # loss = outputs.loss
 # logits = outputs.logits
 
-
+import tensorflow as tf 
+gpus = tf.config.list_physical_devices('GPU')
+print('======>',gpus,'<=======')
 
 ############## whole token generation ############  
 
