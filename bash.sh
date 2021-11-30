@@ -84,7 +84,7 @@ alias wn='watch -n 1 nvidia-smi'
 
 # 解压
 unzip -o -d /home/sunny myfile.zip
-tar -zxvf resource.tar.gz
+tar -zxvf torch_ds.tar.gz;tar -zxvf cache_cbert.tar.gz;
 
 
 
@@ -98,5 +98,5 @@ done
 
 zip -r myfile.zip ./myfile
 
-
+cat *.pgn | grep "Result" | sort | uniq -c
 conda config --set auto_activate_base true
