@@ -4,7 +4,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 parser = argparse.ArgumentParser()
 parser.add_argument("--future_steps", default=32, type=int)
 parser.add_argument("--beams", default=256, type=int)
-parser.add_argument("--gpu", default="0,1", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 print('args==>', args)
 
@@ -48,7 +48,7 @@ gpt2.config.pad_token_id = 50256
 
 gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=True)
 
-device_i = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
+device_i = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 gpt2.to(device_i)
 
 
@@ -196,6 +196,7 @@ Note: We need the initialization for last layer of the Actor to be between
 the initial stages, which would squash our gradients to zero,
 as we use the `tanh` activation.
 """
+
 preprocessor_file = "./resource/albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
 preprocessor_layer = hub.KerasLayer(preprocessor_file)
 encoder = hub.KerasLayer("./resource/albert_en_base_2", trainable=True)
@@ -288,7 +289,7 @@ gamma = 0.99
 # Used to update target networks
 tau = 0.005
 
-buffer = Buffer(100000, 64)
+buffer = Buffer(100000, 32)
 
 """
 Now we implement our main training loop, and iterate over episodes.
@@ -310,11 +311,11 @@ def sample_action_gpt(sent, action):
     return next_token
 
 
-def get_future_score(sent, label, future_steps, beams):
+def get_future_score(sent, label, beams):
     # ori
     ori_ids = tokenizer_gpt2.encode(sent, return_tensors="pt")
     tokens_len_ori = ori_ids.shape[1]
-    result = gen_nlp_gpt2([sent], max_length=tokens_len_ori+future_steps, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
+    result = gen_nlp_gpt2([sent], max_length=64, do_sample=True, top_p=0.9, top_k=0, temperature=1,\
                             repetition_penalty=1.0, num_return_sequences=beams, clean_up_tokenization_spaces=True)
     
     x = tf.convert_to_tensor([ ii['generated_text'].strip() for ii in result ])
@@ -325,13 +326,13 @@ def get_future_score(sent, label, future_steps, beams):
     return future_loss[0]
 
 def next_sent_reward(sent_ori, sent, label, next_token, future_steps=32, beams=512):
-    score_ori = get_future_score(sent_ori, label, future_steps, beams)
+    score_ori = get_future_score(sent_ori, label, beams)
 
     next_state_ids = torch.cat([tokenizer_gpt2.encode(sent, return_tensors="pt"), next_token.cpu()], dim=-1)
 
     sent_next = tokenizer_gpt2.decode(next_state_ids[0], clean_up_tokenization_spaces=True, skip_special_tokens=True)
     
-    score_next  = get_future_score(sent_next, label, future_steps, beams)
+    score_next  = get_future_score(sent_next, label, beams)
 
     return tf.convert_to_tensor(score_ori - score_next), sent_next
 

@@ -1,5 +1,11 @@
 from google.colab import drive
+import os, sys
 drive.mount('/content/gdrive')
+nb_path = '/content/gdrive'
+os.symlink('/content/drive/My Drive/Colab Notebooks', nb_path)
+sys.path.insert(0,nb_path)
+
+!pip install --target=$nb_path jdc
 
 sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
 
@@ -44,13 +50,20 @@ print('======>',gpus,'<=======')
 ############## whole token generation ############  
 
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+try:
+    tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+except:
+    tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=False)
+
 #tokenizer_gpt2.padding_side = "left" 
 tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
 tokenizer_gpt2.sep_token = '<|sep|>'
 #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
 print(tokenizer_gpt2)
-gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+try:
+    gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+except:
+    gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=False)
 #gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_ft_ep')
 from transformers import pipeline
 gpt2.trainable = False
