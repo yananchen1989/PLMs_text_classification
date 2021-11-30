@@ -383,7 +383,11 @@ def get_model_nsp(max_length):
     token_type_ids = tf.keras.layers.Input(
         shape=(max_length,), dtype=tf.int32, name="token_type_ids"
     )
-    bert_layer = TFBertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+    try:
+        bert_layer = TFBertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+    except:
+        bert_layer = TFBertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache')
+
 
     logits = bert_layer(input_ids, token_type_ids=token_type_ids)[0]
     out = tf.keras.activations.softmax(logits)

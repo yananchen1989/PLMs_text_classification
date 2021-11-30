@@ -9,10 +9,16 @@ from transformers import AutoTokenizer
 import transformers
 
 if transformers.__version__.startswith("4."):
-    tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache", local_files_only=True)
+    try:
+        tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache", local_files_only=True)
+    except:
+        tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache")
 
 if transformers.__version__.startswith("2."):
-    tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache_cbert", local_files_only=True)
+    try:
+        tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache_cbert", local_files_only=True)
+    except:
+        tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache_cbert")
 
 
 def truncate(sent, max_length):

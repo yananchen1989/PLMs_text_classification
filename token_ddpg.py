@@ -33,14 +33,14 @@ ds.df_train['content'] = ds.df_train['content'].map(lambda x: x.strip(string.pun
 
 # gpt2
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=False)
 #tokenizer_gpt2.padding_side = "left" 
 tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
 tokenizer_gpt2.sep_token = '<|sep|>'
 #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
 print(tokenizer_gpt2)
 # no
-gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=False)
 # tc pp
 #gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format('t5', 'ep') )
 gpt2.trainable = False
