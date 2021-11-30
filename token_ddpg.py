@@ -289,7 +289,7 @@ gamma = 0.99
 # Used to update target networks
 tau = 0.005
 
-buffer = Buffer(100000, 32)
+buffer = Buffer(100000, 16)
 
 """
 Now we implement our main training loop, and iterate over episodes.
@@ -372,7 +372,8 @@ for epoch in range(100):
             ep_reward_list.append(reward.numpy())
             avg_reward_list.append(reward.numpy())
 
-        print(ix, label_name, "instance reward==>", np.array(avg_reward_list).mean(), "==>", sent_next)
+        print(ix, label_name, "instance reward==>", np.array(avg_reward_list).mean(), avg_reward_list)
+        print("sent==>", sent)
 
         if ix > 0 and ix % 8 == 0:
             buffer.learn()
