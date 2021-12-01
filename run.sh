@@ -6,7 +6,7 @@ gpu=${1}
 
 for i in {1..12}
 do
-	for samplecnt in 64 128 32
+	for samplecnt in 64 32
 	do
 		seed=$RANDOM
 		#seed=$(date +"%T")
