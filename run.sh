@@ -1,11 +1,11 @@
 max_aug_times=1
 gpu=${1}
 
-for candidates in 512 1024 256
+for i in {1..10}
 do
-	for i in {1..10}
+	for candidates in 256 512 1024
 	do
-		for samplecnt in 64 32
+		for samplecnt in 128
 		do
 			seed=$RANDOM
 			#seed=$(date +"%T")
