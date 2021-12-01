@@ -3,7 +3,7 @@ gpu=${1}
 
 for i in {1..10}
 do
-	for candidates in 256 512 1024
+	for candidates in 256 512 1024 2048
 	do
 		for samplecnt in 128
 		do
