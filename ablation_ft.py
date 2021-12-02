@@ -44,7 +44,7 @@ parser.add_argument("--candidates", default=64, type=int)
 parser.add_argument("--seed", default=0, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 
-# parser.add_argument("--ddi", default=2, type=int)
+parser.add_argument("--ft_epochs", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
 
 # parser.add_argument("--encm", default='dan', type=str, \
@@ -144,7 +144,7 @@ os.system(
         --per_device_eval_batch_size 8 \
         --output_dir {} \
         --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(len(gpus)-1, 12, train_file, validation_file, model_output_path, 64) ) 
+        --block_size {}".format(len(gpus)-1, args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
 gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 
@@ -167,7 +167,7 @@ os.system(
         --per_device_eval_batch_size 8 \
         --output_dir {} \
         --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(len(gpus)-1, 12, train_file, validation_file, model_output_path, 64) ) 
+        --block_size {}".format(len(gpus)-1, args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
 gpt2_entire = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 
