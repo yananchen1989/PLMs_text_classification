@@ -219,8 +219,9 @@ for ix, row in ds.df_train.reset_index().iterrows():
     print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
 
     for ft, gen_nlp_v in gen_nlp.items():
-        content_syn = gen_text(gen_nlp_v, prompt, ft)
-
+        content_syn = gen_text(gen_nlp_v, row['content'], ft)
+        content_syn = remove_str(content_syn)
+        print("ft:{}==>{}".format(ft, content_syn))
         infos.append((content_syn, row['label_name'], row['label'], ft))
 
 

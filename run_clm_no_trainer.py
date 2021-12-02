@@ -464,6 +464,7 @@ def main():
     cur_perplexity = perplexity
     best_model = model
 
+    perplexiy_ll = []
     for epoch in range(args.num_train_epochs):
         model.train()
         for step, batch in enumerate(train_dataloader):
@@ -502,8 +503,12 @@ def main():
             logger.info("<==perplexity dropped==>")
             cur_perplexity = perplexity
             best_model = model
+        else:
+            perplexiy_ll.append(-1)
 
-
+        if sum(perplexiy_ll) <= -3:
+            break 
+            
     if args.output_dir is not None:
         accelerator.wait_for_everyone()
         unwrapped_model = accelerator.unwrap_model(best_model)
