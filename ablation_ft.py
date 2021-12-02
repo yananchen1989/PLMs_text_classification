@@ -226,16 +226,23 @@ gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_
 
 dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
-def gen_text(gen_nlp, prompt, ft):
+def gen_text(gen_nlp, prompt, ft, row):
     if ft == 'lambda':
         prompt = ' '.join(prompt.split(' ')[:4])
     result_gpt = gen_nlp([prompt], max_length=dsn_maxlen[args.dsn], \
                                     do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                    repetition_penalty=1.2, num_return_sequences= 8,\
+                                    repetition_penalty=1.2, num_return_sequences= 16,\
                                     clean_up_tokenization_spaces=True)
 
     contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt[0] if ii]
-    return random.sample(contents_syn_tmp, 1)[0]
+
+    pred = model_cls.predict(contents_syn_tmp, batch_size=8, verbose=0)  
+
+    pred_label_score = pred[:, row['label']]
+    df_tmp = pd.DataFrame(zip(contents_syn_tmp, list(pred_label_score)), columns=['content','cls_score'])
+    contents_syn_tmp_cls = df_tmp.sort_values(by=['cls_score'], ascending=False, inplace=True)['content'].tolist()[0]
+    
+    return random.sample(contents_syn_tmp, 1)[0], contents_syn_tmp_cls
 
 
 infos = []
@@ -244,10 +251,12 @@ for ix, row in ds.df_train.reset_index().iterrows():
     print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
 
     for ft, gen_nlp_v in gen_nlp.items():
-        content_syn = gen_text(gen_nlp_v, row['content'], ft)
-        content_syn = remove_str(content_syn)
+        content_syn, content_syn_cls = gen_text(gen_nlp_v, row['content'], ft, row)
+
         print("ft:{}==>{}".format(ft, content_syn))
-        infos.append((content_syn, row['label_name'], row['label'], ft))
+        infos.append((content_syn,     row['label_name'], row['label'], ft+'0'))
+        infos.append((content_syn_cls, row['label_name'], row['label'], ft+'1'))
+
     print('\n')
 
 df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'ft'])
@@ -257,9 +266,8 @@ ds.df_train['ft'] = 'ori'
 df_train_aug = pd.concat([ds.df_train + df_synthesize ]).sample(frac=1)
 
 
-
 for ft in df_synthesize['ft'].unique():
     acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['ft'].isin(['ori',ft])], ds.df_test)
-    print(ft, acc_aug)
+    print(ft, acc_aug, round((acc_aug - acc_noaug)/acc_noaug, 4)*100 )
 
 
