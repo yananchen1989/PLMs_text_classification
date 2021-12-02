@@ -52,8 +52,10 @@ do
 done
 
 
+for i in 0 1 2 3 
+do
 nohup bash run_cbert.sh & 
-
+done
 
 
 # nohup python -u rltoken.py  --gpu 0,1  --alpha 0.9 --future_steps 32 --beams 128 > rltoken.0p9.log &
@@ -64,13 +66,26 @@ nohup bash run_cbert.sh &
 
 
 
+while true
+do
+   seed=$RANDOM
+   for samplecnt in 32 64 128
+   do
+      for dsn in ag uci  #yelp2 amazon2
+      do 
+        python -u ablation_ft.py --samplecnt ${samplecnt} --dsn ${dsn} > ablation_ft.${samplecnt}.${dsn}.${seed}.log 2>&1
+      done
+   done
+done
+
 
 
 
 
 ############################################################################################################################################
 ps aux|grep "augf.py"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "run_nlinsp.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
 ps aux|grep "dvrl_iter"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "dvrl_iter"|grep "3762"|grep -v grep | awk '{print $2}'|xargs kill -9

@@ -236,7 +236,7 @@ def gen_text(gen_nlp, prompt, ft, row):
 
     contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt[0] if ii]
 
-    pred = model_cls.predict(contents_syn_tmp, batch_size=8, verbose=0)  
+    pred = model_cls.predict(np.array(contents_syn_tmp), batch_size=8, verbose=0)  
 
     pred_label_score = pred[:, row['label']]
     df_tmp = pd.DataFrame(zip(contents_syn_tmp, list(pred_label_score)), columns=['content','cls_score'])
