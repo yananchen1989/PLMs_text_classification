@@ -101,8 +101,32 @@ ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 ds, proper_len = process_ds(ds, 128)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
+testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
+def thread_testing(testvalid, df_train, df_test):
+    best_test_accs = []
+    models = []
 
+    for ddi in range(3):
+        threads = []
+        for di in range(1):
+            t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
+                              args.epochs,  args.verbose, 'albert', 8))
+            t.start()
+            threads.append(t)
+        # join all threads
+        for t in threads:
+            t.join() 
 
+    if args.basemode == 'mean':
+        acc = round(np.array(best_test_accs).mean(), 4)
+    elif args.basemode == 'max':
+        acc = round(np.array(best_test_accs).max(), 4)
+
+    model_best = models[np.array(best_test_accs).argmax()]
+    return  acc, model_best
+
+acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)    
+print("acc_noaug==>", acc_noaug)
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache")
 #tokenizer_gpt2.padding_side = "left" 
@@ -224,7 +248,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
         content_syn = remove_str(content_syn)
         print("ft:{}==>{}".format(ft, content_syn))
         infos.append((content_syn, row['label_name'], row['label'], ft))
-
+    print('\n')
 
 df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'ft'])
 
@@ -232,33 +256,7 @@ df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'ft
 ds.df_train['ft'] = 'ori'
 df_train_aug = pd.concat([ds.df_train + df_synthesize ]).sample(frac=1)
 
-testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
-def thread_testing(testvalid, df_train, df_test):
-    best_test_accs = []
-    models = []
 
-    if gpus:
-        outer_loop, inner_loop = 1, 3 
-    else:
-        outer_loop, inner_loop = 3, 1
-    for ddi in range(outer_loop):
-        threads = []
-        for di in range(inner_loop):
-            t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
-                              args.epochs,  args.verbose, 'albert', 8))
-            t.start()
-            threads.append(t)
-        # join all threads
-        for t in threads:
-            t.join() 
-
-    if args.basemode == 'mean':
-        acc = round(np.array(best_test_accs).mean(), 4)
-    elif args.basemode == 'max':
-        acc = round(np.array(best_test_accs).max(), 4)
-
-    model_best = models[np.array(best_test_accs).argmax()]
-    return  acc, model_best
 
 for ft in df_synthesize['ft'].unique():
     acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['ft'].isin(['ori',ft])], ds.df_test)
