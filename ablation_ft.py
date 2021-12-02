@@ -231,6 +231,34 @@ df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'ft
 ds.df_train['ft'] = 'ori'
 df_train_aug = pd.concat([ds.df_train + df_synthesize ]).sample(frac=1)
 
+testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
+def thread_testing(testvalid, df_train, df_test):
+    best_test_accs = []
+    models = []
+
+    if gpus:
+        outer_loop, inner_loop = 1, 3 
+    else:
+        outer_loop, inner_loop = 3, 1
+    for ddi in range(outer_loop):
+        threads = []
+        for di in range(inner_loop):
+            t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
+                              args.epochs,  args.verbose, 'albert', 8))
+            t.start()
+            threads.append(t)
+        # join all threads
+        for t in threads:
+            t.join() 
+
+    if args.basemode == 'mean':
+        acc = round(np.array(best_test_accs).mean(), 4)
+    elif args.basemode == 'max':
+        acc = round(np.array(best_test_accs).max(), 4)
+
+    model_best = models[np.array(best_test_accs).argmax()]
+    return  acc, model_best
+    
 for ft in df_synthesize['ft'].unique():
     acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['ft'].isin(['ori',ft])], ds.df_test)
     print(ft, acc_aug)
