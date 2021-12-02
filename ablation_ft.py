@@ -210,8 +210,9 @@ def gen_text(gen_nlp, prompt, ft):
                                     repetition_penalty=1.2, num_return_sequences= 8,\
                                     clean_up_tokenization_spaces=True)
 
-    contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
+    contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt[0] if ii]
     return random.sample(contents_syn_tmp, 1)[0]
+
 
 infos = []
 for ix, row in ds.df_train.reset_index().iterrows():
@@ -258,7 +259,7 @@ def thread_testing(testvalid, df_train, df_test):
 
     model_best = models[np.array(best_test_accs).argmax()]
     return  acc, model_best
-    
+
 for ft in df_synthesize['ft'].unique():
     acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['ft'].isin(['ori',ft])], ds.df_test)
     print(ft, acc_aug)
