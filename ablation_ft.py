@@ -168,7 +168,7 @@ os.system(
         --per_device_eval_batch_size 8 \
         --output_dir {} \
         --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(1, args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
+        --block_size {}".format(int(args.gpu.split(',')[1]), args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
 gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 
@@ -191,7 +191,7 @@ os.system(
         --per_device_eval_batch_size 8 \
         --output_dir {} \
         --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(1, args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
+        --block_size {}".format(int(args.gpu.split(',')[1]), args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
 gpt2_entire = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 
@@ -203,7 +203,7 @@ gen_nlp = {}
 
 gpt2_noft.trainable = False
 gpt2_noft.config.pad_token_id=50256
-gen_nlp['noft']  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
+gen_nlp['noft']  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
 
 gpt2_lambda.trainable = False
 gpt2_lambda.config.pad_token_id=50256

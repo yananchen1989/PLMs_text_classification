@@ -65,10 +65,6 @@ done
 # nohup python -u aug_ppo.py > aug_ppo.log & 
 
 
-
-
-
-
 nohup python -u ablation_ft.py --samplecnt 16 --dsn ag --gpu 5,6,7 --epochs 1 --verbose 1 > ablation_ft.test.log &
 
 
