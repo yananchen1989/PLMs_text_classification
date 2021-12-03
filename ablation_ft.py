@@ -211,15 +211,15 @@ gen_nlp['lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=to
 
 gpt2_entire.trainable = False
 gpt2_entire.config.pad_token_id=50256
-gen_nlp['entire']  = pipeline("text-generation", model=gpt2_entire, tokenizer=tokenizer_gpt2, device=2, return_full_text=False)
+gen_nlp['entire']  = pipeline("text-generation", model=gpt2_entire, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
 
 gpt2_tc.trainable = False
 gpt2_tc.config.pad_token_id=50256
-gen_nlp['tc']  = pipeline("text-generation", model=gpt2_tc, tokenizer=tokenizer_gpt2, device=2, return_full_text=False)
+gen_nlp['tc']  = pipeline("text-generation", model=gpt2_tc, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
 
 gpt2_pp.trainable = False
 gpt2_pp.config.pad_token_id=50256
-gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=2, return_full_text=False)
+gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
 
 
 

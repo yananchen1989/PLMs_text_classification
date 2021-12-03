@@ -15,9 +15,9 @@ do
 				   > ./log_baselines/${dsn}.${aug}.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
 			done
 
-			envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug cbert \
-			      --max_aug_times ${max_aug_times} --seed ${seed} --testvalid test  \
-			 > ./log_baselines/${dsn}.cbert.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
+			# envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug cbert \
+			#       --max_aug_times ${max_aug_times} --seed ${seed} --testvalid test  \
+			#  > ./log_baselines/${dsn}.cbert.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
 		done
 	done
 done 
