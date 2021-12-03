@@ -46,15 +46,15 @@ python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug bt \
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 
-for gpu in 0,1 2,3 4,5 6,7
+for gpu in 0,1 2,3 
 do
    nohup bash run.sh  ${gpu} &
 done
 
 
-for i in 0 1 2 3 
+for gpu in 0,1 2,3 
 do
-nohup bash run_cbert.sh & 
+nohup bash run_cbert.sh ${gpu} & 
 done
 
 
