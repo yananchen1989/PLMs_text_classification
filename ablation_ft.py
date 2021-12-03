@@ -202,23 +202,23 @@ gen_nlp = {}
 
 gpt2_noft.trainable = False
 gpt2_noft.config.pad_token_id=50256
-gen_nlp['noft']  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokenizer_gpt2, device=device_id, return_full_text=False)
+gen_nlp['noft']  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
 gpt2_lambda.trainable = False
 gpt2_lambda.config.pad_token_id=50256
-gen_nlp['lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=device_id, return_full_text=False)
+gen_nlp['lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
 gpt2_entire.trainable = False
 gpt2_entire.config.pad_token_id=50256
-gen_nlp['entire']  = pipeline("text-generation", model=gpt2_entire, tokenizer=tokenizer_gpt2, device=device_id, return_full_text=False)
+gen_nlp['entire']  = pipeline("text-generation", model=gpt2_entire, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
 
 gpt2_tc.trainable = False
 gpt2_tc.config.pad_token_id=50256
-gen_nlp['tc']  = pipeline("text-generation", model=gpt2_tc, tokenizer=tokenizer_gpt2, device=device_id, return_full_text=False)
+gen_nlp['tc']  = pipeline("text-generation", model=gpt2_tc, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
 
 gpt2_pp.trainable = False
 gpt2_pp.config.pad_token_id=50256
-gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=device_id, return_full_text=False)
+gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
 
 
 
@@ -233,7 +233,7 @@ def gen_text(gen_nlp, prompt, ft, row):
                                     repetition_penalty=1.2, num_return_sequences= 16,\
                                     clean_up_tokenization_spaces=True)
 
-    contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt[0] if ii]
+    contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
 
     pred = model_cls.predict(np.array(contents_syn_tmp), batch_size=8, verbose=0)  
 
