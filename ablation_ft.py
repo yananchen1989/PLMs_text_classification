@@ -127,7 +127,7 @@ def thread_testing(testvalid, df_train, df_test):
 acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)    
 print("acc_noaug==>", acc_noaug)
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache")
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 #tokenizer_gpt2.padding_side = "left" 
 tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
 tokenizer_gpt2.sep_token = '<|sep|>'
@@ -135,7 +135,7 @@ tokenizer_gpt2.sep_token = '<|sep|>'
 print(tokenizer_gpt2)
 
 
-gpt2_noft = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache")
+gpt2_noft = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 
 # lambda
 if not os.path.exists('ft_tmp'):
