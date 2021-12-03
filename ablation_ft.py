@@ -253,14 +253,15 @@ for ix, row in ds.df_train.reset_index().iterrows():
     for ft, gen_nlp_v in gen_nlp.items():
         content_syn, content_syn_cls = gen_text(gen_nlp_v, row['content'], ft, row)
 
-        print("ft:{}==>{}".format(ft, content_syn))
+        print("ft:{}0==>{}".format(ft, content_syn))
+        print("ft:{}1==>{}".format(ft, content_syn_cls))
         infos.append((content_syn,     row['label_name'], row['label'], ft+'0'))
         infos.append((content_syn_cls, row['label_name'], row['label'], ft+'1'))
 
     print('\n')
 
 df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'ft'])
-
+print(df_synthesize.head(10))
 
 ds.df_train['ft'] = 'ori'
 df_train_aug = pd.concat([ds.df_train + df_synthesize ]).sample(frac=1)

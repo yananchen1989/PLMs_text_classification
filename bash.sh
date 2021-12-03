@@ -57,6 +57,8 @@ do
 nohup bash run_cbert.sh ${gpu} & 
 done
 
+nohup bash run_ablation.sh 4,5 &
+nohup bash run_ablation.sh 6,7 &
 
 # nohup python -u rltoken.py  --gpu 0,1  --alpha 0.9 --future_steps 32 --beams 128 > rltoken.0p9.log &
 # nohup python -u rltoken.py  --gpu 2,3  --alpha 0.5 --future_steps 32 --beams 128 > rltoken.0p5.log &
@@ -66,6 +68,12 @@ done
 
 
 nohup python -u ablation_ft.py --samplecnt 16 --dsn ag --gpu 5,6,7 --epochs 1 --verbose 1 > ablation_ft.test.log &
+
+
+
+nohup envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug cbert \
+      --max_aug_times ${max_aug_times} --seed ${seed} --testvalid test  \
+ > ./log_baselines/${dsn}.cbert.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
 
 
 ############################################################################################################################################
