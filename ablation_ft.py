@@ -168,7 +168,7 @@ os.system(
         --per_device_eval_batch_size 8 \
         --output_dir {} \
         --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(1, args.ft_epochs, train_file, validation_file, model_output_path, 64) )
+        --block_size {}".format(len(gpus)-1, args.ft_epochs, train_file, validation_file, model_output_path, 64) )
 gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 
@@ -191,35 +191,34 @@ os.system(
         --per_device_eval_batch_size 8 \
         --output_dir {} \
         --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(1, args.ft_epochs, train_file, validation_file, model_output_path, 64) )
+        --block_size {}".format(len(gpus)-1, args.ft_epochs, train_file, validation_file, model_output_path, 64) )
 gpt2_entire = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 
 gpt2_tc = GPT2LMHeadModel.from_pretrained('ft_model_gpt_tc' )
 gpt2_pp = GPT2LMHeadModel.from_pretrained('ft_model_gpt_pp' )
 
-device_id = -1
 gen_nlp = {}
 
 gpt2_noft.trainable = False
 gpt2_noft.config.pad_token_id=50256
-gen_nlp['noft']  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
+gen_nlp['noft']  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
 gpt2_lambda.trainable = False
 gpt2_lambda.config.pad_token_id=50256
-gen_nlp['lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
+gen_nlp['lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
 gpt2_entire.trainable = False
 gpt2_entire.config.pad_token_id=50256
-gen_nlp['entire']  = pipeline("text-generation", model=gpt2_entire, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
+gen_nlp['entire']  = pipeline("text-generation", model=gpt2_entire, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
 gpt2_tc.trainable = False
 gpt2_tc.config.pad_token_id=50256
-gen_nlp['tc']  = pipeline("text-generation", model=gpt2_tc, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
+gen_nlp['tc']  = pipeline("text-generation", model=gpt2_tc, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
 gpt2_pp.trainable = False
 gpt2_pp.config.pad_token_id=50256
-gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
+gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
 
 

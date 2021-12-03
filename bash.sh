@@ -67,13 +67,13 @@ nohup bash run_ablation.sh 6,7 &
 # nohup python -u aug_ppo.py > aug_ppo.log & 
 
 
-nohup python -u ablation_ft.py --samplecnt 16 --dsn ag --gpu 5,6,7 --epochs 1 --verbose 1 > ablation_ft.test.log &
+nohup python -u ablation_ft.py --samplecnt 8 --dsn ag --gpu 6,7 --epochs 1 --ft_epochs 1 --verbose 1 > ablation_ft.test.log &
 
 
 
-nohup envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --aug cbert \
-      --max_aug_times ${max_aug_times} --seed ${seed} --testvalid test  \
- > ./log_baselines/${dsn}.cbert.${samplecnt}.${max_aug_times}.${seed}.log 2>&1
+nohup envcbert/bin/python -u augf.py --dsn uci --samplecnt 128 --aug cbert \
+      --max_aug_times 1 --seed 3654 --testvalid test  \
+ > ./log_baselines/uci.cbert.128.1.3654.log 2>&1
 
 
 ############################################################################################################################################
