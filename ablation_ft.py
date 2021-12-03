@@ -42,7 +42,7 @@ parser.add_argument("--candidates", default=64, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--gpu", default="0,1,2", type=str)
 
 parser.add_argument("--ft_epochs", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -101,42 +101,8 @@ ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 ds, proper_len = process_ds(ds, 128)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
-def do_train_test_thread_(df_train, df_test,  best_test_accs, models, di,  epochs=100,verbose=1,model_name='albert',bs=8):
 
-    # if df_test.label.unique().shape[0] == 2:
-    #     val_acc = 'val_binary_accuracy'   
-    # else:
-    #     val_acc = 'val_acc'
-
-    print("do_train_test_thread di==>",  di)
-    x_train, y_train = get_keras_data(df_train)
-    x_test, y_test = get_keras_data(df_test)
-
-    with tf.distribute.MirroredStrategy().scope():
-        if model_name == 'albert':
-            model = get_model_bert(df_test.label.unique().shape[0])
-        elif model_name == 'former':
-            model = get_model_former(df_test.label.unique().shape[0])
-            
-        elif model_name == 'cnn':
-            model = get_model_cnn(df_test.label.unique().shape[0])
-            
-        else:
-            raise KeyError("input model illegal!")
-
-    history = model.fit(
-        x_train, y_train, batch_size=bs, epochs=epochs, \
-        validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=bs, validation_freq=1,
-        callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=4, mode='max',restore_best_weights=True)]
-    )
-
-    best_test_accs.append(max(history.history['val_acc']))
-    models.append(model)
-
-    print('do_train_test iters test==>', best_test_accs)
-
-
-testbed_func = {"test":do_train_test_thread_, "valid":do_train_test_valid_thread}
+testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
 def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
@@ -202,7 +168,7 @@ os.system(
         --per_device_eval_batch_size 8 \
         --output_dir {} \
         --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(len(gpus)-1, args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
+        --block_size {}".format(1, args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
 gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 
@@ -225,7 +191,7 @@ os.system(
         --per_device_eval_batch_size 8 \
         --output_dir {} \
         --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(len(gpus)-1, args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
+        --block_size {}".format(1, args.ft_epochs, train_file, validation_file, model_output_path, 64) ) 
 gpt2_entire = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 
@@ -241,19 +207,19 @@ gen_nlp['noft']  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokeni
 
 gpt2_lambda.trainable = False
 gpt2_lambda.config.pad_token_id=50256
-gen_nlp['lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
+gen_nlp['lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=1, return_full_text=False)
 
 gpt2_entire.trainable = False
 gpt2_entire.config.pad_token_id=50256
-gen_nlp['entire']  = pipeline("text-generation", model=gpt2_entire, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
+gen_nlp['entire']  = pipeline("text-generation", model=gpt2_entire, tokenizer=tokenizer_gpt2, device=2, return_full_text=False)
 
 gpt2_tc.trainable = False
 gpt2_tc.config.pad_token_id=50256
-gen_nlp['tc']  = pipeline("text-generation", model=gpt2_tc, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
+gen_nlp['tc']  = pipeline("text-generation", model=gpt2_tc, tokenizer=tokenizer_gpt2, device=2, return_full_text=False)
 
 gpt2_pp.trainable = False
 gpt2_pp.config.pad_token_id=50256
-gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
+gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=2, return_full_text=False)
 
 
 
