@@ -263,7 +263,7 @@ df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'ft
 print(df_synthesize.head(10))
 
 ds.df_train['ft'] = 'ori'
-df_train_aug = pd.concat([ds.df_train + df_synthesize ]).sample(frac=1)
+df_train_aug = pd.concat([ds.df_train, df_synthesize ]).sample(frac=1)
 
 
 for ft in df_synthesize['ft'].unique():
