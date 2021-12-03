@@ -229,7 +229,7 @@ dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':12
 def gen_text(gen_nlp, prompt, ft, row):
     if ft == 'lambda':
         prompt = ' '.join(prompt.split(' ')[:4])
-    result_gpt = gen_nlp['noft']([prompt], max_length=dsn_maxlen[args.dsn], \
+    result_gpt = gen_nlp([prompt], max_length=dsn_maxlen[args.dsn], \
                                     do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                     repetition_penalty=1.2, num_return_sequences= 16,\
                                     clean_up_tokenization_spaces=True)
