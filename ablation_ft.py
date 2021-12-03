@@ -197,7 +197,7 @@ gpt2_entire = GPT2LMHeadModel.from_pretrained(model_output_path)
 gpt2_tc = GPT2LMHeadModel.from_pretrained('ft_model_gpt_tc' )
 gpt2_pp = GPT2LMHeadModel.from_pretrained('ft_model_gpt_pp' )
 
-device_id = 0
+device_id = -1
 gen_nlp = {}
 
 gpt2_noft.trainable = False
