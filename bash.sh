@@ -60,6 +60,9 @@ done
 nohup bash run_ablation.sh 4,5 &
 nohup bash run_ablation.sh 6,7 &
 
+
+
+nohup bash run_ablation.sh 0 &
 # nohup python -u rltoken.py  --gpu 0,1  --alpha 0.9 --future_steps 32 --beams 128 > rltoken.0p9.log &
 # nohup python -u rltoken.py  --gpu 2,3  --alpha 0.5 --future_steps 32 --beams 128 > rltoken.0p5.log &
 # nohup python -u rltoken.py  --gpu 4,5  --alpha 0.1 --future_steps 32 --beams 128 > rltoken.0p1.log &
@@ -69,6 +72,7 @@ nohup bash run_ablation.sh 6,7 &
 
 nohup python -u ablation_ft.py --samplecnt 8 --dsn ag --gpu 6,7 --epochs 1 --ft_epochs 1 --verbose 1 > ablation_ft.test.log &
 
+nohup python -u ablation_ft.py --samplecnt 8 --dsn ag --gpu 0 --epochs 1 --ft_epochs 1 --verbose 1 > ablation_ft.test.log &
 
 
 nohup envcbert/bin/python -u augf.py --dsn uci --samplecnt 128 --aug cbert \

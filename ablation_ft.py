@@ -197,6 +197,7 @@ gpt2_entire = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 gpt2_tc = GPT2LMHeadModel.from_pretrained('ft_model_gpt_tc' )
 gpt2_pp = GPT2LMHeadModel.from_pretrained('ft_model_gpt_pp' )
+#gpt2_ep = GPT2LMHeadModel.from_pretrained('ft_model_gpt_ep' )
 
 gen_nlp = {}
 
@@ -221,6 +222,9 @@ gpt2_pp.config.pad_token_id=50256
 gen_nlp['pp']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
 
+# gpt2_pp.trainable = False
+# gpt2_pp.config.pad_token_id=50256
+# gen_nlp['ep']  = pipeline("text-generation", model=gpt2_pp, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
 
 dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
@@ -228,6 +232,10 @@ dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':12
 def gen_text(gen_nlp, prompt, ft, row):
     if ft == 'lambda':
         prompt = ' '.join(prompt.split(' ')[:4])
+    if ft == 'ep':
+        ners = get_ners(prompt)
+        ners_join = '<=>'.join(ners)
+        prompt = ners_join + tokenizer_t5.eos_token        
     result_gpt = gen_nlp([prompt], max_length=dsn_maxlen[args.dsn], \
                                     do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                     repetition_penalty=1.2, num_return_sequences= 16,\
@@ -268,6 +276,6 @@ df_train_aug = pd.concat([ds.df_train, df_synthesize ]).sample(frac=1)
 
 for ft in df_synthesize['ft'].unique():
     acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['ft'].isin(['ori',ft])], ds.df_test)
-    print(ft, acc_aug, round((acc_aug - acc_noaug)/acc_noaug, 4)*100 )
+    print("summary==>", ft, acc_aug, round((acc_aug - acc_noaug)/acc_noaug, 4)*100 )
 
 

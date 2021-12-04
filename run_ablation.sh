@@ -7,7 +7,7 @@ do
       for dsn in ag uci  #yelp2 amazon2
       do 
         python -u ablation_ft.py --samplecnt ${samplecnt} --dsn ${dsn} --gpu ${gpu} \
-            > ablation_ft.${samplecnt}.${dsn}.${seed}.log 2>&1
+            > ./log_ablation/ablation_ft.${samplecnt}.${dsn}.${seed}.log 2>&1
       done
    done
 done
