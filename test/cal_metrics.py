@@ -55,30 +55,32 @@ for col in ['acc_base','acc_aug','gain']:
         df[col] = df[col].astype('float')
 
 
-samplecnt = 64
+samplecnt = 128
 for dsn in ['uci','ag','nyt']:
     # baselines : eda uci cbert
-        for aug in ['eda', 'bt', 'cbert']:
-            dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']==aug)][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
-            print(dsn, aug, round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
-                round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4)  dfi.shape[0])
+    for aug in ['eda', 'bt', 'cbert']:
+        dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']==aug)][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
+        print(dsn, aug, round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
+            round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4) , dfi.shape[0])
 
     # baselines: lambda embed
-        for fmark in ['cls', 'embed']:
-            dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']=='generate') & (df['genm']=='gpt') \
-                     & (df['fmark']==fmark) ][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
-            print(dsn, 'gpt-{}'.format(fmark), round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
-                round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4), dfi.shape[0])
+    for fmark in ['cls', 'embed']:
+        dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']=='generate') & (df['genm']=='gpt') \
+                 & (df['fmark']==fmark) ][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
+        print(dsn, 'gpt-{}'.format(fmark), round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
+            round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4), dfi.shape[0])
 
     #nli nsp
-        for genm in ['gpt', 't5']:
-            #for candidates in df['candidates'].unique():
-            for fmark in ['11', '10', '01', '00']:
-                dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']=='generate') & (df['genm']==genm) \
-                         & (df['fmark']==fmark) ][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
-                print(dsn, "{}-{}".format(genm, fmark), round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
-                    round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4),  dfi.shape[0])
-    print('\n')
+    for genm in ['gpt', 't5']:
+        #for candidates in df['candidates'].unique():
+        for fmark in ['11', '10', '01', '00']:
+            dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']=='generate') & (df['genm']==genm) \
+                     & (df['fmark']==fmark) ][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
+            print(dsn, "{}-{}".format(genm, fmark), round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
+                round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4),  dfi.shape[0])
+    print()
+
+
 
 
 '''

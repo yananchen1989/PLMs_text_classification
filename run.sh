@@ -3,13 +3,13 @@ gpu=${1}
 
 for i in {1..10}
 do
-	for candidates in 256 512 1024 2048
+	for candidates in 256 #512 1024 2048
 	do
 		for samplecnt in 128
 		do
 			seed=$RANDOM
 			#seed=$(date +"%T")
-			for dsn in ag uci nyt #yelp2 amazon2
+			for dsn in nyt #yelp2 amazon2 ag uci 
 			do	
 				# lambda
 				python -u augf.py --dsn ${dsn} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \

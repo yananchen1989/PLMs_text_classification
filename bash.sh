@@ -75,9 +75,26 @@ nohup python -u ablation_ft.py --samplecnt 8 --dsn ag --gpu 6,7 --epochs 1 --ft_
 nohup python -u ablation_ft.py --samplecnt 8 --dsn ag --gpu 0 --epochs 1 --ft_epochs 1 --verbose 1 > ablation_ft.test.log &
 
 
+
+seed=$RANDOM
+for dsn in uci ag nyt 
+do
 nohup envcbert/bin/python -u augf.py --dsn uci --samplecnt 128 --aug cbert \
-      --max_aug_times 1 --seed 3654 --testvalid test  \
- > ./log_baselines/uci.cbert.128.1.3654.log 2>&1
+      --max_aug_times 1 --seed ${seed} --testvalid test  \
+ > ./log_baselines/uci.cbert.128.1.${seed}.log 2>&1 &
+done
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ############################################################################################################################################
