@@ -46,7 +46,7 @@ python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug bt \
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 
-for gpu in 0,1 2,3 
+for gpu in 0,1 2,3 4,5 6,7
 do
    nohup bash run.sh  ${gpu} &
 done
@@ -70,28 +70,34 @@ nohup bash run_ablation.sh 0 &
 # nohup python -u aug_ppo.py > aug_ppo.log & 
 
 
-nohup python -u ablation_ft.py --samplecnt 8 --dsn ag --gpu 6,7 --epochs 1 --ft_epochs 1 --verbose 1 > ablation_ft.test.log &
-
-nohup python -u ablation_ft.py --samplecnt 8 --dsn ag --gpu 0 --epochs 1 --ft_epochs 1 --verbose 1 > ablation_ft.test.log &
-
-
 
 seed=$RANDOM
 for dsn in uci ag nyt 
 do
-nohup envcbert/bin/python -u augf.py --dsn uci --samplecnt 128 --aug cbert \
+nohup envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt 128 --aug cbert \
       --max_aug_times 1 --seed ${seed} --testvalid test  \
- > ./log_baselines/uci.cbert.128.1.${seed}.log 2>&1 &
+ > ./log_baselines/${dsn}.cbert.128.1.${seed}.log 2>&1 &
 done
 
 
+for std_cut in 0.1 0.12 0.15 0.18 0.2
+do
+   for topk in  32 64 128 200 256 300 512 
+   do 
+      python -u zsl_pure_classifier.py --std_cut ${std_cut} --topk ${topk} --gram_diff_file ${1} \
+            > zsl.${1}.${std_cut}.${topk}.log 2>&1
+   done
+done
 
+for std_cut in 0.1
+do 
+   for topk in 64 128 200
+   do
+   python -u zsl_pure_classifier.py --std_cut ${std_cut} --topk ${topk} --gram_diff_file gram_diff_constrain \
+               > zsl.gram_diff_constrain.${std_cut}.${topk}.log 2>&1
 
-
-
-
-
-
+   done
+done 
 
 
 

@@ -31,12 +31,97 @@ sent = "Autism wave keeps growing"
 
 sent = "Virus to cause spike in pork prices"
 
-#from utils.flair_ners import * 
+import os 
+os.environ['CUDA_VISIBLE_DEVICES'] = ""
+import pandas as pd
+import time
+from utils.flair_ners import *
 
+from transformers import pipeline
 # gpt neo
-# from transformers import GPT2Tokenizer, GPTNeoForCausalLM
-# tokenizer = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
-# model = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache",  local_files_only=True)
+from transformers import GPT2Tokenizer, GPTNeoForCausalLM
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
+gpt2 = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
+
+
+from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+
+
+
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+tokenizer_gpt2.sep_token = '<|sep|>'
+#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+print(tokenizer_gpt2)
+
+gpt2.trainable = False
+gpt2.config.pad_token_id=50256
+
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
+
+from utils.encoders import *
+enc = encoder('cmlm-base')
+
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
+from utils.load_data import * 
+ds = load_data(dataset='uci', samplecnt= 64)
+
+
+
+enc_dic = {}
+for l in ds.df_train['label_name'].unique():
+    contents_ = ds.df_train.loc[ds.df_train['label_name']==l]['content'].values
+    embeds = enc.infer(contents_)
+    enc_dic[l] = embeds
+
+
+
+for ix, row in ds.df_train.sample(frac=1).iterrows():
+    content = row['content']
+    label = row['label_name']
+     
+    result_gpt = gen_nlp([content], max_length=128, \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences=16,\
+                                        clean_up_tokenization_spaces=True)
+    contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
+
+    ners_syn = set()
+    for content_syn in contents_syn_tmp:
+        ners = get_ners(content_syn)
+        ners_syn.update(ners)
+
+    ners_syn = list(ners_syn)
+    if not ners_syn:
+        continue 
+
+    embeds_ner = enc.infer(ners_syn)
+
+    label_scores = {}
+    for label_name, embeds in enc_dic.items():
+        scores = cosine_similarity(embeds_ner, embeds).mean(axis=1)
+        label_scores[label_name] = scores
+ 
+    df_nl = pd.DataFrame(label_scores)
+    ixl = {ix:label_name for ix, label_name in enumerate(list(df_nl.columns))}
+    label_scores_array= df_nl.values
+    df_nl['max_label'] = label_scores_array.argmax(axis=1)
+    df_nl['max_cosine_simi'] = label_scores_array.max(axis=1)
+    df_nl['ner'] = ners_syn
+    df_nl['max_label_name'] = df_nl['max_label'].map(lambda x: ixl[x])
+    df_nl = df_nl.loc[df_nl['max_cosine_simi']>=0.2]
+    print(label)
+    print(df_nl['max_label_name'].value_counts())
+    print(df_nl.head(50))
+    print('\n')
+
+
+
+
+
+
 
 # inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
 # outputs = model(**inputs, labels=inputs["input_ids"])
