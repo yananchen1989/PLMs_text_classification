@@ -228,13 +228,13 @@ def cal_gram_entropy(labels_candidates, df_label_sample, gram):
     dftitle = df_label_sample.loc[df_label_sample['title_lower'].str.contains(gram)]
 
     titles_include = dftitle.sample(min(512, dftitle.shape[0]))['title'].tolist()
-
+    fbs = 256
     infos = []
-    for i in range(0,len(titles_include), 256):
+    for i in range(0,len(titles_include), fbs):
         #print(i)
-        if len(titles_include[i:i+256]) == 1:
+        if len(titles_include[i:i+fbs]) == 1:
             continue
-        nli_result = nli_nlp(titles_include[i:i+32],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        nli_result = nli_nlp(titles_include[i:i+fbs], labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
         if isinstance(nli_result, dict):
             continue
         for r in  nli_result:
