@@ -75,16 +75,16 @@ class load_data():
                                   'Crime','Murder','Religion','Jurisdiction', 'Democracy'])
                 ixl = {1:'World', 2:"Sports", 3:"Business", 4:"science and technology"} 
             if self.dataset == 'yahoo':
-                ixl = {  1: 'Society & Culture',
-                  2: 'Science & Mathematics',
+                ixl = {  1: 'Society and Culture',
+                  2: 'Science and Mathematics',
                   3: 'Health',
-                  4: 'Education & Reference',
-                  5: 'Computers & Internet',
+                  4: 'Education and Reference',
+                  5: 'Computers and Internet',
                   6: 'Sports',
-                  7: 'Business & Finance',
-                  8: 'Entertainment & Music',
-                  9: 'Family & Relationships',
-                 10: 'Politics & Government'}
+                  7: 'Business and Finance',
+                  8: 'Entertainment and Music',
+                  9: 'Family and Relationships',
+                 10: 'Politics and Government'}
             self.df_train['label_name'] = self.df_train['label'].map(lambda x: ixl.get(x))
             self.df_test['label_name'] = self.df_test['label'].map(lambda x: ixl.get(x))
             self.df_train['label'] = self.df_train['label'] - 1
