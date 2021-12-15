@@ -84,7 +84,7 @@ for std_cut in 0.1 0.12 0.15 0.18 0.2
 do
    for topk in 64 128 200 256 300 512 
    do 
-      python -u zsl_pure_classifier.py --std_cut ${std_cut} --topk ${topk} --gram_diff_file ${1} \
+      python -u zsl_pure_classifier.py --std_cut ${std_cut} --topk ${topk} --gram_diff_file ${1} --gpu ${2} \
             > ./log_zsl/zsl.${1}.${std_cut}.${topk}.log 2>&1
    done
 done

@@ -58,7 +58,14 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 #from utils.flair_ners import *
 import tensorflow as tf
 gpus = tf.config.list_physical_devices('GPU')
-
+if gpus:
+  try:
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+      # tf.config.experimental.set_virtual_device_configuration(gpu, \
+      #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+  except RuntimeError as e:
+    print(e)
 
 from utils.load_data import * 
 ds = load_data(dataset='uci', samplecnt= 2048)
