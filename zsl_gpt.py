@@ -30,9 +30,10 @@ if gpus:
 
 from utils.load_data import * 
 if args.dsn == 'nyt':
-    samplecnt = 400 
+    samplecnt = 256 
 else:
     samplecnt = 2048
+
 ds = load_data(dataset=args.dsn, samplecnt= samplecnt)
 
 labels_candidates = ds.df_test['label_name'].unique().tolist()
