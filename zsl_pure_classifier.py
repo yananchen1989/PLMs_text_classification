@@ -227,7 +227,7 @@ df_label_sample['title_lower'] = df_label_sample['title'].map(lambda x: x.lower(
 def cal_gram_entropy(labels_candidates, df_label_sample, gram):
     dftitle = df_label_sample.loc[df_label_sample['title_lower'].str.contains(gram)]
 
-    titles_include = dftitle.sample(min(512, dftitle.shape[0]))['title'].tolist()
+    titles_include = dftitle.sample(min(1024, dftitle.shape[0]))['title'].tolist()
     fbs = 256
     infos = []
     for i in range(0,len(titles_include), fbs):
