@@ -84,9 +84,9 @@ nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokeni
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
 import nltk
-nltk.download('stopwords')
-stopwords = stopwords.words('english')
-
+# nltk.download('stopwords')
+# stopwords = stopwords.words('english')
+stopwords = joblib.load("./utils/stopwords")
 
 import numpy as np
 import datasets,re,operator,joblib
