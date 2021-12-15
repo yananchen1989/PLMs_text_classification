@@ -28,8 +28,9 @@ if gpus:
     print(e)
 
 from utils.load_data import * 
-ds = load_data(dataset='uci', samplecnt= 2048)
+ds = load_data(dataset=args.dsn, samplecnt= 2048)
 labels_candidates = ds.df_test['label_name'].unique().tolist()
+print("labels_candidates==>", labels_candidates)
 
 from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
