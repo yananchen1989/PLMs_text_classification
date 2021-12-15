@@ -11,6 +11,7 @@ parser.add_argument("--genm", default='gpt2', type=str)
 parser.add_argument("--gpu", default="0,1", type=str)
 args = parser.parse_args()
 
+dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
@@ -79,7 +80,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
         accs_noexpand.append(0)
 
 
-    result_gpt = gen_nlp([remove_str(content)], max_length=args.maxlen, \
+    result_gpt = gen_nlp([remove_str(content)], max_length=dsn_maxlen[args.dsn], \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                         repetition_penalty=1.2, num_return_sequences= args.fbs_gen,\
                                         clean_up_tokenization_spaces=True)
