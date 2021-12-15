@@ -40,22 +40,24 @@ def map_expand_nli(base_nli, dsn):
         label_expands_mannual['science'] = base_nli['science'] 
         label_expands_mannual['technology'] = base_nli['technology']
     return label_expands_mannual
-
-import os 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 import pandas as pd
 import time,argparse
-#from utils.flair_ners import *
-import tensorflow as tf
-gpus = tf.config.list_physical_devices('GPU')
+import os 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--std_cut", default=0.1, type=float)
 parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--gram_diff_file", default="gram_diff_constrain", type=str)
-
+parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
+
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+
+#from utils.flair_ners import *
+import tensorflow as tf
+gpus = tf.config.list_physical_devices('GPU')
 
 
 from utils.load_data import * 
@@ -71,8 +73,8 @@ nli_model_name = "facebook/bart-large-mnli"
 
 from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache')
-tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache')
+model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
 nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
 
@@ -237,8 +239,9 @@ def cal_gram_entropy(labels_candidates, df_label_sample, gram):
     scores_reduce = list(np.array(infos).mean(axis=0))
     df_ls = pd.DataFrame(zip(labels_candidates, scores_reduce), columns=['label','score'])
     df_ls.sort_values(by=['score'], ascending=False, inplace=True)
-    print(gram, len(titles_include), df_ls['score'].std(), scipy.stats.entropy(df_ls['score'].values))
+    #print(gram, len(titles_include), df_ls['score'].std(), scipy.stats.entropy(df_ls['score'].values))
     return df_ls['score'].std(), scipy.stats.entropy(df_ls['score'].values)
+
 '''
 grams_entropy = []
 for gram in grams_candidates:
@@ -248,7 +251,7 @@ for gram in grams_candidates:
 df_grams_entropy = pd.DataFrame(grams_entropy, columns=['gram','cnt','std','entropy'])
 df_grams_entropy.sort_values(by=['entropy'], ascending=True, inplace=True)
 
-ban_grams = set(df_grams_entropy.loc[df_grams_entropy['std'] < args.std_cut]['gram'].tolist())
+ban_grams = set(df_grams_entropy.loc[df_grams_entropy['std'] < std_cut]['gram'].tolist())
 '''
 #df_grams_entropy.loc[df_grams_entropy['gram']=='new']
 ################# filter ######
@@ -256,6 +259,7 @@ ban_grams = set(df_grams_entropy.loc[df_grams_entropy['std'] < args.std_cut]['gr
 
 import joblib,operator
 gram_diff = joblib.load(args.gram_diff_file)
+
 
 label_expands = {}
 for l, gram_scores in gram_diff.items():
@@ -265,13 +269,15 @@ for l, gram_scores in gram_diff.items():
     grams_topk = []
     for gram in grams_rank:
         std, entropy = cal_gram_entropy(labels_candidates, df_label_sample, gram)
+        if not std:
+            continue
         if std < args.std_cut:
             continue
         grams_topk.append(gram)
         if len(grams_topk) == args.topk:
             break 
     label_expands[l] = grams_topk
-print( 'label_expands ===>', label_expands)
+#print( 'label_expands ===>', label_expands)
 
 grams_candidates = []
 for l, grams in label_expands.items():
@@ -315,18 +321,14 @@ for ix, row in ds.df_train.reset_index().iterrows():
     else:
         accs_expand.append(0)
 
-    if ix % 100 == 0:
+    if ix % 2048 == 0:
         print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
-print("final_summary==>", " ".join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
+
+print("final_summary==>", args.gram_diff_file, args.std_cut, args.topk,
      sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
 # uci
 #4095 noexpand:0.7263 manual_expand:0.76147
-
-
-
-
-
 
 '''
 ag:
