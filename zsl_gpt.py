@@ -35,6 +35,10 @@ else:
     samplecnt = 2048
 
 ds = load_data(dataset=args.dsn, samplecnt= samplecnt)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
+ds, proper_len = process_ds(ds, 128)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
+
 
 labels_candidates = ds.df_test['label_name'].unique().tolist()
 print("labels_candidates==>", labels_candidates)
