@@ -105,7 +105,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
     else:
         accs_expand.append(0)
 
-    if ix % 2048 == 0 and ix > 0:
+    if ix % 256 == 0 and ix > 0:
         print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
 
 print("summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]) ,
