@@ -84,8 +84,9 @@ for ix, row in ds.df_train.reset_index().iterrows():
     else:
         accs_expand.append(0)
 
-    if ix % 64 == 0 and ix > 0:
+    if ix % 2048 == 0 and ix > 0:
         print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
+        
 print(args.fbs_gen, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
 
