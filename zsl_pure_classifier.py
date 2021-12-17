@@ -46,7 +46,7 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="uci", type=str)
-parser.add_argument("--std_cut", default=0.1, type=float)
+parser.add_argument("--fbs", default=0.1, type=int)
 parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--gram_diff_file", default="gram_diff_constrain", type=str)
 parser.add_argument("--manauto", default="auto", type=str)
@@ -179,7 +179,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
         continue
 
     gen_result = gen_nlp(content + tokenizer_t5.eos_token,  do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                            repetition_penalty=1.2, num_return_sequences= 32,\
+                                            repetition_penalty=1.2, num_return_sequences= args.fbs,\
                                             clean_up_tokenization_spaces=True)
     gen_contents = [s['generated_text'].lower() for s in gen_result if s['generated_text']]
 
@@ -234,7 +234,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
             gram_diff[l][gram].append(s)
 
 
-    if ix % 20 ==0:
+    if ix % 5 ==0:
         print(ix)
         label_expands = {}
         for l, gram_scores in gram_diff.items():
@@ -243,7 +243,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
             print(l, '===>', gram_scores_mean_sort[:50])
             label_expands[l] = [ii[0] for ii in gram_scores_mean_sort[:20]]
         print('\n')
-        joblib.dump(gram_diff, 'gram_diff_gen')
+        joblib.dump(gram_diff, 'gram_diff_gen_{}'.format(args.fbs))
 
 
 
