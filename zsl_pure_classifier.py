@@ -45,10 +45,12 @@ import time,argparse
 import os 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--dsn", default="uci", type=str)
 parser.add_argument("--std_cut", default=0.1, type=float)
 parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--gram_diff_file", default="gram_diff_constrain", type=str)
-parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--manauto", default="auto", type=str)
+parser.add_argument("--gpu", default="6", type=str)
 args = parser.parse_args()
 
 
@@ -68,7 +70,7 @@ if gpus:
     print(e)
 
 from utils.load_data import * 
-ds = load_data(dataset='uci', samplecnt= 2048)
+ds = load_data(dataset=args.dsn, samplecnt= 2048)
 labels_candidates = ds.df_test['label_name'].unique().tolist()
 
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
@@ -122,7 +124,7 @@ for i in range(0, len(titles), fbs):
         df_label = pd.DataFrame(infos, columns=['title','label']) 
         print(df_label['label'].value_counts())
         df_label.to_csv("df_cc_label.csv", index=False)
-
+'''
 
 
 ############ find support seeds
@@ -211,7 +213,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
         print('\n')
         joblib.dump(gram_diff, 'gram_diff_constrain')
 
-'''
+
 
 
 ########## get distribution for each gram 
@@ -267,8 +269,8 @@ ban_grams = set(df_grams_entropy.loc[df_grams_entropy['std'] < std_cut]['gram'].
 import joblib,operator
 gram_diff = joblib.load(args.gram_diff_file)
 
-
-label_expands = {}
+# expansion automatic
+label_expands_auto = {}
 for l, gram_scores in gram_diff.items():
     gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
     gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
@@ -283,16 +285,23 @@ for l, gram_scores in gram_diff.items():
         grams_topk.append(gram)
         if len(grams_topk) == args.topk:
             break 
-    label_expands[l] = grams_topk
-#print( 'label_expands ===>', label_expands)
+    label_expands_auto[l] = grams_topk
+
+# expansion mannual 
+label_expands_mannual = map_expand_nli(base_nli, args.dsn)
+
+
+# assign
+if args.manauto == 'man':
+    label_expands = label_expands_mannual
+elif args.manauto == 'auto':
+    label_expands = label_expands_auto
+
 
 grams_candidates = []
 for l, grams in label_expands.items():
     grams_candidates.extend(grams)
-
 grams_candidates = list(set(grams_candidates))
-
-
 
 ######## evaluate ###########
 
@@ -328,45 +337,13 @@ for ix, row in ds.df_train.reset_index().iterrows():
     else:
         accs_expand.append(0)
 
-    if ix % 2048 == 0:
+    if ix % 256 == 0 and ix > 0:
         print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
 
-print("final_summary==>", args.gram_diff_file, args.std_cut, args.topk,
+print("final_summary==>", args.dsn, args.gram_diff_file, args.std_cut, args.topk,
      sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
-# uci
-#4095 noexpand:0.7263 manual_expand:0.76147
 
-'''
-ag:
-facebook/bart-large-mnli
-acc: 0.7199046483909416
-time cost: 2.5168240070343018
-
-vicgalle/xlm-roberta-large-xnli-anli
-acc: 0.7612236789829162
-time cost: 2.5296759605407715
-
-joeddav/xlm-roberta-large-xnli
-acc: 0.6893126738180373
-time cost: 2.215322971343994
-
-
-
-uci:
-
-facebook/bart-large-mnli
-acc: 0.6745514798308765
-time cost: 0.43288516998291016
-
-vicgalle/xlm-roberta-large-xnli-anli
-acc: 0.7370586218717861
-time cost: 0.6152443885803223
-
-joeddav/xlm-roberta-large-xnli
-acc: 0.6927208319049252
-time cost: 0.3963637351989746
-'''
 
 
 

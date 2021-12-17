@@ -80,20 +80,22 @@ nohup envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt 128 --aug cbert \
 done
 
 
-for std_cut in 0.1 0.12 0.15 0.18 0.2
+for std_cut in 0.15 0.18 0.2
 do
-   for topk in 64 128 200 256 300 512 
+   for topk in 128
    do 
-      python -u zsl_pure_classifier.py --std_cut ${std_cut} --topk ${topk} --gram_diff_file ${1} --gpu ${2} \
-            > ./log_zsl/zsl.${1}.${std_cut}.${topk}.log 2>&1
+      python -u zsl_pure_classifier.py --std_cut ${std_cut} --topk ${topk} --dsn uci --manauto auto \
+               --gram_diff_file gram_diff_constrain --gpu ${2} \
+            > ./log_zsl/zsl.uci.${std_cut}.${topk}.log 2>&1
    done
 done
 
 
-
-python -u zsl_pure_classifier.py --std_cut 0.1 --topk 100 --gram_diff_file gram_diff_constrain 
-
-
+for fbs_gen in 32 64 
+do 
+python -u zsl_gpt.py --dsn uci --genm t5 --gpu 0,1 --fbs_gen ${fbs_gen} \
+          > ./log_zsl/zsl_gpt.uci.t5.${fbs_gen}.log 2>&1 
+done
 
 
 ############################################################################################################################################
