@@ -160,7 +160,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
                     if g not in stopwords \
                         and g not in [ll.lower() for ll in labels_candidates] \
                         and not g.isdigit() \
-                        and re.search('[a-zA-Z]', gram) is not None \
+                        and re.search('[a-zA-Z]', g) is not None \
                         and check_noun(g)]
     if not grams:
         continue
