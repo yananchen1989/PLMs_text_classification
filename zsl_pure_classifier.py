@@ -128,6 +128,7 @@ for i in range(0, len(titles), fbs):
 
 
 ############ find support seeds
+'''
 gram_diff = {l:{} for l in labels_candidates}
 
 for ix, row in df.sample(frac=1).reset_index().iterrows():
@@ -214,7 +215,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
         joblib.dump(gram_diff, 'gram_diff_constrain')
 
 
-
+'''
 
 ########## get distribution for each gram 
 import scipy
