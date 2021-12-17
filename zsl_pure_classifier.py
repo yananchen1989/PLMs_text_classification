@@ -50,7 +50,7 @@ parser.add_argument("--std_cut", default=0.1, type=float)
 parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--gram_diff_file", default="gram_diff_constrain", type=str)
 parser.add_argument("--manauto", default="auto", type=str)
-parser.add_argument("--gpu", default="6", type=str)
+parser.add_argument("--gpu", default="4", type=str)
 args = parser.parse_args()
 
 
@@ -99,14 +99,14 @@ stopwords = joblib.load("./utils/stopwords")
 
 import numpy as np
 import datasets,re,operator,joblib
-try:
-    cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='./torch_ds')
-    df = pd.DataFrame(zip(cc_news['title'], cc_news['text'], cc_news['description'] ))
-    df.columns = ['title','content','description']
-    df.drop_duplicates(['title','content'], inplace=True) 
-    df.to_csv("./torch_ds/df_cc_news.csv", index=False)
-except:
-    df = get_cc_news(1)
+# try:
+#     cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='./torch_ds')
+#     df = pd.DataFrame(zip(cc_news['title'], cc_news['text'], cc_news['description'] ))
+#     df.columns = ['title','content','description']
+#     df.drop_duplicates(['title','content'], inplace=True) 
+#     df.to_csv("./torch_ds/df_cc_news.csv", index=False)
+# except:
+df = get_cc_news(1)
 
 '''
 # prepare balanced df
@@ -125,10 +125,15 @@ for i in range(0, len(titles), fbs):
         print(df_label['label'].value_counts())
         df_label.to_csv("df_cc_label.csv", index=False)
 '''
-
+def check_noun(word):
+    nets = wn.synsets(word)
+    for net in nets:
+        if net.name().split('.')[1] == 'n':
+            return True 
+    return False
 
 ############ find support seeds
-'''
+from nltk.corpus import wordnet as wn
 gram_diff = {l:{} for l in labels_candidates}
 
 for ix, row in df.sample(frac=1).reset_index().iterrows():
@@ -143,7 +148,13 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
 
     vectorizer = CountVectorizer(analyzer='word', ngram_range=(1, 1), lowercase=False)
     vectorizer.fit([content])
-    grams = vectorizer.get_feature_names_out().tolist()
+    grams = [g for g in vectorizer.get_feature_names() \
+                    if g not in stopwords \
+                        and g not in [ll.lower() for ll in labels_candidates] \
+                        and not gram.isdigit() \
+                        and re.search('[a-zA-Z]', gram) is not None \
+                        and check_noun(g)]
+
     #ners = get_ners(row['title'])
     #ners_ = [ner.lower() for ner in ners if len(ner.split(' '))>=2 and len(ner.split(' '))<=3]
 
@@ -155,10 +166,16 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
     df_ori = pd.DataFrame(result_ori)
 
     # tune
-    if df_ori['scores'].max() < 0.8:
+    if df_ori['scores'].max() < 0.7:
         continue
 
     embeds = enc.infer([content])
+    embeds_grams = enc.infer(grams)
+    simis = cosine_similarity(embeds, embeds_grams)[0]
+    df_gram_simis = pd.DataFrame(zip(grams, list(simis)), columns=['gram','simi'])
+    df_gram_simis['simi'] = (df_gram_simis['simi'] - df_gram_simis['simi'].min()) / (df_gram_simis['simi'].max()-df_gram_simis['simi'].min())
+    df_gram_simis.sort_values(by=['simi'], ascending=False, inplace=True)
+    print(df_gram_simis, '\n')
 
     grams_sent = []
     for gram in grams:
@@ -215,7 +232,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
         joblib.dump(gram_diff, 'gram_diff_constrain')
 
 
-'''
+
 
 ########## get distribution for each gram 
 import scipy
@@ -225,6 +242,7 @@ df_label_sample = sample_stratify(df_label, df_label.label.value_counts().values
 
 df_label_sample['title_lower'] = df_label_sample['title'].map(lambda x: x.lower())
 
+df_label_sample.loc[df_label_sample['title_lower'].str.contains('vaccine')]
 
 
 def cal_gram_entropy(labels_candidates, df_label_sample, gram):
