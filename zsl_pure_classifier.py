@@ -192,7 +192,6 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
     print(ix)
     print("======>", content)
     print("====>", grams)
-    assert len(results) == len(grams_sent)
     
     for gram in grams:
         lscores = {l:[] for l in labels_candidates}
