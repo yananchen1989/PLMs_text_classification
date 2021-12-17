@@ -73,9 +73,9 @@ from utils.load_data import *
 ds = load_data(dataset=args.dsn, samplecnt= 2048)
 labels_candidates = ds.df_test['label_name'].unique().tolist()
 
-from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
-from utils.encoders import *
-enc = encoder('cmlm-base')
+#from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
+# from utils.encoders import *
+# enc = encoder('cmlm-base')
 
 
 nli_model_name = "facebook/bart-large-mnli"
@@ -87,6 +87,11 @@ tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-a
 nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
 
+from transformers import T5Tokenizer, AutoModelWithLMHead
+tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+print(tokenizer_t5)
+t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
+gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
 
 
 # load dataset
@@ -140,7 +145,10 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
     #row = ds.df_train.sample(1)
     #content = row['content'].tolist()[0]
     #label_name = row['label_name'].tolist()[0]
+    if not row['title']:
+        continue
     content = row['title'].lower()
+
     if not content or len(content.split(' ')) <=5:
         continue
     if re.search('[a-zA-Z]', content) is None:
@@ -151,10 +159,11 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
     grams = [g for g in vectorizer.get_feature_names() \
                     if g not in stopwords \
                         and g not in [ll.lower() for ll in labels_candidates] \
-                        and not gram.isdigit() \
+                        and not g.isdigit() \
                         and re.search('[a-zA-Z]', gram) is not None \
                         and check_noun(g)]
-
+    if not grams:
+        continue
     #ners = get_ners(row['title'])
     #ners_ = [ner.lower() for ner in ners if len(ner.split(' '))>=2 and len(ner.split(' '))<=3]
 
@@ -169,58 +178,64 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
     if df_ori['scores'].max() < 0.7:
         continue
 
-    embeds = enc.infer([content])
-    embeds_grams = enc.infer(grams)
-    simis = cosine_similarity(embeds, embeds_grams)[0]
-    df_gram_simis = pd.DataFrame(zip(grams, list(simis)), columns=['gram','simi'])
-    df_gram_simis['simi'] = (df_gram_simis['simi'] - df_gram_simis['simi'].min()) / (df_gram_simis['simi'].max()-df_gram_simis['simi'].min())
-    df_gram_simis.sort_values(by=['simi'], ascending=False, inplace=True)
-    print(df_gram_simis, '\n')
+    gen_result = gen_nlp(content + tokenizer_t5.eos_token,  do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                            repetition_penalty=1.2, num_return_sequences= 32,\
+                                            clean_up_tokenization_spaces=True)
+    gen_contents = [s['generated_text'].lower() for s in gen_result if s['generated_text']]
 
-    grams_sent = []
-    for gram in grams:
-        if gram not in content:
-            print("gram not in ")
-            continue
-        if gram in stopwords or gram.lower() in stopwords:
-           continue
-        if gram.lower() in labels_candidates:
-            continue
-        if gram.isdigit():
-            continue
-        if re.search('[a-zA-Z]', gram) is None:
-            continue
-        grams_sent.append((gram, content.replace(gram, '').strip()))
-
-    if len(grams_sent)<=2:
-        continue
-
-    results = nli_nlp([ii[1] for ii in grams_sent],  list(labels_candidates), multi_label=True, hypothesis_template="This text is about {}.")
-    
+    # embeds = enc.infer([content])
+    # embeds_grams = enc.infer(grams)
+    # simis = cosine_similarity(embeds, embeds_grams)[0]
+    # df_gram_simis = pd.DataFrame(zip(grams, list(simis)), columns=['gram','simi'])
+    # #df_gram_simis['simi'] = (df_gram_simis['simi'] - df_gram_simis['simi'].min()) / (df_gram_simis['simi'].max()-df_gram_simis['simi'].min())
+    # df_gram_simis.sort_values(by=['simi'], ascending=False, inplace=True)
+    print(ix)
+    print("======>", content)
+    print("====>", grams)
     assert len(results) == len(grams_sent)
-    for i in range(len(results)):
-        gram = grams_sent[i][0]
-        result_ = results[i]
-        result_.pop('sequence')
-        embed_gram = enc.infer([gram])
-        simi = cosine_similarity(embed_gram, embeds)
-        #print(gram, simi[0][0])
+    
+    for gram in grams:
+        lscores = {l:[] for l in labels_candidates}
+        contents_yes = []
+        contents_no = []
+        for sent in gen_contents:
+            if gram not in sent.split(' '):
+                continue
+            contents_yes.append(sent)
+            contents_no.append(sent.replace(gram, ''))
 
-        df_ = pd.DataFrame(result_)
-        df_merge = pd.merge(df_ori, df_, on=['labels'], how='inner')
-        df_merge['score_diff'] = df_merge['scores_x'] - df_merge['scores_y']
-        df_merge.sort_values(by=['score_diff'], ascending=False, inplace=True)
+        contents_yes.append(content)
+        contents_no.append(content.replace(gram, '').strip())
 
-        df_merge_pos = df_merge.loc[df_merge['score_diff']>0]
-        if df_merge_pos.shape[0] == 0:
-            continue  
+        result_yes = nli_nlp(contents_yes,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        result_no = nli_nlp(contents_no,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        
+        if len(contents_yes) == 1:
+            result_yes = [result_yes]
+            result_no = [result_no]
+        assert len(result_yes) == len(result_no)
+        for ryes, rno in zip(result_yes, result_no):
+            ryes.pop('sequence')
+            rno.pop('sequence')
+            df_yes = pd.DataFrame(ryes)
+            df_no = pd.DataFrame(rno)
+            df_merge_yesno = pd.merge(df_yes, df_no, on=['labels'], how='inner')
+            df_merge_yesno['score_diff'] = df_merge_yesno['scores_x'] - df_merge_yesno['scores_y']
+            for ix, row in df_merge_yesno.iterrows():
+                if row['score_diff'] > 0 :
+                    lscores[row['labels']].append(row['score_diff'])
 
-        for iix, roww in df_merge_pos.iterrows():
-            if not gram_diff[roww['labels']].get(gram, None):
-                gram_diff[roww['labels']][gram] = []
-            gram_diff[roww['labels']][gram].append(roww['score_diff'] * simi[0][0])
+        lscores_final = {l:sum(s)/len(s) for l, s in lscores.items() if len(s) > 0}
+        #print(gram, lscores_final)
 
-    if ix % 100 ==0:
+
+        for l, s in lscores_final.items():
+            if not gram_diff[l].get(gram, None):
+                gram_diff[l][gram] = []
+            gram_diff[l][gram].append(s)
+
+
+    if ix % 20 ==0:
         print(ix)
         label_expands = {}
         for l, gram_scores in gram_diff.items():
@@ -229,10 +244,21 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
             print(l, '===>', gram_scores_mean_sort[:50])
             label_expands[l] = [ii[0] for ii in gram_scores_mean_sort[:20]]
         print('\n')
-        joblib.dump(gram_diff, 'gram_diff_constrain')
+        joblib.dump(gram_diff, 'gram_diff_gen')
 
 
 
+
+
+
+
+
+
+
+
+
+
+'''
 
 ########## get distribution for each gram 
 import scipy
@@ -269,20 +295,6 @@ def cal_gram_entropy(labels_candidates, df_label_sample, gram):
     df_ls.sort_values(by=['score'], ascending=False, inplace=True)
     #print(gram, len(titles_include), df_ls['score'].std(), scipy.stats.entropy(df_ls['score'].values))
     return df_ls['score'].std(), scipy.stats.entropy(df_ls['score'].values)
-
-'''
-grams_entropy = []
-for gram in grams_candidates:
-    std, entropy = cal_gram_entropy(labels_candidates, df_label_sample, gram)
-    grams_entropy.append((gram, len(titles_include), df_ls['score'].std(), scipy.stats.entropy(df_ls['score'].values)))  
-
-df_grams_entropy = pd.DataFrame(grams_entropy, columns=['gram','cnt','std','entropy'])
-df_grams_entropy.sort_values(by=['entropy'], ascending=True, inplace=True)
-
-ban_grams = set(df_grams_entropy.loc[df_grams_entropy['std'] < std_cut]['gram'].tolist())
-'''
-#df_grams_entropy.loc[df_grams_entropy['gram']=='new']
-################# filter ######
 
 
 import joblib,operator
@@ -364,7 +376,7 @@ print("final_summary==>", args.dsn, args.gram_diff_file, args.std_cut, args.topk
 
 
 
-
+'''
 
 
 
