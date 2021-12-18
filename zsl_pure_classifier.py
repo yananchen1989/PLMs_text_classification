@@ -84,7 +84,7 @@ from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
 tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
+nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=0)
 
 
 from transformers import T5Tokenizer, AutoModelWithLMHead
@@ -220,7 +220,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
             df_no = pd.DataFrame(rno)
             df_merge_yesno = pd.merge(df_yes, df_no, on=['labels'], how='inner')
             df_merge_yesno['score_diff'] = df_merge_yesno['scores_x'] - df_merge_yesno['scores_y']
-            for ix, row in df_merge_yesno.iterrows():
+            for _, row in df_merge_yesno.iterrows():
                 if row['score_diff'] > 0 :
                     lscores[row['labels']].append(row['score_diff'])
 
@@ -234,7 +234,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
             gram_diff[l][gram].append(s)
 
 
-    if ix % 10 ==0 and ix > 0 :
+    if ix % 100 ==0 and ix > 0 :
         print(ix)
         label_expands = {}
         for l, gram_scores in gram_diff.items():

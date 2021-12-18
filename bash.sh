@@ -85,20 +85,26 @@ done
 
 nohup python -u zsl_pure_classifier.py --std_cut 0.15 --topk 128 --dsn uci --manauto auto \
                --gram_diff_file gram_diff_constrain --gpu 6 \
-            > ./log_zsl/zsl.uci.${std_cut}.${topk}.log & 
+            > ./log_zsl/zsl.uci.0.15.128.log & 
 
-nohup python -u zsl_pure_classifier.py --std_cut 0.19 --topk 128 --dsn uci --manauto auto \
+nohup python -u zsl_pure_classifier.py --std_cut 0.20 --topk 128 --dsn uci --manauto auto \
                --gram_diff_file gram_diff_constrain --gpu 7 \
-            > ./log_zsl/zsl.uci.${std_cut}.${topk}.log & 
+            > ./log_zsl/zsl.uci.0.20.128.log & 
 
 
 
-for fbs_gen in 32 64 
-do 
-python -u zsl_gpt.py --dsn uci --genm t5 --gpu 0,1 --fbs_gen ${fbs_gen} \
-          > ./log_zsl/zsl_gpt.uci.t5.${fbs_gen}.log 2>&1 
-done
 
+nohup python -u zsl_gpt.py --dsn uci --genm t5 --gpu 6,7 --fbs_gen 128 \
+          > ./log_zsl/zsl_gpt.uci.t5.128.log & 
+
+
+nohup python -u zsl_gpt.py --dsn ag --genm t5 --gpu 2,3 --fbs_gen 128 \
+          > ./log_zsl/zsl_gpt.ag.t5.128.log & 
+
+
+nohup python -u zsl_pure_classifier.py --gpu 0 --fbs 32 > zsl_pure_classifier_32.log & 
+nohup python -u zsl_pure_classifier.py --gpu 1 --fbs 64 > zsl_pure_classifier_64.log & 
+nohup python -u zsl_pure_classifier.py --gpu 4 --fbs 128 > zsl_pure_classifier_128.log & 
 
 ############################################################################################################################################
 ps aux|grep "augf.py"|grep -v grep | awk '{print $2}'|xargs kill -9
