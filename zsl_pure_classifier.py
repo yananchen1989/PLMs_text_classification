@@ -234,7 +234,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
             gram_diff[l][gram].append(s)
 
 
-    if ix % 5 ==0:
+    if ix % 10 ==0 and ix > 0 :
         print(ix)
         label_expands = {}
         for l, gram_scores in gram_diff.items():
