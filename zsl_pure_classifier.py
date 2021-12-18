@@ -46,7 +46,7 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="uci", type=str)
-parser.add_argument("--fbs", default=0.1, type=int)
+parser.add_argument("--fbs", default=32, type=int)
 parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--gram_diff_file", default="gram_diff_constrain", type=str)
 parser.add_argument("--manauto", default="auto", type=str)
