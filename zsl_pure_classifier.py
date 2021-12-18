@@ -51,7 +51,7 @@ parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--manauto", default="auto", type=str)
 parser.add_argument("--gram_diff", default="gram_diff_gen__uci_32", type=str)
 parser.add_argument("--calculate", default="sum", type=str)
-
+parser.add_argument("--embed_cut", default=0.1, type=float)
 
 parser.add_argument("--gpu", default="4", type=str)
 
@@ -281,7 +281,7 @@ for l, gram_scores in gram_diff.items():
     for ii in gram_scores_mean_sort:
         embed_score =  get_embedding_score(ii[0], df, enc)
         print(ii[0], embed_score)
-        if embed_score >= 0.1:
+        if embed_score >= args.embed_cut:
             label_expands_auto[l].append(ii[0])
             if len(label_expands_auto[l]) >= args.topk:
                 break
