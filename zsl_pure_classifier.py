@@ -48,7 +48,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="uci", type=str)
 parser.add_argument("--fbs", default=32, type=int)
 parser.add_argument("--topk", default=100, type=int)
-parser.add_argument("--gram_diff_file", default="gram_diff_constrain", type=str)
 parser.add_argument("--manauto", default="auto", type=str)
 parser.add_argument("--gpu", default="4", type=str)
 args = parser.parse_args()
@@ -243,7 +242,7 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
             print(l, '===>', gram_scores_mean_sort[:50])
             label_expands[l] = [ii[0] for ii in gram_scores_mean_sort[:20]]
         print('\n')
-        joblib.dump(gram_diff, 'gram_diff_gen_{}'.format(args.fbs))
+        joblib.dump(gram_diff, 'gram_diff_gen__{}_{}'.format(args.dsn, args.fbs))
 
 
 
