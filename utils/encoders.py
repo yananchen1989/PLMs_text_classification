@@ -10,13 +10,17 @@ import tensorflow_text
 # import torch
 
 class encoder():
-    def __init__(self, m):
+    def __init__(self, m, device):
         self.m = m
         #self.device = device
         print('loading m:', self.m)
         text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
-        #with tf.device('/GPU:{}'.format(1)):
-        with tf.device('/cpu:0'):
+        if device == 'cpu':
+            device_context = '/cpu:0'
+        elif device == 'gpu':
+            device_context = '/GPU:0'
+            
+        with tf.device(device_context):
             #with tf.distribute.MirroredStrategy().scope():
             if self.m == 'dan':
                 # https://tfhub.dev/google/universal-sentence-encoder/4

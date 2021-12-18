@@ -129,6 +129,7 @@ for i in range(0, len(titles), fbs):
         print(df_label['label'].value_counts())
         df_label.to_csv("df_cc_label.csv", index=False)
 '''
+from nltk.corpus import wordnet as wn
 def check_noun(word):
     nets = wn.synsets(word)
     for net in nets:
@@ -137,7 +138,7 @@ def check_noun(word):
     return False
 
 ############ find support seeds
-from nltk.corpus import wordnet as wn
+
 gram_diff = {l:{} for l in labels_candidates}
 
 
@@ -251,6 +252,21 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
 
 
 
+label_expands = {}
+for l, gram_scores in gram_diff.items():
+    gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
+    gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
+    print(l, '===>', gram_scores_mean_sort[:100])
+    label_expands[l] = [ii[0] for ii in gram_scores_mean_sort[:50]]
+print('\n')
+
+
+
+foods concussion 
+illness autism drugs dog 
+gets says  news help best first 
+
+len(gram_diff['health']['sanitization'])
 
 
 
@@ -260,7 +276,9 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
 
 
 
-'''
+
+
+
 
 ########## get distribution for each gram 
 import scipy
@@ -300,7 +318,7 @@ def cal_gram_entropy(labels_candidates, df_label_sample, gram):
 
 
 import joblib,operator
-gram_diff = joblib.load(args.gram_diff_file)
+gram_diff = joblib.load('gram_diff_gen__uci_32')
 
 # expansion automatic
 label_expands_auto = {}
@@ -378,7 +396,7 @@ print("final_summary==>", args.dsn, args.gram_diff_file, args.std_cut, args.topk
 
 
 
-'''
+
 
 
 
