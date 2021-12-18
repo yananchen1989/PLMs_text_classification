@@ -49,7 +49,12 @@ parser.add_argument("--dsn", default="uci", type=str)
 parser.add_argument("--fbs", default=32, type=int)
 parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--manauto", default="auto", type=str)
+parser.add_argument("--gram_diff", default="gram_diff_gen__uci_32", type=str)
+parser.add_argument("--calculate", default="sum", type=str)
+
+
 parser.add_argument("--gpu", default="4", type=str)
+
 args = parser.parse_args()
 
 
@@ -72,9 +77,13 @@ from utils.load_data import *
 ds = load_data(dataset=args.dsn, samplecnt= 2048)
 labels_candidates = ds.df_test['label_name'].unique().tolist()
 print(labels_candidates)
-#from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
-# from utils.encoders import *
-# enc = encoder('cmlm-base')
+
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
+from utils.encoders import *
+if not gpus:
+    enc = encoder('dan','cpu')
+else:
+    enc = encoder('dan','gpu')
 
 
 nli_model_name = "facebook/bart-large-mnli"
@@ -103,15 +112,19 @@ stopwords = joblib.load("./utils/stopwords")
 
 import numpy as np
 import datasets,re,operator,joblib
-# try:
-#     cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='./torch_ds')
-#     df = pd.DataFrame(zip(cc_news['title'], cc_news['text'], cc_news['description'] ))
-#     df.columns = ['title','content','description']
-#     df.drop_duplicates(['title','content'], inplace=True) 
-#     df.to_csv("./torch_ds/df_cc_news.csv", index=False)
-# except:
+
+def get_embedding_score(gram, df, enc):
+    dfs = df.loc[df['title_lower'].str.contains(gram)]
+    titles_contain = dfs.sample(min(2048, dfs.shape[0]))['title'].tolist()
+    embeds = enc.infer(titles_contain)
+    embeds_grams = enc.infer([gram])
+    simi = cosine_similarity(embeds, embeds_grams).mean()
+    return simi
+
+
 df = get_cc_news(1)
 df = df.loc[~df['title'].isnull()]
+df['title_lower'] = df['title'].map(lambda x: x.lower())
 '''
 # prepare balanced df
 fbs = 256
@@ -138,10 +151,8 @@ def check_noun(word):
     return False
 
 ############ find support seeds
-
+'''
 gram_diff = {l:{} for l in labels_candidates}
-
-
 for ix, row in df.sample(frac=1).reset_index().iterrows():
     #row = ds.df_train.sample(1)
     #content = row['content'].tolist()[0]
@@ -249,94 +260,33 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
         print('\n')
         joblib.dump(gram_diff, 'gram_diff_gen__{}_{}'.format(args.dsn, args.fbs))
 
-
-
-
-label_expands = {}
-for l, gram_scores in gram_diff.items():
-    gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
-    gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
-    print(l, '===>', gram_scores_mean_sort[:100])
-    label_expands[l] = [ii[0] for ii in gram_scores_mean_sort[:50]]
-print('\n')
-
-
-
-foods concussion 
-illness autism drugs dog 
-gets says  news help best first 
-
-len(gram_diff['health']['sanitization'])
-
-
-
-
-
-
-
-
-
-
-
-
-
-########## get distribution for each gram 
-import scipy
-df_label = pd.read_csv("df_cc_label.csv")
-df_label = df_label.loc[~df_label['title'].isnull()]
-df_label_sample = sample_stratify(df_label, df_label.label.value_counts().values.min())
-
-df_label_sample['title_lower'] = df_label_sample['title'].map(lambda x: x.lower())
-
-df_label_sample.loc[df_label_sample['title_lower'].str.contains('vaccine')]
-
-
-def cal_gram_entropy(labels_candidates, df_label_sample, gram):
-    dftitle = df_label_sample.loc[df_label_sample['title_lower'].str.contains(gram)]
-
-    titles_include = dftitle.sample(min(1024, dftitle.shape[0]))['title'].tolist()
-    fbs = 256
-    infos = []
-    for i in range(0,len(titles_include), fbs):
-        #print(i)
-        if len(titles_include[i:i+fbs]) == 1:
-            continue
-        nli_result = nli_nlp(titles_include[i:i+fbs], labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-        if isinstance(nli_result, dict):
-            continue
-        for r in  nli_result:
-            lsd = {l:s for l, s in zip(r['labels'], r['scores'])}
-            scores = [lsd[l] for l in labels_candidates]
-            infos.append(scores)
-    if not infos:
-        return None, None
-    scores_reduce = list(np.array(infos).mean(axis=0))
-    df_ls = pd.DataFrame(zip(labels_candidates, scores_reduce), columns=['label','score'])
-    df_ls.sort_values(by=['score'], ascending=False, inplace=True)
-    #print(gram, len(titles_include), df_ls['score'].std(), scipy.stats.entropy(df_ls['score'].values))
-    return df_ls['score'].std(), scipy.stats.entropy(df_ls['score'].values)
-
+'''
 
 import joblib,operator
-gram_diff = joblib.load('gram_diff_gen__uci_32')
+import numpy as np
+gram_diff = joblib.load(args.gram_diff)
 
-# expansion automatic
 label_expands_auto = {}
 for l, gram_scores in gram_diff.items():
-    gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
+    if args.calculate == 'sum':
+        gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
+    elif args.calculate == 'max':
+        gram_scores_mean = {g:round(np.array(scores).max(),4) for g, scores in gram_scores.items() }
+    elif args.calculate == 'mean':
+        gram_scores_mean = {g:round(np.array(scores).mean(),4) for g, scores in gram_scores.items() }
+
     gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
-    grams_rank = [gs[0] for gs in gram_scores_mean_sort]
-    grams_topk = []
-    for gram in grams_rank:
-        std, entropy = cal_gram_entropy(labels_candidates, df_label_sample, gram)
-        if not std:
-            continue
-        if std < args.std_cut:
-            continue
-        grams_topk.append(gram)
-        if len(grams_topk) == args.topk:
-            break 
-    label_expands_auto[l] = grams_topk
+    print(l, '===>', gram_scores_mean_sort[:100])
+    label_expands_auto[l] = []
+    for ii in gram_scores_mean_sort:
+        embed_score =  get_embedding_score(ii[0], df, enc)
+        print(ii[0], embed_score)
+        if embed_score >= 0.1:
+            label_expands_auto[l].append(ii[0])
+            if len(label_expands_auto[l]) >= args.topk:
+                break
+print(label_expands_auto)
+
 
 # expansion mannual 
 label_expands_mannual = map_expand_nli(base_nli, args.dsn)
@@ -391,7 +341,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
     if ix % 256 == 0 and ix > 0:
         print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
 
-print("final_summary==>", args.dsn, args.gram_diff_file, args.std_cut, args.topk,
+print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
      sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
 

@@ -10,7 +10,7 @@ import tensorflow_text
 # import torch
 
 class encoder():
-    def __init__(self, m, device):
+    def __init__(self, m='cmlm-base', device='cpu'):
         self.m = m
         #self.device = device
         print('loading m:', self.m)
