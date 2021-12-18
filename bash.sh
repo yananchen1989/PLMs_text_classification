@@ -102,15 +102,17 @@ nohup python -u zsl_pure_classifier.py --dsn yahoo  --gpu 7 --fbs 64 >  ./log_zs
 
 
 
-nohup python -u zsl_pure_classifier.py --dsn uci --gpu 2 --gram_diff gram_diff_gen__uci_32 --calculate sum \
+nohup python -u zsl_pure_classifier.py --dsn uci --gpu 2 --gram_diff gram_diff_gen__uci_32 --embed_cut 0.15 --calculate sum \
       > ./log_zsl/zsl.test.uci.gram_diff_gen__uci_32.sum.log & 
 
+nohup python -u zsl_pure_classifier.py --dsn uci --gpu 5 --gram_diff gram_diff_gen__uci_32 --embed_cut 0.15 --calculate mean \
+      > ./log_zsl/zsl.test.uci.gram_diff_gen__uci_32.mean.log &
 
-nohup python -u zsl_pure_classifier.py --dsn uci --gpu 5 --gram_diff gram_diff_gen__uci_32 --calculate mean \
-      > ./log_zsl/zsl.test.uci.gram_diff_gen__uci_32.sum.log &
+nohup python -u zsl_pure_classifier.py --dsn uci --gpu 7 --gram_diff gram_diff_gen__uci_32 --embed_cut 0.15 --calculate max \
+      > ./log_zsl/zsl.test.uci.gram_diff_gen__uci_32.max.log &
 
-      nohup python -u zsl_pure_classifier.py --dsn uci --gpu 7 --gram_diff gram_diff_gen__uci_32 --calculate max \
-      > ./log_zsl/zsl.test.uci.gram_diff_gen__uci_32.sum.log &
+
+
 
 
 ############################################################################################################################################

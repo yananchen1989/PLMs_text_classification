@@ -52,7 +52,6 @@ parser.add_argument("--manauto", default="auto", type=str)
 parser.add_argument("--gram_diff", default="gram_diff_gen__uci_32", type=str)
 parser.add_argument("--calculate", default="sum", type=str)
 parser.add_argument("--embed_cut", default=0.1, type=float)
-
 parser.add_argument("--gpu", default="4", type=str)
 
 args = parser.parse_args()
