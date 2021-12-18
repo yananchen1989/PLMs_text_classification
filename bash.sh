@@ -109,7 +109,7 @@ nohup python -u zsl_pure_classifier.py --dsn yahoo  --gpu 7 --fbs 64 >  ./log_zs
 
 
 ############################################################################################################################################
-ps aux|grep "augf.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "zsl_pure_classifier.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 

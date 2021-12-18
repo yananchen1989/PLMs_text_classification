@@ -71,7 +71,7 @@ if gpus:
 from utils.load_data import * 
 ds = load_data(dataset=args.dsn, samplecnt= 2048)
 labels_candidates = ds.df_test['label_name'].unique().tolist()
-
+print(labels_candidates)
 #from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 # from utils.encoders import *
 # enc = encoder('cmlm-base')
