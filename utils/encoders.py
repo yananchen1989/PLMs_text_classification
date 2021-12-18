@@ -14,14 +14,15 @@ class encoder():
         self.m = m
         #self.device = device
         print('loading m:', self.m)
-        text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
+        
         if device == 'cpu':
             device_context = '/cpu:0'
         elif device == 'gpu':
             device_context = '/GPU:0'
             
         with tf.device(device_context):
-            #with tf.distribute.MirroredStrategy().scope():
+        #with tf.distribute.MirroredStrategy().scope():
+            text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
             if self.m == 'dan':
                 # https://tfhub.dev/google/universal-sentence-encoder/4
                 # https://tfhub.dev/google/universal-sentence-encoder-lite/2
@@ -37,7 +38,7 @@ class encoder():
             #     self.model = SentenceTransformer(self.m, device=self.device, cache_folder='./sentberts')
 
         #if self.m in ['dan'] or self.m.startswith('cmlm'):
-        self.model = tf.keras.Model(inputs=text_input, outputs=embed)
+            self.model = tf.keras.Model(inputs=text_input, outputs=embed)
 
     def infer(self, sents, batch_size=32):
         #if self.m in ['dan'] or self.m.startswith('cmlm'):

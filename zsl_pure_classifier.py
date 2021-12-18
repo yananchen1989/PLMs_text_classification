@@ -116,7 +116,7 @@ import datasets,re,operator,joblib
 def get_embedding_score(gram, df, enc):
     dfs = df.loc[df['title_lower'].str.contains(gram)]
     titles_contain = dfs.sample(min(2048, dfs.shape[0]))['title'].tolist()
-    embeds = enc.infer(titles_contain)
+    embeds = enc.infer(titles_contain, batch_size=1024)
     embeds_grams = enc.infer([gram])
     simi = cosine_similarity(embeds, embeds_grams).mean()
     return simi
