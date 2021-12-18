@@ -111,7 +111,7 @@ import datasets,re,operator,joblib
 #     df.to_csv("./torch_ds/df_cc_news.csv", index=False)
 # except:
 df = get_cc_news(1)
-
+df = df.loc[~df['title'].isnull()]
 '''
 # prepare balanced df
 fbs = 256
@@ -140,13 +140,17 @@ def check_noun(word):
 from nltk.corpus import wordnet as wn
 gram_diff = {l:{} for l in labels_candidates}
 
+
 for ix, row in df.sample(frac=1).reset_index().iterrows():
     #row = ds.df_train.sample(1)
     #content = row['content'].tolist()[0]
     #label_name = row['label_name'].tolist()[0]
     if not row['title']:
         continue
-    content = row['title'].lower()
+    try:
+        content = row['title'].lower()
+    except:
+        continue
 
     if not content or len(content.split(' ')) <=5:
         continue

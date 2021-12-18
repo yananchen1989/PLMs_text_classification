@@ -81,25 +81,9 @@ done
 
 
 
-
-
-nohup python -u zsl_pure_classifier.py --std_cut 0.15 --topk 128 --dsn uci --manauto auto \
-               --gram_diff_file gram_diff_constrain --gpu 6 \
-            > ./log_zsl/zsl.uci.0.15.128.log & 
-
-nohup python -u zsl_pure_classifier.py --std_cut 0.20 --topk 128 --dsn uci --manauto auto \
-               --gram_diff_file gram_diff_constrain --gpu 7 \
-            > ./log_zsl/zsl.uci.0.20.128.log & 
-
-
-
-
 nohup python -u zsl_gpt.py --dsn uci --genm t5 --gpu 6,7 --fbs_gen 128 \
           > ./log_zsl/zsl_gpt.uci.t5.128.log & 
 
-
-nohup python -u zsl_gpt.py --dsn ag --genm t5 --gpu 2,3 --fbs_gen 128 \
-          > ./log_zsl/zsl_gpt.ag.t5.128.log & 
 
 
 nohup python -u zsl_pure_classifier.py --dsn uci --gpu 0 --fbs 32 >  ./log_zsl/zsl.flip.gen.uci.32.log & 
@@ -111,9 +95,16 @@ nohup python -u zsl_pure_classifier.py --dsn ag --gpu 3 --fbs 32 >  ./log_zsl/zs
 nohup python -u zsl_pure_classifier.py --dsn ag  --gpu 4 --fbs 64 >  ./log_zsl/zsl.flip.gen.ag.64.log & 
 nohup python -u zsl_pure_classifier.py --dsn ag  --gpu 5 --fbs 128 > ./log_zsl/zsl.flip.gen.ag.128.log &
 
-
 nohup python -u zsl_pure_classifier.py --dsn yahoo --gpu 6 --fbs 32 >  ./log_zsl/zsl.flip.gen.yahoo.32.log & 
 nohup python -u zsl_pure_classifier.py --dsn yahoo  --gpu 7 --fbs 64 >  ./log_zsl/zsl.flip.gen.yahoo.64.log & 
+
+
+
+
+
+
+
+
 
 
 
