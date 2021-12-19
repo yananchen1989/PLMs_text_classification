@@ -10,7 +10,7 @@ parser.add_argument("--genm", default='t5', type=str)
 parser.add_argument("--gpu", default="0,1", type=str)
 args = parser.parse_args()
 
-dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
+dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
