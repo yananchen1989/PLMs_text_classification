@@ -6,8 +6,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--fbs_gen", default=32, type=int)
-parser.add_argument("--maxlen", default=64, type=int)
-parser.add_argument("--genm", default='gpt2', type=str)
+parser.add_argument("--genm", default='t5', type=str)
 parser.add_argument("--gpu", default="0,1", type=str)
 args = parser.parse_args()
 

@@ -81,35 +81,32 @@ done
 
 
 
-nohup python -u zsl_gpt.py --dsn uci --genm t5 --gpu 6,7 --fbs_gen 128 \
-          > ./log_zsl/zsl_gpt.uci.t5.128.log & 
-
-
-
-nohup python -u zsl_pure_classifier.py --dsn uci --gpu 0 --fbs 32 >  ./log_zsl/zsl.flip.gen.uci.32.log & 
-nohup python -u zsl_pure_classifier.py --dsn uci  --gpu 1 --fbs 64 >  ./log_zsl/zsl.flip.gen.uci.64.log & 
-nohup python -u zsl_pure_classifier.py --dsn uci  --gpu 2 --fbs 128 > ./log_zsl/zsl.flip.gen.uci.128.log & 
-
-
-nohup python -u zsl_pure_classifier.py --dsn ag --gpu 3 --fbs 32 >  ./log_zsl/zsl.flip.gen.ag.32.log & 
-nohup python -u zsl_pure_classifier.py --dsn ag  --gpu 4 --fbs 64 >  ./log_zsl/zsl.flip.gen.ag.64.log & 
-nohup python -u zsl_pure_classifier.py --dsn ag  --gpu 5 --fbs 128 > ./log_zsl/zsl.flip.gen.ag.128.log &
-
-nohup python -u zsl_pure_classifier.py --dsn yahoo --gpu 6 --fbs 32 >  ./log_zsl/zsl.flip.gen.yahoo.32.log & 
-nohup python -u zsl_pure_classifier.py --dsn yahoo  --gpu 7 --fbs 64 >  ./log_zsl/zsl.flip.gen.yahoo.64.log & 
 
 
 
 
 
-nohup python -u zsl_pure_classifier.py --dsn uci --gpu 2 --gram_diff gram_diff_gen__uci_32 --embed_cut 0.15 --calculate sum \
-      > ./log_zsl/zsl.test.uci.gram_diff_gen__uci_32.sum.log & 
+for gram_diff in gram_diff_gen__uci_32  gram_diff_gen__uci_64 gram_diff_gen__uci_128
+do
+   do
+   for topk in 64 128 256 
+      do
+         for embed_cut in 0.17 0.2 0.22 0.25 0.275 0.3 
+         do
+         python -u zsl_pure_classifier.py --dsn uci --gpu 2 --gram_diff ${gram_diff} --topk ${topk} \
+                  --embed_cut ${embed_cut} --calculate sum \
+               > ./log_zsl/zsl.test.uci.${gram_diff}.${topk}.${embed_cut}.sum.log & 
+         done 
+      done
+   done 
+done
 
-nohup python -u zsl_pure_classifier.py --dsn uci --gpu 5 --gram_diff gram_diff_gen__uci_32 --embed_cut 0.15 --calculate mean \
-      > ./log_zsl/zsl.test.uci.gram_diff_gen__uci_32.mean.log &
 
-nohup python -u zsl_pure_classifier.py --dsn uci --gpu 7 --gram_diff gram_diff_gen__uci_32 --embed_cut 0.15 --calculate max \
-      > ./log_zsl/zsl.test.uci.gram_diff_gen__uci_32.max.log &
+
+
+
+
+
 
 
 
