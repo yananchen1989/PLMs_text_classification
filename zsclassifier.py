@@ -51,6 +51,8 @@ parser.add_argument("--manauto", default="auto", type=str)
 parser.add_argument("--gram_diff", default="", type=str)
 parser.add_argument("--calculate", default="sum", type=str)
 parser.add_argument("--embed_cut", default=0.15, type=float)
+parser.add_argument("--upper", default=0.85, type=float)
+parser.add_argument("--lower", default=0.15, type=float)
 parser.add_argument("--gpu", default="1", type=str)
 
 args = parser.parse_args()
@@ -219,14 +221,14 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
             embed_score = get_embedding_score(g, df, enc)
             gram_embed[g] = embed_score
 
-        if gram_embed[g] < 0.15:
+        if gram_embed[g] < args.embed_cut:
             continue
 
         r.pop('sequence')
         df_ = pd.DataFrame(r)
         df_diff = pd.merge(df_ori, df_, on=['labels'], how='inner') 
         df_diff['score_diff'] = df_diff['scores_x'] - df_diff['scores_y']
-        df_diff_sel = df_diff.loc[(df_diff['scores_x']>=0.8) & (df_diff['scores_y']<=0.15)]
+        df_diff_sel = df_diff.loc[(df_diff['scores_x']>=args.upper) & (df_diff['scores_y']<=args.lower)]
         
         if df_diff_sel.shape[0] == 0:
             continue
