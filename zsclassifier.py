@@ -45,14 +45,14 @@ import time,argparse
 import os 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="ag", type=str)
+parser.add_argument("--dsn", default="yahoo", type=str)
 parser.add_argument("--fbs", default=32, type=int)
 parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--manauto", default="auto", type=str)
 parser.add_argument("--gram_diff", default="", type=str)
 parser.add_argument("--calculate", default="sum", type=str)
 parser.add_argument("--embed_cut", default=0.15, type=float)
-parser.add_argument("--gpu", default="5", type=str)
+parser.add_argument("--gpu", default="1", type=str)
 
 args = parser.parse_args()
 
@@ -263,8 +263,6 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
 
 import joblib,operator
 import numpy as np
-
-
 gram_diff = joblib.load(args.gram_diff)
 
 label_expands_auto = {}
@@ -295,6 +293,14 @@ if args.manauto == 'man':
     label_expands = map_expand_nli(base_nli, args.dsn)
 elif args.manauto == 'auto':
     label_expands = label_expands_auto
+
+
+# label_expands = {'business': ['market', 'ceo', 'bank', 'stocks', 'boss', 'sales', 'manager', 'stock', 'amazon', 'shares', 'profit', 'director', 'trump', 'businesses', 'news', 'apple', 'china', 'launches', 'team', 'million', 'loss', 'contract', 'google', 'workers', 'chief', 'restaurant', 'companies', 'banks', 'markets', 'jobs', 'growth', 'earnings', 'week', 'investment', 'launch', 'investors', 'economy', 'macron', 'robbery', 'employee', 'agent', 'revenue', 'dividend', 'production', 'billion', 'services', 'career', 'capital', 'workplace', 'partners', 'customers', 'india', 'finance', 'brewers', 'giants', 'executive', 'farm', 'chiefs', 'sells', 'reports', 'airlines', 'commercial', 'center', 'analysts'], 'science and technology': ['energy', 'technology', 'video', 'google', 'apple', 'study', 'science', 'internet', 'arsenal', 'china', 'launches', 'missile', 'electric', 'scientists', 'news', 'ceo', 'mobile', 'amazon', 'market', 'trump', 'space', 'smart', 'software', 'rockets', 'mining', 'launch', 'latest', 'moon', 'probe', 'gun', 'fireworks', 'researchers', 'technologies', 'zoo', 'lions', 'steel', 'million', 'brewers', 'future', 'stars', 'driving', 'birth', 'penguins', 'machine', 'bomb', 'eagles', 'chip', 'drone', 'korea', 'technical', 'shares', 'cloud', 'titans', 'surgery', 'clippers', 'production', 'giants', 'development', 'pipeline', 'fire', 'gold', 'nasa', 'wins', 'tesla'], 'entertainment': ['video', 'season', 'fans', 'stars', 'festival', 'music', 'sports', 'film', 'party', 'series', 'movie', 'club', 'trump', 'concert', 'nightclub', 'fireworks', 'eagles', 'actress', 'news', 'disney', 'hollywood', 'singer', 'zoo', 'rugby', 'channel', 'weekend', 'week', 'episode', 'bowl', 'league', 'album', 'beer', 'tickets', 'celebrity', 'fox', 'dance', 'song', 'parade', 'trailer', 'lions', 'theatre', 'events', 'hosts', 'streaming', 'comedian', 'summer', 'football', 'players', 'wins', 'director', 'movies', 'team', 'launches', 'fame', 'amazon', 'toys', 'theater', 'preview', 'magic', 'twitter', 'vegas', 'apple', 'performance', 'latest'], 'health': ['hospital', 'medical', 'cancer', 'healthcare', 'injury', 'doctor', 'flu', 'drug', 'heart', 'fitness', 'surgery', 'safety', 'doctors', 'blood', 'marijuana', 'hospitals', 'treatment', 'birth', 'injuries', 'patients', 'brain', 'news', 'medicaid', 'abortion', 'study', 'gym', 'nursing', 'concussion', 'safe', 'glasses', 'wounded', 'drugs', 'smoking', 'swim', 'risk', 'recovery', 'patient', 'smoke', 'diet', 'nurse', 'disease', 'dementia', 'save', 'clinic', 'knee', 'workout', 'medicine', 'week', 'exercise', 'police', 'disabled', 'poisoning', 'wellness', 'hurt', 'fire', 'healing', 'warning', 'illness', 'foods', 'vegan', 'swimming', 'autism', 'sports', 'therapy']}
+
+# label_expands = {'business': ['market', 'ceo', 'bank', 'stocks', 'boss', 'sales', 'manager', 'stock', 'amazon', 'shares', 'profit', 'director', 'trump', 'businesses', 'apple', 'china', 'launches', 'million', 'loss', 'contract', 'google', 'workers', 'chief', 'companies', 'banks', 'markets', 'jobs', 'growth', 'earnings', 'investment', 'launch', 'investors', 'economy', 'macron', 'robbery', 'employee', 'agent', 'revenue', 'dividend', 'production', 'billion', 'services', 'career', 'capital', 'workplace', 'partners', 'customers', 'india', 'finance', 'brewers', 'giants', 'executive', 'chiefs', 'sells', 'commercial', 'analysts'], \
+# 'science and technology': ['energy', 'technology', 'video', 'google', 'apple', 'study', 'science', 'internet', 'arsenal', 'china', 'launches', 'missile', 'electric', 'scientists', 'mobile', 'amazon', 'space', 'smart', 'software', 'rockets', 'mining', 'moon', 'probe', 'researchers', 'technologies',  'future', 'stars', 'machine', 'bomb', 'chip', 'drone', 'technical', 'cloud', 'titans', 'surgery', 'clippers', 'production', 'giants', 'development', 'pipeline', 'fire', 'gold', 'nasa', 'tesla'], 
+# 'entertainment': ['video', 'season', 'fans', 'stars', 'festival', 'music', 'sports', 'film', 'party', 'series', 'movie', 'club', 'trump', 'concert', 'nightclub', 'fireworks', 'actress', 'disney', 'hollywood', 'singer', 'rugby', 'channel', 'weekend', 'episode', 'bowl', 'league', 'album', 'beer', 'tickets', 'celebrity', 'fox', 'dance', 'song', 'parade', 'trailer', 'theatre', 'hosts', 'streaming', 'comedian', 'players', 'wins', 'director', 'movies', 'team', 'launches', 'fame', 'amazon', 'toys', 'theater', 'preview', 'magic', 'twitter', 'vegas', 'apple', 'performance'], \
+# 'health': ['hospital', 'medical', 'cancer', 'healthcare', 'injury', 'doctor', 'flu', 'drug', 'heart', 'fitness', 'surgery', 'safety', 'doctors', 'blood', 'marijuana', 'hospitals', 'treatment', 'birth', 'injuries', 'patients', 'brain', 'news', 'medicaid', 'abortion', 'gym', 'nursing', 'concussion', 'safe', 'glasses', 'wounded', 'drugs', 'smoking', 'swim', 'recovery', 'patient', 'smoke', 'diet', 'nurse', 'disease', 'dementia', 'clinic', 'knee', 'workout', 'medicine', 'exercise', 'police', 'disabled', 'poisoning', 'wellness', 'hurt', 'fire', 'healing', 'warning', 'illness', 'foods', 'vegan', 'swimming', 'autism', 'sports', 'therapy']}
 
 
 grams_candidates = []
@@ -345,19 +351,6 @@ for ix, row in ds.df_train.reset_index().iterrows():
 
 print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
      sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
-
-
-
-
-
-
-
-
-# label_expands = \
-# {'business': ['commerce', 'entrepreneurs', 'ceo', 'companies', 'stock', 'businesses', 'insurers', 'analysts', 'workplace', 'businessman', 'brands', 'revenue', 'economics', 'amazon', 'recruits', 'trader', 'tribute', 'investors', 'boss', 'marketing', 'storefront', 'chain', 'enterprise', 'trainers', 'oilfields', 'market', 'telecommunication', 'kiosk', 'executive', 'startup', 'sponsorship', 'mills', 'profit', 'telco', 'dealer', 'professional', 'industries', 'contractor', 'franchise', 'columnist', 'influence', 'prices', 'yanks', 'film', 'manager', 'clutch', 'giants', 'restaurant', 'finances', 'ngos', 'career', 'worker', 'banker', 'eleven', 'rewards', 'chiefs', 'risk', 'league', 'buyer', 'decision', 'conference', 'commercial', 'employers', 'realtors', 'supermarket', 'equities', 'graham', 'customers', 'workers', 'movie', 'stocks', 'apple', 'rankings', 'buys', 'entrepreneur', 'sales', 'results', 'brewers', 'factory', 'conjuring', 'launches', 'grief', 'brewer', 'robber', 'interest', 'logistics', 'finance', 'google', 'crops', 'billionaire', 'fortunes', 'explosion', 'refinery', 'jobs', 'supermarkets', 'packers', 'vehicles', 'chef', 'concierge', 'employees'], 
-# 'science and technology': ['robots', 'automation', 'robot', 'technical', 'hacker', 'driving', 'technology', 'rockets', 'engineering', 'chargers', 'bombs', 'chip', 'technologies', '3d', 'scientists', 'groundbreaking', 'apple', 'discovery', 'startup', 'clippers', 'machine', 'chain', 'silicon', 'guns', 'catheter', 'firepower', 'shooting', 'asteroid', 'buys', 'resuscitation', 'arsenal', 'flies', 'electric', 'mixers', 'energy', 'digitization', 'google', 'space', 'science', 'scoreboard', 'giants', 'software', 'bobsled', 'startups', 'windows', 'batteries', 'stamps', 'balloon', 'spotlight', 'ranking', 'nuke', 'generators', 'revolutionary', 'experiment', 'nukes', 'abrasives', 'automobiles', 'supplements', 'lions', 'ipo', 'conditioners', 'inception', 'phantoms', 'materials', 'gadgets', 'quantum', 'futures', 'hologram', 'planes', 'internet', 'researcher', 'gamecocks', 'automatic', 'camera', 'exam', 'beta', 'angels', 'cyborg', 'moon', 'clocks', 'electronics', 'tvs', 'penguins', 'transplant', 'motorcyclist', 'stocks', 'detector', 'powerhouse', 'malaria', 'walls', 'futurism', 'smart', 'bikes', 'jason', 'grinder', 'fight', 'team', 'builder', 'avengers', 'graduate'], 
-# 'entertainment': ['tvs', 'thrills', 'video', 'theatre', 'zoo', 'dance', 'concert', 'puppets', 'music', 'headsets', 'experiences', 'actress', 'hollywood', 'gigs', 'visitors', 'comedian', 'memes', 'nightclub', 'clubs', 'feasting', 'bollywood', 'musical', 'theater', 'magician', 'superman', 'outings', 'party', 'channel', 'movies', 'pirates', 'joke', 'festival', 'preview', 'avengers', 'exercise', 'special', 'hosts', 'films', 'superstar', 'musician', 'lego', 'kings', 'puppet', 'bonfire', 'idol', 'humor', 'funny', 'comedy', 'blade', 'fireworks', 'musicians', 'television', 'raider', 'celebrities', 'trailer', 'jeopardy', 'playground', 'raiders', 'nightlife', 'voice', 'roars', 'news', 'storylines', 'spectacle', 'stars', 'blockbuster', 'scarface', 'trophies', 'producers', 'comic', 'raceway', 'song', 'intrigue', 'singer', 'dancer', 'tourism', 'shirts', 'jokes', 'darts', 'toys', 'thriller', 'fans', 'eagles', 'glamour', 'treats', 'viewers', 'legends', 'season', 'movie', 'candles', 'drama', 'groove', 'ramps', 'pelicans', 'lions', 'tigers', 'stream', 'boost', 'sports', 'discovery'],
-#  'health': ['healthcare', 'cancer', 'concussion', 'glaucoma', 'medical', 'heartbreak', 'sanitization', 'hospital', 'flu', 'heart', 'sobriety', 'stomach', 'polio', 'stroke', 'doctor', 'recovery', 'healing', 'nursing', 'hospitals', 'ptsd', 'heartthrob', 'feces', 'gynecologist', 'catheter', 'concussions', 'summer', 'hunger', 'scares', 'dementia', 'physicians', 'smoke', 'diabetic', 'icbm', 'clinic', 'dyslexia', 'gym', 'epidemic', 'docs', 'thigh', 'breakers', 'workouts', 'dentist', 'midwife', 'cancers', 'yoga', 'contusion', 'tumor', 'swimming', 'shower', 'illness', 'syndrome', 'knee', 'asthmatics', 'leprosy', 'hospice', 'appointment', 'diapers', 'workout', 'treatment', 'launches', 'swim', 'doctors', 'conditions', 'exercise', 'hospitality', 'injury', 'poisoning', 'improvement', 'physician', 'depression', 'fitness', 'drug', 'eruption', 'vegetarian', 'investigations', 'pediatrician', 'allergens', 'breathing', 'patient', 'paramedic', 'nurse', 'bloodbath', 'loss', 'treatments', 'abuse', 'nutrition', 'sanity', 'baldwin', 'bodybuilding', 'drought', 'bleeding', 'insulin', 'diagnostics', 'glasses', 'surgery', 'cleanup', 'caretaker', 'diet', 'collapses', 'blood']}
 
 
 
