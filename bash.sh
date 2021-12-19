@@ -66,41 +66,40 @@ done
 
 
 dsn=yahoo
-nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 0 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
+nohup python -u zsclassifier.py --dsn ${dsn} --gpu 0 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
                --embed_cut 0.15  --calculate sum \
-            > ./log_zsl/zsl.test.${dsn}.64.0.15.sum.log & 
+            > ./log_zsl/zsl.test.${dsn}.diff32.64.0.15.sum.log & 
 
-nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 1 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
+nohup python -u zsclassifier.py --dsn ${dsn} --gpu 1 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
                --embed_cut 0.15  --calculate sum \
-            > ./log_zsl/zsl.test.${dsn}.128.0.15.sum.log & 
+            > ./log_zsl/zsl.test.${dsn}.diff32.128.0.15.sum.log & 
 
-nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 2 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
+nohup python -u zsclassifier.py --dsn ${dsn} --gpu 2 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
                --embed_cut 0.3  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.64.0.3.max.log & 
+            > ./log_zsl/zsl.test.${dsn}.diff32.64.0.3.max.log & 
 
-nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 3 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
+nohup python -u zsclassifier.py --dsn ${dsn} --gpu 3 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
                --embed_cut 0.3  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.128.0.3.max.log & 
+            > ./log_zsl/zsl.test.${dsn}.diff32.128.0.3.max.log & 
 
 
+nohup python -u zsclassifier.py --dsn ${dsn} --gpu 4 --gram_diff gram_diff_gen__${dsn}_64 --topk 64 \
+               --embed_cut 0.15  --calculate sum \
+            > ./log_zsl/zsl.test.${dsn}.diff64.64.0.15.sum.log & 
 
-dsn=ag
-nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 4 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
-               --embed_cut 0.15  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.64.0.15.max.log & 
+nohup python -u zsclassifier.py --dsn ${dsn} --gpu 5 --gram_diff gram_diff_gen__${dsn}_64 --topk 128 \
+               --embed_cut 0.15  --calculate sum \
+            > ./log_zsl/zsl.test.${dsn}.diff64.128.0.15.sum.log & 
 
-nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 5 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
-               --embed_cut 0.15  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.128.0.15.max.log & 
+nohup python -u zsclassifier.py --dsn ${dsn} --gpu 6 --gram_diff gram_diff_gen__${dsn}_64 --topk 64 \
+               --embed_cut 0.3  --calculate max \
+            > ./log_zsl/zsl.test.${dsn}.diff64.64.0.3.max.log & 
+
+nohup python -u zsclassifier.py --dsn ${dsn} --gpu 7 --gram_diff gram_diff_gen__${dsn}_64 --topk 128 \
+               --embed_cut 0.3  --calculate max \
+            > ./log_zsl/zsl.test.${dsn}.diff64.128.0.3.max.log & 
 
 
-nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 6 --gram_diff gram_diff_gen__${dsn}_32 --topk 256 \
-               --embed_cut 0.15  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.256.0.15.max.log & 
-
-nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 7 --gram_diff gram_diff_gen__${dsn}_32 --topk 32 \
-               --embed_cut 0.15  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.32.0.15.max.log &
 
 
 

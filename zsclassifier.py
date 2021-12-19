@@ -46,7 +46,6 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="yahoo", type=str)
-parser.add_argument("--fbs", default=32, type=int)
 parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--manauto", default="auto", type=str)
 parser.add_argument("--gram_diff", default="", type=str)
@@ -55,7 +54,6 @@ parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--gpu", default="1", type=str)
 
 args = parser.parse_args()
-
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
@@ -93,12 +91,12 @@ model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-rob
 tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
 nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=0)
 
-if not args.gram_diff:
-    from transformers import T5Tokenizer, AutoModelWithLMHead
-    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-    print(tokenizer_t5)
-    t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
-    gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
+# if not args.gram_diff:
+#     from transformers import T5Tokenizer, AutoModelWithLMHead
+#     tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+#     print(tokenizer_t5)
+#     t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
+#     gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
 
 
 # load dataset
@@ -150,8 +148,9 @@ def check_noun(word):
     return False
 
 ############ find support seeds
-'''
+
 gram_diff = {l:{} for l in labels_candidates}
+gram_embed = {}
 for ix, row in df.sample(frac=1).reset_index().iterrows():
     #row = ds.df_train.sample(1)
     #content = row['content'].tolist()[0]
@@ -183,69 +182,62 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
 
     #grams = grams + ners_
     #print(grams)
-
+    
     result_ori = nli_nlp(content, labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
     result_ori.pop('sequence')
     df_ori = pd.DataFrame(result_ori)
 
     # tune
-    if df_ori['scores'].max() < 0.7:
+    if df_ori['scores'].max() < 0.8:
         continue
 
-    gen_result = gen_nlp(content + tokenizer_t5.eos_token,  do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                            repetition_penalty=1.2, num_return_sequences= args.fbs,\
-                                            clean_up_tokenization_spaces=True)
-    gen_contents = [s['generated_text'].lower() for s in gen_result if s['generated_text']]
+    # gen_result = gen_nlp(content + tokenizer_t5.eos_token,  do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+    #                                         repetition_penalty=1.2, num_return_sequences= args.fbs,\
+    #                                         clean_up_tokenization_spaces=True)
+    # gen_contents = [s['generated_text'].lower() for s in gen_result if s['generated_text']]
 
-    # embeds = enc.infer([content])
-    # embeds_grams = enc.infer(grams)
-    # simis = cosine_similarity(embeds, embeds_grams)[0]
-    # df_gram_simis = pd.DataFrame(zip(grams, list(simis)), columns=['gram','simi'])
-    # #df_gram_simis['simi'] = (df_gram_simis['simi'] - df_gram_simis['simi'].min()) / (df_gram_simis['simi'].max()-df_gram_simis['simi'].min())
-    # df_gram_simis.sort_values(by=['simi'], ascending=False, inplace=True)
-    print(ix)
-    print("======>", content)
-    print("====>", grams)
+    embeds = enc.infer([content])
+    embeds_grams = enc.infer(grams)
+    simis = cosine_similarity(embeds, embeds_grams)[0]
+    df_gram_simis = pd.DataFrame(zip(grams, list(simis)), columns=['gram','simi'])
+    #df_gram_simis['simi'] = (df_gram_simis['simi'] - df_gram_simis['simi'].min()) / (df_gram_simis['simi'].max()-df_gram_simis['simi'].min())
+    df_gram_simis.sort_values(by=['simi'], ascending=False, inplace=True)
+    # print(ix)
+    # print("======>", content)
+    # print("====>", grams)
     
-    for gram in grams:
-        lscores = {l:[] for l in labels_candidates}
-        contents_yes = []
-        contents_no = []
-        for sent in gen_contents:
-            if gram not in sent.split(' '):
-                continue
-            contents_yes.append(sent)
-            contents_no.append(sent.replace(gram, ''))
+    content_ = [content.replace(gram, '') for gram in grams]
 
-        contents_yes.append(content)
-        contents_no.append(content.replace(gram, '').strip())
+    if len(content_)<=1:
+        continue
 
-        result_yes = nli_nlp(contents_yes,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-        result_no = nli_nlp(contents_no,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+    result_ = nli_nlp(content_,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+
+    for g,r in zip(grams, result_):
+        # embedding score
+        if not gram_embed.get(g, None):
+            embed_score = get_embedding_score(g, df, enc)
+            gram_embed[g] = embed_score
+
+        if gram_embed[g] < 0.15:
+            continue
+
+        r.pop('sequence')
+        df_ = pd.DataFrame(r)
+        df_diff = pd.merge(df_ori, df_, on=['labels'], how='inner') 
+        df_diff['score_diff'] = df_diff['scores_x'] - df_diff['scores_y']
+        df_diff_sel = df_diff.loc[(df_diff['scores_x']>=0.8) & (df_diff['scores_y']<=0.15)]
         
-        if len(contents_yes) == 1:
-            result_yes = [result_yes]
-            result_no = [result_no]
-        assert len(result_yes) == len(result_no)
-        for ryes, rno in zip(result_yes, result_no):
-            ryes.pop('sequence')
-            rno.pop('sequence')
-            df_yes = pd.DataFrame(ryes)
-            df_no = pd.DataFrame(rno)
-            df_merge_yesno = pd.merge(df_yes, df_no, on=['labels'], how='inner')
-            df_merge_yesno['score_diff'] = df_merge_yesno['scores_x'] - df_merge_yesno['scores_y']
-            for _, row in df_merge_yesno.iterrows():
-                if row['score_diff'] > 0 :
-                    lscores[row['labels']].append(row['score_diff'])
-
-        lscores_final = {l:sum(s)/len(s) for l, s in lscores.items() if len(s) > 0}
-        #print(gram, lscores_final)
-
-
-        for l, s in lscores_final.items():
-            if not gram_diff[l].get(gram, None):
-                gram_diff[l][gram] = []
-            gram_diff[l][gram].append(s)
+        if df_diff_sel.shape[0] == 0:
+            continue
+        print(g)
+        print(df_diff_sel)
+        for _, row in df_diff_sel.iterrows():
+            if not gram_diff[row['labels']].get(g, None):
+                gram_diff[row['labels']][g] = []
+            gram_diff[row['labels']][g].append(row['score_diff'])
+        print("embed score:", gram_embed[g])
+    print()
 
 
     if ix % 100 ==0 and ix > 0 :
@@ -257,9 +249,14 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
             print(l, '===>', gram_scores_mean_sort[:50])
             label_expands[l] = [ii[0] for ii in gram_scores_mean_sort[:20]]
         print('\n')
-        joblib.dump(gram_diff, 'gram_diff_gen__{}_{}'.format(args.dsn, args.fbs))
+
+        # save to disk
+        joblib.dump(gram_diff, 'gram_diff___{}'.format(args.dsn))
+        joblib.dump(gram_embed, 'gram_embed___{}'.format(args.dsn))
+
 
 '''
+
 
 import joblib,operator
 import numpy as np
@@ -356,7 +353,7 @@ print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).
 
 
 
-
+'''
 
 
 
