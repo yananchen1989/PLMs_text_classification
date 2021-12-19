@@ -35,14 +35,6 @@ python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
 
 
 
-envcbert/bin/python -u augf.py --dsn ag --samplecnt 32 --aug cbert \
-               --max_aug_times 1 --seed 3333 --testvalid test --epochs 2
-
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug eda \
-                --seed 0 --testvalid test --epochs 2  --verbose 1 
-
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug bt \
-                --seed 1 --testvalid test --epochs 1 --gpu 1 --verbose 1 
 
 # sdu  generate dvrl  ==> log_arxiv_testearlystop
 
@@ -57,17 +49,6 @@ do
 nohup bash run_cbert.sh ${gpu} & 
 done
 
-nohup bash run_ablation.sh 4,5 &
-nohup bash run_ablation.sh 6,7 &
-
-
-
-nohup bash run_ablation.sh 0 &
-# nohup python -u rltoken.py  --gpu 0,1  --alpha 0.9 --future_steps 32 --beams 128 > rltoken.0p9.log &
-# nohup python -u rltoken.py  --gpu 2,3  --alpha 0.5 --future_steps 32 --beams 128 > rltoken.0p5.log &
-# nohup python -u rltoken.py  --gpu 4,5  --alpha 0.1 --future_steps 32 --beams 128 > rltoken.0p1.log &
-
-# nohup python -u aug_ppo.py > aug_ppo.log & 
 
 
 
@@ -84,30 +65,43 @@ done
 
 
 
+dsn=uci
+nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 0 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
+               --embed_cut 0.15  --calculate sum \
+            > ./log_zsl/zsl.test.${dsn}.64.0.15.sum.log & 
 
-dsn=${1}
-for gram_diff in gram_diff_gen__${dsn}_32  gram_diff_gen__${dsn}_64 
-do
-   for topk in 32 64 128 200 
-   do
-      for embed_cut in 0.1 0.15 0.17 0.2 0.22 0.25 0.275 0.3 
-      do
-         for calculate in sum mean max
-         do
-            python -u zsl_pure_classifier.py --dsn ${dsn} --gpu ${2} --gram_diff ${gram_diff} --topk ${topk} \
-               --embed_cut ${embed_cut} --calculate ${calculate} \
-            > ./log_zsl/zsl.test.${dsn}.${gram_diff}.${topk}.${embed_cut}.${calculate}.log 2>&1  
-         done 
-      done 
-   done
-done
+nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 1 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
+               --embed_cut 0.15  --calculate sum \
+            > ./log_zsl/zsl.test.${dsn}.128.0.15.sum.log & 
 
 
+nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 2 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
+               --embed_cut 0.3  --calculate max \
+            > ./log_zsl/zsl.test.${dsn}.64.0.3.max.log & 
+
+nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 3 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
+               --embed_cut 0.3  --calculate max \
+            > ./log_zsl/zsl.test.${dsn}.128.0.3.max.log & 
 
 
 
+dsn=ag
+nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 4 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
+               --embed_cut 0.15  --calculate max \
+            > ./log_zsl/zsl.test.${dsn}.64.0.15.max.log & 
+
+nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 5 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
+               --embed_cut 0.15  --calculate max \
+            > ./log_zsl/zsl.test.${dsn}.128.0.15.max.log & 
 
 
+nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 6 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
+               --embed_cut 0.15  --calculate sum \
+            > ./log_zsl/zsl.test.${dsn}.64.0.15.sum.log & 
+
+nohup python -u zsl_pure_classifier.py --dsn ${dsn} --gpu 7 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
+               --embed_cut 0.15  --calculate sum \
+            > ./log_zsl/zsl.test.${dsn}.128.0.15.sum.log &
 
 
 

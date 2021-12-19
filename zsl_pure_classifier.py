@@ -45,14 +45,14 @@ import time,argparse
 import os 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="uci", type=str)
+parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--fbs", default=32, type=int)
 parser.add_argument("--topk", default=100, type=int)
 parser.add_argument("--manauto", default="auto", type=str)
-parser.add_argument("--gram_diff", default="gram_diff_gen__uci_32", type=str)
+parser.add_argument("--gram_diff", default="", type=str)
 parser.add_argument("--calculate", default="sum", type=str)
-parser.add_argument("--embed_cut", default=0.1, type=float)
-parser.add_argument("--gpu", default="2", type=str)
+parser.add_argument("--embed_cut", default=0.15, type=float)
+parser.add_argument("--gpu", default="5", type=str)
 
 args = parser.parse_args()
 
@@ -79,10 +79,10 @@ print(labels_candidates)
 
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 from utils.encoders import *
-if not gpus:
-    enc = encoder('dan','cpu')
-else:
-    enc = encoder('dan','gpu')
+#if not gpus:
+enc = encoder('dan','cpu')
+# else:
+#     enc = encoder('dan','gpu')
 
 
 nli_model_name = "facebook/bart-large-mnli"
@@ -93,12 +93,12 @@ model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-rob
 tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
 nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=0)
 
-
-from transformers import T5Tokenizer, AutoModelWithLMHead
-tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-print(tokenizer_t5)
-t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
-gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
+if not args.gram_diff:
+    from transformers import T5Tokenizer, AutoModelWithLMHead
+    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    print(tokenizer_t5)
+    t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
+    gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
 
 
 # load dataset
@@ -289,13 +289,10 @@ for l, gram_scores in gram_diff.items():
 print(label_expands_auto)
 
 
-# expansion mannual 
-label_expands_mannual = map_expand_nli(base_nli, args.dsn)
-
 
 # assign
 if args.manauto == 'man':
-    label_expands = label_expands_mannual
+    label_expands = map_expand_nli(base_nli, args.dsn)
 elif args.manauto == 'auto':
     label_expands = label_expands_auto
 
@@ -306,13 +303,13 @@ for l, grams in label_expands.items():
 grams_candidates = list(set(grams_candidates))
 
 ######## evaluate ###########
-
+assert set(labels_candidates) == set(label_expands.keys())
 accs_noexpand = []
 accs_expand = []
 for ix, row in ds.df_train.reset_index().iterrows():
     content = row['content']
 
-    nli_result = nli_nlp([content],  labels_candidates, multi_label=False, hypothesis_template="This text is about {}.")
+    nli_result = nli_nlp([content],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
 
     pred_label =  nli_result['labels'][0]
     if pred_label == row['label_name']:
