@@ -85,20 +85,21 @@ done
 
 
 
-
-for gram_diff in gram_diff_gen__uci_32  gram_diff_gen__uci_64 gram_diff_gen__uci_128
+dsn=${1}
+for gram_diff in gram_diff_gen__${dsn}_32  gram_diff_gen__${dsn}_64 
 do
+   for topk in 32 64 128 200 
    do
-   for topk in 64 128 256 
+      for embed_cut in 0.1 0.15 0.17 0.2 0.22 0.25 0.275 0.3 
       do
-         for embed_cut in 0.17 0.2 0.22 0.25 0.275 0.3 
+         for calculate in sum mean max
          do
-         python -u zsl_pure_classifier.py --dsn uci --gpu 2 --gram_diff ${gram_diff} --topk ${topk} \
-                  --embed_cut ${embed_cut} --calculate sum \
-               > ./log_zsl/zsl.test.uci.${gram_diff}.${topk}.${embed_cut}.sum.log & 
+            python -u zsl_pure_classifier.py --dsn ${dsn} --gpu ${2} --gram_diff ${gram_diff} --topk ${topk} \
+               --embed_cut ${embed_cut} --calculate ${calculate} \
+            > ./log_zsl/zsl.test.${dsn}.${gram_diff}.${topk}.${embed_cut}.${calculate}.log 2>&1  
          done 
-      done
-   done 
+      done 
+   done
 done
 
 
