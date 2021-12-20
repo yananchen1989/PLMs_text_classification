@@ -53,7 +53,7 @@ parser.add_argument("--calculate", default="sum", type=str)
 parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--upper", default=0.85, type=float)
 parser.add_argument("--lower", default=0.15, type=float)
-parser.add_argument("--gpu", default="2", type=str)
+parser.add_argument("--gpu", default="", type=str)
 
 args = parser.parse_args()
 
