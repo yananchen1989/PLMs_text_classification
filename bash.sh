@@ -65,48 +65,33 @@ done
 
 
 
-dsn=yahoo
-nohup python -u zsclassifier.py --dsn ${dsn} --gpu 0 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
-               --embed_cut 0.15  --calculate sum \
-            > ./log_zsl/zsl.test.${dsn}.diff32.64.0.15.sum.log & 
+nohup python -u zsclassifier.py --dsn yahoo --gpu 0   --embed_cut 0.15  --upper 0.85 --lower 0.15 \
+            > ./log_zsl/zsl.gen.yahoo.15.85.15.log & 
 
-nohup python -u zsclassifier.py --dsn ${dsn} --gpu 1 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
-               --embed_cut 0.15  --calculate sum \
-            > ./log_zsl/zsl.test.${dsn}.diff32.128.0.15.sum.log & 
-
-nohup python -u zsclassifier.py --dsn ${dsn} --gpu 2 --gram_diff gram_diff_gen__${dsn}_32 --topk 64 \
-               --embed_cut 0.3  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.diff32.64.0.3.max.log & 
-
-nohup python -u zsclassifier.py --dsn ${dsn} --gpu 3 --gram_diff gram_diff_gen__${dsn}_32 --topk 128 \
-               --embed_cut 0.3  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.diff32.128.0.3.max.log & 
-
-
-nohup python -u zsclassifier.py --dsn ${dsn} --gpu 4 --gram_diff gram_diff_gen__${dsn}_64 --topk 64 \
-               --embed_cut 0.15  --calculate sum \
-            > ./log_zsl/zsl.test.${dsn}.diff64.64.0.15.sum.log & 
-
-nohup python -u zsclassifier.py --dsn ${dsn} --gpu 5 --gram_diff gram_diff_gen__${dsn}_64 --topk 128 \
-               --embed_cut 0.15  --calculate sum \
-            > ./log_zsl/zsl.test.${dsn}.diff64.128.0.15.sum.log & 
-
-nohup python -u zsclassifier.py --dsn ${dsn} --gpu 6 --gram_diff gram_diff_gen__${dsn}_64 --topk 64 \
-               --embed_cut 0.3  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.diff64.64.0.3.max.log & 
-
-nohup python -u zsclassifier.py --dsn ${dsn} --gpu 7 --gram_diff gram_diff_gen__${dsn}_64 --topk 128 \
-               --embed_cut 0.3  --calculate max \
-            > ./log_zsl/zsl.test.${dsn}.diff64.128.0.3.max.log & 
+nohup python -u zsclassifier.py --dsn yahoo --gpu 1   --embed_cut 0.15  --upper 0.9 --lower 0.1 \
+            > ./log_zsl/zsl.gen.yahoo.15.90.10.log & 
 
 
 
+nohup python -u zsclassifier.py --dsn ag --gpu 2   --embed_cut 0.15  --upper 0.85 --lower 0.15 \
+            > ./log_zsl/zsl.gen.ag.15.85.15.log & 
+
+nohup python -u zsclassifier.py --dsn ag --gpu 3   --embed_cut 0.15  --upper 0.9 --lower 0.1 \
+            > ./log_zsl/zsl.gen.ag.15.90.10.log & 
 
 
+nohup python -u zsclassifier.py --dsn uci --gpu 4   --embed_cut 0.15  --upper 0.85 --lower 0.15 \
+            > ./log_zsl/zsl.gen.uci.15.85.15.log & 
+
+nohup python -u zsclassifier.py --dsn uci --gpu 5   --embed_cut 0.15  --upper 0.9 --lower 0.1 \
+            > ./log_zsl/zsl.gen.uci.15.90.10.log & 
 
 
+nohup python -u zsclassifier.py --dsn uci --gpu 6   --embed_cut 0.2  --upper 0.85 --lower 0.15 \
+            > ./log_zsl/zsl.gen.uci.20.85.15.log & 
 
-
+nohup python -u zsclassifier.py --dsn uci --gpu 7   --embed_cut 0.2  --upper 0.9 --lower 0.1 \
+            > ./log_zsl/zsl.gen.uci.20.90.10.log & 
 
 
 
