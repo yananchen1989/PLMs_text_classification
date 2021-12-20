@@ -91,7 +91,7 @@ from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
 tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=0)
+nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
 # if not args.gram_diff:
 #     from transformers import T5Tokenizer, AutoModelWithLMHead
