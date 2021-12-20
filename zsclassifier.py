@@ -258,8 +258,6 @@ for ix, row in df.sample(frac=1).reset_index().iterrows():
 
 
 '''
-
-
 import joblib,operator
 import numpy as np
 gram_diff = joblib.load(args.gram_diff)
