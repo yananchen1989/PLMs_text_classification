@@ -266,87 +266,88 @@ elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
     gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-    for args.calculate in ['sum', 'min', 'max']:
-        label_expands_auto = {}
-        for l, gram_scores in gram_diff.items():
-            if args.calculate == 'sum':
-                gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
-            elif args.calculate == 'max':
-                gram_scores_mean = {g:round(np.array(scores).max(),4) for g, scores in gram_scores.items() }
-            elif args.calculate == 'mean':
-                gram_scores_mean = {g:round(np.array(scores).mean(),4) for g, scores in gram_scores.items() }
+    for args.topk in [32, 64, 100]:
+        for args.calculate in ['sum', 'min', 'max']:
+            label_expands_auto = {}
+            for l, gram_scores in gram_diff.items():
+                if args.calculate == 'sum':
+                    gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
+                elif args.calculate == 'max':
+                    gram_scores_mean = {g:round(np.array(scores).max(),4) for g, scores in gram_scores.items() }
+                elif args.calculate == 'mean':
+                    gram_scores_mean = {g:round(np.array(scores).mean(),4) for g, scores in gram_scores.items() }
 
-            gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
-            print(l, '===>', gram_scores_mean_sort[:100])
-             
-            label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]]
+                gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
+                print(l, '===>', gram_scores_mean_sort[:100])
+                 
+                label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]]
 
-        print(label_expands_auto)
-
-
-        # assign
-        if args.manauto == 'man':
-            label_expands = map_expand_nli(base_nli, args.dsn)
-        elif args.manauto == 'auto':
-            label_expands = label_expands_auto
+            print(label_expands_auto)
 
 
-        # label_expands = {'business': ['market', 'ceo', 'bank', 'stocks', 'boss', 'sales', 'manager', 'stock', 'amazon', 'shares', 'profit', 'director', 'trump', 'businesses', 'news', 'apple', 'china', 'launches', 'team', 'million', 'loss', 'contract', 'google', 'workers', 'chief', 'restaurant', 'companies', 'banks', 'markets', 'jobs', 'growth', 'earnings', 'week', 'investment', 'launch', 'investors', 'economy', 'macron', 'robbery', 'employee', 'agent', 'revenue', 'dividend', 'production', 'billion', 'services', 'career', 'capital', 'workplace', 'partners', 'customers', 'india', 'finance', 'brewers', 'giants', 'executive', 'farm', 'chiefs', 'sells', 'reports', 'airlines', 'commercial', 'center', 'analysts'], 'science and technology': ['energy', 'technology', 'video', 'google', 'apple', 'study', 'science', 'internet', 'arsenal', 'china', 'launches', 'missile', 'electric', 'scientists', 'news', 'ceo', 'mobile', 'amazon', 'market', 'trump', 'space', 'smart', 'software', 'rockets', 'mining', 'launch', 'latest', 'moon', 'probe', 'gun', 'fireworks', 'researchers', 'technologies', 'zoo', 'lions', 'steel', 'million', 'brewers', 'future', 'stars', 'driving', 'birth', 'penguins', 'machine', 'bomb', 'eagles', 'chip', 'drone', 'korea', 'technical', 'shares', 'cloud', 'titans', 'surgery', 'clippers', 'production', 'giants', 'development', 'pipeline', 'fire', 'gold', 'nasa', 'wins', 'tesla'], 'entertainment': ['video', 'season', 'fans', 'stars', 'festival', 'music', 'sports', 'film', 'party', 'series', 'movie', 'club', 'trump', 'concert', 'nightclub', 'fireworks', 'eagles', 'actress', 'news', 'disney', 'hollywood', 'singer', 'zoo', 'rugby', 'channel', 'weekend', 'week', 'episode', 'bowl', 'league', 'album', 'beer', 'tickets', 'celebrity', 'fox', 'dance', 'song', 'parade', 'trailer', 'lions', 'theatre', 'events', 'hosts', 'streaming', 'comedian', 'summer', 'football', 'players', 'wins', 'director', 'movies', 'team', 'launches', 'fame', 'amazon', 'toys', 'theater', 'preview', 'magic', 'twitter', 'vegas', 'apple', 'performance', 'latest'], 'health': ['hospital', 'medical', 'cancer', 'healthcare', 'injury', 'doctor', 'flu', 'drug', 'heart', 'fitness', 'surgery', 'safety', 'doctors', 'blood', 'marijuana', 'hospitals', 'treatment', 'birth', 'injuries', 'patients', 'brain', 'news', 'medicaid', 'abortion', 'study', 'gym', 'nursing', 'concussion', 'safe', 'glasses', 'wounded', 'drugs', 'smoking', 'swim', 'risk', 'recovery', 'patient', 'smoke', 'diet', 'nurse', 'disease', 'dementia', 'save', 'clinic', 'knee', 'workout', 'medicine', 'week', 'exercise', 'police', 'disabled', 'poisoning', 'wellness', 'hurt', 'fire', 'healing', 'warning', 'illness', 'foods', 'vegan', 'swimming', 'autism', 'sports', 'therapy']}
+            # assign
+            if args.manauto == 'man':
+                label_expands = map_expand_nli(base_nli, args.dsn)
+            elif args.manauto == 'auto':
+                label_expands = label_expands_auto
 
-        # label_expands = {'business': ['market', 'ceo', 'bank', 'stocks', 'boss', 'sales', 'manager', 'stock', 'amazon', 'shares', 'profit', 'director', 'trump', 'businesses', 'apple', 'china', 'launches', 'million', 'loss', 'contract', 'google', 'workers', 'chief', 'companies', 'banks', 'markets', 'jobs', 'growth', 'earnings', 'investment', 'launch', 'investors', 'economy', 'macron', 'robbery', 'employee', 'agent', 'revenue', 'dividend', 'production', 'billion', 'services', 'career', 'capital', 'workplace', 'partners', 'customers', 'india', 'finance', 'brewers', 'giants', 'executive', 'chiefs', 'sells', 'commercial', 'analysts'], \
-        # 'science and technology': ['energy', 'technology', 'video', 'google', 'apple', 'study', 'science', 'internet', 'arsenal', 'china', 'launches', 'missile', 'electric', 'scientists', 'mobile', 'amazon', 'space', 'smart', 'software', 'rockets', 'mining', 'moon', 'probe', 'researchers', 'technologies',  'future', 'stars', 'machine', 'bomb', 'chip', 'drone', 'technical', 'cloud', 'titans', 'surgery', 'clippers', 'production', 'giants', 'development', 'pipeline', 'fire', 'gold', 'nasa', 'tesla'], 
-        # 'entertainment': ['video', 'season', 'fans', 'stars', 'festival', 'music', 'sports', 'film', 'party', 'series', 'movie', 'club', 'trump', 'concert', 'nightclub', 'fireworks', 'actress', 'disney', 'hollywood', 'singer', 'rugby', 'channel', 'weekend', 'episode', 'bowl', 'league', 'album', 'beer', 'tickets', 'celebrity', 'fox', 'dance', 'song', 'parade', 'trailer', 'theatre', 'hosts', 'streaming', 'comedian', 'players', 'wins', 'director', 'movies', 'team', 'launches', 'fame', 'amazon', 'toys', 'theater', 'preview', 'magic', 'twitter', 'vegas', 'apple', 'performance'], \
-        # 'health': ['hospital', 'medical', 'cancer', 'healthcare', 'injury', 'doctor', 'flu', 'drug', 'heart', 'fitness', 'surgery', 'safety', 'doctors', 'blood', 'marijuana', 'hospitals', 'treatment', 'birth', 'injuries', 'patients', 'brain', 'news', 'medicaid', 'abortion', 'gym', 'nursing', 'concussion', 'safe', 'glasses', 'wounded', 'drugs', 'smoking', 'swim', 'recovery', 'patient', 'smoke', 'diet', 'nurse', 'disease', 'dementia', 'clinic', 'knee', 'workout', 'medicine', 'exercise', 'police', 'disabled', 'poisoning', 'wellness', 'hurt', 'fire', 'healing', 'warning', 'illness', 'foods', 'vegan', 'swimming', 'autism', 'sports', 'therapy']}
+
+            # label_expands = {'business': ['market', 'ceo', 'bank', 'stocks', 'boss', 'sales', 'manager', 'stock', 'amazon', 'shares', 'profit', 'director', 'trump', 'businesses', 'news', 'apple', 'china', 'launches', 'team', 'million', 'loss', 'contract', 'google', 'workers', 'chief', 'restaurant', 'companies', 'banks', 'markets', 'jobs', 'growth', 'earnings', 'week', 'investment', 'launch', 'investors', 'economy', 'macron', 'robbery', 'employee', 'agent', 'revenue', 'dividend', 'production', 'billion', 'services', 'career', 'capital', 'workplace', 'partners', 'customers', 'india', 'finance', 'brewers', 'giants', 'executive', 'farm', 'chiefs', 'sells', 'reports', 'airlines', 'commercial', 'center', 'analysts'], 'science and technology': ['energy', 'technology', 'video', 'google', 'apple', 'study', 'science', 'internet', 'arsenal', 'china', 'launches', 'missile', 'electric', 'scientists', 'news', 'ceo', 'mobile', 'amazon', 'market', 'trump', 'space', 'smart', 'software', 'rockets', 'mining', 'launch', 'latest', 'moon', 'probe', 'gun', 'fireworks', 'researchers', 'technologies', 'zoo', 'lions', 'steel', 'million', 'brewers', 'future', 'stars', 'driving', 'birth', 'penguins', 'machine', 'bomb', 'eagles', 'chip', 'drone', 'korea', 'technical', 'shares', 'cloud', 'titans', 'surgery', 'clippers', 'production', 'giants', 'development', 'pipeline', 'fire', 'gold', 'nasa', 'wins', 'tesla'], 'entertainment': ['video', 'season', 'fans', 'stars', 'festival', 'music', 'sports', 'film', 'party', 'series', 'movie', 'club', 'trump', 'concert', 'nightclub', 'fireworks', 'eagles', 'actress', 'news', 'disney', 'hollywood', 'singer', 'zoo', 'rugby', 'channel', 'weekend', 'week', 'episode', 'bowl', 'league', 'album', 'beer', 'tickets', 'celebrity', 'fox', 'dance', 'song', 'parade', 'trailer', 'lions', 'theatre', 'events', 'hosts', 'streaming', 'comedian', 'summer', 'football', 'players', 'wins', 'director', 'movies', 'team', 'launches', 'fame', 'amazon', 'toys', 'theater', 'preview', 'magic', 'twitter', 'vegas', 'apple', 'performance', 'latest'], 'health': ['hospital', 'medical', 'cancer', 'healthcare', 'injury', 'doctor', 'flu', 'drug', 'heart', 'fitness', 'surgery', 'safety', 'doctors', 'blood', 'marijuana', 'hospitals', 'treatment', 'birth', 'injuries', 'patients', 'brain', 'news', 'medicaid', 'abortion', 'study', 'gym', 'nursing', 'concussion', 'safe', 'glasses', 'wounded', 'drugs', 'smoking', 'swim', 'risk', 'recovery', 'patient', 'smoke', 'diet', 'nurse', 'disease', 'dementia', 'save', 'clinic', 'knee', 'workout', 'medicine', 'week', 'exercise', 'police', 'disabled', 'poisoning', 'wellness', 'hurt', 'fire', 'healing', 'warning', 'illness', 'foods', 'vegan', 'swimming', 'autism', 'sports', 'therapy']}
+
+            # label_expands = {'business': ['market', 'ceo', 'bank', 'stocks', 'boss', 'sales', 'manager', 'stock', 'amazon', 'shares', 'profit', 'director', 'trump', 'businesses', 'apple', 'china', 'launches', 'million', 'loss', 'contract', 'google', 'workers', 'chief', 'companies', 'banks', 'markets', 'jobs', 'growth', 'earnings', 'investment', 'launch', 'investors', 'economy', 'macron', 'robbery', 'employee', 'agent', 'revenue', 'dividend', 'production', 'billion', 'services', 'career', 'capital', 'workplace', 'partners', 'customers', 'india', 'finance', 'brewers', 'giants', 'executive', 'chiefs', 'sells', 'commercial', 'analysts'], \
+            # 'science and technology': ['energy', 'technology', 'video', 'google', 'apple', 'study', 'science', 'internet', 'arsenal', 'china', 'launches', 'missile', 'electric', 'scientists', 'mobile', 'amazon', 'space', 'smart', 'software', 'rockets', 'mining', 'moon', 'probe', 'researchers', 'technologies',  'future', 'stars', 'machine', 'bomb', 'chip', 'drone', 'technical', 'cloud', 'titans', 'surgery', 'clippers', 'production', 'giants', 'development', 'pipeline', 'fire', 'gold', 'nasa', 'tesla'], 
+            # 'entertainment': ['video', 'season', 'fans', 'stars', 'festival', 'music', 'sports', 'film', 'party', 'series', 'movie', 'club', 'trump', 'concert', 'nightclub', 'fireworks', 'actress', 'disney', 'hollywood', 'singer', 'rugby', 'channel', 'weekend', 'episode', 'bowl', 'league', 'album', 'beer', 'tickets', 'celebrity', 'fox', 'dance', 'song', 'parade', 'trailer', 'theatre', 'hosts', 'streaming', 'comedian', 'players', 'wins', 'director', 'movies', 'team', 'launches', 'fame', 'amazon', 'toys', 'theater', 'preview', 'magic', 'twitter', 'vegas', 'apple', 'performance'], \
+            # 'health': ['hospital', 'medical', 'cancer', 'healthcare', 'injury', 'doctor', 'flu', 'drug', 'heart', 'fitness', 'surgery', 'safety', 'doctors', 'blood', 'marijuana', 'hospitals', 'treatment', 'birth', 'injuries', 'patients', 'brain', 'news', 'medicaid', 'abortion', 'gym', 'nursing', 'concussion', 'safe', 'glasses', 'wounded', 'drugs', 'smoking', 'swim', 'recovery', 'patient', 'smoke', 'diet', 'nurse', 'disease', 'dementia', 'clinic', 'knee', 'workout', 'medicine', 'exercise', 'police', 'disabled', 'poisoning', 'wellness', 'hurt', 'fire', 'healing', 'warning', 'illness', 'foods', 'vegan', 'swimming', 'autism', 'sports', 'therapy']}
 
 
-        grams_candidates = []
-        for l, grams in label_expands.items():
-            grams_candidates.extend(grams)
-        grams_candidates = list(set(grams_candidates))
+            grams_candidates = []
+            for l, grams in label_expands.items():
+                grams_candidates.extend(grams)
+            grams_candidates = list(set(grams_candidates))
 
-        ######## evaluate ###########
-        assert set(labels_candidates) == set(label_expands.keys())
-        accs_noexpand = []
-        accs_expand = []
-        for ix, row in ds.df_train.reset_index().iterrows():
-            content = row['content']
+            ######## evaluate ###########
+            assert set(labels_candidates) == set(label_expands.keys())
+            accs_noexpand = []
+            accs_expand = []
+            for ix, row in ds.df_train.reset_index().iterrows():
+                content = row['content']
 
-            nli_result = nli_nlp([content],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+                nli_result = nli_nlp([content],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
 
-            pred_label =  nli_result['labels'][0]
-            if pred_label == row['label_name']:
-                accs_noexpand.append(1)
-            else:
-                accs_noexpand.append(0)
+                pred_label =  nli_result['labels'][0]
+                if pred_label == row['label_name']:
+                    accs_noexpand.append(1)
+                else:
+                    accs_noexpand.append(0)
 
-            nli_result_ = nli_nlp([content],  grams_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-            nli_result_.pop('sequence')
+                nli_result_ = nli_nlp([content],  grams_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+                nli_result_.pop('sequence')
 
-            gram_score_dic = {gram:score for gram, score in zip(nli_result_['labels'], nli_result_['scores'])}
+                gram_score_dic = {gram:score for gram, score in zip(nli_result_['labels'], nli_result_['scores'])}
 
-            infos = []
-            for l in label_expands.keys():
-                l_score = np.array(([gram_score_dic[gram] for gram in label_expands[l]]  )).mean()
-                infos.append((l, l_score))
+                infos = []
+                for l in label_expands.keys():
+                    l_score = np.array(([gram_score_dic[gram] for gram in label_expands[l]]  )).mean()
+                    infos.append((l, l_score))
 
-            df_expand = pd.DataFrame(infos, columns=['label','score'])
+                df_expand = pd.DataFrame(infos, columns=['label','score'])
 
-            pred_label = df_expand.sort_values(by=['score'], ascending=False).head(1)['label'].tolist()[0]
+                pred_label = df_expand.sort_values(by=['score'], ascending=False).head(1)['label'].tolist()[0]
 
-            if pred_label == row['label_name']:
-                accs_expand.append(1)
-            else:
-                accs_expand.append(0)
-                # print(row['label_name'])
-                # print(content)
-                # print(df_expand.sort_values(by=['score'], ascending=False))
-                # print()
+                if pred_label == row['label_name']:
+                    accs_expand.append(1)
+                else:
+                    accs_expand.append(0)
+                    # print(row['label_name'])
+                    # print(content)
+                    # print(df_expand.sort_values(by=['score'], ascending=False))
+                    # print()
 
-            if ix % 128 == 0 and ix > 0:
-                print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
+                if ix % 128 == 0 and ix > 0:
+                    print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
 
-        print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
-             sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
+            print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
+                 sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
 
 
