@@ -100,9 +100,16 @@ nohup python -u zsclassifier.py --dsn ag  > zsl.test.ag.log &
 nohup python -u zsclassifier.py --dsn yahoo        > zsl.test.yahoo.log &
 
 
+for embedm in dan cmlm-base
+do
+   for dsn in yahoo ag uci
+   do
+      nohup python -u zsclassifier.py --dsn ${dsn} --embedm ${embedm} --mode test_embed \
+               > zsclassifier.test_embed.${dsn}.${embedm}.log & 
+   done
+done
 
 
-python -u zsclassifier.py --dsn yahoo --embedm dan --mode test_embed
 
 
 ############################################################################################################################################
