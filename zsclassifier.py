@@ -266,8 +266,8 @@ elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
     gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-    for args.topk in [64, 100]:
-        for args.calculate in ['sum', 'mean', 'max']:
+    for args.topk in [50, 75, 100, 128]:
+        for args.calculate in ['sum', 'mean', 'max', 'median']:
             label_expands_auto = {}
             for l, gram_scores in gram_diff.items():
                 if args.calculate == 'sum':
@@ -276,6 +276,8 @@ elif args.mode == 'test':
                     gram_scores_mean = {g:round(np.array(scores).max(),4) for g, scores in gram_scores.items() }
                 elif args.calculate == 'mean':
                     gram_scores_mean = {g:round(np.array(scores).mean(),4) for g, scores in gram_scores.items() }
+                elif args.calculate == 'median':
+                    gram_scores_mean = {g:round(np.median(np.array(scores)),4) for g, scores in gram_scores.items() }
 
                 gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
                 print(l, '===>', gram_scores_mean_sort[:100])
