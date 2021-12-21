@@ -102,7 +102,7 @@ nohup python -u zsclassifier.py --dsn yahoo        > zsl.test.yahoo.log &
 
 
 
-python -u zsclassifier.py --dsn yahoo --embedm dan 
+python -u zsclassifier.py --dsn yahoo --embedm dan --mode test_embed
 
 
 ############################################################################################################################################

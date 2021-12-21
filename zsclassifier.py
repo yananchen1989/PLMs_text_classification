@@ -265,7 +265,7 @@ if args.mode == 'train':
 
 elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
-    gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
+    #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
     for args.topk in [50, 75, 100, 128]:
         for args.calculate in ['sum', 'mean', 'max', 'median']:
@@ -382,7 +382,7 @@ elif args.mode == 'test_embed':
 
             accs_noexpand = []
             accs_expand = []
-            for ix, row in ds.df_train.iterrows():
+            for ix, row in ds.df_train.reset_index().iterrows():
                 embeds_content = enc.infer([row['content']]) 
                 simis = cosine_similarity(embeds_content, embeds_labels)
                 pred = labels_candidates[simis.argmax()]
