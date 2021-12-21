@@ -99,6 +99,12 @@ nohup python -u zsclassifier.py --dsn uci --gpu 6  > zsl.test.uci.log &
 nohup python -u zsclassifier.py --dsn ag  > zsl.test.ag.log &
 nohup python -u zsclassifier.py --dsn yahoo        > zsl.test.yahoo.log &
 
+
+
+
+python -u zsclassifier.py --dsn yahoo --embedm dan 
+
+
 ############################################################################################################################################
 ps aux|grep "zsl_pure_classifier.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9

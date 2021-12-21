@@ -54,7 +54,7 @@ parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--upper", default=0.85, type=float)
 parser.add_argument("--lower", default=0.15, type=float)
 parser.add_argument("--gpu", default="", type=str)
-parser.add_argument("--embedm", default="dan", choices=['cmlm-base','cmlm-large','dan'] type=str)
+parser.add_argument("--embedm", default="dan", choices=['cmlm-base','cmlm-large','dan'], type=str)
 
 args = parser.parse_args()
 
