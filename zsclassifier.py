@@ -54,6 +54,7 @@ parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--upper", default=0.85, type=float)
 parser.add_argument("--lower", default=0.15, type=float)
 parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--embedm", default="dan", choices=['cmlm-base','cmlm-large','dan'] type=str)
 
 args = parser.parse_args()
 
@@ -80,18 +81,18 @@ print(labels_candidates)
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 from utils.encoders import *
 #if not gpus:
-enc = encoder('dan','cpu')
+enc = encoder(args.embedm,'cpu')
 # else:
 #     enc = encoder('dan','gpu')
 
 
 nli_model_name = "facebook/bart-large-mnli"
 
-from transformers import pipeline
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
+# from transformers import pipeline
+# from transformers import AutoModelForSequenceClassification, AutoTokenizer
+# model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+# tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+# nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
 # if not args.gram_diff:
 #     from transformers import T5Tokenizer, AutoModelWithLMHead
@@ -351,14 +352,61 @@ elif args.mode == 'test':
                  sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
 
+elif args.mode == 'test_embed':
+    gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
+    embeds_labels = enc.infer(labels_candidates)
+
+    for args.topk in [32, 64, 128, 256, 512]:
+        for args.calculate in ['sum', 'mean', 'max', 'median']:
+            label_expands_auto = {}
+            for l, gram_scores in gram_diff.items():
+                if args.calculate == 'sum':
+                    gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
+                elif args.calculate == 'max':
+                    gram_scores_mean = {g:round(np.array(scores).max(),4) for g, scores in gram_scores.items() }
+                elif args.calculate == 'mean':
+                    gram_scores_mean = {g:round(np.array(scores).mean(),4) for g, scores in gram_scores.items() }
+                elif args.calculate == 'median':
+                    gram_scores_mean = {g:round(np.median(np.array(scores)),4) for g, scores in gram_scores.items() }
+
+                gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
+                print(l, '===>', gram_scores_mean_sort[:100])
+                 
+                label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]]
 
 
+            label_embeddings = {}
+            for l, grams in label_expands_auto.items():
+                embeds_grams = enc.infer(grams)
+                label_embeddings[l] = embeds_grams
 
+            accs_noexpand = []
+            accs_expand = []
+            for ix, row in ds.df_train.iterrows():
+                embeds_content = enc.infer([row['content']]) 
+                simis = cosine_similarity(embeds_content, embeds_labels)
+                pred = labels_candidates[simis.argmax()]
+                if pred == row['label_name']:
+                    accs_noexpand.append(1)
+                else:
+                    accs_noexpand.append(0)
 
+                l_scores = []
+                for l, grams_embedding in label_embeddings.items():
+                    simi = cosine_similarity(embeds_content, grams_embedding)
+                    l_scores.append((l, simi.mean() ))
 
+                l_scores_sorted = sorted(l_scores, key=operator.itemgetter(1), reverse=True)
 
+                if l_scores_sorted[0][0] == row['label_name']:
+                    accs_expand.append(1)
+                else:
+                    accs_expand.append(0)
 
+                if ix > 0 and ix % 1024 ==0:
+                    print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
-
+            print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
+                 sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
 

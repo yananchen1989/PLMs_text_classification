@@ -95,7 +95,9 @@ nohup python -u zsclassifier.py --dsn uci --gpu 7   --embed_cut 0.2  --upper 0.9
 
 
 
-
+nohup python -u zsclassifier.py --dsn uci --gpu 6  > zsl.test.uci.log &
+nohup python -u zsclassifier.py --dsn ag  > zsl.test.ag.log &
+nohup python -u zsclassifier.py --dsn yahoo        > zsl.test.yahoo.log &
 
 ############################################################################################################################################
 ps aux|grep "zsl_pure_classifier.py"|grep -v grep | awk '{print $2}'|xargs kill -9
