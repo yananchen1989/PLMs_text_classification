@@ -266,7 +266,7 @@ elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
     gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-    for args.topk in [32, 64, 100]:
+    for args.topk in [64, 100]:
         for args.calculate in ['sum', 'mean', 'max']:
             label_expands_auto = {}
             for l, gram_scores in gram_diff.items():
