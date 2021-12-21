@@ -410,3 +410,24 @@ elif args.mode == 'test_embed':
                  sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
 
+
+
+
+os.environ["TFHUB_MODEL_LOAD_FORMAT"] = "UNCOMPRESSED"
+enc = hub.load('https://tfhub.dev/google/universal-sentence-encoder/4')
+embeds = enc(df['content'].tolist()[:10000])
+
+
+enc_ = encoder(args.embedm,'cpu')
+embeds = enc_.infer(df['content'].tolist()[:10000]) 
+
+
+
+
+
+
+
+
+
+
+

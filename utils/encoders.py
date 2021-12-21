@@ -19,9 +19,7 @@ class encoder():
             device_context = '/cpu:0'
         elif device == 'gpu':
             device_context = '/GPU:0'
-        elif device == 'tpu':
-            device_context = '/TPU:0'
-            
+
         with tf.device(device_context):
         #with tf.distribute.MirroredStrategy().scope():
             text_input = tf.keras.layers.Input(shape=(), dtype=tf.string)
