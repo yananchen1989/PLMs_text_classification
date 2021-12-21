@@ -267,7 +267,7 @@ elif args.mode == 'test':
     gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
     for args.topk in [32, 64, 100]:
-        for args.calculate in ['sum', 'min', 'max']:
+        for args.calculate in ['sum', 'mean', 'max']:
             label_expands_auto = {}
             for l, gram_scores in gram_diff.items():
                 if args.calculate == 'sum':
@@ -283,7 +283,6 @@ elif args.mode == 'test':
                 label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]]
 
             print(label_expands_auto)
-
 
             # assign
             if args.manauto == 'man':
@@ -343,7 +342,7 @@ elif args.mode == 'test':
                     # print(df_expand.sort_values(by=['score'], ascending=False))
                     # print()
 
-                if ix % 128 == 0 and ix > 0:
+                if ix % 512 == 0 and ix > 0:
                     print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
 
             print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
