@@ -91,7 +91,7 @@ nli_model_name = "facebook/bart-large-mnli"
 from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-if argsargs.mode in ['test', 'train']:
+if args.mode in ['test', 'train']:
     model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
     tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
     nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
