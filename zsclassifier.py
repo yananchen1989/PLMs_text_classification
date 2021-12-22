@@ -75,7 +75,7 @@ if gpus:
 
 from utils.load_data import * 
 ds = load_data(dataset=args.dsn, samplecnt= 2048)
-labels_candidates = ds.df_test['label_name'].unique().tolist()
+labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
 
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
@@ -267,7 +267,7 @@ elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
     #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-    for args.topk in [50, 75, 100, 128]:
+    for args.topk in [32, 64, 128]:
         for args.calculate in ['sum', 'mean', 'max', 'median']:
             label_expands_auto = {}
             for l, gram_scores in gram_diff.items():
@@ -283,7 +283,7 @@ elif args.mode == 'test':
                 gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
                 print(l, '===>', gram_scores_mean_sort[:100])
                  
-                label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]]
+                label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]] + [l]
 
             print(label_expands_auto)
 
@@ -372,7 +372,7 @@ elif args.mode == 'test_embed':
                 gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
                 print(l, '===>', gram_scores_mean_sort[:100])
                  
-                label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]]
+                label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]] 
 
 
             label_embeddings = {}
@@ -408,21 +408,6 @@ elif args.mode == 'test_embed':
 
             print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
                  sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
-
-
-
-
-
-os.environ["TFHUB_MODEL_LOAD_FORMAT"] = "UNCOMPRESSED"
-enc = hub.load('https://tfhub.dev/google/universal-sentence-encoder/4')
-embeds = enc(df['content'].tolist()[:10000])
-
-
-enc_ = encoder(args.embedm,'cpu')
-embeds = enc_.infer(df['content'].tolist()[:10000]) 
-
-
-
 
 
 
