@@ -80,19 +80,21 @@ print(labels_candidates)
 
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 from utils.encoders import *
-#if not gpus:
-enc = encoder(args.embedm,'cpu')
-# else:
-#     enc = encoder('dan','gpu')
+if not gpus:
+    enc = encoder(args.embedm,'cpu')
+else:
+    enc = encoder(args.embedm,'gpu')
 
 
 nli_model_name = "facebook/bart-large-mnli"
 
-# from transformers import pipeline
-# from transformers import AutoModelForSequenceClassification, AutoTokenizer
-# model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-# tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-# nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
+from transformers import pipeline
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+if argsargs.mode in ['test', 'train']:
+    model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+    tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+    nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
 # if not args.gram_diff:
 #     from transformers import T5Tokenizer, AutoModelWithLMHead
@@ -268,7 +270,7 @@ elif args.mode == 'test':
     #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
     for args.topk in [32, 64, 128]:
-        for args.calculate in ['sum', 'mean', 'max', 'median']:
+        for args.calculate in ['sum']:
             label_expands_auto = {}
             for l, gram_scores in gram_diff.items():
                 if args.calculate == 'sum':
@@ -356,7 +358,7 @@ elif args.mode == 'test_embed':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
     embeds_labels = enc.infer(labels_candidates)
 
-    for args.topk in [32, 64, 128, 256, 512]:
+    for args.topk in [128, 256, 512, 1024, 2048]:
         for args.calculate in ['sum', 'mean', 'max', 'median']:
             label_expands_auto = {}
             for l, gram_scores in gram_diff.items():
