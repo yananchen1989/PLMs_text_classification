@@ -269,7 +269,7 @@ elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
     #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-    for args.topk in [32, 64, 128]:
+    for args.topk in [32, 64, 128, 256]:
         for args.calculate in ['sum']:
             label_expands_auto = {}
             for l, gram_scores in gram_diff.items():
@@ -347,7 +347,7 @@ elif args.mode == 'test':
                     # print(df_expand.sort_values(by=['score'], ascending=False))
                     # print()
 
-                if ix % 512 == 0 and ix > 0:
+                if ix % 1024 == 0 and ix > 0:
                     print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
 
             print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
@@ -356,7 +356,7 @@ elif args.mode == 'test':
 
 elif args.mode == 'test_embed':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
-    embeds_labels = enc.infer(labels_candidates)
+    embeds_labels = enc.infer(labels_candidates, batch_size=512)
 
     for args.topk in [128, 256, 512, 1024, 2048]:
         for args.calculate in ['sum', 'mean', 'max', 'median']:
@@ -381,6 +381,9 @@ elif args.mode == 'test_embed':
             for l, grams in label_expands_auto.items():
                 embeds_grams = enc.infer(grams)
                 label_embeddings[l] = embeds_grams
+
+
+
 
             accs_noexpand = []
             accs_expand = []
@@ -410,11 +413,6 @@ elif args.mode == 'test_embed':
 
             print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
                  sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
-
-
-
-
-
 
 
 
