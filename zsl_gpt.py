@@ -4,7 +4,7 @@ import time,argparse
 import os 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','yahoo', 'nyt','yelp2','amazon2','stsa'])
+parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','yahoo', 'nyt','yelp2','amazon2','stsa', 'imdb'])
 parser.add_argument("--fbs_gen", default=32, type=int)
 parser.add_argument("--genm", default='t5', type=str)
 parser.add_argument("--gpu", default="0,1", type=str)

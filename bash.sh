@@ -95,8 +95,8 @@ nohup python -u zsclassifier.py --dsn uci --gpu 7   --embed_cut 0.2  --upper 0.9
 
 
 
-nohup python -u zsclassifier.py --dsn uci   --mode test  --gpu 0   > zsl.test.uci.include.log &
-nohup python -u zsclassifier.py --dsn ag    --mode test --gpu 1   > zsl.test.ag.include.log &
+nohup python -u zsclassifier.py --dsn uci   --mode test     > zsl.test.uci.include.log &
+nohup python -u zsclassifier.py --dsn ag    --mode test    > zsl.test.ag.include.log &
 nohup python -u zsclassifier.py --dsn yahoo --mode test   > zsl.test.yahoo.include.log &
 
 
