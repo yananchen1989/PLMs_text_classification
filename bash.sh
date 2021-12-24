@@ -95,27 +95,14 @@ nohup python -u zsclassifier.py --dsn uci --gpu 7   --embed_cut 0.2  --upper 0.9
 
 
 
-nohup python -u zsclassifier.py --dsn uci   --gpu 0   > zsl.test.uci.include.log &
-nohup python -u zsclassifier.py --dsn ag    --gpu 1   > zsl.test.ag.include.log &
-nohup python -u zsclassifier.py --dsn yahoo   > zsl.test.yahoo.include.log &
+nohup python -u zsclassifier.py --dsn uci   --mode test  --gpu 0   > zsl.test.uci.include.log &
+nohup python -u zsclassifier.py --dsn ag    --mode test --gpu 1   > zsl.test.ag.include.log &
+nohup python -u zsclassifier.py --dsn yahoo --mode test   > zsl.test.yahoo.include.log &
 
 
-for embedm in dan cmlm-base
-do
-   for dsn in yahoo ag uci
-   do
-      
-   done
-done
-
-nohup python -u zsclassifier.py --dsn uci --embedm cmlm-base --mode test_embed --gpu 2 \
-               > zsclassifier.test_embed.uci.cmlm-base.log & 
-
-nohup python -u zsclassifier.py --dsn ag --embedm cmlm-base --mode test_embed --gpu 3 \
-               > zsclassifier.test_embed.ag.cmlm-base.log & 
-
-nohup python -u zsclassifier.py --dsn yahoo --embedm cmlm-base --mode test_embed --gpu 4 \
-               > zsclassifier.test_embed.yahoo.cmlm-base.log & 
+nohup python -u zsclassifier.py --dsn nyt --mode test --manauto man  --gpu 2  > zsl.test.nyt.mannual.log &
+nohup python -u zsclassifier.py --dsn uci --mode test --manauto man  --gpu 3  > zsl.test.uci.mannual.log &
+nohup python -u zsclassifier.py --dsn ag --mode test --manauto man  --gpu 4  > zsl.test.ag.mannual.log &
 
 
 

@@ -74,7 +74,12 @@ if gpus:
     print(e)
 
 from utils.load_data import * 
-ds = load_data(dataset=args.dsn, samplecnt= 2048)
+
+if args.dsn == 'nyt':
+    samplecnt = 400
+else:
+    samplecnt = 2048
+ds = load_data(dataset=args.dsn, samplecnt= samplecnt)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
 
