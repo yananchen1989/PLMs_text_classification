@@ -80,10 +80,10 @@ print(labels_candidates)
 
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 from utils.encoders import *
-if not gpus:
-    enc = encoder(args.embedm,'cpu')
-else:
-    enc = encoder(args.embedm,'gpu')
+#if not gpus:
+enc = encoder(args.embedm,'cpu')
+#else:
+#    enc = encoder(args.embedm,'gpu')
 
 
 nli_model_name = "facebook/bart-large-mnli"
