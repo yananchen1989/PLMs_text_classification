@@ -57,8 +57,8 @@ parser.add_argument("--calculate", default="sum", type=str)
 parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--upper", default=0.85, type=float)
 parser.add_argument("--lower", default=0.15, type=float)
-parser.add_argument("--gpu", default="0", type=str)
-parser.add_argument("--embedm", default="dan", choices=['cmlm-base','cmlm-large','dan','google'], type=str)
+parser.add_argument("--gpu", default="2", type=str)
+parser.add_argument("--embedm", default="google", choices=['cmlm-base','cmlm-large','dan','google'], type=str)
 
 args = parser.parse_args()
 
@@ -90,7 +90,7 @@ print(labels_candidates)
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 from utils.encoders import *
 #if not gpus:
-enc = encoder(args.embedm,'cpu')
+enc = encoder('dan','cpu')
 #else:
 #    enc = encoder(args.embedm,'gpu')
 
@@ -282,6 +282,8 @@ elif args.mode == 'test':
                         simi = model_google.similarity(l, j[0])
                     if simi >= 0.1:
                         label_expands_auto[l].append(j[0])
+                    if len(label_expands_auto[l]) > args.topk:
+                        break 
 
             else:
                 embed_label = enc.infer([l])
@@ -289,7 +291,7 @@ elif args.mode == 'test':
 
                 simis = cosine_similarity(embed_label, embed_grams)
                 df_simi = pd.DataFrame(zip([j[0] for j in gram_scores_mean_sort], list(simis[0])), columns=['gram', 'simi'])
-                label_expands_auto[l].extend(df_simi.loc[df_simi['simi']>=0.3, 'gram'].tolist())
+                label_expands_auto[l].extend(df_simi.loc[df_simi['simi']>=0.3, 'gram'].tolist()[:args.topk] )
                 
 
             print(l, len(label_expands_auto[l]), label_expands_auto[l][:50], '\n')
