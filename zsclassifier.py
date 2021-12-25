@@ -58,7 +58,7 @@ parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--upper", default=0.85, type=float)
 parser.add_argument("--lower", default=0.15, type=float)
 parser.add_argument("--gpu", default="0", type=str)
-parser.add_argument("--embedm", default="dan", choices=['cmlm-base','cmlm-large','dan'], type=str)
+parser.add_argument("--embedm", default="dan", choices=['cmlm-base','cmlm-large','dan','google'], type=str)
 
 args = parser.parse_args()
 
@@ -268,20 +268,29 @@ elif args.mode == 'test':
             gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
 
             label_expands_auto[l] = [l]
-            for j in gram_scores_mean_sort:
+            if args.embedm == 'google':
+                for j in gram_scores_mean_sort:
+                    if j[0] not in model_google.vocab.keys():
+                        #print(j[0])
+                        continue
 
-                if j[0] not in model_google.vocab.keys():
-                    #print(j[0])
-                    continue
+                    if ' and ' in l:
+                        w0 = l.split('and')[0].strip()
+                        w1 = l.split('and')[1].strip()
+                        simi = max(model_google.similarity(w0, j[0]), model_google.similarity(w1, j[0]) )
+                    else:
+                        simi = model_google.similarity(l, j[0])
+                    if simi >= 0.1:
+                        label_expands_auto[l].append(j[0])
 
-                if ' and ' in l:
-                    w0 = l.split('and')[0].strip()
-                    w1 = l.split('and')[1].strip()
-                    simi = max(model_google.similarity(w0, j[0]), model_google.similarity(w1, j[0]) )
-                else:
-                    simi = model_google.similarity(l, j[0])
-                if simi >= 0.1:
-                    label_expands_auto[l].append(j[0])
+            else:
+                embed_label = enc.infer([l])
+                embed_grams = enc.infer([j[0] for j in gram_scores_mean_sort])
+
+                simis = cosine_similarity(embed_label, embed_grams)
+                df_simi = pd.DataFrame(zip([j[0] for j in gram_scores_mean_sort], list(simis[0])), columns=['gram', 'simi'])
+                label_expands_auto[l].extend(df_simi.loc[df_simi['simi']>=0.3, 'gram'].tolist())
+                
 
             print(l, len(label_expands_auto[l]), label_expands_auto[l][:50], '\n')
 
@@ -298,6 +307,8 @@ elif args.mode == 'test':
 
         ######## evaluate ###########
         assert set(labels_candidates) == set(label_expands.keys())
+        print("labels_candidates:", labels_candidates)
+        print("label_expands:", label_expands)
         accs_noexpand = []
         accs_expand = []
         for ix, row in ds.df_train.reset_index().iterrows():
