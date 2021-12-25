@@ -69,10 +69,6 @@ wget http://nlp.stanford.edu/data/glove.840B.300d.zip http://nlp.stanford.edu/da
 
 
 python -m gensim.scripts.glove2word2vec -i ./resource/glove.6B.300d.txt -o ./resource/glove.6B.300d.word2vec.txt
-python -m gensim.scripts.glove2word2vec -i ./resource/glove.42B.300d.txt -o ./resource/glove.42B.300d.word2vec.txt;
-python -m gensim.scripts.glove2word2vec -i ./resource/glove.840B.300d.txt -o ./resource/glove.840B.300d.word2vec.txt;
-python -m gensim.scripts.glove2word2vec -i ./resource/glove.twitter.27B.200d.txt -o ./resource/glove.twitter.27B.200d.word2vec.txt
-
 
 
 nohup python -u zsclassifier.py --dsn agp --gpu 7  --mode train  --embed_cut 0.15  --upper 0.85 --lower 0.15 \
@@ -88,7 +84,11 @@ nohup python -u zsclassifier.py --dsn uci   --mode test  --w2v_thres 0.2 --gpu 3
 nohup python -u zsclassifier.py --dsn ag    --mode test  --w2v_thres 0.2 --gpu 4   > zsl.test.ag.w2v0.2.log &
 nohup python -u zsclassifier.py --dsn yahoo --mode test  --w2v_thres 0.2  --gpu 5   > zsl.test.yahoo.w2v0.2.log &
 
-nohup python -u zsclassifier.py --dsn agp    --mode test  --w2v_thres 0.1 --gpu 6   > zsl.test.ag.w2v0.1.log &
+nohup python -u zsclassifier.py --dsn agp    --mode test  --w2v_thres 0.1 --gpu 6   > zsl.test.agp.w2v0.1.log &
+
+
+
+
 
 ############################################################################################################################################
 ps aux|grep "zsclassifier.py"|grep -v grep | awk '{print $2}'|xargs kill -9

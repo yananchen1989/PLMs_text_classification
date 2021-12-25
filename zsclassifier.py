@@ -124,6 +124,13 @@ bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='.
 bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
 bert_nsp.to(device0)
 
+def nsp_infer(sent1, sent2, bert_nsp, bert_tokenizer):
+    encoding = bert_tokenizer(sent1, sent2, return_tensors='pt', max_length=256, truncation=True).to(device0)
+    outputs = bert_nsp(**encoding, labels=torch.LongTensor([1]).cpu().to(device0) )
+    logits = outputs.logits
+    probs = torch.nn.functional.softmax(logits, dim=-1)
+    return probs.cpu().detach().numpy()[0][0]
+    
 # nltk.download('stopwords')
 # stopwords = stopwords.words('english')
 stopwords = joblib.load("./utils/stopwords")
