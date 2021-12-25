@@ -67,8 +67,8 @@ class load_data():
                 self.df_test = self.df_test.rename(columns={'Title': 'content'}).rename(columns={'Class Index': 'label'}) 
                               
             else:
-                self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, self.dataset))
-                self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, self.dataset))
+                self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, 'ag'))
+                self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, 'ag'))
             
             if self.dataset in ['ag', 'agt']:
                 world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
