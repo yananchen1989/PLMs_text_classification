@@ -39,7 +39,11 @@ def map_expand_nli(base_nli, dsn):
         label_expands_mannual['estate'] = base_nli['estate']
         label_expands_mannual['science'] = base_nli['science'] 
         label_expands_mannual['technology'] = base_nli['technology']
+        label_expands_mannual['business'] = base_nli['business']
+        label_expands_mannual['health'] = base_nli['health']
     return label_expands_mannual
+
+
 import pandas as pd
 import time,argparse
 import os 
@@ -53,7 +57,7 @@ parser.add_argument("--calculate", default="sum", type=str)
 parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--upper", default=0.85, type=float)
 parser.add_argument("--lower", default=0.15, type=float)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 parser.add_argument("--embedm", default="dan", choices=['cmlm-base','cmlm-large','dan'], type=str)
 
 args = parser.parse_args()
@@ -300,15 +304,6 @@ elif args.mode == 'test':
             elif args.manauto == 'auto':
                 label_expands = label_expands_auto
 
-
-            # label_expands = {'business': ['market', 'ceo', 'bank', 'stocks', 'boss', 'sales', 'manager', 'stock', 'amazon', 'shares', 'profit', 'director', 'trump', 'businesses', 'news', 'apple', 'china', 'launches', 'team', 'million', 'loss', 'contract', 'google', 'workers', 'chief', 'restaurant', 'companies', 'banks', 'markets', 'jobs', 'growth', 'earnings', 'week', 'investment', 'launch', 'investors', 'economy', 'macron', 'robbery', 'employee', 'agent', 'revenue', 'dividend', 'production', 'billion', 'services', 'career', 'capital', 'workplace', 'partners', 'customers', 'india', 'finance', 'brewers', 'giants', 'executive', 'farm', 'chiefs', 'sells', 'reports', 'airlines', 'commercial', 'center', 'analysts'], 'science and technology': ['energy', 'technology', 'video', 'google', 'apple', 'study', 'science', 'internet', 'arsenal', 'china', 'launches', 'missile', 'electric', 'scientists', 'news', 'ceo', 'mobile', 'amazon', 'market', 'trump', 'space', 'smart', 'software', 'rockets', 'mining', 'launch', 'latest', 'moon', 'probe', 'gun', 'fireworks', 'researchers', 'technologies', 'zoo', 'lions', 'steel', 'million', 'brewers', 'future', 'stars', 'driving', 'birth', 'penguins', 'machine', 'bomb', 'eagles', 'chip', 'drone', 'korea', 'technical', 'shares', 'cloud', 'titans', 'surgery', 'clippers', 'production', 'giants', 'development', 'pipeline', 'fire', 'gold', 'nasa', 'wins', 'tesla'], 'entertainment': ['video', 'season', 'fans', 'stars', 'festival', 'music', 'sports', 'film', 'party', 'series', 'movie', 'club', 'trump', 'concert', 'nightclub', 'fireworks', 'eagles', 'actress', 'news', 'disney', 'hollywood', 'singer', 'zoo', 'rugby', 'channel', 'weekend', 'week', 'episode', 'bowl', 'league', 'album', 'beer', 'tickets', 'celebrity', 'fox', 'dance', 'song', 'parade', 'trailer', 'lions', 'theatre', 'events', 'hosts', 'streaming', 'comedian', 'summer', 'football', 'players', 'wins', 'director', 'movies', 'team', 'launches', 'fame', 'amazon', 'toys', 'theater', 'preview', 'magic', 'twitter', 'vegas', 'apple', 'performance', 'latest'], 'health': ['hospital', 'medical', 'cancer', 'healthcare', 'injury', 'doctor', 'flu', 'drug', 'heart', 'fitness', 'surgery', 'safety', 'doctors', 'blood', 'marijuana', 'hospitals', 'treatment', 'birth', 'injuries', 'patients', 'brain', 'news', 'medicaid', 'abortion', 'study', 'gym', 'nursing', 'concussion', 'safe', 'glasses', 'wounded', 'drugs', 'smoking', 'swim', 'risk', 'recovery', 'patient', 'smoke', 'diet', 'nurse', 'disease', 'dementia', 'save', 'clinic', 'knee', 'workout', 'medicine', 'week', 'exercise', 'police', 'disabled', 'poisoning', 'wellness', 'hurt', 'fire', 'healing', 'warning', 'illness', 'foods', 'vegan', 'swimming', 'autism', 'sports', 'therapy']}
-
-            # label_expands = {'business': ['market', 'ceo', 'bank', 'stocks', 'boss', 'sales', 'manager', 'stock', 'amazon', 'shares', 'profit', 'director', 'trump', 'businesses', 'apple', 'china', 'launches', 'million', 'loss', 'contract', 'google', 'workers', 'chief', 'companies', 'banks', 'markets', 'jobs', 'growth', 'earnings', 'investment', 'launch', 'investors', 'economy', 'macron', 'robbery', 'employee', 'agent', 'revenue', 'dividend', 'production', 'billion', 'services', 'career', 'capital', 'workplace', 'partners', 'customers', 'india', 'finance', 'brewers', 'giants', 'executive', 'chiefs', 'sells', 'commercial', 'analysts'], \
-            # 'science and technology': ['energy', 'technology', 'video', 'google', 'apple', 'study', 'science', 'internet', 'arsenal', 'china', 'launches', 'missile', 'electric', 'scientists', 'mobile', 'amazon', 'space', 'smart', 'software', 'rockets', 'mining', 'moon', 'probe', 'researchers', 'technologies',  'future', 'stars', 'machine', 'bomb', 'chip', 'drone', 'technical', 'cloud', 'titans', 'surgery', 'clippers', 'production', 'giants', 'development', 'pipeline', 'fire', 'gold', 'nasa', 'tesla'], 
-            # 'entertainment': ['video', 'season', 'fans', 'stars', 'festival', 'music', 'sports', 'film', 'party', 'series', 'movie', 'club', 'trump', 'concert', 'nightclub', 'fireworks', 'actress', 'disney', 'hollywood', 'singer', 'rugby', 'channel', 'weekend', 'episode', 'bowl', 'league', 'album', 'beer', 'tickets', 'celebrity', 'fox', 'dance', 'song', 'parade', 'trailer', 'theatre', 'hosts', 'streaming', 'comedian', 'players', 'wins', 'director', 'movies', 'team', 'launches', 'fame', 'amazon', 'toys', 'theater', 'preview', 'magic', 'twitter', 'vegas', 'apple', 'performance'], \
-            # 'health': ['hospital', 'medical', 'cancer', 'healthcare', 'injury', 'doctor', 'flu', 'drug', 'heart', 'fitness', 'surgery', 'safety', 'doctors', 'blood', 'marijuana', 'hospitals', 'treatment', 'birth', 'injuries', 'patients', 'brain', 'news', 'medicaid', 'abortion', 'gym', 'nursing', 'concussion', 'safe', 'glasses', 'wounded', 'drugs', 'smoking', 'swim', 'recovery', 'patient', 'smoke', 'diet', 'nurse', 'disease', 'dementia', 'clinic', 'knee', 'workout', 'medicine', 'exercise', 'police', 'disabled', 'poisoning', 'wellness', 'hurt', 'fire', 'healing', 'warning', 'illness', 'foods', 'vegan', 'swimming', 'autism', 'sports', 'therapy']}
-
-
             grams_candidates = []
             for l, grams in label_expands.items():
                 grams_candidates.extend(grams)
@@ -329,14 +324,24 @@ elif args.mode == 'test':
                 else:
                     accs_noexpand.append(0)
 
-                nli_result_ = nli_nlp([content],  grams_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-                nli_result_.pop('sequence')
 
-                gram_score_dic = {gram:score for gram, score in zip(nli_result_['labels'], nli_result_['scores'])}
+
+                nli_result_ = nli_nlp([content],  grams_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+                
+                df_buff_ll = []
+                for j in range(0, len(grams_candidates), 64):
+                    grams_candidates_buff = grams_candidates[j:j+64]
+                    nli_result_buff = nli_nlp([content],  grams_candidates_buff, multi_label=True, hypothesis_template="This text is about {}.")
+                    nli_result_buff.pop('sequence')  
+                    df_buff = pd.DataFrame(nli_result_buff)     
+                    df_buff_ll.append(df_buff)     
+
+                df_gram_score = pd.concat(df_buff_ll)
+                assert df_gram_score.shape[0] == len(grams_candidates)
 
                 infos = []
                 for l in label_expands.keys():
-                    l_score = np.array(([gram_score_dic[gram] for gram in label_expands[l]]  )).mean()
+                    l_score = np.array(([df_gram_score.loc[df_gram_score['labels']==gram, 'scores'].tolist()[0] for gram in label_expands[l]]  )).mean()
                     infos.append((l, l_score))
 
                 df_expand = pd.DataFrame(infos, columns=['label','score'])
