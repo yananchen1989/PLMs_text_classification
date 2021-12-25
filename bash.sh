@@ -92,6 +92,11 @@ nohup python -u zsclassifier.py --dsn yahoo  --embedm glove6b --mode test  --gpu
 nohup python -u zsclassifier.py --dsn yahoo  --embedm glove27b --mode test  --gpu 6   > zsl.test.yahoo.w2v.glove27b.log &
 
 
+
+
+nohup python -u zsclassifier.py --dsn yahoo  --embedm google --mode test  --gpu 0
+
+
 ############################################################################################################################################
 ps aux|grep "zsclassifier.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9

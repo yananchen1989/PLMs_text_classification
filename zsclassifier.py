@@ -258,100 +258,100 @@ if args.mode == 'train':
             joblib.dump(gram_embed, 'gram_embed___{}'.format(args.dsn))
 
 
-'''
-elif args.mode == 'test':
-    gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
-    #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-    for args.topk in [16, 32, 50, 64]:
+# elif args.mode == 'test':
+#     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
+#     #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-        label_expands_auto = {}
-        for l, gram_scores in gram_diff.items():
-            gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
-            gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
+#     for args.topk in [16, 32, 50, 64]:
 
-            label_expands_auto[l] = [l.lower()]
+#         label_expands_auto = {}
+#         for l, gram_scores in gram_diff.items():
+#             gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
+#             gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
 
-            for j in gram_scores_mean_sort:
-                if j[0] not in vocab_w2v:
-                    #print(j[0])
-                    continue
+#             label_expands_auto[l] = [l.lower()]
 
-                if ' and ' in l:
-                    w0 = l.split('and')[0].strip().lower()
-                    w1 = l.split('and')[1].strip().lower()
-                    simi = max(model_w2v.similarity(w0, j[0]), model_w2v.similarity(w1, j[0]) )
-                else:
-                    simi = model_w2v.similarity(l.lower(), j[0])
+#             for j in gram_scores_mean_sort:
+#                 if j[0] not in vocab_w2v:
+#                     #print(j[0])
+#                     continue
 
-                if simi >= args.w2v_thres:
-                    label_expands_auto[l].append(j[0])
-                if len(label_expands_auto[l])-1 == args.topk:
-                    break 
+#                 if ' and ' in l:
+#                     w0 = l.split('and')[0].strip().lower()
+#                     w1 = l.split('and')[1].strip().lower()
+#                     simi = max(model_w2v.similarity(w0, j[0]), model_w2v.similarity(w1, j[0]) )
+#                 else:
+#                     simi = model_w2v.similarity(l.lower(), j[0])
 
-            print(l, len(label_expands_auto[l]), label_expands_auto[l][:50], '\n')
+#                 if simi >= args.w2v_thres:
+#                     label_expands_auto[l].append(j[0])
+#                 if len(label_expands_auto[l])-1 == args.topk:
+#                     break 
 
-        # assign
-        if args.manauto == 'man':
-            label_expands = map_expand_nli(base_nli, args.dsn)
-        elif args.manauto == 'auto':
-            label_expands = label_expands_auto
+#             print(l, len(label_expands_auto[l]), label_expands_auto[l][:50], '\n')
 
-        grams_candidates = []
-        for l, grams in label_expands.items():
-            grams_candidates.extend(grams)
-        grams_candidates = list(set(grams_candidates))
+#         # assign
+#         if args.manauto == 'man':
+#             label_expands = map_expand_nli(base_nli, args.dsn)
+#         elif args.manauto == 'auto':
+#             label_expands = label_expands_auto
 
-        ######## evaluate ###########
-        assert set(labels_candidates) == set(label_expands.keys())
+#         grams_candidates = []
+#         for l, grams in label_expands.items():
+#             grams_candidates.extend(grams)
+#         grams_candidates = list(set(grams_candidates))
 
-        accs_noexpand = []
-        accs_expand = []
-        for ix, row in ds.df_train.reset_index().iterrows():
-            content = row['content']
+#         ######## evaluate ###########
+#         assert set(labels_candidates) == set(label_expands.keys())
 
-            nli_result = nli_nlp([content],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-            pred_label =  nli_result['labels'][0]
-            if pred_label == row['label_name']:
-                accs_noexpand.append(1)
-            else:
-                accs_noexpand.append(0)
+#         accs_noexpand = []
+#         accs_expand = []
+#         for ix, row in ds.df_train.reset_index().iterrows():
+#             content = row['content']
 
-            df_buff_ll = []
-            for j in range(0, len(grams_candidates), 64):
-                grams_candidates_buff = grams_candidates[j:j+64]
-                nli_result_buff = nli_nlp([content],  grams_candidates_buff, multi_label=True, hypothesis_template="This text is about {}.")
-                nli_result_buff.pop('sequence')  
-                df_buff = pd.DataFrame(nli_result_buff)     
-                df_buff_ll.append(df_buff)     
+#             nli_result = nli_nlp([content],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+#             pred_label =  nli_result['labels'][0]
+#             if pred_label == row['label_name']:
+#                 accs_noexpand.append(1)
+#             else:
+#                 accs_noexpand.append(0)
 
-            df_gram_score = pd.concat(df_buff_ll)
-            assert df_gram_score.shape[0] == len(grams_candidates)
+#             df_buff_ll = []
+#             for j in range(0, len(grams_candidates), 64):
+#                 grams_candidates_buff = grams_candidates[j:j+64]
+#                 nli_result_buff = nli_nlp([content],  grams_candidates_buff, multi_label=True, hypothesis_template="This text is about {}.")
+#                 nli_result_buff.pop('sequence')  
+#                 df_buff = pd.DataFrame(nli_result_buff)     
+#                 df_buff_ll.append(df_buff)     
 
-            infos = []
-            for l in label_expands.keys():
-                l_score = np.array(([df_gram_score.loc[df_gram_score['labels']==gram, 'scores'].tolist()[0] for gram in label_expands[l]]  )).mean()
-                infos.append((l, l_score))
+#             df_gram_score = pd.concat(df_buff_ll)
+#             assert df_gram_score.shape[0] == len(grams_candidates)
 
-            df_expand = pd.DataFrame(infos, columns=['label','score'])
+#             infos = []
+#             for l in label_expands.keys():
+#                 l_score = np.array(([df_gram_score.loc[df_gram_score['labels']==gram, 'scores'].tolist()[0] for gram in label_expands[l]]  )).mean()
+#                 infos.append((l, l_score))
 
-            pred_label = df_expand.sort_values(by=['score'], ascending=False).head(1)['label'].tolist()[0]
+#             df_expand = pd.DataFrame(infos, columns=['label','score'])
 
-            if pred_label == row['label_name']:
-                accs_expand.append(1)
-            else:
-                accs_expand.append(0)
-                # print(row['label_name'])
-                # print(content)
-                # print(df_expand.sort_values(by=['score'], ascending=False))
-                # print()
+#             pred_label = df_expand.sort_values(by=['score'], ascending=False).head(1)['label'].tolist()[0]
 
-            if ix % 1024 == 0 and ix > 0:
-                print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
+#             if pred_label == row['label_name']:
+#                 accs_expand.append(1)
+#             else:
+#                 accs_expand.append(0)
+#                 # print(row['label_name'])
+#                 # print(content)
+#                 # print(df_expand.sort_values(by=['score'], ascending=False))
+#                 # print()
 
-        print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
-             sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
-'''
+#             if ix % 1024 == 0 and ix > 0:
+#                 print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
+
+#         print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
+#              sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
+
 
 
 elif args.mode == 'test':
