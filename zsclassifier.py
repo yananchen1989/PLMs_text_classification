@@ -47,6 +47,14 @@ def map_expand_nli(base_nli, dsn):
 import pandas as pd
 import time,argparse
 import os 
+import numpy as np
+import datasets,re,operator,joblib
+from sklearn.feature_extraction.text import CountVectorizer
+from nltk.corpus import stopwords
+import nltk,gensim
+import tensorflow as tf
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
+assert gensim.__version__ == '4.1.2'
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="yahoo", type=str)
@@ -58,15 +66,16 @@ parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--upper", default=0.85, type=float)
 parser.add_argument("--lower", default=0.15, type=float)
 parser.add_argument("--gpu", default="2", type=str)
-parser.add_argument("--embedm", default="google", choices=['cmlm-base','cmlm-large','dan','google'], type=str)
-
+parser.add_argument("--embedm", default="google", choices=['cmlm-base','cmlm-large','dan','google',\
+                     'glove840b','glove6b', 'glove27b', 'glove42b'], type=str)
+parser.add_argument("--w2v_thres", default=0.1, type=float)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
 #from utils.flair_ners import *
-import tensorflow as tf
+
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
   try:
@@ -87,7 +96,7 @@ ds = load_data(dataset=args.dsn, samplecnt= samplecnt)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
 
-from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
+
 from utils.encoders import *
 #if not gpus:
 enc = encoder('dan','cpu')
@@ -114,15 +123,11 @@ if args.mode in ['test', 'train']:
 
 
 # load dataset
-from sklearn.feature_extraction.text import CountVectorizer
-from nltk.corpus import stopwords
-import nltk,gensim
+
 # nltk.download('stopwords')
 # stopwords = stopwords.words('english')
 stopwords = joblib.load("./utils/stopwords")
 
-import numpy as np
-import datasets,re,operator,joblib
 
 def get_embedding_score(gram, df, enc):
     dfs = df.loc[df['title_lower'].str.contains(gram)]
@@ -143,7 +148,19 @@ def check_noun(word):
     return False
 
 ############ find support seeds
-model_google = gensim.models.KeyedVectors.load_word2vec_format('./resource/GoogleNews-vectors-negative300.bin',binary=True)
+if args.embedm == 'google':
+    model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/GoogleNews-vectors-negative300.bin',binary=True)
+elif args.embedm == 'glove840b':
+    model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/glove.840B.300d.word2vec.txt', binary=False)
+elif args.embedm == 'glove6b':
+    model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/glove.6B.300d.word2vec.txt', binary=False)
+elif args.embedm == 'glove27b':
+    model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/glove.twitter.27B.200d.word2vec.txt', binary=False)
+elif args.embedm == 'glove42b':
+    model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/glove.42B.300d.word2vec.txt', binary=False)
+
+vocab_w2v = set(list(model_w2v.index_to_key))
+
 
 if args.mode == 'train':
     df = get_cc_news(1)
@@ -267,32 +284,24 @@ elif args.mode == 'test':
             gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
             gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
 
-            label_expands_auto[l] = [l]
-            if args.embedm == 'google':
-                for j in gram_scores_mean_sort:
-                    if j[0] not in model_google.vocab.keys():
-                        #print(j[0])
-                        continue
+            label_expands_auto[l] = [l.lower()]
 
-                    if ' and ' in l:
-                        w0 = l.split('and')[0].strip()
-                        w1 = l.split('and')[1].strip()
-                        simi = max(model_google.similarity(w0, j[0]), model_google.similarity(w1, j[0]) )
-                    else:
-                        simi = model_google.similarity(l, j[0])
-                    if simi >= 0.1:
-                        label_expands_auto[l].append(j[0])
-                    if len(label_expands_auto[l]) > args.topk:
-                        break 
+            for j in gram_scores_mean_sort:
+                if j[0] not in vocab_w2v:
+                    #print(j[0])
+                    continue
 
-            else:
-                embed_label = enc.infer([l])
-                embed_grams = enc.infer([j[0] for j in gram_scores_mean_sort])
+                if ' and ' in l:
+                    w0 = l.split('and')[0].strip().lower()
+                    w1 = l.split('and')[1].strip().lower()
+                    simi = max(model_w2v.similarity(w0, j[0]), model_w2v.similarity(w1, j[0]) )
+                else:
+                    simi = model_w2v.similarity(l.lower(), j[0])
 
-                simis = cosine_similarity(embed_label, embed_grams)
-                df_simi = pd.DataFrame(zip([j[0] for j in gram_scores_mean_sort], list(simis[0])), columns=['gram', 'simi'])
-                label_expands_auto[l].extend(df_simi.loc[df_simi['simi']>=0.3, 'gram'].tolist()[:args.topk] )
-                
+                if simi >= args.w2v_thres:
+                    label_expands_auto[l].append(j[0])
+                if len(label_expands_auto[l])-1 == args.topk:
+                    break 
 
             print(l, len(label_expands_auto[l]), label_expands_auto[l][:50], '\n')
 
