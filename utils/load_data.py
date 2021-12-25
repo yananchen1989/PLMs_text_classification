@@ -57,7 +57,7 @@ class load_data():
         self.path = './torch_ds'
         self.samplecnt_test = samplecnt_test
 
-        if self.dataset in ['ag','yahoo', 'agt']:
+        if self.dataset in ['ag','yahoo', 'agt', 'agp']:
 
             if self.dataset == 'agt':
                 self.df_train = pd.read_csv('{}/ag_train_kaggle.csv'.format(self.path))
@@ -74,7 +74,11 @@ class load_data():
                 world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
                                   'Crime','Murder','Religion','Jurisdiction', 'Democracy'])
                 ixl = {1:'World', 2:"Sports", 3:"Business", 4:"science and technology"} 
-            if self.dataset == 'yahoo':
+                
+            elif self.dataset == 'agp':
+                ixl = {1:'Politics and Law', 2:"Sports", 3:"Business", 4:"science and technology"} 
+
+            elif self.dataset == 'yahoo':
                 ixl = {  1: 'Society and Culture',
                   2: 'Science and Mathematics',
                   3: 'Health',

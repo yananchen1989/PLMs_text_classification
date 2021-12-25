@@ -95,12 +95,6 @@ nohup python -u zsclassifier.py --dsn uci --gpu 7   --embed_cut 0.2  --upper 0.9
 
 
 
-nohup python -u zsclassifier.py --dsn uci   --mode test  --gpu 5   > zsl.test.uci.include.log &
-nohup python -u zsclassifier.py --dsn ag    --mode test  --gpu 6  > zsl.test.ag.include.log &
-nohup python -u zsclassifier.py --dsn yahoo --mode test  --gpu 7  > zsl.test.yahoo.include.log &
-
-
-
 nohup python -u zsclassifier.py --dsn uci   --mode test  --gpu 0   > zsl.test.uci.w2v.log &
 nohup python -u zsclassifier.py --dsn ag   --mode test  --gpu 1   > zsl.test.ag.w2v.log &
 nohup python -u zsclassifier.py --dsn yahoo   --mode test  --gpu 2   > zsl.test.yahoo.w2v.log &
@@ -108,7 +102,7 @@ nohup python -u zsclassifier.py --dsn yahoo   --mode test  --gpu 2   > zsl.test.
 
 
 ############################################################################################################################################
-ps aux|grep "zsl_pure_classifier.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "zsclassifier.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
