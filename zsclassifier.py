@@ -116,7 +116,7 @@ if args.mode in ['test', 'train']:
 # load dataset
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
-import nltk
+import nltk,gensim
 # nltk.download('stopwords')
 # stopwords = stopwords.words('english')
 stopwords = joblib.load("./utils/stopwords")
@@ -134,23 +134,6 @@ def get_embedding_score(gram, df, enc):
 
 
 
-'''
-# prepare balanced df
-fbs = 256
-infos = []
-titles = df.sample(frac=1)['title'].tolist()
-for i in range(0, len(titles), fbs):
-    torch.cuda.empty_cache()
-    nli_result = nli_nlp(titles[i:i+fbs],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-    for r in  nli_result:
-        if r['scores'][0] >= 0.8:
-            infos.append((r['sequence'], r['labels'][0] ))   
-        
-    if i % 2048 == 0:
-        df_label = pd.DataFrame(infos, columns=['title','label']) 
-        print(df_label['label'].value_counts())
-        df_label.to_csv("df_cc_label.csv", index=False)
-'''
 from nltk.corpus import wordnet as wn
 def check_noun(word):
     nets = wn.synsets(word)
@@ -160,8 +143,7 @@ def check_noun(word):
     return False
 
 ############ find support seeds
-import joblib,operator
-import numpy as np
+model_google = gensim.models.KeyedVectors.load_word2vec_format('./resource/GoogleNews-vectors-negative300.bin',binary=True)
 
 if args.mode == 'train':
     df = get_cc_news(1)
@@ -278,85 +260,90 @@ elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
     #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-    for args.topk in [32, 64, 128, 256]:
-        for args.calculate in ['sum']:
-            label_expands_auto = {}
-            for l, gram_scores in gram_diff.items():
-                if args.calculate == 'sum':
-                    gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
-                elif args.calculate == 'max':
-                    gram_scores_mean = {g:round(np.array(scores).max(),4) for g, scores in gram_scores.items() }
-                elif args.calculate == 'mean':
-                    gram_scores_mean = {g:round(np.array(scores).mean(),4) for g, scores in gram_scores.items() }
-                elif args.calculate == 'median':
-                    gram_scores_mean = {g:round(np.median(np.array(scores)),4) for g, scores in gram_scores.items() }
+    for args.topk in [32, 64, 85, 128, 200, 256, 512]:
 
-                gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
-                print(l, '===>', gram_scores_mean_sort[:100])
-                 
-                label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]] + [l]
+        label_expands_auto = {}
+        for l, gram_scores in gram_diff.items():
+            gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
+            gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
 
-            print(label_expands_auto)
+            label_expands_auto[l] = []
+            for j in gram_scores_mean_sort:
 
-            # assign
-            if args.manauto == 'man':
-                label_expands = map_expand_nli(base_nli, args.dsn)
-            elif args.manauto == 'auto':
-                label_expands = label_expands_auto
+                if j[0] not in model_google.vocab.keys():
+                    #print(j[0])
+                    continue
 
-            grams_candidates = []
-            for l, grams in label_expands.items():
-                grams_candidates.extend(grams)
-            grams_candidates = list(set(grams_candidates))
-
-            ######## evaluate ###########
-            assert set(labels_candidates) == set(label_expands.keys())
-            accs_noexpand = []
-            accs_expand = []
-            for ix, row in ds.df_train.reset_index().iterrows():
-                content = row['content']
-
-                nli_result = nli_nlp([content],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-                pred_label =  nli_result['labels'][0]
-                if pred_label == row['label_name']:
-                    accs_noexpand.append(1)
+                if ' and ' in l:
+                    w0 = l.split('and')[0].strip()
+                    w1 = l.split('and')[1].strip()
+                    simi = max(model_google.similarity(w0, j[0]), model_google.similarity(w1, j[0]) )
                 else:
-                    accs_noexpand.append(0)
+                    simi = model_google.similarity(l, j[0])
+                if simi >= 0.1:
+                    label_expands_auto[l].append(j[0])
 
-                df_buff_ll = []
-                for j in range(0, len(grams_candidates), 64):
-                    grams_candidates_buff = grams_candidates[j:j+64]
-                    nli_result_buff = nli_nlp([content],  grams_candidates_buff, multi_label=True, hypothesis_template="This text is about {}.")
-                    nli_result_buff.pop('sequence')  
-                    df_buff = pd.DataFrame(nli_result_buff)     
-                    df_buff_ll.append(df_buff)     
+            print(l, len(label_expands_auto[l]), label_expands_auto[l][:50], '\n')
 
-                df_gram_score = pd.concat(df_buff_ll)
-                assert df_gram_score.shape[0] == len(grams_candidates)
+        # assign
+        if args.manauto == 'man':
+            label_expands = map_expand_nli(base_nli, args.dsn)
+        elif args.manauto == 'auto':
+            label_expands = label_expands_auto
 
-                infos = []
-                for l in label_expands.keys():
-                    l_score = np.array(([df_gram_score.loc[df_gram_score['labels']==gram, 'scores'].tolist()[0] for gram in label_expands[l]]  )).mean()
-                    infos.append((l, l_score))
+        grams_candidates = []
+        for l, grams in label_expands.items():
+            grams_candidates.extend(grams)
+        grams_candidates = list(set(grams_candidates))
 
-                df_expand = pd.DataFrame(infos, columns=['label','score'])
+        ######## evaluate ###########
+        assert set(labels_candidates) == set(label_expands.keys())
+        accs_noexpand = []
+        accs_expand = []
+        for ix, row in ds.df_train.reset_index().iterrows():
+            content = row['content']
 
-                pred_label = df_expand.sort_values(by=['score'], ascending=False).head(1)['label'].tolist()[0]
+            nli_result = nli_nlp([content],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+            pred_label =  nli_result['labels'][0]
+            if pred_label == row['label_name']:
+                accs_noexpand.append(1)
+            else:
+                accs_noexpand.append(0)
 
-                if pred_label == row['label_name']:
-                    accs_expand.append(1)
-                else:
-                    accs_expand.append(0)
-                    # print(row['label_name'])
-                    # print(content)
-                    # print(df_expand.sort_values(by=['score'], ascending=False))
-                    # print()
+            df_buff_ll = []
+            for j in range(0, len(grams_candidates), 64):
+                grams_candidates_buff = grams_candidates[j:j+64]
+                nli_result_buff = nli_nlp([content],  grams_candidates_buff, multi_label=True, hypothesis_template="This text is about {}.")
+                nli_result_buff.pop('sequence')  
+                df_buff = pd.DataFrame(nli_result_buff)     
+                df_buff_ll.append(df_buff)     
 
-                if ix % 1024 == 0 and ix > 0:
-                    print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
+            df_gram_score = pd.concat(df_buff_ll)
+            assert df_gram_score.shape[0] == len(grams_candidates)
 
-            print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
-                 sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
+            infos = []
+            for l in label_expands.keys():
+                l_score = np.array(([df_gram_score.loc[df_gram_score['labels']==gram, 'scores'].tolist()[0] for gram in label_expands[l]]  )).mean()
+                infos.append((l, l_score))
+
+            df_expand = pd.DataFrame(infos, columns=['label','score'])
+
+            pred_label = df_expand.sort_values(by=['score'], ascending=False).head(1)['label'].tolist()[0]
+
+            if pred_label == row['label_name']:
+                accs_expand.append(1)
+            else:
+                accs_expand.append(0)
+                # print(row['label_name'])
+                # print(content)
+                # print(df_expand.sort_values(by=['score'], ascending=False))
+                # print()
+
+            if ix % 1024 == 0 and ix > 0:
+                print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
+
+        print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
+             sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
 
 
 elif args.mode == 'test_embed':

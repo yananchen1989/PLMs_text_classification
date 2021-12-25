@@ -5,25 +5,16 @@ import joblib,operator
 import numpy as np 
 
 
+import gensim
+model_google = gensim.models.KeyedVectors.load_word2vec_format('./resource/GoogleNews-vectors-negative300.bin',binary=True)
+
 
 from utils.load_data import * 
 
-dsn = 'uci'
+dsn = 'yahoo'
 ds = load_data(dataset=dsn, samplecnt= 2048)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
-
-gram_diff = joblib.load("gram_diff___{}".format(dsn))
-
-label_expands_auto = {}
-for l, gram_scores in gram_diff.items():
-    gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
-
-    gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
-    print(l, '===>', gram_scores_mean_sort[:100]) 
-    label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:64]] + [l]
-    print()
-
 
 
 from transformers import BertTokenizer, BertForNextSentencePrediction
