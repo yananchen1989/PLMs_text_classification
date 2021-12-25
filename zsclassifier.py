@@ -240,7 +240,7 @@ if args.mode == 'train':
         print()
 
 
-        if ix % 100 ==0 and ix > 0 :
+        if ix % 1000 ==0 and ix > 0 :
             print(ix)
             label_expands = {}
             for l, gram_scores in gram_diff.items():
@@ -260,7 +260,7 @@ elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
     #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-    for args.topk in [32, 64, 85, 128, 200, 256, 512]:
+    for args.topk in [16, 32, 64, 85, 128, 200, 256, 512]:
 
         label_expands_auto = {}
         for l, gram_scores in gram_diff.items():
