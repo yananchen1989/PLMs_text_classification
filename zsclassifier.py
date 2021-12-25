@@ -67,6 +67,10 @@ parser.add_argument("--calculate", default="sum", type=str)
 parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--upper", default=0.85, type=float)
 parser.add_argument("--lower", default=0.15, type=float)
+
+parser.add_argument("--w1", default=0.5, type=float)
+parser.add_argument("--w2", default=0.5, type=float)
+
 parser.add_argument("--gpu", default="7", type=str)
 parser.add_argument("--embedm", default="google", choices=['cmlm-base','cmlm-large','dan','google',\
                      'glove840b','glove6b', 'glove27b', 'glove42b'], type=str)
@@ -464,10 +468,10 @@ elif args.mode == 'test':
         df_merge_fuse = pd.merge(df_merge, df_nsp, on=['label'], how='inner')\
                           .rename(columns={'score': 'score_nsp'})         
 
-        df_merge_fuse['score_fuse'] = df_merge_fuse['score_noexpand'].map(lambda x: math.log(x)) \
-                                    + df_merge_fuse['score_expand'].map(lambda x: math.log(x))  \
-                                    + df_merge_fuse['score_nsp'].map(lambda x: math.log(x))
-         
+        df_merge_fuse['score_fuse'] = args.w1 * df_merge_fuse['score_noexpand'].map(lambda x: math.log(x)) \
+                                    + args.w2 * df_merge_fuse['score_expand'].map(lambda x: math.log(x))  \
+                                    + (1-args.w1-args.w2) * df_merge_fuse['score_nsp'].map(lambda x: math.log(x))
+
         pred_label = df_merge_fuse.sort_values(by=['score_fuse'], ascending=False).head(args.acc_topn)['label'].tolist()
 
         if row['label_name'] in pred_label:

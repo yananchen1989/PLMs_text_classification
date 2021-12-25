@@ -85,16 +85,8 @@ nohup python -u zsclassifier.py --dsn ag   --embedm google  --mode test    --gpu
 nohup python -u zsclassifier.py --dsn yahoo  --embedm google  --mode test --gpu 2   > zsl.test.yahoo.w2v.log &
 
 
-nohup python -u zsclassifier.py --dsn uci  --embedm glove6b --mode test  --gpu 3   > zsl.test.uci.w2v.glove6b.log &
-nohup python -u zsclassifier.py --dsn uci  --embedm glove27b --mode test  --gpu 4   > zsl.test.uci.w2v.glove27b.log &
 
-nohup python -u zsclassifier.py --dsn yahoo  --embedm glove6b --mode test  --gpu 5   > zsl.test.yahoo.w2v.glove6b.log &
-nohup python -u zsclassifier.py --dsn yahoo  --embedm glove27b --mode test  --gpu 6   > zsl.test.yahoo.w2v.glove27b.log &
-
-
-
-
-nohup python -u zsclassifier.py --dsn yahoo  --embedm google --mode test  --gpu 0
+python -u zsclassifier.py --dsn yahoo --topk 32 --acc_topn 1 --embedm google --mode test  --gpu 0
 
 
 ############################################################################################################################################
