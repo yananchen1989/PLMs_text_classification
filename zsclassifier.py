@@ -115,6 +115,12 @@ model_nli = AutoModelForSequenceClassification.from_pretrained(nli_model_name, c
 tokenizer_nli = AutoTokenizer.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
 nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
+from transformers import BertTokenizer, BertForNextSentencePrediction
+import torch
+device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+bert_nsp.to(device0)
 
 # nltk.download('stopwords')
 # stopwords = stopwords.words('english')
@@ -436,19 +442,38 @@ elif args.mode == 'test':
         nli_result.pop('sequence')
         df_noexpand = pd.DataFrame(nli_result)
         df_noexpand = df_noexpand.rename(columns={'labels': 'label', 'scores':'score'})
-        df_merge = pd.merge(df_noexpand, df_expand, on=['label'], how='inner') 
-        df_merge['score_fuse'] = df_merge['score_x'].map(lambda x: math.log(x)) + df_merge['score_y'].map(lambda x: math.log(x))
+         
+        # nsp
+        infos = []
+        for l, grams in label_expands.items():
+            nsp_scores = []
+            nsp_grams = [l] + grams
+            for ng in nsp_grams:
+                sent2 = "This text is about {}.".format(ng)
+                nsp_prob12 = nsp_infer(content, sent2, bert_nsp, bert_tokenizer)
+                nsp_prob21 = nsp_infer(sent2, content, bert_nsp, bert_tokenizer)
+                nsp_prob = (nsp_prob12+nsp_prob21) / 2    
+                nsp_scores.append(nsp_prob)     
+            nsp_scores_mean = sum(nsp_scores) / len(nsp_scores)
+            infos.append((l, nsp_scores_mean))
+        df_nsp = pd.DataFrame(infos, columns=['label','score'])
 
-        pred_label = df_merge.sort_values(by=['score_fuse'], ascending=False).head(args.acc_topn)['label'].tolist()
+        df_merge = pd.merge(df_noexpand, df_expand, on=['label'], how='inner')\
+                        .rename(columns={'score_x': 'score_noexpand', 'score_y':'score_expand'}) 
+
+        df_merge_fuse = pd.merge(df_merge, df_nsp, on=['label'], how='inner')\
+                          .rename(columns={'score': 'score_nsp'})         
+
+        df_merge_fuse['score_fuse'] = df_merge_fuse['score_noexpand'].map(lambda x: math.log(x)) \
+                                    + df_merge_fuse['score_expand'].map(lambda x: math.log(x))  \
+                                    + df_merge_fuse['score_nsp'].map(lambda x: math.log(x))
+         
+        pred_label = df_merge_fuse.sort_values(by=['score_fuse'], ascending=False).head(args.acc_topn)['label'].tolist()
 
         if row['label_name'] in pred_label:
             accs_expand.append(1)
         else:
             accs_expand.append(0)
-            # print(row['label_name'])
-            # print(content)
-            # print(df_expand.sort_values(by=['score'], ascending=False))
-            # print()
 
         if ix % 64 == 0 and ix > 0:
             print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
