@@ -59,6 +59,7 @@ assert gensim.__version__ == '4.1.2'
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="yahoo", type=str)
 parser.add_argument("--topk", default=32, type=int)
+parser.add_argument("--fbs", default=64, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--manauto", default="auto", type=str)
 parser.add_argument("--mode", default="test", type=str)
@@ -414,8 +415,8 @@ elif args.mode == 'test':
             accs_noexpand.append(0)
 
         df_buff_ll = []
-        for j in range(0, len(grams_candidates), 64):
-            grams_candidates_buff = grams_candidates[j:j+64]
+        for j in range(0, len(grams_candidates), args.fbs):
+            grams_candidates_buff = grams_candidates[j:j+args.fbs]
             nli_result_buff = nli_nlp([content],  grams_candidates_buff, multi_label=True, hypothesis_template="This text is about {}.")
             nli_result_buff.pop('sequence')  
             df_buff = pd.DataFrame(nli_result_buff)     
