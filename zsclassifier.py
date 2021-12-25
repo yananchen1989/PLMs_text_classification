@@ -267,7 +267,7 @@ elif args.mode == 'test':
             gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
             gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
 
-            label_expands_auto[l] = []
+            label_expands_auto[l] = [l]
             for j in gram_scores_mean_sort:
 
                 if j[0] not in model_google.vocab.keys():

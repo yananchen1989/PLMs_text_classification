@@ -119,8 +119,12 @@ print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).
 
 
 
+embed_label = enc.infer(["Business"])
+embed_grams = enc.infer([ii[0] for ii in grams])
 
+simis = cosine_similarity(embed_label, embed_grams)
 
+df_simi = pd.DataFrame(zip([ii[0] for ii in grams], list(simis[0])), columns=['gram', 'simi'])
 
 
 
