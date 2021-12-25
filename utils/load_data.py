@@ -66,9 +66,13 @@ class load_data():
                 self.df_train = self.df_train.rename(columns={'Title': 'content'}).rename(columns={'Class Index': 'label'}) 
                 self.df_test = self.df_test.rename(columns={'Title': 'content'}).rename(columns={'Class Index': 'label'}) 
                               
-            else:
+            elif self.dataset in ['ag', 'agp']:
                 self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, 'ag'))
                 self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, 'ag'))
+
+            elif self.dataset == 'yahoo':
+                self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, 'yahoo'))
+                self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, 'yahoo'))                
             
             if self.dataset in ['ag', 'agt']:
                 world_replace = ' '.join(['Politics','War','Military','Terrorism','Election','Finance',\
