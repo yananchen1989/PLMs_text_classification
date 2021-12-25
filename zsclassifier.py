@@ -317,17 +317,12 @@ elif args.mode == 'test':
                 content = row['content']
 
                 nli_result = nli_nlp([content],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-
                 pred_label =  nli_result['labels'][0]
                 if pred_label == row['label_name']:
                     accs_noexpand.append(1)
                 else:
                     accs_noexpand.append(0)
 
-
-
-                nli_result_ = nli_nlp([content],  grams_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-                
                 df_buff_ll = []
                 for j in range(0, len(grams_candidates), 64):
                     grams_candidates_buff = grams_candidates[j:j+64]
