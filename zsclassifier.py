@@ -57,15 +57,16 @@ from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
 assert gensim.__version__ == '4.1.2'
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="yahoo", type=str)
+parser.add_argument("--dsn", default="uci", type=str)
 parser.add_argument("--topk", default=100, type=int)
+parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--manauto", default="auto", type=str)
 parser.add_argument("--mode", default="test", type=str)
 parser.add_argument("--calculate", default="sum", type=str)
 parser.add_argument("--embed_cut", default=0.15, type=float)
 parser.add_argument("--upper", default=0.85, type=float)
 parser.add_argument("--lower", default=0.15, type=float)
-parser.add_argument("--gpu", default="2", type=str)
+parser.add_argument("--gpu", default="7", type=str)
 parser.add_argument("--embedm", default="google", choices=['cmlm-base','cmlm-large','dan','google',\
                      'glove840b','glove6b', 'glove27b', 'glove42b'], type=str)
 parser.add_argument("--w2v_thres", default=0.1, type=float)
@@ -98,31 +99,21 @@ print(labels_candidates)
 
 
 from utils.encoders import *
-#if not gpus:
-enc = encoder('dan','cpu')
-#else:
-#    enc = encoder(args.embedm,'gpu')
+
+if args.mode == 'train':
+    enc = encoder('dan','cpu')
 
 
-nli_model_name = "facebook/bart-large-mnli"
+
 
 from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-if args.mode in ['test', 'train']:
-    model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-    tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-    nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
+nli_model_name = 'vicgalle/xlm-roberta-large-xnli-anli' #"facebook/bart-large-mnli"
+model_nli = AutoModelForSequenceClassification.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
+tokenizer_nli = AutoTokenizer.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
+nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
-# if not args.gram_diff:
-#     from transformers import T5Tokenizer, AutoModelWithLMHead
-#     tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-#     print(tokenizer_t5)
-#     t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
-#     gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
-
-
-# load dataset
 
 # nltk.download('stopwords')
 # stopwords = stopwords.words('english')
@@ -208,11 +199,6 @@ if args.mode == 'train':
         if df_ori['scores'].max() < 0.8:
             continue
 
-        # gen_result = gen_nlp(content + tokenizer_t5.eos_token,  do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-        #                                         repetition_penalty=1.2, num_return_sequences= args.fbs,\
-        #                                         clean_up_tokenization_spaces=True)
-        # gen_contents = [s['generated_text'].lower() for s in gen_result if s['generated_text']]
-
         embeds = enc.infer([content])
         embeds_grams = enc.infer(grams)
         simis = cosine_similarity(embeds, embeds_grams)[0]
@@ -272,7 +258,7 @@ if args.mode == 'train':
             joblib.dump(gram_embed, 'gram_embed___{}'.format(args.dsn))
 
 
-
+'''
 elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
     #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
@@ -318,8 +304,7 @@ elif args.mode == 'test':
 
         ######## evaluate ###########
         assert set(labels_candidates) == set(label_expands.keys())
-        print("labels_candidates:", labels_candidates)
-        print("label_expands:", label_expands)
+
         accs_noexpand = []
         accs_expand = []
         for ix, row in ds.df_train.reset_index().iterrows():
@@ -366,67 +351,99 @@ elif args.mode == 'test':
 
         print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
              sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
+'''
 
 
-elif args.mode == 'test_embed':
+elif args.mode == 'test':
     gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
-    embeds_labels = enc.infer(labels_candidates, batch_size=512)
+    #gram_embed = joblib.load("gram_embed___{}".format(args.dsn))
 
-    for args.topk in [128, 256, 512, 1024, 2048]:
-        for args.calculate in ['sum', 'mean', 'max', 'median']:
-            label_expands_auto = {}
-            for l, gram_scores in gram_diff.items():
-                if args.calculate == 'sum':
-                    gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
-                elif args.calculate == 'max':
-                    gram_scores_mean = {g:round(np.array(scores).max(),4) for g, scores in gram_scores.items() }
-                elif args.calculate == 'mean':
-                    gram_scores_mean = {g:round(np.array(scores).mean(),4) for g, scores in gram_scores.items() }
-                elif args.calculate == 'median':
-                    gram_scores_mean = {g:round(np.median(np.array(scores)),4) for g, scores in gram_scores.items() }
+    for args.topk in [16, 32, 50, 64]:
 
-                gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
-                print(l, '===>', gram_scores_mean_sort[:100])
-                 
-                label_expands_auto[l] = [j[0] for j in gram_scores_mean_sort[:args.topk]] 
+        label_expands_auto = {}
+        for l, gram_scores in gram_diff.items():
+            gram_scores_mean = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
+            gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
 
+            label_expands_auto[l] = [l.lower()]
 
-            label_embeddings = {}
-            for l, grams in label_expands_auto.items():
-                embeds_grams = enc.infer(grams)
-                label_embeddings[l] = embeds_grams
+            for j in gram_scores_mean_sort:
+                if j[0] not in vocab_w2v:
+                    #print(j[0])
+                    continue
 
-
-
-
-            accs_noexpand = []
-            accs_expand = []
-            for ix, row in ds.df_train.reset_index().iterrows():
-                embeds_content = enc.infer([row['content']]) 
-                simis = cosine_similarity(embeds_content, embeds_labels)
-                pred = labels_candidates[simis.argmax()]
-                if pred == row['label_name']:
-                    accs_noexpand.append(1)
+                if ' and ' in l:
+                    w0 = l.split('and')[0].strip().lower()
+                    w1 = l.split('and')[1].strip().lower()
+                    simi = max(model_w2v.similarity(w0, j[0]), model_w2v.similarity(w1, j[0]) )
                 else:
-                    accs_noexpand.append(0)
+                    simi = model_w2v.similarity(l.lower(), j[0])
 
-                l_scores = []
-                for l, grams_embedding in label_embeddings.items():
-                    simi = cosine_similarity(embeds_content, grams_embedding)
-                    l_scores.append((l, simi.mean() ))
+                if simi >= args.w2v_thres:
+                    label_expands_auto[l].append(j[0])
+                if len(label_expands_auto[l])-1 == args.topk:
+                    break 
 
-                l_scores_sorted = sorted(l_scores, key=operator.itemgetter(1), reverse=True)
+            print(l, len(label_expands_auto[l]), label_expands_auto[l][:50], '\n')
 
-                if l_scores_sorted[0][0] == row['label_name']:
-                    accs_expand.append(1)
-                else:
-                    accs_expand.append(0)
+        # assign
+        if args.manauto == 'man':
+            label_expands = map_expand_nli(base_nli, args.dsn)
+        elif args.manauto == 'auto':
+            label_expands = label_expands_auto
 
-                if ix > 0 and ix % 1024 ==0:
-                    print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
+        grams_candidates = []
+        for l, grams in label_expands.items():
+            grams_candidates.extend(grams)
+        grams_candidates = list(set(grams_candidates))
 
-            print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
-                 sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
+        ######## evaluate ###########
+        assert set(labels_candidates) == set(label_expands.keys())
 
+        accs_noexpand = []
+        accs_expand = []
+        for ix, row in ds.df_train.reset_index().iterrows():
+            torch.cuda.empty_cache()
+            content = row['content']
 
+            nli_result = nli_nlp([content],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+            pred_label =  nli_result['labels'][:args.acc_topn]
+            if row['label_name'] in pred_label:
+                accs_noexpand.append(1)
+            else:
+                accs_noexpand.append(0)
 
+            df_buff_ll = []
+            for j in range(0, len(grams_candidates), 64):
+                grams_candidates_buff = grams_candidates[j:j+64]
+                nli_result_buff = nli_nlp([content],  grams_candidates_buff, multi_label=True, hypothesis_template="This text is about {}.")
+                nli_result_buff.pop('sequence')  
+                df_buff = pd.DataFrame(nli_result_buff)     
+                df_buff_ll.append(df_buff)     
+
+            df_gram_score = pd.concat(df_buff_ll)
+            assert df_gram_score.shape[0] == len(grams_candidates)
+
+            infos = []
+            for l in label_expands.keys():
+                l_score = np.array(([df_gram_score.loc[df_gram_score['labels']==gram, 'scores'].tolist()[0] for gram in label_expands[l]]  )).mean()
+                infos.append((l, l_score))
+
+            df_expand = pd.DataFrame(infos, columns=['label','score'])
+
+            pred_label = df_expand.sort_values(by=['score'], ascending=False).head(args.acc_topn)['label'].tolist()
+
+            if row['label_name'] in pred_label:
+                accs_expand.append(1)
+            else:
+                accs_expand.append(0)
+                # print(row['label_name'])
+                # print(content)
+                # print(df_expand.sort_values(by=['score'], ascending=False))
+                # print()
+
+            if ix % 32 == 0 and ix > 0:
+                print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
+
+        print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
+             sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
