@@ -1,12 +1,3 @@
-from google.colab import drive
-import os, sys
-drive.mount('/content/gdrive')
-nb_path = '/content/gdrive'
-os.symlink('/content/drive/My Drive/Colab Notebooks', nb_path)
-sys.path.insert(0,nb_path)
-
-!pip install --target=$nb_path jdc
-
 sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Chase & Co., to cash in on the long run; withdraws $20 million in business and two senior executives earn $4 million to $5 million to avoid penalties Financial Times , Feb 15; Citi Plc Frequent speaker, former U.S. Ambassador"
 
 sent = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
@@ -31,97 +22,158 @@ sent = "Autism wave keeps growing"
 
 sent = "Virus to cause spike in pork prices"
 
-import os 
-os.environ['CUDA_VISIBLE_DEVICES'] = ""
-import pandas as pd
-import time
-from utils.flair_ners import *
 
-from transformers import pipeline
+
 # gpt neo
-from transformers import GPT2Tokenizer, GPTNeoForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
-gpt2 = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
+# from transformers import GPT2Tokenizer, GPTNeoForCausalLM
+# tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
+# gpt2 = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
 
 
+
+
+
+
+
+
+
+
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
+from utils.load_data import * 
+
+
+
+import transformers
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-
-
-
 #tokenizer_gpt2.padding_side = "left" 
 tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
 tokenizer_gpt2.sep_token = '<|sep|>'
 #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
 print(tokenizer_gpt2)
-
 gpt2.trainable = False
 gpt2.config.pad_token_id=50256
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
+for dsn in ['agp','uci','yahoo']:
+    ds = load_data(dataset=dsn, samplecnt= 32)
+    labels_candidates = ds.df_train['label_name'].unique().tolist()
+    print(labels_candidates)
+    infos = []
+    while True:
+        #prompts = ["topic {} source strait stimes title".format(label) for label in labels_candidates]
+        prompts = ["This is {} News: ".format(label) for label in labels_candidates]
+        result_gpt = gen_nlp(prompts, max_length=64, \
+                                                    do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                                    repetition_penalty=1.2, num_return_sequences= 64,\
+                                                    clean_up_tokenization_spaces=True)
 
-from utils.encoders import *
-enc = encoder('cmlm-base')
+        for label, rg in zip(labels_candidates, result_gpt):
+            contents = [ ii['generated_text'] for ii in rg if len(ii['generated_text'])>=20 ] 
 
-from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
-from utils.load_data import * 
-ds = load_data(dataset='uci', samplecnt= 64)
+            result_nlp = nli_nlp(contents, labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+            for ii in  result_nlp:
+                df_tmp = pd.DataFrame(ii)
+                df_tmp_sel = df_tmp.loc[df_tmp['scores']>=0.95]
+                if df_tmp_sel.shape[0] == 0:
+                    continue
+                if label in df_tmp_sel['labels'].tolist():
+                    infos.append((remove_str(ii['sequence']), label))
 
-
-
-enc_dic = {}
-for l in ds.df_train['label_name'].unique():
-    contents_ = ds.df_train.loc[ds.df_train['label_name']==l]['content'].values
-    embeds = enc.infer(contents_)
-    enc_dic[l] = embeds
-
-
-
-for ix, row in ds.df_train.sample(frac=1).iterrows():
-    content = row['content']
-    label = row['label_name']
-     
-    result_gpt = gen_nlp([content], max_length=128, \
-                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences=16,\
-                                        clean_up_tokenization_spaces=True)
-    contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
-
-    ners_syn = set()
-    for content_syn in contents_syn_tmp:
-        ners = get_ners(content_syn)
-        ners_syn.update(ners)
-
-    ners_syn = list(ners_syn)
-    if not ners_syn:
-        continue 
-
-    embeds_ner = enc.infer(ners_syn)
-
-    label_scores = {}
-    for label_name, embeds in enc_dic.items():
-        scores = cosine_similarity(embeds_ner, embeds).mean(axis=1)
-        label_scores[label_name] = scores
- 
-    df_nl = pd.DataFrame(label_scores)
-    ixl = {ix:label_name for ix, label_name in enumerate(list(df_nl.columns))}
-    label_scores_array= df_nl.values
-    df_nl['max_label'] = label_scores_array.argmax(axis=1)
-    df_nl['max_cosine_simi'] = label_scores_array.max(axis=1)
-    df_nl['ner'] = ners_syn
-    df_nl['max_label_name'] = df_nl['max_label'].map(lambda x: ixl[x])
-    df_nl = df_nl.loc[df_nl['max_cosine_simi']>=0.2]
-    print(label)
-    print(df_nl['max_label_name'].value_counts())
-    print(df_nl.head(50))
-    print('\n')
+        if len(infos) > 0 and len(infos) % 1000:
+            df = pd.DataFrame(infos, columns = ['content','label_name'])
+            print(df['label_name'].value_counts())
+            df.to_csv("df_gen_{}.csv".format(dsn), index=False)
+            if df['label_name'].value_counts().min() >= 512:
+                break 
 
 
 
 
 
 
+
+
+
+
+
+ds = load_data(dataset='yahoo', samplecnt= 2048)
+df_gen = pd.read_csv("df_gen_yahoo.csv")
+
+labels_candidates = ds.df_train['label_name'].unique().tolist()
+
+
+scores_nsp_ins, scores_nsp_outs = [], []
+scores_nsp_l_ins, scores_nsp_l_outs = [], []
+
+scores_nli_ins, scores_nli_outs = [], []
+scores_nli_l_ins, scores_nli_l_outs = [], []
+
+for ix, row in ds.df_train.reset_index().iterrows():
+    label_name = row['label_name']
+    label_name_ = random.sample([l for l in labels_candidates if l != label_name], 1)[0]
+
+    contents = df_gen.loc[df_gen['label_name']==label_name].sample(64)['content'].tolist()
+    contents_ = df_gen.loc[df_gen['label_name']==label_name_].sample(64)['content'].tolist()
+
+    contents_l = ["This text is about {}.".format(label_name)] * 64
+    contents_l_ = ["This text is about {}.".format(label_name_)] * 64
+
+    # nsp - content
+    scores_nsp_in = np.array([nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer)  for sent in contents]).mean()
+    scores_nsp_out = np.array([nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer)  for sent in contents_]).mean()
+
+    # nsp - content_l
+    scores_nsp_l_in = np.array([nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer)  for sent in contents_l]).mean()
+    scores_nsp_l_out = np.array([nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer)  for sent in contents_l_]).mean()
+
+    #nli - content
+    scores_nli_in = np.array([nli_infer(row['content'], sent, model_nli, tokenizer_nli) for sent in contents]).mean()
+    scores_nli_out = np.array([nli_infer(row['content'], sent, model_nli, tokenizer_nli) for sent in contents_]).mean()
+
+    #nli - content_l
+    scores_nli_l_in = np.array([nli_infer(row['content'], sent, model_nli, tokenizer_nli) for sent in contents_l]).mean()
+    scores_nli_l_out = np.array([nli_infer(row['content'], sent, model_nli, tokenizer_nli) for sent in contents_l_]).mean()
+
+    # nli
+    scores_nli_ins.append(scores_nli_in)
+    scores_nli_outs.append(scores_nli_out)
+    scores_nli_l_ins.append(scores_nli_l_in)
+    scores_nli_l_outs.append(scores_nli_l_out)
+
+    # nsp 
+    scores_nsp_ins.append(scores_nsp_in)
+    scores_nsp_outs.append(scores_nsp_out)
+    scores_nsp_l_ins.append(scores_nsp_l_in)
+    scores_nsp_l_outs.append(scores_nsp_l_out)
+
+
+    if ix > 0 and ix % 32 == 0:
+        print('nsp sent ==>', 'in:', np.array(scores_nsp_ins).mean(), 'out:', np.array(scores_nsp_outs).mean())
+        print('nsp label ==>', 'in:', np.array(scores_nsp_l_ins).mean(), 'out:', np.array(scores_nsp_l_outs).mean())
+
+        print('nli sent==>', 'in:', np.array(scores_nli_ins).mean(), 'out:', np.array(scores_nli_outs).mean())
+        print('nli label==>', 'in:', np.array(scores_nli_l_ins).mean(), 'out:', np.array(scores_nli_l_outs).mean())
+        
+        print()
+
+
+
+
+
+
+
+
+
+'''
+this is a science news:
+The world's leading research institution is on a mission to create safe, 
+renewable energy for all of us without compromising our health. 
+Since 1981, the United Nations has implemented its Goal of Emissions Neutrality and is
+
+
+'''
 
 # inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
 # outputs = model(**inputs, labels=inputs["input_ids"])

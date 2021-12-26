@@ -249,9 +249,15 @@ if args.aug == 'generate':
         tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
         nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
-        with tf.distribute.MirroredStrategy().scope():
-            bert_nsp  = get_model_nsp(256)
-    
+        # with tf.distribute.MirroredStrategy().scope():
+        #     bert_nsp  = get_model_nsp(256)
+        from transformers import BertTokenizer, BertForNextSentencePrediction
+        import torch
+        device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+        bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+        bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+        bert_nsp.to(device0)
+
     if 'clsembed' == args.filter or 'dvrl' in args.filter:
         enc = encoder('cmlm-base')
         enc_dic = {}
@@ -308,6 +314,16 @@ if args.aug == 'cbert':
 def run_dvrl_thread(dsn, ii, seed):
     os.system('python dvrl_iter.py --dsn {} --ite {} --seed {} '.format(dsn, ii, seed))
 
+def nsp_infer(sent1, sent2, bert_nsp, bert_tokenizer):
+    scores = []
+    for s1, s2 in [(sent1, sent2), (sent2, sent1)]:
+        encoding = bert_tokenizer(s1, s2, return_tensors='pt', max_length=256, truncation=True).to(device0)
+        outputs = bert_nsp(**encoding, labels=torch.LongTensor([1]).cpu().to(device0) )
+        logits = outputs.logits
+        probs = torch.nn.functional.softmax(logits, dim=-1)
+        scores.append(probs.cpu().detach().numpy()[0][0])
+    return sum(scores) / 2
+    
 def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev, mode='max'):
     assert label_name and  labels_candidates
     if not generated_text or len(generated_text) <= 10:
@@ -468,10 +484,10 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     torch.cuda.empty_cache()
     # get nsp score
-    pairs = [[row['content'], sent] for sent in contents_syn]
-    pairs_ids = get_ids(pairs, 256, tokenizer_bert )
-    preds = bert_nsp.predict(pairs_ids, batch_size=8)
-    nsp_scores = preds[:,0]
+    nsp_scores = [nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer) for sent in contents_syn]
+    # pairs_ids = get_ids(pairs, 256, tokenizer_bert )
+    # preds = bert_nsp.predict(pairs_ids, batch_size=8)
+    # nsp_scores = preds[:,0]
 
     df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
 

@@ -418,3 +418,28 @@ def get_ids(sentence_pairs,  max_length, tokenizer_bert):
         truncation=True,  # Truncate to max_length
     )
     return (encoded["input_ids"] , encoded["attention_mask"], encoded["token_type_ids"])
+
+
+def nsp_infer(sent1, sent2, bert_nsp, bert_tokenizer, device0):
+    scores = []
+    for s1, s2 in [(sent1, sent2), (sent2, sent1)]:
+        encoding = bert_tokenizer(s1, s2, return_tensors='pt', max_length=256, truncation=True).to(device0)
+        outputs = bert_nsp(**encoding, labels=torch.LongTensor([1]).cpu().to(device0) )
+        logits = outputs.logits
+        probs = torch.nn.functional.softmax(logits, dim=-1)
+        scores.append(probs.cpu().detach().numpy()[0][0])
+    return sum(scores) / 2
+
+
+def nli_infer(premise, hypothesis, model_nli, tokenizer_nli, device0):
+    # run through model pre-trained on MNLI
+    x = tokenizer_nli.encode(premise, hypothesis, return_tensors='pt', truncation_strategy='only_first')
+    logits = model_nli(x.to(device0))[0]
+    # we throw away "neutral" (dim 1) and take the probability of
+    # "entailment" (2) as the probability of the label being true 
+    entail_contradiction_logits = logits[:,[0,2]]
+    probs = entail_contradiction_logits.softmax(dim=1)
+    prob_label_is_true = probs[:,1]
+    return prob_label_is_true.cpu().detach().numpy()[0]
+
+    

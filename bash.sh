@@ -77,14 +77,13 @@ nohup python -u zsclassifier.py --dsn agp --gpu 7  --mode train  --embed_cut 0.1
 
 
 nohup python -u zsclassifier.py --dsn uci   --mode test  --w2v_thres 0.1 --gpu 0   > zsl.test.uci.w2v0.1.log &
-nohup python -u zsclassifier.py --dsn ag    --mode test  --w2v_thres 0.1 --gpu 1   > zsl.test.ag.w2v0.1.log &
+nohup python -u zsclassifier.py --dsn agp    --mode test  --w2v_thres 0.1 --gpu 1   > zsl.test.agp.w2v0.1.log &
 nohup python -u zsclassifier.py --dsn yahoo --mode test  --w2v_thres 0.1  --gpu 2   > zsl.test.yahoo.w2v0.1.log &
 
 nohup python -u zsclassifier.py --dsn uci   --mode test  --w2v_thres 0.2 --gpu 3   > zsl.test.uci.w2v0.2.log &
-nohup python -u zsclassifier.py --dsn ag    --mode test  --w2v_thres 0.2 --gpu 4   > zsl.test.ag.w2v0.2.log &
+nohup python -u zsclassifier.py --dsn agp    --mode test  --w2v_thres 0.2 --gpu 4   > zsl.test.agp.w2v0.2.log &
 nohup python -u zsclassifier.py --dsn yahoo --mode test  --w2v_thres 0.2  --gpu 5   > zsl.test.yahoo.w2v0.2.log &
 
-nohup python -u zsclassifier.py --dsn agp    --mode test  --w2v_thres 0.1 --gpu 6   > zsl.test.agp.w2v0.1.log &
 
 
 

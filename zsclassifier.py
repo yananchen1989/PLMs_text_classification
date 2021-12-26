@@ -93,11 +93,12 @@ if gpus:
     print(e)
 
 from utils.load_data import * 
+from utils.transblock import * 
 
 if args.dsn == 'nyt':
     samplecnt = 256
 else:
-    samplecnt = 2048
+    samplecnt = 1024
 ds = load_data(dataset=args.dsn, samplecnt= samplecnt)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
@@ -111,12 +112,13 @@ if args.mode == 'train':
 
 from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
 nli_model_name = 'vicgalle/xlm-roberta-large-xnli-anli' #"facebook/bart-large-mnli"
 model_nli = AutoModelForSequenceClassification.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
 tokenizer_nli = AutoTokenizer.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
 nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
+
+# nsp model
 from transformers import BertTokenizer, BertForNextSentencePrediction
 import torch
 device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
@@ -124,13 +126,9 @@ bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='.
 bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
 bert_nsp.to(device0)
 
-def nsp_infer(sent1, sent2, bert_nsp, bert_tokenizer):
-    encoding = bert_tokenizer(sent1, sent2, return_tensors='pt', max_length=256, truncation=True).to(device0)
-    outputs = bert_nsp(**encoding, labels=torch.LongTensor([1]).cpu().to(device0) )
-    logits = outputs.logits
-    probs = torch.nn.functional.softmax(logits, dim=-1)
-    return probs.cpu().detach().numpy()[0][0]
-    
+
+
+
 # nltk.download('stopwords')
 # stopwords = stopwords.words('english')
 stopwords = joblib.load("./utils/stopwords")
@@ -416,7 +414,8 @@ elif args.mode == 'test':
     ######## evaluate ###########
     assert set(labels_candidates) == set(label_expands.keys())
 
-    for args.w1, args.w2 in [(0, 1), (1, 0), (0.5, 0.5), (0.4, 0.4), (0.3, 0.3), (0.2, 0.2), (0.1, 0.1)]:
+    for args.w1, args.w2 in [ (0.5, 0.5), (0.6, 0.4), (0.7, 0.3), (0.8, 0.2), (0.9, 0.1), (1, 0), \
+                                (0, 1),   (0.4, 0.6), (0.3, 0.7), (0.2, 0.8), (0.1, 0.9)]:
         accs_noexpand = []
         accs_expand = []
         for ix, row in ds.df_train.reset_index().iterrows():
@@ -454,38 +453,36 @@ elif args.mode == 'test':
             df_noexpand = df_noexpand.rename(columns={'labels': 'label', 'scores':'score'})
              
             # nsp
-            infos = []
-            for l, grams in label_expands.items():
-                nsp_scores = []
-                nsp_grams = [l] + grams
-                for ng in nsp_grams:
-                    sent2 = "This text is about {}.".format(ng)
-                    nsp_prob12 = nsp_infer(content, sent2, bert_nsp, bert_tokenizer)
-                    nsp_prob21 = nsp_infer(sent2, content, bert_nsp, bert_tokenizer)
-                    nsp_prob = (nsp_prob12+nsp_prob21) / 2    
-                    nsp_scores.append(nsp_prob)     
-                nsp_scores_mean = sum(nsp_scores) / len(nsp_scores)
-                infos.append((l, nsp_scores_mean))
-            df_nsp = pd.DataFrame(infos, columns=['label','score'])
+            # infos = []
+            # for l, grams in label_expands.items():
+            #     nsp_scores = []
+            #     nsp_grams = [l] + grams
+            #     for ng in nsp_grams:
+            #         sent2 = "This text is about {}.".format(ng)
+            #         nsp_prob = nsp_infer(content, sent2, bert_nsp, bert_tokenizer) 
+            #         nsp_scores.append(nsp_prob)     
+            #     nsp_scores_mean = sum(nsp_scores) / len(nsp_scores)
+            #     infos.append((l, nsp_scores_mean))
+            # df_nsp = pd.DataFrame(infos, columns=['label','score'])
 
             df_merge = pd.merge(df_noexpand, df_expand, on=['label'], how='inner')\
                             .rename(columns={'score_x': 'score_noexpand', 'score_y':'score_expand'}) 
 
-            df_merge_fuse = pd.merge(df_merge, df_nsp, on=['label'], how='inner')\
-                              .rename(columns={'score': 'score_nsp'})         
+            #df_merge_fuse = pd.merge(df_merge, df_nsp, on=['label'], how='inner')\
+            #                  .rename(columns={'score': 'score_nsp'})         
 
-            df_merge_fuse['score_fuse'] = args.w1 * df_merge_fuse['score_noexpand'].map(lambda x: math.log(x)) \
-                                        + args.w2 * df_merge_fuse['score_expand'].map(lambda x: math.log(x))  \
-                                        + (1-args.w1-args.w2) * df_merge_fuse['score_nsp'].map(lambda x: math.log(x))
+            df_merge['score_fuse'] = args.w1 * df_merge['score_noexpand'].map(lambda x: math.log(x)) \
+                                        + args.w2 * df_merge['score_expand'].map(lambda x: math.log(x))  #\
+                                        #+ (1-args.w1-args.w2) * df_merge_fuse['score_nsp'].map(lambda x: math.log(x))
 
-            pred_label = df_merge_fuse.sort_values(by=['score_fuse'], ascending=False).head(args.acc_topn)['label'].tolist()
+            pred_label = df_merge.sort_values(by=['score_fuse'], ascending=False).head(args.acc_topn)['label'].tolist()
 
             if row['label_name'] in pred_label:
                 accs_expand.append(1)
             else:
                 accs_expand.append(0)
 
-            if ix % 128 == 0 and ix > 0:
+            if ix % 1024 == 0 and ix > 0:
                 print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
 
         print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]),
