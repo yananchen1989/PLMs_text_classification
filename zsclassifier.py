@@ -119,12 +119,12 @@ nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokeni
 
 
 # nsp model
-from transformers import BertTokenizer, BertForNextSentencePrediction
-import torch
-device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
-bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
-bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
-bert_nsp.to(device0)
+# from transformers import BertTokenizer, BertForNextSentencePrediction
+# import torch
+# device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+# bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+# bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+# bert_nsp.to(device0)
 
 
 
