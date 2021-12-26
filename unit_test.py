@@ -160,9 +160,26 @@ for ix, row in ds.df_train.reset_index().iterrows():
 
 
 
+pairs = [[row['content'], "this text is about {}".format(l)] for l in labels_candidates]
 
 
 
+nsp_logits = nsp_infer_pairs(pairs, bert_nsp, bert_tokenizer)
+
+
+
+'''
+array([[2.0087222e-02, 9.7991276e-01],
+       [1.1240494e-03, 9.9887592e-01],
+       [1.8545908e-05, 9.9998140e-01],
+       [1.6868417e-01, 8.3131576e-01],
+       [2.7328890e-02, 9.7267103e-01],
+       [4.3195905e-05, 9.9995685e-01],
+       [9.9142402e-01, 8.5760094e-03],
+       [5.5881192e-05, 9.9994409e-01],
+       [1.2956167e-03, 9.9870431e-01],
+       [8.7379594e-05, 9.9991262e-01]]
+'''
 
 
 

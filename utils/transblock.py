@@ -419,8 +419,9 @@ def get_ids(sentence_pairs,  max_length, tokenizer_bert):
     )
     return (encoded["input_ids"] , encoded["attention_mask"], encoded["token_type_ids"])
 
-
-def nsp_infer(sent1, sent2, bert_nsp, bert_tokenizer, device0):
+import torch
+def nsp_infer(sent1, sent2, bert_nsp, bert_tokenizer):
+    device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
     scores = []
     for s1, s2 in [(sent1, sent2), (sent2, sent1)]:
         encoding = bert_tokenizer(s1, s2, return_tensors='pt', max_length=256, truncation=True).to(device0)
@@ -430,8 +431,28 @@ def nsp_infer(sent1, sent2, bert_nsp, bert_tokenizer, device0):
         scores.append(probs.cpu().detach().numpy()[0][0])
     return sum(scores) / 2
 
+def nsp_infer_pairs(pairs, bert_nsp, bert_tokenizer):
+    device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+    pairs_ids = bert_tokenizer.batch_encode_plus(
+            pairs,
+            add_special_tokens=True,
+            max_length= 512,
+            return_attention_mask=True,
+            return_token_type_ids=True,
+            padding='max_length',
+            return_tensors="pt",
+            truncation=True,  # Truncate to max_length
+        ).to(device0)
 
-def nli_infer(premise, hypothesis, model_nli, tokenizer_nli, device0):
+    outputs = bert_nsp(**pairs_ids, labels=torch.LongTensor([1]*pairs_ids['input_ids'].shape[0]).cpu().to(device0) )
+
+    probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
+    return probs.cpu().detach().numpy()
+
+
+
+def nli_infer(premise, hypothesis, model_nli, tokenizer_nli):
+    device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
     # run through model pre-trained on MNLI
     x = tokenizer_nli.encode(premise, hypothesis, return_tensors='pt', truncation_strategy='only_first')
     logits = model_nli(x.to(device0))[0]
