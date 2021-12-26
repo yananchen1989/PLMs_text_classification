@@ -436,7 +436,7 @@ def nsp_infer_pairs(pairs, bert_nsp, bert_tokenizer):
     pairs_ids = bert_tokenizer.batch_encode_plus(
             pairs,
             add_special_tokens=True,
-            max_length= 512,
+            max_length= 256,
             return_attention_mask=True,
             return_token_type_ids=True,
             padding='max_length',
@@ -446,8 +446,23 @@ def nsp_infer_pairs(pairs, bert_nsp, bert_tokenizer):
 
     outputs = bert_nsp(**pairs_ids, labels=torch.LongTensor([1]*pairs_ids['input_ids'].shape[0]).cpu().to(device0) )
 
+    pairs_ = [[ii[1], ii[0]] for ii in pairs]
+    pairs_ids_ = bert_tokenizer.batch_encode_plus(
+            pairs_,
+            add_special_tokens=True,
+            max_length= 256,
+            return_attention_mask=True,
+            return_token_type_ids=True,
+            padding='max_length',
+            return_tensors="pt",
+            truncation=True,  # Truncate to max_length
+        ).to(device0)
+
+    outputs_ = bert_nsp(**pairs_ids_, labels=torch.LongTensor([1]*pairs_ids_['input_ids'].shape[0]).cpu().to(device0) )
+
     probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
-    return probs.cpu().detach().numpy()
+    probs_ = torch.nn.functional.softmax(outputs_.logits, dim=-1)
+    return probs.cpu().detach().numpy() + probs_.cpu().detach().numpy()
 
 
 

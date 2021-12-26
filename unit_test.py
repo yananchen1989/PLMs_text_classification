@@ -38,8 +38,7 @@ sent = "Virus to cause spike in pork prices"
 
 
 
-from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
-from utils.load_data import * 
+
 
 
 
@@ -96,7 +95,8 @@ for dsn in ['agp','uci','yahoo']:
 
 
 
-
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
+from utils.load_data import * 
 
 ds = load_data(dataset='yahoo', samplecnt= 2048)
 df_gen = pd.read_csv("df_gen_yahoo.csv")
@@ -104,83 +104,47 @@ df_gen = pd.read_csv("df_gen_yahoo.csv")
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 
 
-scores_nsp_ins, scores_nsp_outs = [], []
-scores_nsp_l_ins, scores_nsp_l_outs = [], []
 
-scores_nli_ins, scores_nli_outs = [], []
-scores_nli_l_ins, scores_nli_l_outs = [], []
 
+from sklearn.metrics import accuracy_score
+
+infos = []
 for ix, row in ds.df_train.reset_index().iterrows():
-    label_name = row['label_name']
-    label_name_ = random.sample([l for l in labels_candidates if l != label_name], 1)[0]
 
-    contents = df_gen.loc[df_gen['label_name']==label_name].sample(64)['content'].tolist()
-    contents_ = df_gen.loc[df_gen['label_name']==label_name_].sample(64)['content'].tolist()
+    pairs0 = [[row['content'], "this text is about {}".format(l)] for l in labels_candidates]
+    pairs1 = [["this text is about {}".format(l) ,row['content']] for l in labels_candidates]
 
-    contents_l = ["This text is about {}.".format(label_name)] * 64
-    contents_l_ = ["This text is about {}.".format(label_name_)] * 64
+    nsp_logits0 = nsp_infer_pairs(pairs0, bert_nsp, bert_tokenizer)
+    preds0 = nsp_logits0[:,0]
 
-    # nsp - content
-    scores_nsp_in = np.array([nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer)  for sent in contents]).mean()
-    scores_nsp_out = np.array([nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer)  for sent in contents_]).mean()
+    nsp_logits1 = nsp_infer_pairs(pairs1, bert_nsp, bert_tokenizer)
+    preds1 = nsp_logits1[:,0]
 
-    # nsp - content_l
-    scores_nsp_l_in = np.array([nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer)  for sent in contents_l]).mean()
-    scores_nsp_l_out = np.array([nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer)  for sent in contents_l_]).mean()
+    preds = preds0 + preds1
+    pred_ix = preds.argmax()
+    pred_label_name = labels_candidates[pred_ix]
 
-    #nli - content
-    scores_nli_in = np.array([nli_infer(row['content'], sent, model_nli, tokenizer_nli) for sent in contents]).mean()
-    scores_nli_out = np.array([nli_infer(row['content'], sent, model_nli, tokenizer_nli) for sent in contents_]).mean()
+    pred_label_name0 = labels_candidates[preds0.argmax()]
+    pred_label_name1 = labels_candidates[preds1.argmax()]
 
-    #nli - content_l
-    scores_nli_l_in = np.array([nli_infer(row['content'], sent, model_nli, tokenizer_nli) for sent in contents_l]).mean()
-    scores_nli_l_out = np.array([nli_infer(row['content'], sent, model_nli, tokenizer_nli) for sent in contents_l_]).mean()
+    #scores = [nsp_infer(row['content'], "this text is about {}".format(l), bert_nsp, bert_tokenizer ) for l in labels_candidates]
+    #pred_label_name_ = labels_candidates[np.array(scores).argmax()]
 
-    # nli
-    scores_nli_ins.append(scores_nli_in)
-    scores_nli_outs.append(scores_nli_out)
-    scores_nli_l_ins.append(scores_nli_l_in)
-    scores_nli_l_outs.append(scores_nli_l_out)
-
-    # nsp 
-    scores_nsp_ins.append(scores_nsp_in)
-    scores_nsp_outs.append(scores_nsp_out)
-    scores_nsp_l_ins.append(scores_nsp_l_in)
-    scores_nsp_l_outs.append(scores_nsp_l_out)
+    infos.append((pred_label_name, pred_label_name0, pred_label_name1, row['label_name']))
 
 
-    if ix > 0 and ix % 32 == 0:
-        print('nsp sent ==>', 'in:', np.array(scores_nsp_ins).mean(), 'out:', np.array(scores_nsp_outs).mean())
-        print('nsp label ==>', 'in:', np.array(scores_nsp_l_ins).mean(), 'out:', np.array(scores_nsp_l_outs).mean())
+    if len(infos) % 100 ==0:
 
-        print('nli sent==>', 'in:', np.array(scores_nli_ins).mean(), 'out:', np.array(scores_nli_outs).mean())
-        print('nli label==>', 'in:', np.array(scores_nli_l_ins).mean(), 'out:', np.array(scores_nli_l_outs).mean())
-        
-        print()
+        df = pd.DataFrame(infos, columns=['p','p0','p1','p_','l']) 
 
-
-
-pairs = [[row['content'], "this text is about {}".format(l)] for l in labels_candidates]
+        acc_p = accuracy_score(df['l'].values, df['p'].values)
+        acc_p0 = accuracy_score(df['l'].values, df['p0'].values)
+        acc_p1 = accuracy_score(df['l'].values, df['p1'].values)
+        acc_p_ = accuracy_score(df['l'].values, df['p_'].values)
+        print(acc_p, acc_p0, acc_p1, '===', acc_p_)
 
 
-
-nsp_logits = nsp_infer_pairs(pairs, bert_nsp, bert_tokenizer)
-
-
-
-'''
-array([[2.0087222e-02, 9.7991276e-01],
-       [1.1240494e-03, 9.9887592e-01],
-       [1.8545908e-05, 9.9998140e-01],
-       [1.6868417e-01, 8.3131576e-01],
-       [2.7328890e-02, 9.7267103e-01],
-       [4.3195905e-05, 9.9995685e-01],
-       [9.9142402e-01, 8.5760094e-03],
-       [5.5881192e-05, 9.9994409e-01],
-       [1.2956167e-03, 9.9870431e-01],
-       [8.7379594e-05, 9.9991262e-01]]
-'''
-
+0.47846153846153844 0.46615384615384614 0.49 === 0.47846153846153844
 
 
 '''
