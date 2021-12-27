@@ -35,11 +35,11 @@ sent = "Virus to cause spike in pork prices"
 
 
 
-
-
-
-
-
+import os 
+os.environ['CUDA_VISIBLE_DEVICES']  = "6"
+from sklearn.metrics import accuracy_score
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
+from utils.load_data import * 
 
 
 import transformers
@@ -53,9 +53,19 @@ tokenizer_gpt2.sep_token = '<|sep|>'
 print(tokenizer_gpt2)
 gpt2.trainable = False
 gpt2.config.pad_token_id=50256
-gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+gen_nlp  = transformers.pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-for dsn in ['agp','uci','yahoo']:
+
+from transformers import pipeline
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+nli_model_name = 'vicgalle/xlm-roberta-large-xnli-anli' #"facebook/bart-large-mnli"
+model_nli = AutoModelForSequenceClassification.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
+tokenizer_nli = AutoTokenizer.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
+nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=0)
+
+
+
+for dsn in ['agp','ag', 'nyt']:
     ds = load_data(dataset=dsn, samplecnt= 32)
     labels_candidates = ds.df_train['label_name'].unique().tolist()
     print(labels_candidates)
@@ -95,56 +105,11 @@ for dsn in ['agp','uci','yahoo']:
 
 
 
-from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
-from utils.load_data import * 
-
-ds = load_data(dataset='yahoo', samplecnt= 2048)
-df_gen = pd.read_csv("df_gen_yahoo.csv")
-
-labels_candidates = ds.df_train['label_name'].unique().tolist()
 
 
 
 
-from sklearn.metrics import accuracy_score
 
-infos = []
-for ix, row in ds.df_train.reset_index().iterrows():
-
-    pairs0 = [[row['content'], "this text is about {}".format(l)] for l in labels_candidates]
-    pairs1 = [["this text is about {}".format(l) ,row['content']] for l in labels_candidates]
-
-    nsp_logits0 = nsp_infer_pairs(pairs0, bert_nsp, bert_tokenizer)
-    preds0 = nsp_logits0[:,0]
-
-    nsp_logits1 = nsp_infer_pairs(pairs1, bert_nsp, bert_tokenizer)
-    preds1 = nsp_logits1[:,0]
-
-    preds = preds0 + preds1
-    pred_ix = preds.argmax()
-    pred_label_name = labels_candidates[pred_ix]
-
-    pred_label_name0 = labels_candidates[preds0.argmax()]
-    pred_label_name1 = labels_candidates[preds1.argmax()]
-
-    #scores = [nsp_infer(row['content'], "this text is about {}".format(l), bert_nsp, bert_tokenizer ) for l in labels_candidates]
-    #pred_label_name_ = labels_candidates[np.array(scores).argmax()]
-
-    infos.append((pred_label_name, pred_label_name0, pred_label_name1, row['label_name']))
-
-
-    if len(infos) % 100 ==0:
-
-        df = pd.DataFrame(infos, columns=['p','p0','p1','p_','l']) 
-
-        acc_p = accuracy_score(df['l'].values, df['p'].values)
-        acc_p0 = accuracy_score(df['l'].values, df['p0'].values)
-        acc_p1 = accuracy_score(df['l'].values, df['p1'].values)
-        acc_p_ = accuracy_score(df['l'].values, df['p_'].values)
-        print(acc_p, acc_p0, acc_p1, '===', acc_p_)
-
-
-0.47846153846153844 0.46615384615384614 0.49 === 0.47846153846153844
 
 
 '''

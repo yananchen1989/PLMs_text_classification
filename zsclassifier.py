@@ -164,6 +164,13 @@ elif args.embedm == 'glove27b':
 elif args.embedm == 'glove42b':
     model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/glove.42B.300d.word2vec.txt', binary=False)
 
+'''
+wget http://nlp.stanford.edu/data/glove.6B.zip
+wget http://nlp.stanford.edu/data/glove.42B.300d.zip http://nlp.stanford.edu/data/glove.840B.300d.zip http://nlp.stanford.edu/data/glove.twitter.27B.zip
+wget http://nlp.stanford.edu/data/glove.840B.300d.zip http://nlp.stanford.edu/data/glove.twitter.27B.zip
+python -m gensim.scripts.glove2word2vec -i ./resource/glove.6B.300d.txt -o ./resource/glove.6B.300d.word2vec.txt
+
+'''
 vocab_w2v = set(list(model_w2v.index_to_key))
 
 

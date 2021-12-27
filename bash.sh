@@ -63,12 +63,6 @@ done
 
 
 
-wget http://nlp.stanford.edu/data/glove.6B.zip
-wget http://nlp.stanford.edu/data/glove.42B.300d.zip http://nlp.stanford.edu/data/glove.840B.300d.zip http://nlp.stanford.edu/data/glove.twitter.27B.zip
-wget http://nlp.stanford.edu/data/glove.840B.300d.zip http://nlp.stanford.edu/data/glove.twitter.27B.zip
-
-
-python -m gensim.scripts.glove2word2vec -i ./resource/glove.6B.300d.txt -o ./resource/glove.6B.300d.word2vec.txt
 
 
 nohup python -u zsclassifier.py --dsn agp --gpu 7  --mode train  --embed_cut 0.15  --upper 0.85 --lower 0.15 \
@@ -86,6 +80,15 @@ nohup python -u zsclassifier.py --dsn yahoo --mode test  --w2v_thres 0.2  --gpu 
 
 
 
+nohup python -u zsclassifier_fly.py --dsn yahoo --gpu 7 --fbs 64 > zsl.fly.yahoo.64.log & 
+nohup python -u zsclassifier_fly.py --dsn uci --gpu 3 --fbs 64 > zsl.fly.uci.64.log & 
+nohup python -u zsclassifier_fly.py --dsn agp --gpu 0 --fbs 64 > zsl.fly.agp.64.log & 
+nohup python -u zsclassifier_fly.py --dsn ag --gpu 6 --fbs 64 > zsl.fly.ag.64.log & 
+
+nohup python -u zsclassifier_fly.py --dsn yahoo --gpu 1 --fbs 256 > zsl.fly.yahoo.256.log & 
+nohup python -u zsclassifier_fly.py --dsn uci --gpu 2 --fbs 256 > zsl.fly.uci.256.log & 
+nohup python -u zsclassifier_fly.py --dsn agp --gpu 4 --fbs 256 > zsl.fly.agp.256.log & 
+nohup python -u zsclassifier_fly.py --dsn ag --gpu 5 --fbs 256 > zsl.fly.ag.256.log &
 
 
 
