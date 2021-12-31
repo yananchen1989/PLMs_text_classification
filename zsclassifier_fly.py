@@ -18,6 +18,7 @@ parser.add_argument("--w1", default=0.5, type=float)
 parser.add_argument("--w2", default=0.5, type=float)
 parser.add_argument("--gpu", default="7", type=str)
 parser.add_argument("--para", default=1, type=int)
+parser.add_argument("--para_cnt", default=8, type=int)
 
 args = parser.parse_args()
 
@@ -65,7 +66,6 @@ device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cp
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
 bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
 bert_nsp.to(device0)
-bert_nsp.to("cpu")
 
 if args.para:
     from transformers import T5Tokenizer, AutoModelWithLMHead
@@ -78,7 +78,7 @@ def para_t5(content):
     dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128, 'imdb':128}
     result_gpt = gen_nlp_t5([remove_str(content)], max_length=dsn_maxlen[args.dsn], \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= 8,\
+                                        repetition_penalty=1.2, num_return_sequences= args.para_cnt,\
                                         clean_up_tokenization_spaces=True)
     ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] + [remove_str(content)]
     return ori_gen_contents

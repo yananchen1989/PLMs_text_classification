@@ -81,8 +81,11 @@ nohup python -u zsclassifier_fly.py --dsn nyt --gpu 4 --fbs 256 > zsl.fly.nyt.25
 
 
 
-nohup python -u zsclassifier_fly.py --dsn nyt --gpu 6 --fbs 1024 > zsl.fly.nyt.1024.log & 
-nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 1024 > zsl.fly.yahoo.1024.log & 
+nohup python -u zsclassifier_fly.py --dsn uci --gpu 5 --fbs 64 --para 1 > zsl.fly.t5.uci.64.log & 
+nohup python -u zsclassifier_fly.py --dsn ag  --gpu 6 --fbs 64 --para 1 > zsl.fly.t5.ag.64.log & 
+nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl.fly.t5.yahoo.64.log & 
+
+
 
 
 ############################################################################################################################################
