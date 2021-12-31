@@ -468,18 +468,18 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     else:
         fbs = 16
     for ix in range(0, len(contents_syn), fbs):
-        contents_syn_ix = contents_syn[ix:ix+fbs]
-        nli_result = nli_nlp(contents_syn_ix,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        nli_result = nli_nlp(contents_syn[ix:ix+fbs],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
         nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
         nli_scores.extend(nli_scores_ix)
 
     torch.cuda.empty_cache()
     # get nsp score
-    nsp_scores = [nsp_infer(row['content'], sent, bert_nsp, bert_tokenizer) for sent in contents_syn]
-    # pairs_ids = get_ids(pairs, 256, tokenizer_bert )
-    # preds = bert_nsp.predict(pairs_ids, batch_size=8)
-    # nsp_scores = preds[:,0]
-
+    pairs = [[remove_str(row['content']), sent] for sent in contents_syn ]
+    nsp_scores = []
+    for j in range(0, len(pairs), 8):
+        score_nsp = nsp_infer_pairs(pairs[j:j+8], bert_nsp, bert_tokenizer)[:,0]
+        nsp_scores.extend(list(score_nsp)) 
+    
     df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
 
     df_tmp['score'] = df_tmp['nli_score'].map(lambda x: math.log(x)) + df_tmp['nsp_score'].map(lambda x: math.log(x))
@@ -596,7 +596,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         for ix, row in ds.df_train.reset_index().iterrows():
             torch.cuda.empty_cache()
             print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
-
+             
             t0 = time.time()
             if args.filter == 'nlinsp':
                 result_syn = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)

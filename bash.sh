@@ -65,8 +65,10 @@ done
 
 
 
-nohup python -u zsclassifier.py --dsn agp --gpu 7  --mode train  --embed_cut 0.15  --upper 0.85 --lower 0.15 \
-            > ./log_zsl/zsl.gen.agp.15.85.15.log & 
+
+
+
+
 
 
 

@@ -29,12 +29,6 @@ sent = "Virus to cause spike in pork prices"
 # tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
 # gpt2 = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
 
-
-
-
-
-
-
 import os 
 os.environ['CUDA_VISIBLE_DEVICES']  = "7"
 from utils.load_data import * 
@@ -111,55 +105,27 @@ for dsn in ['uci','yahoo','ag', 'nyt']:
 
 
 
-'''
-this is a science news:
-The world's leading research institution is on a mission to create safe, 
-renewable energy for all of us without compromising our health. 
-Since 1981, the United Nations has implemented its Goal of Emissions Neutrality and is
 
 
-'''
-
-# inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
-# outputs = model(**inputs, labels=inputs["input_ids"])
-# loss = outputs.loss
-# logits = outputs.logits
-
-import tensorflow as tf 
-gpus = tf.config.list_physical_devices('GPU')
-print('======>',gpus,'<=======')
-
-############## whole token generation ############  
-
-from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-try:
-    tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-except:
-    tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=False)
-
-#tokenizer_gpt2.padding_side = "left" 
-tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-tokenizer_gpt2.sep_token = '<|sep|>'
-#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
-print(tokenizer_gpt2)
-try:
-    gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-except:
-    gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=False)
-#gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_ft_ep')
-from transformers import pipeline
-gpt2.trainable = False
-gpt2.config.pad_token_id = 50256
-gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
 
 
-sent = '''
-Wizards welcome Bobcats to NBA Basketball returned to Charlotte as the Bobcats opened their first season Thursday night with a 103 - 96 loss to the Wizards. Replacing the Hornets after they moved to New Orleans
-'''
-result_gpt = gen_nlp([sent], max_length=128, \
-                                            do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                            repetition_penalty=1.2, num_return_sequences= 36,\
-                                            clean_up_tokenization_spaces=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
