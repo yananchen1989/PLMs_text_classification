@@ -70,26 +70,19 @@ nohup python -u zsclassifier.py --dsn agp --gpu 7  --mode train  --embed_cut 0.1
 
 
 
-nohup python -u zsclassifier.py --dsn uci   --mode test  --w2v_thres 0.1 --gpu 0   > zsl.test.uci.w2v0.1.log &
-nohup python -u zsclassifier.py --dsn agp    --mode test  --w2v_thres 0.1 --gpu 1   > zsl.test.agp.w2v0.1.log &
-nohup python -u zsclassifier.py --dsn yahoo --mode test  --w2v_thres 0.1  --gpu 2   > zsl.test.yahoo.w2v0.1.log &
-
-nohup python -u zsclassifier.py --dsn uci   --mode test  --w2v_thres 0.2 --gpu 3   > zsl.test.uci.w2v0.2.log &
-nohup python -u zsclassifier.py --dsn agp    --mode test  --w2v_thres 0.2 --gpu 4   > zsl.test.agp.w2v0.2.log &
-nohup python -u zsclassifier.py --dsn yahoo --mode test  --w2v_thres 0.2  --gpu 5   > zsl.test.yahoo.w2v0.2.log &
 
 
+nohup python -u zsclassifier_fly.py --dsn yahoo --gpu 0 --fbs 512 > zsl.fly.yahoo.512.log & 
+nohup python -u zsclassifier_fly.py --dsn uci --gpu 1 --fbs 512 > zsl.fly.uci.512.log & 
+nohup python -u zsclassifier_fly.py --dsn nyt --gpu 2 --fbs 512 > zsl.fly.nyt.512.log & 
+nohup python -u zsclassifier_fly.py --dsn ag --gpu 3 --fbs 512 > zsl.fly.ag.512.log & 
 
-nohup python -u zsclassifier_fly.py --dsn yahoo --gpu 7 --fbs 64 > zsl.fly.yahoo.64.log & 
-nohup python -u zsclassifier_fly.py --dsn uci --gpu 3 --fbs 64 > zsl.fly.uci.64.log & 
-nohup python -u zsclassifier_fly.py --dsn agp --gpu 0 --fbs 64 > zsl.fly.agp.64.log & 
-nohup python -u zsclassifier_fly.py --dsn ag --gpu 6 --fbs 64 > zsl.fly.ag.64.log & 
+nohup python -u zsclassifier_fly.py --dsn nyt --gpu 4 --fbs 256 > zsl.fly.nyt.256.log & 
 
-nohup python -u zsclassifier_fly.py --dsn yahoo --gpu 1 --fbs 256 > zsl.fly.yahoo.256.log & 
-nohup python -u zsclassifier_fly.py --dsn uci --gpu 2 --fbs 256 > zsl.fly.uci.256.log & 
-nohup python -u zsclassifier_fly.py --dsn agp --gpu 4 --fbs 256 > zsl.fly.agp.256.log & 
-nohup python -u zsclassifier_fly.py --dsn ag --gpu 5 --fbs 256 > zsl.fly.ag.256.log &
 
+
+nohup python -u zsclassifier_fly.py --dsn nyt --gpu 6 --fbs 1024 > zsl.fly.nyt.1024.log & 
+nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 1024 > zsl.fly.yahoo.1024.log & 
 
 
 ############################################################################################################################################

@@ -314,16 +314,7 @@ if args.aug == 'cbert':
 def run_dvrl_thread(dsn, ii, seed):
     os.system('python dvrl_iter.py --dsn {} --ite {} --seed {} '.format(dsn, ii, seed))
 
-def nsp_infer(sent1, sent2, bert_nsp, bert_tokenizer):
-    scores = []
-    for s1, s2 in [(sent1, sent2), (sent2, sent1)]:
-        encoding = bert_tokenizer(s1, s2, return_tensors='pt', max_length=256, truncation=True).to(device0)
-        outputs = bert_nsp(**encoding, labels=torch.LongTensor([1]).cpu().to(device0) )
-        logits = outputs.logits
-        probs = torch.nn.functional.softmax(logits, dim=-1)
-        scores.append(probs.cpu().detach().numpy()[0][0])
-    return sum(scores) / 2
-    
+
 def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev, mode='max'):
     assert label_name and  labels_candidates
     if not generated_text or len(generated_text) <= 10:

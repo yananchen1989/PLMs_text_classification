@@ -36,11 +36,8 @@ sent = "Virus to cause spike in pork prices"
 
 
 import os 
-os.environ['CUDA_VISIBLE_DEVICES']  = "6"
-from sklearn.metrics import accuracy_score
-from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
+os.environ['CUDA_VISIBLE_DEVICES']  = "7"
 from utils.load_data import * 
-
 
 import transformers
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
@@ -55,6 +52,13 @@ gpt2.trainable = False
 gpt2.config.pad_token_id=50256
 gen_nlp  = transformers.pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
+# from transformers import CTRLTokenizer, TFCTRLLMHeadModel
+# tokenizer_ctrl = CTRLTokenizer.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
+# model_ctrl = TFCTRLLMHeadModel.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
+# print(tokenizer_ctrl)
+# control_codes = tokenizer_ctrl.control_codes.keys()
+# gen_nlp  = transformers.pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=0,  return_full_text=False)
+
 
 from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -65,45 +69,40 @@ nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokeni
 
 
 
-for dsn in ['agp','ag', 'nyt']:
+for dsn in ['uci','yahoo','ag', 'nyt']:
     ds = load_data(dataset=dsn, samplecnt= 32)
     labels_candidates = ds.df_train['label_name'].unique().tolist()
     print(labels_candidates)
     infos = []
     while True:
         #prompts = ["topic {} source strait stimes title".format(label) for label in labels_candidates]
-        prompts = ["This is {} News: ".format(label) for label in labels_candidates]
-        result_gpt = gen_nlp(prompts, max_length=64, \
+        prompts = ["This is {} News: ".format(label) for label in labels_candidates] # gpt
+        #prompts = ["Links In {} : ".format(label) for label in labels_candidates] # ctrl
+        result_gpt = gen_nlp(prompts, max_length=128, \
                                                     do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                                    repetition_penalty=1.2, num_return_sequences= 64,\
+                                                    repetition_penalty=1.2, num_return_sequences= 16,\
                                                     clean_up_tokenization_spaces=True)
 
         for label, rg in zip(labels_candidates, result_gpt):
             contents = [ ii['generated_text'] for ii in rg if len(ii['generated_text'])>=20 ] 
+            for sent in contents:
+                infos.append((remove_str(sent) , label ))
 
-            result_nlp = nli_nlp(contents, labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-            for ii in  result_nlp:
-                df_tmp = pd.DataFrame(ii)
-                df_tmp_sel = df_tmp.loc[df_tmp['scores']>=0.95]
-                if df_tmp_sel.shape[0] == 0:
-                    continue
-                if label in df_tmp_sel['labels'].tolist():
-                    infos.append((remove_str(ii['sequence']), label))
+            # result_nlp = nli_nlp(contents, labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+            # for ii in  result_nlp:
+            #     df_tmp = pd.DataFrame(ii)
+            #     df_tmp_sel = df_tmp.loc[df_tmp['scores']>=0.9]
+            #     if df_tmp_sel.shape[0] == 0:
+            #         continue
+            #     if label in df_tmp_sel['labels'].tolist():
+            #         infos.append((remove_str(ii['sequence']), label))
 
         if len(infos) > 0 and len(infos) % 1000:
             df = pd.DataFrame(infos, columns = ['content','label_name'])
             print(df['label_name'].value_counts())
-            df.to_csv("df_gen_{}.csv".format(dsn), index=False)
-            if df['label_name'].value_counts().min() >= 512:
+            df.to_csv("df_gen_ctrl_{}.csv".format(dsn), index=False)
+            if df['label_name'].value_counts().min() >= 2048:
                 break 
-
-
-
-
-
-
-
-
 
 
 
