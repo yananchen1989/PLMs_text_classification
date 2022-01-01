@@ -1,5 +1,3 @@
-max_aug_times=1
-gpu=${1}
 
 for i in {1..10}
 do
@@ -19,7 +17,7 @@ do
 			###### no finetune
 			for genm in gpt t5
 			do
-				python -u augf.py --dsn ${1} --samplecnt ${samplecnt} --max_aug_times ${max_aug_times} --aug generate \
+				python -u augf.py --dsn ${1} --samplecnt ${samplecnt} --max_aug_times 1 --aug generate \
 						      --genft no  --genm ${genm} --filter nlinsp --seed ${seed} --testbed 0 \
 						      --testvalid test --candidates ${candidates} --gpu ${2} \
 			> ./log_arxiv_nlinsp_noner/${dsn}.generate.${samplecnt}.${max_aug_times}.${candidates}.${genm}.no.${seed}.log 2>&1
