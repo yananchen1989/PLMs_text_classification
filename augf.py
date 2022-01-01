@@ -42,7 +42,7 @@ parser.add_argument("--candidates", default=64, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="7", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -144,9 +144,6 @@ else:
     acc_noaug = -1
 
 
-# if args.aug == 'generate' and args.genft == 'ep':
-#     from utils.flair_ners import * 
-    
 if args.aug == 'eda':
     from utils.eda import *
 
@@ -459,25 +456,23 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     # get nli score
     #ners = get_ners(row['content'])
-    labels_candidates = [row['label_name']] #+ ners
-    print(labels_candidates)
-    nli_scores = []
 
-    if args.genm == 't5' and args.dsn in ['ag','nyt']:
-        fbs = 16 
-    else:
-        fbs = 32
-    for ix in range(0, len(contents_syn), fbs):
-        nli_result = nli_nlp(contents_syn[ix:ix+fbs],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-        nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
-        nli_scores.extend(nli_scores_ix)
+    # if args.genm == 't5' and args.dsn in ['ag','nyt']:
+    #     fbs = 16 
+    # else:
+    #     fbs = 32
+    # for ix in range(0, len(contents_syn), fbs):
+    #nli_result = nli_nlp(contents_syn[ix:ix+fbs],  [row['label_name']], multi_label=True, hypothesis_template="This text is about {}.")
+    nli_result = nli_nlp(contents_syn,  [row['label_name']], multi_label=True, hypothesis_template="This text is about {}.")
+    nli_scores = [r['scores'][0] for r in nli_result] 
 
     torch.cuda.empty_cache()
     # get nsp score
     pairs = [[remove_str(row['content']), sent] for sent in contents_syn ]
+
     nsp_scores = []
-    for j in range(0, len(pairs), fbs):
-        score_nsp = nsp_infer_pairs(pairs[j:j+fbs], bert_nsp, bert_tokenizer)[:,0]
+    for j in range(0, len(pairs), 16):
+        score_nsp = nsp_infer_pairs(pairs[j:j+16], bert_nsp, bert_tokenizer)[:,0]
         nsp_scores.extend(list(score_nsp)) 
     
     df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
