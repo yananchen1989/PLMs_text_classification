@@ -471,8 +471,8 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     pairs = [[remove_str(row['content']), sent] for sent in contents_syn ]
 
     nsp_scores = []
-    for j in range(0, len(pairs), 16):
-        score_nsp = nsp_infer_pairs(pairs[j:j+16], bert_nsp, bert_tokenizer)[:,0]
+    for j in range(0, len(pairs), 8):
+        score_nsp = nsp_infer_pairs(pairs[j:j+8], bert_nsp, bert_tokenizer)[:,0]
         nsp_scores.extend(list(score_nsp)) 
     
     df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
