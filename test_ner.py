@@ -122,76 +122,76 @@ nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokeni
 
 dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
-for args.dsn in ['uci','ag']:
-    infos = []
-    ds = load_data(dataset=args.dsn, samplecnt= 256)
-    ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
-    ds, proper_len = process_ds(ds, 128)
-    ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
-    ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
-    ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+infos = []
+ds = load_data(dataset=args.dsn, samplecnt= 256)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
+ds, proper_len = process_ds(ds, 128)
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
-    with tf.distribute.MirroredStrategy().scope():
-        model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-    model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
+ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
+
+with tf.distribute.MirroredStrategy().scope():
+    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 
-    for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
+for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
+    torch.cuda.empty_cache()
+    print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
+     
+    contents_syn = []
+    fbs_gen = 64
+    for _ in range(0, args.candidates//fbs_gen):
         torch.cuda.empty_cache()
-        print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
-         
-        contents_syn = []
-        fbs_gen = 64
-        for _ in range(0, args.candidates//fbs_gen):
-            torch.cuda.empty_cache()
-            result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn], \
-                                            do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                            repetition_penalty=1.2, num_return_sequences= fbs_gen,\
-                                            clean_up_tokenization_spaces=True)
+        result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn], \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= fbs_gen,\
+                                        clean_up_tokenization_spaces=True)
 
-            contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
-            contents_syn.extend(contents_syn_tmp)
-        torch.cuda.empty_cache()
+        contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
+        contents_syn.extend(contents_syn_tmp)
+    torch.cuda.empty_cache()
 
-        ners = get_ners(row['content'])
-        labels_candidates_ners = [row['label_name']] + ners
-        print(labels_candidates_ners)
+    ners = get_ners(row['content'])
+    labels_candidates_ners = [row['label_name']] + ners
+    print(labels_candidates_ners)
 
-        nli_scores_ner, nli_scores = [], []
+    nli_scores_ner, nli_scores = [], []
 
-        #fbs = 16
-        #for ix in range(0, len(contents_syn), fbs):
-        nli_result_ner = nli_nlp(contents_syn,  labels_candidates_ners, multi_label=True, hypothesis_template="This text is about {}.")
+    #fbs = 16
+    #for ix in range(0, len(contents_syn), fbs):
+    nli_result_ner = nli_nlp(contents_syn,  labels_candidates_ners, multi_label=True, hypothesis_template="This text is about {}.")
 
-        for r in nli_result_ner:
-            nli_scores_ner.append(np.array(r['scores']).mean())
-            lr = {ii[0]:ii[1] for ii in zip(r['labels'], r['scores'])}
-            nli_scores.append(lr[row['label_name']])
+    for r in nli_result_ner:
+        nli_scores_ner.append(np.array(r['scores']).mean())
+        lr = {ii[0]:ii[1] for ii in zip(r['labels'], r['scores'])}
+        nli_scores.append(lr[row['label_name']])
 
 
-        dfdic = {'nli_score':nli_scores, 'nli_score_ner':nli_scores_ner, 'contents':contents_syn}
-        df_tmp = pd.DataFrame(dfdic)
+    dfdic = {'nli_score':nli_scores, 'nli_score_ner':nli_scores_ner, 'contents':contents_syn}
+    df_tmp = pd.DataFrame(dfdic)
 
-        preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
-        df_tmp['preds'] = preds[:, ixl_rev[row['label_name']]]
-        corr_noner = df_tmp[['nli_score','preds']].corr().values[0][1]
-        corr_ner = df_tmp[['nli_score_ner','preds']].corr().values[0][1]
+    preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
+    df_tmp['preds'] = preds[:, ixl_rev[row['label_name']]]
+    corr_noner = df_tmp[['nli_score','preds']].corr().values[0][1]
+    corr_ner = df_tmp[['nli_score_ner','preds']].corr().values[0][1]
 
-        contents_head_noner = df_tmp.sort_values(by=['nli_score'], ascending=False).head(16)['contents'].values
-        contents_head_ner = df_tmp.sort_values(by=['nli_score_ner'], ascending=False).head(16)['contents'].values
+    contents_head_noner = df_tmp.sort_values(by=['nli_score'], ascending=False).head(16)['contents'].values
+    contents_head_ner = df_tmp.sort_values(by=['nli_score_ner'], ascending=False).head(16)['contents'].values
 
-        scores_noner = model_cls.predict(contents_head_noner,  batch_size=32, verbose=0)
-        scores_ner = model_cls.predict(contents_head_ner,  batch_size=32, verbose=0)   
+    scores_noner = model_cls.predict(contents_head_noner,  batch_size=32, verbose=0)
+    scores_ner = model_cls.predict(contents_head_ner,  batch_size=32, verbose=0)   
 
-        pred_ori = model_cls.predict(np.array([row['content']]),  batch_size=1, verbose=0) 
-        if pred_ori.argmax() != ixl_rev[row['label_name']]:
-            print("nomax", pred_ori.argmax(), ixl_rev[row['label_name']])
+    pred_ori = model_cls.predict(np.array([row['content']]),  batch_size=1, verbose=0) 
+    if pred_ori.argmax() != ixl_rev[row['label_name']]:
+        print("nomax", pred_ori.argmax(), ixl_rev[row['label_name']])
 
-        infos.append((corr_noner, corr_ner, \
-            scores_noner[ixl_rev[row['label_name']]].mean(), scores_ner[ixl_rev[row['label_name']]].mean() ))
-    df_info = pd.DataFrame(infos, columns=['corr_noner', 'corr_ner', 'score_noner', 'score_ner'])
-    print(args.dsn, df_info['corr_noner'].mean(), df_info['corr_ner'].mean(), \
-                df['score_noner'].mean(), df['score_ner'].mean() )
+    infos.append((corr_noner, corr_ner, \
+        scores_noner[ixl_rev[row['label_name']]].mean(), scores_ner[ixl_rev[row['label_name']]].mean() ))
+df_info = pd.DataFrame(infos, columns=['corr_noner', 'corr_ner', 'score_noner', 'score_ner'])
+print(args.dsn, df_info['corr_noner'].mean(), df_info['corr_ner'].mean(), \
+            df['score_noner'].mean(), df['score_ner'].mean() )
 
 
