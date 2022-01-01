@@ -115,7 +115,7 @@ def thread_testing(testvalid, df_train, df_test):
     models = []
 
     if gpus:
-        outer_loop, inner_loop = 1, 3 
+        outer_loop, inner_loop = 2, 2 
     else:
         outer_loop, inner_loop = 3, 1
     for ddi in range(outer_loop):
