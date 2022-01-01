@@ -144,8 +144,8 @@ else:
     acc_noaug = -1
 
 
-if args.aug == 'generate' and args.genft == 'ep':
-    from utils.flair_ners import * 
+# if args.aug == 'generate' and args.genft == 'ep':
+#     from utils.flair_ners import * 
     
 if args.aug == 'eda':
     from utils.eda import *
@@ -458,15 +458,15 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     torch.cuda.empty_cache()
 
     # get nli score
-    ners = get_ners(row['content'])
-    labels_candidates = [row['label_name']] + ners
+    #ners = get_ners(row['content'])
+    labels_candidates = [row['label_name']] #+ ners
     print(labels_candidates)
     nli_scores = []
 
     if args.genm == 't5' and args.dsn in ['ag','nyt']:
-        fbs = 8 
+        fbs = 16 
     else:
-        fbs = 16
+        fbs = 32
     for ix in range(0, len(contents_syn), fbs):
         nli_result = nli_nlp(contents_syn[ix:ix+fbs],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
         nli_scores_ix = [np.array(r['scores']).mean() for r in nli_result]    
@@ -476,8 +476,8 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     # get nsp score
     pairs = [[remove_str(row['content']), sent] for sent in contents_syn ]
     nsp_scores = []
-    for j in range(0, len(pairs), 8):
-        score_nsp = nsp_infer_pairs(pairs[j:j+8], bert_nsp, bert_tokenizer)[:,0]
+    for j in range(0, len(pairs), fbs):
+        score_nsp = nsp_infer_pairs(pairs[j:j+fbs], bert_nsp, bert_tokenizer)[:,0]
         nsp_scores.extend(list(score_nsp)) 
     
     df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
@@ -596,7 +596,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         for ix, row in ds.df_train.reset_index().iterrows():
             torch.cuda.empty_cache()
             print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
-             
+
             t0 = time.time()
             if args.filter == 'nlinsp':
                 result_syn = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
