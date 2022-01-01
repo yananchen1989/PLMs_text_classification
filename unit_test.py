@@ -105,6 +105,55 @@ for dsn in ['uci','yahoo','ag', 'nyt']:
 
 
 
+with tf.distribute.MirroredStrategy().scope():
+    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
+
+
+
+for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
+    torch.cuda.empty_cache()
+    print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
+     
+    prompt = decorate_sent(row['content'], row['label_name'])
+            
+    contents_syn = []
+    fbs_gen = 64
+    for _ in range(0, args.candidates//fbs_gen):
+        torch.cuda.empty_cache()
+        result_gpt = gen_nlp([prompt], max_length=dsn_maxlen[args.dsn], \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= fbs_gen,\
+                                        clean_up_tokenization_spaces=True)
+
+        contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
+        contents_syn.extend(contents_syn_tmp)
+    torch.cuda.empty_cache()
+
+    ners = get_ners(row['content'])
+    labels_candidates_ners = [row['label_name']] + ners
+    print(labels_candidates_ners)
+
+    nli_scores_ner, nli_scores = [], []
+
+    #fbs = 16
+    #for ix in range(0, len(contents_syn), fbs):
+    nli_result_ner = nli_nlp(contents_syn,  labels_candidates_ners, multi_label=True, hypothesis_template="This text is about {}.")
+
+    for r in nli_result_ner:
+        nli_scores_ner.append(np.array(r['scores']).mean())
+        lr = {ii[0]:ii[1] for ii in zip(r['labels'], r['scores'])}
+        nli_scores.append(lr[row['label_name']])
+
+
+    dfdic = {'nli_score':nli_scores, 'nli_score_ner':nli_scores_ner, 'contents':contents_syn}
+    df_tmp = pd.DataFrame(dfdic)
+
+    preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
+    df_tmp['preds'] = preds[:, ixl_rev[row['label_name']]]
+    corr_noner = df_tmp[['nli_score','preds']].corr().values[0][1]
+    corr_ner = df_tmp[['nli_score_ner','preds']].corr().values[0][1]
+    print(corr_noner, corr_ner)
 
 
 
@@ -131,15 +180,8 @@ for dsn in ['uci','yahoo','ag', 'nyt']:
 
 
 
-from transformers import GPT2Tokenizer, TFGPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache_tfgpt")
-#tokenizer_gpt2.padding_side = "left" 
-tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-tokenizer_gpt2.sep_token = '<|sep|>'
-#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
-print(tokenizer_gpt2)
-# no
-gpt2 = TFGPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache_tfgpt")
+
+
 
 
 
