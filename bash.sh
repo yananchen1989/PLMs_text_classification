@@ -89,6 +89,8 @@ nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl
 
 
 
+nohup python -u test_ner.py --dsn ag > test_ner.ag.log & 
+nohup python -u test_ner.py --dsn uci > test_ner.uci.log & 
 
 ############################################################################################################################################
 ps aux|grep "zsclassifier.py"|grep -v grep | awk '{print $2}'|xargs kill -9

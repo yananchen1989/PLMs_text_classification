@@ -190,8 +190,10 @@ for ix, row in ds.df_train.sample(frac=1).reset_index().iterrows():
 
     infos.append((corr_noner, corr_ner, \
         scores_noner[ixl_rev[row['label_name']]].mean(), scores_ner[ixl_rev[row['label_name']]].mean() ))
-df_info = pd.DataFrame(infos, columns=['corr_noner', 'corr_ner', 'score_noner', 'score_ner'])
-print(args.dsn, df_info['corr_noner'].mean(), df_info['corr_ner'].mean(), \
-            df['score_noner'].mean(), df['score_ner'].mean() )
+
+    if len(infos) > 0 and len(infos) % 64 ==0:
+        df_info = pd.DataFrame(infos, columns=['corr_noner', 'corr_ner', 'score_noner', 'score_ner'])
+        print("summary==>", args.dsn, df_info['corr_noner'].mean(), df_info['corr_ner'].mean(), \
+                    df['score_noner'].mean(), df['score_ner'].mean() )
 
 
