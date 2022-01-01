@@ -17,7 +17,7 @@ parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--w1", default=0.5, type=float)
 parser.add_argument("--w2", default=0.5, type=float)
 parser.add_argument("--gpu", default="7", type=str)
-parser.add_argument("--para", default=1, type=int)
+parser.add_argument("--para", default=0, type=int)
 parser.add_argument("--para_cnt", default=8, type=int)
 
 args = parser.parse_args()
