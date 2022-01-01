@@ -44,6 +44,12 @@ do
 done
 
 
+
+nohup bash run.sh uci 5 &
+nohup bash run.sh ag 6 &
+nohup bash run.sh nyt 7 &
+
+
 for gpu in 0,1 2,3 
 do
 nohup bash run_cbert.sh ${gpu} & 
@@ -89,9 +95,10 @@ nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl
 
 
 
-nohup python -u test_ner.py --dsn ag --gpu 5 > test_ner.ag.log & 
-nohup python -u test_ner.py --dsn uci --gpu 6 > test_ner.uci.log & 
-nohup python -u test_ner.py --dsn nyt --gpu 7 > test_ner.nyt.log & 
+
+
+
+
 ############################################################################################################################################
 ps aux|grep "test_ner.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
