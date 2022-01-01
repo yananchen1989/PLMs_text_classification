@@ -114,13 +114,9 @@ def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
 
-    if gpus:
-        outer_loop, inner_loop = 2, 2 
-    else:
-        outer_loop, inner_loop = 3, 1
-    for ddi in range(outer_loop):
+    for ddi in range(3):
         threads = []
-        for di in range(inner_loop):
+        for di in range(1):
             t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
                               args.epochs,  args.verbose, 'albert', 8))
             t.start()
