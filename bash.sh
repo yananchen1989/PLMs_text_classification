@@ -68,12 +68,16 @@ nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl
 
 
 
+nohup python -u zsl_gpt.py --dsn ag --fbs_gen 32 > zsl_gpt.ag.32.log & 
+nohup python -u zsl_gpt.py --dsn ag --fbs_gen 128 > zsl_gpt.ag.128.log & 
 
 
+nohup python -u zsl_gpt.py --dsn uci --fbs_gen 32 > zsl_gpt.uci.32.log & 
+nohup python -u zsl_gpt.py --dsn uci --fbs_gen 128 > zsl_gpt.uci.128.log & 
 
 
 ############################################################################################################################################
-ps aux|grep "test_ner.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "augf.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 

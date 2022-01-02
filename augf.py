@@ -114,7 +114,7 @@ def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
 
-    for ddi in range(3):
+    for ddi in range(1):
         threads = []
         for di in range(1):
             t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
@@ -567,9 +567,9 @@ def decorate_sent(content, label_name):
             prompt = content + tokenizer_t5.eos_token
     return prompt
 
-def synthesize(ds, proper_len, syn_df_ll, seed):
+def synthesize(aug, ds, proper_len, syn_df_ll, seed):
 
-    if args.aug == 'generate':
+    if aug == 'generate':
         # # nli config
         # if args.dsn in ['ag','uci', 'nyt']:
         #     ln_extend = {}
@@ -660,13 +660,13 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
 
 
-    elif args.aug == 'eda':
+    elif aug == 'eda':
         aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
                                    alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
         assert len(aug_sentences) == ds.df_train.shape[0]
         contents_syn = [ii[0] for ii in aug_sentences]
 
-    elif args.aug == 'bt':
+    elif aug == 'bt':
         contents_syn = []
         fbs = 8
         for i in range(0, ds.df_train.shape[0], fbs):
@@ -678,7 +678,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             contents_syn.extend([ii['translation_text'] for ii in content__])
             print('translate trunk==>', i, i+fbs, 'of', ds.df_train.shape[0])
 
-    elif args.aug == 'cbert':
+    elif aug == 'cbert':
 
         temp_path = "augf__{}_{}".format(args.dsn, args.aug)
         temp_path_ft = "augf__{}_{}_ft".format(args.dsn, args.aug)
@@ -790,10 +790,10 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
     else:
         raise KeyError("args.aug model illegal!")   
 
-    if args.aug in ['eda','bt','cbert']:
+    if aug in ['eda','bt','cbert']:
         df_synthesize = ds.df_train[['label_name','label']]
         df_synthesize['content'] = contents_syn
-        df_synthesize['fmark'] = args.aug
+        df_synthesize['fmark'] = aug
 
     return df_synthesize 
 
@@ -805,7 +805,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 syn_df_ll = []
 for augi in range(args.max_aug_times):
     print("augi==>{}".format(augi))
-    df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
+    df_synthesize = synthesize(args.aug, ds, proper_len, syn_df_ll, args.seed)
     syn_df_ll.append(df_synthesize)
 
 

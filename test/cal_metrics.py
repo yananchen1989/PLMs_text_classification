@@ -28,8 +28,8 @@ for file in error_files:
 import pandas as pd
 import glob 
 infos = []
-#folder = "log_arxiv_nlinsp"
-for folder in ["log_baselines", "log_arxiv_nlinsp"]:
+#folder = "log_arxiv_nlinsp" "log_baselines",
+for folder in [ "log_arxiv_nlinsp_noner"]:
     files = glob.glob("./{}/*.log".format(folder))
     for file in files:
         with open(file,'r') as f: 
@@ -55,32 +55,32 @@ for col in ['acc_base','acc_aug','gain']:
         df[col] = df[col].astype('float')
 
 
-samplecnt = 128
-for dsn in ['uci','ag','nyt']:
-    # # baselines : eda uci cbert
-    # for aug in ['eda', 'bt', 'cbert']:
-    #     dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']==aug)][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
-    #     print(dsn, aug, round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
-    #         round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4) , dfi.shape[0])
+for samplecnt in [32, 64, 128]:
+    for dsn in ['uci','ag','nyt']:
+        # # baselines : eda uci cbert
+        # for aug in ['eda', 'bt', 'cbert']:
+        #     dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']==aug)][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
+        #     print(dsn, aug, round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
+        #         round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4) , dfi.shape[0])
 
-    # # baselines: lambda embed
-    # for fmark in ['cls', 'embed']:
-    #     dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']=='generate') & (df['genm']=='gpt') \
-    #              & (df['fmark']==fmark) ][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
-    #     print(dsn, 'gpt-{}'.format(fmark), round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
-    #         round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4), dfi.shape[0])
+        # # baselines: lambda embed
+        # for fmark in ['cls', 'embed']:
+        #     dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']=='generate') & (df['genm']=='gpt') \
+        #              & (df['fmark']==fmark) ][['acc_base','acc_aug','gain']] # & (df['candidates']==candidates)
+        #     print(dsn, 'gpt-{}'.format(fmark), round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
+        #         round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4), dfi.shape[0])
 
-    #nli nsp
-    for genm in ['gpt', 't5']:
-        for candidates in [  64,    128, 256, 512, 1024]:
-            for fmark in ['11', '10', '01', '00']:
-                dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']=='generate') & (df['genm']==genm) \
-                         & (df['fmark']==fmark)  & (df['candidates']==candidates) ][['acc_base','acc_aug','gain']] 
-                if dfi.shape[0] == 0:
-                    continue
-                print(dsn, candidates, "{}-{}".format(genm, fmark), round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
-                    round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4),  dfi.shape[0])
-    print()
+        #nli nsp
+        for genm in ['gpt', 't5']:
+            for candidates in [   256]:
+                for fmark in ['11', '10', '01', '00']:
+                    dfi = df.loc[(df['dsn']==dsn) & (df['samplecnt']==samplecnt) & (df['aug']=='generate') & (df['genm']==genm) \
+                             & (df['fmark']==fmark)  & (df['candidates']==candidates) ][['acc_base','acc_aug','gain']] 
+                    if dfi.shape[0] == 0:
+                        continue
+                    print(dsn, candidates, "{}-{}".format(genm, fmark), round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
+                        round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4),  dfi.shape[0])
+        print()
 
 
 
