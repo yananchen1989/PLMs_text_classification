@@ -145,86 +145,86 @@ if args.aug == 'eda':
 
 if args.aug == 'generate':
     ####################### generation setting ######################
-    if args.genm == 'gpt':
-        from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-        tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-        #tokenizer_gpt2.padding_side = "left" 
-        tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-        tokenizer_gpt2.sep_token = '<|sep|>'
-        #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
-        print(tokenizer_gpt2)
+    #if args.genm == 'gpt':
+    from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+    tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    #tokenizer_gpt2.padding_side = "left" 
+    tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+    tokenizer_gpt2.sep_token = '<|sep|>'
+    #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+    print(tokenizer_gpt2)
 
-        if args.genft == 'no':
-            gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    if args.genft == 'no':
+        gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 
-        elif args.genft == 'lambda' :
-            if not os.path.exists('ft_tmp'):
-                os.makedirs('ft_tmp')
+    elif args.genft == 'lambda' :
+        if not os.path.exists('ft_tmp'):
+            os.makedirs('ft_tmp')
 
-            train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, args.seed)
-            validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, args.seed)
+        train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, args.seed)
+        validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, args.seed)
 
-            df_train_ft = ds.df_train.copy()
-            df_test_ft = ds.df_test.copy()
+        df_train_ft = ds.df_train.copy()
+        df_test_ft = ds.df_test.copy()
 
-            df_train_ft['text'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_train_ft['content']
-            df_test_ft['text'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_test_ft['content']
+        df_train_ft['text'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_train_ft['content']
+        df_test_ft['text'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_test_ft['content']
 
-            with open (train_file, 'w') as f:
-                f.write(tokenizer_gpt2.eos_token.join(df_train_ft['text'].tolist()))
+        with open (train_file, 'w') as f:
+            f.write(tokenizer_gpt2.eos_token.join(df_train_ft['text'].tolist()))
 
-            with open (validation_file, 'w') as f:
-                f.write(tokenizer_gpt2.eos_token.join(df_test_ft['text'].tolist()))
+        with open (validation_file, 'w') as f:
+            f.write(tokenizer_gpt2.eos_token.join(df_test_ft['text'].tolist()))
 
-            model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
-            os.system(
-            "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
-                    --num_train_epochs {} \
-                    --train_file {} \
-                    --validation_file {} \
-                    --model_name_or_path gpt2 \
-                    --per_device_train_batch_size 8 \
-                    --per_device_eval_batch_size 8 \
-                    --output_dir {} \
-                    --preprocessing_num_workers 8 --overwrite_cache True \
-                    --block_size {}".format(len(gpus)-1, 12, train_file, validation_file, model_output_path, 64) ) 
-            gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
+        model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
+        os.system(
+        "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
+                --num_train_epochs {} \
+                --train_file {} \
+                --validation_file {} \
+                --model_name_or_path gpt2 \
+                --per_device_train_batch_size 8 \
+                --per_device_eval_batch_size 8 \
+                --output_dir {} \
+                --preprocessing_num_workers 8 --overwrite_cache True \
+                --block_size {}".format(len(gpus)-1, 12, train_file, validation_file, model_output_path, 64) ) 
+        gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
 
-        # elif args.genft == 'cc':
-        #     gpt2 = GPT2LMHeadModel.from_pretrained(args.ft_model_path)
+    # elif args.genft == 'cc':
+    #     gpt2 = GPT2LMHeadModel.from_pretrained(args.ft_model_path)
 
-        elif args.genft in ['tc', 'pp', 'ep']:
-            gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format(args.genm, args.genft) )
+    elif args.genft in ['tc', 'pp', 'ep']:
+        gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format(args.genm, args.genft) )
 
-        else:
-            raise KeyError("args.genft illegal!")
-        gpt2.trainable = False
-        gpt2.config.pad_token_id=50256
-        gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-2, return_full_text=False)
+    else:
+        raise KeyError("args.genft illegal!")
+    gpt2.trainable = False
+    gpt2.config.pad_token_id=50256
+    gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-2, return_full_text=False)
 
-    elif args.genm == 't5':
-        from transformers import T5Tokenizer, AutoModelWithLMHead
-        tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-        print(tokenizer_t5)
-        if args.genft == 'no':
-            t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-        elif args.genft in ['tc', 'pp', 'ep']:
-            ft_model_path = 'ft_model_{}_{}'.format(args.genm, args.genft)
-            checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
-            list.sort(checkpoint_files)
-            t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
-        else:
-            raise KeyError("args.genft illegal!")
+    #elif args.genm == 't5':
+    from transformers import T5Tokenizer, AutoModelWithLMHead
+    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    print(tokenizer_t5)
+    if args.genft == 'no':
+        t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    elif args.genft in ['tc', 'pp', 'ep']:
+        ft_model_path = 'ft_model_{}_{}'.format(args.genm, args.genft)
+        checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
+        list.sort(checkpoint_files)
+        t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+    else:
+        raise KeyError("args.genft illegal!")
 
-        gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-2)
+    gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-2)
 
-    elif args.genm == 'ctrl':
-        from transformers import CTRLTokenizer, TFCTRLLMHeadModel
-        tokenizer_ctrl = CTRLTokenizer.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
-        model_ctrl = TFCTRLLMHeadModel.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
-        print(tokenizer_ctrl)
-        control_codes = tokenizer_ctrl.control_codes.keys()
-        gen_nlp_ctrl  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=len(gpus)-1, return_full_text=False)
+    # elif args.genm == 'ctrl':
+    #     from transformers import CTRLTokenizer, TFCTRLLMHeadModel
+    #     tokenizer_ctrl = CTRLTokenizer.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
+    #     model_ctrl = TFCTRLLMHeadModel.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
+    #     print(tokenizer_ctrl)
+    #     control_codes = tokenizer_ctrl.control_codes.keys()
+    #     gen_nlp_ctrl  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=len(gpus)-1, return_full_text=False)
  
     # elif args.genm == 'neo':
     #     gen_nlp_gptneo = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B', device=0)
