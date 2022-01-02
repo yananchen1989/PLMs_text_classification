@@ -806,7 +806,7 @@ ds.df_train['fmark'] = 'ori'
 filter_gems = {'clsembed':['gpt'], 'nlinsp':['gpt', 't5']}
 
 for args.aug in ['generate']:
-    for args.filter in ['clsembed', 'nlinsp']:
+    for args.filter in ['nlinsp', 'clsembed']:
         for args.genm in filter_gems[args.filter]:
             print("=====>aug:{} filter:{} genm:{} <=====".format(args.aug, args.filter, args.genm))
             syn_df_ll = []
