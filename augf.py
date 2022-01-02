@@ -193,8 +193,8 @@ if args.aug == 'generate':
     # elif args.genft == 'cc':
     #     gpt2 = GPT2LMHeadModel.from_pretrained(args.ft_model_path)
 
-    elif args.genft in ['tc', 'pp', 'ep']:
-        gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format(args.genm, args.genft) )
+    # elif args.genft in ['tc', 'pp', 'ep']:
+    #     gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format(args.genm, args.genft) )
 
     else:
         raise KeyError("args.genft illegal!")
