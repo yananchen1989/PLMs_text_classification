@@ -203,11 +203,14 @@ for l in ds.df_train['label'].unique():
     
 
 
-def gen(row, gen_nlp, ft_flag):
+def gen(row, ft_flag):
     if ft_flag == 'noft':
         prompt = remove_str(row['content']) 
+        gen_nlp = gen_nlp_gpt2_noft
     elif ft_flag == 'ft':
         prompt = '[{}]'.format(row['label_name']) +  ' '.join(row['content'].split(' ')[:3] )
+        gen_nlp = gen_nlp_gpt2_ft
+
     contents_syn = []
     fbs_gen = 64
     for _ in range(0, args.candidates//fbs_gen):
@@ -221,40 +224,14 @@ def gen(row, gen_nlp, ft_flag):
         contents_syn.extend(contents_syn_tmp)
     return contents_syn
 
-def lambda_gen(row, gen_nlp, enc, model_cls, ft_flag):
-    
-    contents_syn = gen(row, gen_nlp, ft_flag)
-    torch.cuda.empty_cache()
-
-    embeds_syn = enc.infer(contents_syn)
-    embeds_score = cosine_similarity(embeds_syn, enc_dic[row['label']])
-
-    preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
-    cls_score = preds[:, row['label'] ]
-
-    df_tmp = pd.DataFrame(zip(contents_syn, list(embeds_score.reshape(-1)), list(cls_score)),\
-                 columns=['content', 'embed_score', 'cls_score'])
-
-    result_syn = {}
-    result_syn['{}-cls'.format(ft_flag)] = df_tmp.sort_values(by=['cls_score'], ascending=False).head(1)['content'].tolist()[0] 
-    result_syn['{}-embed'.format(ft_flag)] = df_tmp.sort_values(by=['embed_score'], ascending=False).head(1)['content'].tolist()[0] 
-    return result_syn
 
 
-def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp, ft_flag):
+def clsembednlinsp_gen(row, ft_flag):
           
-    contents_syn = gen(row, gen_nlp, ft_flag)
+    contents_syn = gen(row, ft_flag)
     torch.cuda.empty_cache()
 
-    # get nli score
-    #ners = get_ners(row['content'])
-
-    # if args.genm == 't5' and args.dsn in ['ag','nyt']:
-    #     fbs = 16 
-    # else:
-    #     fbs = 32
-    # for ix in range(0, len(contents_syn), fbs):
-    #nli_result = nli_nlp(contents_syn[ix:ix+fbs],  [row['label_name']], multi_label=True, hypothesis_template="This text is about {}.")
+    #nlisp
     nli_result = nli_nlp(contents_syn,  [row['label_name']], multi_label=True, hypothesis_template="This text is about {}.")
     nli_scores = [r['scores'][0] for r in nli_result] 
 
@@ -277,6 +254,22 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp, ft_flag):
     result_syn['{}-nsp'.format(ft_flag)] = df_tmp.sort_values(by=['nsp_score'], ascending=False).head(1)['content'].tolist()[0]  
     result_syn['{}-nofil'.format(ft_flag)] = df_tmp.sample(1)['content'].tolist()[0] 
 
+    # clsembed
+    torch.cuda.empty_cache()
+
+    embeds_syn = enc.infer(contents_syn)
+    embeds_score = cosine_similarity(embeds_syn, enc_dic[row['label']])
+
+    preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
+    cls_score = preds[:, row['label'] ]
+
+    df_tmp = pd.DataFrame(zip(contents_syn, list(embeds_score.reshape(-1)), list(cls_score)),\
+                 columns=['content', 'embed_score', 'cls_score'])
+
+    result_syn['{}-cls'.format(ft_flag)] = df_tmp.sort_values(by=['cls_score'], ascending=False).head(1)['content'].tolist()[0] 
+    result_syn['{}-embed'.format(ft_flag)] = df_tmp.sort_values(by=['embed_score'], ascending=False).head(1)['content'].tolist()[0] 
+    
+
     return result_syn
 
 
@@ -289,11 +282,10 @@ def synthesize(ds):
 
         t0 = time.time()
 
-        result_syn_clsembed_ft =    lambda_gen(row, gen_nlp_gpt2_ft,    enc, model_cls, 'ft')
-        result_syn_clsembed_noft =  lambda_gen(row, gen_nlp_gpt2_noft,  enc, model_cls, 'noft')
-        result_syn_nlisp_ft =       nlinsp_gen(row, gen_nlp_gpt2_ft,    nli_nlp, bert_nsp, 'ft')
-        result_syn_nlisp_noft =     nlinsp_gen(row, gen_nlp_gpt2_noft,  nli_nlp, bert_nsp, 'noft')
-        for result_syn in [result_syn_clsembed_ft, result_syn_clsembed_noft, result_syn_nlisp_ft, result_syn_nlisp_noft]:
+        result_syn__ft =    clsembednlinsp_gen(row,  'ft')
+        result_syn__noft =  clsembednlinsp_gen(row,  'noft')
+
+        for result_syn in [result_syn__ft, result_syn__noft]:
             print("gen===>")
             for fmark, content in result_syn.items():
                 print("{} ==>{}".format(fmark, content) )
