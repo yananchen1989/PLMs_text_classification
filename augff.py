@@ -17,17 +17,9 @@ parser.add_argument("--epochs", default=100, type=int)
 #parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 parser.add_argument("--testvalid", default='test', type=str)
-parser.add_argument("--filter", default="nlinsp", type=str, choices=['nlinsp', 'clsembed'])
-
-parser.add_argument("--valid_files_cnt", default=16, type=int)
-parser.add_argument("--threads", default=64, type=int)
 
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
-parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','tc','pp', 'ep'])
 
-# dpfuture
-#parser.add_argument("--future_steps", default=64, type=int)
-#parser.add_argument("--test_beams", default=64, type=int)
 parser.add_argument("--candidates", default=64, type=int)
 
 #parser.add_argument("--num_return_sequences", default=4, type=int)
@@ -114,7 +106,9 @@ def thread_testing(testvalid, df_train, df_test):
 print("begin_to_test_noaug")
 acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)
 
-
+with tf.distribute.MirroredStrategy().scope():
+    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 ####################### generation setting ######################
 #if args.genm == 'gpt':
@@ -192,7 +186,7 @@ bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='.
 bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
 bert_nsp.to(device0)
 
-#if 'clsembed' in args.filter or 'dvrl' in args.filter:
+
 enc = encoder('cmlm-base')
 enc_dic = {}
 for l in ds.df_train['label'].unique():
@@ -317,6 +311,7 @@ df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
 
 for fmark in df_synthesize['fmark'].unique():
+    print("fmark:", fmark)
     acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
 
     # if acc_noaug > 0:
