@@ -4,10 +4,10 @@ import time,argparse
 import os 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','yahoo', 'nyt','yelp2','amazon2','stsa', 'imdb'])
-parser.add_argument("--fbs_gen", default=32, type=int)
+parser.add_argument("--dsn", default="yahoo", type=str, choices=['uci','ag','agt','yahoo', 'nyt','yelp2','amazon2','stsa', 'imdb'])
+parser.add_argument("--fbs_gen", default=64, type=int)
 parser.add_argument("--genm", default='t5', type=str)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="7", type=str)
 args = parser.parse_args()
 
 dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128, 'imdb':128}
@@ -95,11 +95,16 @@ for ix, row in ds.df_train.reset_index().iterrows():
                                         clean_up_tokenization_spaces=True)
     
     ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] + [remove_str(content)]
-    nli_result = nli_nlp(ori_gen_contents,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+
     ls = {l:0 for l in labels_candidates}
-    for r in nli_result:
-        for l,s in zip(r['labels'], r['scores']):
-            ls[l] += s
+    for j in range(0, len(ori_gen_contents), 16):
+        contents_tmp = ori_gen_contents[j:j+16] 
+        if len(contents_tmp) == 1:
+            continue
+        nli_result = nli_nlp(contents_tmp,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        for r in nli_result:
+            for l,s in zip(r['labels'], r['scores']):
+                ls[l] += s
 
     ls_sort = sorted(ls.items(), key=operator.itemgetter(1), reverse=True)
 
