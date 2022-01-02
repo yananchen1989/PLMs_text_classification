@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','yahoo', 'nyt','yelp2','amazon2','stsa', 'imdb'])
 parser.add_argument("--fbs_gen", default=32, type=int)
 parser.add_argument("--genm", default='t5', type=str)
-parser.add_argument("--gpu", default="0,1", type=str)
+parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 
 dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128, 'imdb':128}
@@ -46,7 +46,7 @@ from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
 tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=1)
+nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=-1)
 
 
 from transformers import pipeline
@@ -70,7 +70,7 @@ elif args.genm == 't5':
     tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
     print(tokenizer_t5)
     t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
-    gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
+    gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=-1)
 
 
 
@@ -109,7 +109,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
         accs_expand.append(0)
 
     if ix % 256 == 0 and ix > 0:
-        print(ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
+        print(args.dsn, ix, sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand))
 
 print("summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]) ,
              sum(accs_noexpand) / len(accs_noexpand), sum(accs_expand)/len(accs_expand) )
