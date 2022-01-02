@@ -4,7 +4,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
-parser.add_argument("--samplecnt", default=8, type=int)
+parser.add_argument("--samplecnt", default=32, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
 parser.add_argument("--model", default="albert", type=str)
@@ -101,8 +101,6 @@ def thread_testing(testvalid, df_train, df_test):
     model_best = models[np.array(best_test_accs).argmax()]
     return  acc, model_best
 
-print("begin_to_test_noaug")
-acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)
 
 # with tf.distribute.MirroredStrategy().scope():
 #     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
@@ -149,7 +147,7 @@ os.system(
         --per_device_eval_batch_size 8 \
         --output_dir {} \
         --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(len(gpus)-1, 12, train_file, validation_file, model_output_path, 64) ) 
+        --block_size {}".format(args.gpu, 12, train_file, validation_file, model_output_path, 64) ) 
 gpt2_ft = GPT2LMHeadModel.from_pretrained(model_output_path)
 
 
@@ -165,6 +163,10 @@ gen_nlp_gpt2_ft  = pipeline("text-generation", model=gpt2_ft, tokenizer=tokenize
 print('generate model loaded ==>{}'.format(args.genm))
 
 dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
+
+print("begin_to_test_noaug")
+acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)
+
 
 ####################### filter setting ######################
 #if 'nlinsp' in args.filter: 
