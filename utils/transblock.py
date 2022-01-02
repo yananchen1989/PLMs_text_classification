@@ -431,8 +431,8 @@ def nsp_infer(sent1, sent2, bert_nsp, bert_tokenizer):
         scores.append(probs.cpu().detach().numpy()[0][0])
     return sum(scores) / 2
 
-def nsp_infer_pairs(pairs, bert_nsp, bert_tokenizer):
-    device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+def nsp_infer_pairs(pairs, bert_nsp, bert_tokenizer, device0):
+    #device0 = torch.device("cuda:{}".format(1) if torch.cuda.is_available() else "cpu")
     pairs_ids = bert_tokenizer.batch_encode_plus(
             pairs,
             add_special_tokens=True,

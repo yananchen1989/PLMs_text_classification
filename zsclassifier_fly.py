@@ -122,7 +122,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
         #for ii in range(0, args.fbs, 8):
             #pairs = [[row['content'], sent] for sent in contents_syn[ii:ii+8]]
         for j in range(0, len(pairs), 8):
-            score_nsp = nsp_infer_pairs(pairs[j:j+8], bert_nsp, bert_tokenizer)[:,0]
+            score_nsp = nsp_infer_pairs(pairs[j:j+8], bert_nsp, bert_tokenizer, device0)[:,0]
             scores_tmp.extend(list(score_nsp)) 
 
         score_nsp_reduce = np.array(scores_tmp).mean()
