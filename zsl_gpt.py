@@ -97,14 +97,18 @@ for ix, row in ds.df_train.reset_index().iterrows():
     ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] + [remove_str(content)]
 
     ls = {l:0 for l in labels_candidates}
+    nli_result_ll = []
     for j in range(0, len(ori_gen_contents), 16):
         contents_tmp = ori_gen_contents[j:j+16] 
-        if len(contents_tmp) == 1:
-            continue
         nli_result = nli_nlp(contents_tmp,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-        for r in nli_result:
-            for l,s in zip(r['labels'], r['scores']):
-                ls[l] += s
+        if isinstance(nli_result, dict):
+            nli_result_ll.append(nli_result)
+        else:
+            nli_result_ll.extend(nli_result)
+
+    for r in nli_result_ll:
+        for l,s in zip(r['labels'], r['scores']):
+            ls[l] += s
 
     ls_sort = sorted(ls.items(), key=operator.itemgetter(1), reverse=True)
 

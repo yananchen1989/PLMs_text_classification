@@ -52,30 +52,16 @@ done
 
 
 
-
-nohup python -u zsclassifier_fly.py --dsn yahoo --gpu 0 --fbs 512 > zsl.fly.yahoo.512.log & 
-nohup python -u zsclassifier_fly.py --dsn uci --gpu 1 --fbs 512 > zsl.fly.uci.512.log & 
-nohup python -u zsclassifier_fly.py --dsn nyt --gpu 2 --fbs 512 > zsl.fly.nyt.512.log & 
-nohup python -u zsclassifier_fly.py --dsn ag --gpu 3 --fbs 512 > zsl.fly.ag.512.log & 
-
-nohup python -u zsclassifier_fly.py --dsn nyt --gpu 4 --fbs 256 > zsl.fly.nyt.256.log & 
-
-
-
 nohup python -u zsclassifier_fly.py --dsn uci --gpu 5 --fbs 64 --para 1 > zsl.fly.t5.uci.64.log & 
 nohup python -u zsclassifier_fly.py --dsn ag  --gpu 6 --fbs 64 --para 1 > zsl.fly.t5.ag.64.log & 
 nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl.fly.t5.yahoo.64.log & 
 
 
 
-nohup python -u zsl_gpt.py --dsn ag --fbs_gen 32 > zsl_gpt.ag.32.log & 
-nohup python -u zsl_gpt.py --dsn ag --fbs_gen 128 > zsl_gpt.ag.128.log & 
 
-
-nohup python -u zsl_gpt.py --dsn uci --fbs_gen 32 > zsl_gpt.uci.32.log & 
-nohup python -u zsl_gpt.py --dsn uci --fbs_gen 128 > zsl_gpt.uci.128.log & 
-
-
+nohup python -u zsl_gpt.py --dsn uci --fbs_gen 128 --gpu 6 > zsl_gpt.uci.128.log & 
+nohup python -u zsl_gpt.py --dsn yahoo --fbs_gen 64 --gpu 7 > zsl_gpt.yahoo.64.log & 
+nohup python -u zsl_gpt.py --dsn yahoo --fbs_gen 128 --gpu 5 > zsl_gpt.yahoo.128.log & 
 ############################################################################################################################################
 ps aux|grep "augf.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
