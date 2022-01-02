@@ -3,7 +3,6 @@ from sklearn import metrics
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--aug", default="generate", type=str)
 parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--samplecnt", default=8, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
@@ -15,7 +14,6 @@ parser.add_argument("--basemode", default="max", type=str) # rank or thres
 #parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--epochs", default=100, type=int)
 #parser.add_argument("--freq", default=25, type=int)
-parser.add_argument("--testbed", default=1, type=int)
 parser.add_argument("--testvalid", default='test', type=str)
 
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
@@ -106,9 +104,9 @@ def thread_testing(testvalid, df_train, df_test):
 print("begin_to_test_noaug")
 acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)
 
-with tf.distribute.MirroredStrategy().scope():
-    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
+# with tf.distribute.MirroredStrategy().scope():
+#     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+# model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
 ####################### generation setting ######################
 #if args.genm == 'gpt':
