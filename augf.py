@@ -468,7 +468,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     nsp_scores = []
     for j in range(0, len(pairs), 8):
-        score_nsp = nsp_infer_pairs(pairs[j:j+8], bert_nsp, bert_tokenizer)[:,0]
+        score_nsp = nsp_infer_pairs(pairs[j:j+8], bert_nsp, bert_tokenizer, device0)[:,0]
         nsp_scores.extend(list(score_nsp)) 
     
     df_tmp = pd.DataFrame(zip(contents_syn, nli_scores, nsp_scores ), columns=['content','nli_score', 'nsp_score'])
@@ -817,7 +817,6 @@ for args.aug in ['generate']:
       
             df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
             print("begin_to_test_aug")
-
 
             for fmark in df_synthesize['fmark'].unique():
                 acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
