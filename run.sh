@@ -23,7 +23,7 @@ do
 			# > ./log_arxiv_nlinsp_noner/${1}.generate.${samplecnt}.${candidates}.${genm}.no.${seed}.log 2>&1
 			# done
 	        ## end 
-			python -u augf.py --dsn ${1} --samplecnt ${samplecnt} --max_aug_times 1 \
+			python -u augff.py --dsn ${1} --samplecnt ${samplecnt} --max_aug_times 1 \
 						      --genm gpt  --seed ${seed} \
 						      --testvalid test --candidates ${candidates} --gpu ${2} \
 			> ./log_arxiv_clsembednlinsp/${1}.${samplecnt}.${candidates}.${seed}.log 2>&1
