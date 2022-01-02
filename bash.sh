@@ -59,7 +59,6 @@ nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl
 
 
 
-nohup python -u zsl_gpt.py --dsn uci --fbs_gen 128 --gpu 6 > zsl_gpt.uci.128.log & 
 nohup python -u zsl_gpt.py --dsn yahoo --fbs_gen 64 --gpu 7 > zsl_gpt.yahoo.64.log & 
 nohup python -u zsl_gpt.py --dsn yahoo --fbs_gen 128 --gpu 5 > zsl_gpt.yahoo.128.log & 
 ############################################################################################################################################

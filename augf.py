@@ -57,7 +57,7 @@ parser.add_argument("--gpu", default="7", type=str)
 args = parser.parse_args()
 print('args==>', args)
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-#args.filter = args.filter.split(',')
+#args.filter = args.gpu.split(',')
 
 import numpy as np
 import tensorflow as tf
@@ -200,7 +200,7 @@ if args.aug == 'generate':
             raise KeyError("args.genft illegal!")
         gpt2.trainable = False
         gpt2.config.pad_token_id=50256
-        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
+        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-2, return_full_text=False)
 
     elif args.genm == 't5':
         from transformers import T5Tokenizer, AutoModelWithLMHead
@@ -216,7 +216,7 @@ if args.aug == 'generate':
         else:
             raise KeyError("args.genft illegal!")
 
-        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-2)
 
     elif args.genm == 'ctrl':
         from transformers import CTRLTokenizer, TFCTRLLMHeadModel
@@ -234,31 +234,31 @@ if args.aug == 'generate':
     dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
     ####################### filter setting ######################
-    if 'nlinsp' in args.filter: 
-        #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=1) #  1.8.1+cu102
-        # vicgalle/xlm-roberta-large-xnli-anli joeddav/xlm-roberta-large-xnli 
-        from transformers import AutoModelForSequenceClassification, AutoTokenizer
-        model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-        tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-        nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
+    #if 'nlinsp' in args.filter: 
+    #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=1) #  1.8.1+cu102
+    # vicgalle/xlm-roberta-large-xnli-anli joeddav/xlm-roberta-large-xnli 
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+    tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+    nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
-        # with tf.distribute.MirroredStrategy().scope():
-        #     bert_nsp  = get_model_nsp(256)
-        from transformers import BertTokenizer, BertForNextSentencePrediction
-        import torch
-        device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
-        bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
-        bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
-        bert_nsp.to(device0)
+    # with tf.distribute.MirroredStrategy().scope():
+    #     bert_nsp  = get_model_nsp(256)
+    from transformers import BertTokenizer, BertForNextSentencePrediction
+    import torch
+    device0 = torch.device("cuda:{}".format(len(gpus)-1) if torch.cuda.is_available() else "cpu")
+    bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+    bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+    bert_nsp.to(device0)
 
-    if 'clsembed' == args.filter or 'dvrl' in args.filter:
-        enc = encoder('cmlm-base')
-        enc_dic = {}
-        for l in ds.df_train['label'].unique():
-            contents_ = ds.df_train.loc[ds.df_train['label']==l]['content'].values
-            embeds = enc.infer(contents_)
-            centroid = embeds.mean(axis=0).reshape(1, -1) 
-            enc_dic[l] = centroid
+    #if 'clsembed' in args.filter or 'dvrl' in args.filter:
+    enc = encoder('cmlm-base')
+    enc_dic = {}
+    for l in ds.df_train['label'].unique():
+        contents_ = ds.df_train.loc[ds.df_train['label']==l]['content'].values
+        embeds = enc.infer(contents_)
+        centroid = embeds.mean(axis=0).reshape(1, -1) 
+        enc_dic[l] = centroid
 
     if 'dvrl' in args.filter:
         os.makedirs('dvrl_np_array', exist_ok=True)
@@ -567,9 +567,9 @@ def decorate_sent(content, label_name):
             prompt = content + tokenizer_t5.eos_token
     return prompt
 
-def synthesize(aug, ds, proper_len, syn_df_ll, seed):
+def synthesize(ds, proper_len, syn_df_ll, seed):
 
-    if aug == 'generate':
+    if args.aug == 'generate':
         # # nli config
         # if args.dsn in ['ag','uci', 'nyt']:
         #     ln_extend = {}
@@ -660,13 +660,13 @@ def synthesize(aug, ds, proper_len, syn_df_ll, seed):
 
 
 
-    elif aug == 'eda':
+    elif args.aug == 'eda':
         aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
                                    alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
         assert len(aug_sentences) == ds.df_train.shape[0]
         contents_syn = [ii[0] for ii in aug_sentences]
 
-    elif aug == 'bt':
+    elif args.aug == 'bt':
         contents_syn = []
         fbs = 8
         for i in range(0, ds.df_train.shape[0], fbs):
@@ -678,7 +678,7 @@ def synthesize(aug, ds, proper_len, syn_df_ll, seed):
             contents_syn.extend([ii['translation_text'] for ii in content__])
             print('translate trunk==>', i, i+fbs, 'of', ds.df_train.shape[0])
 
-    elif aug == 'cbert':
+    elif args.aug == 'cbert':
 
         temp_path = "augf__{}_{}".format(args.dsn, args.aug)
         temp_path_ft = "augf__{}_{}_ft".format(args.dsn, args.aug)
@@ -790,7 +790,7 @@ def synthesize(aug, ds, proper_len, syn_df_ll, seed):
     else:
         raise KeyError("args.aug model illegal!")   
 
-    if aug in ['eda','bt','cbert']:
+    if args.aug in ['eda','bt','cbert']:
         df_synthesize = ds.df_train[['label_name','label']]
         df_synthesize['content'] = contents_syn
         df_synthesize['fmark'] = aug
@@ -802,30 +802,31 @@ def synthesize(aug, ds, proper_len, syn_df_ll, seed):
 # if not args.boost:
 # print("augmentating... boost:", args.boost )
 
-syn_df_ll = []
-for augi in range(args.max_aug_times):
-    print("augi==>{}".format(augi))
-    df_synthesize = synthesize(args.aug, ds, proper_len, syn_df_ll, args.seed)
-    syn_df_ll.append(df_synthesize)
+for args.aug in ['generate']:
+    for args.filter in ['clsembed', 'nlinsp']:
+        print("=====>aug:{} filter:{}<=====".format(args.aug, args.filter))
+        syn_df_ll = []
+        for augi in range(args.max_aug_times):
+            print("augi==>{}".format(augi))
+            df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
+            syn_df_ll.append(df_synthesize)
+
+        ds.df_train['fmark'] = 'ori'
+        df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
+        print("begin_to_test_aug")
 
 
-ds.df_train['fmark'] = 'ori'
-df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
-print("begin_to_test_aug")
+        for fmark in df_synthesize['fmark'].unique():
+            acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
 
+            # if acc_noaug > 0:
+            #     gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
+            # else:
+            #     gain = -1
 
-for fmark in df_synthesize['fmark'].unique():
-    acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
+            summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
+                ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
 
-    if acc_noaug > 0:
-        gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
-    else:
-        gain = -1
-
-
-    summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-        ['fmark:{} acc_base:{} acc_aug:{} gain:{} '.format(fmark, acc_noaug, acc_aug, gain )]
-
-    # if args.testbed and args.epochs > 10 and gain != -1 :
-    #     record_log('log__baselines', summary)
-    print('success', ' '.join(summary))
+            # if args.testbed and args.epochs > 10 and gain != -1 :
+            #     record_log('log__baselines', summary)
+            print('success', ' '.join(summary))
