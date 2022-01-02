@@ -200,7 +200,7 @@ if args.aug == 'generate':
             raise KeyError("args.genft illegal!")
         gpt2.trainable = False
         gpt2.config.pad_token_id=50256
-        gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-2, return_full_text=False)
+        gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-2, return_full_text=False)
 
     elif args.genm == 't5':
         from transformers import T5Tokenizer, AutoModelWithLMHead
@@ -216,7 +216,7 @@ if args.aug == 'generate':
         else:
             raise KeyError("args.genft illegal!")
 
-        gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-2)
+        gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-2)
 
     elif args.genm == 'ctrl':
         from transformers import CTRLTokenizer, TFCTRLLMHeadModel
@@ -224,10 +224,10 @@ if args.aug == 'generate':
         model_ctrl = TFCTRLLMHeadModel.from_pretrained('ctrl', cache_dir='./cache', local_files_only=True)
         print(tokenizer_ctrl)
         control_codes = tokenizer_ctrl.control_codes.keys()
-        gen_nlp  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=len(gpus)-1, return_full_text=False)
+        gen_nlp_ctrl  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=len(gpus)-1, return_full_text=False)
  
     # elif args.genm == 'neo':
-    #     gen_nlp = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B', device=0)
+    #     gen_nlp_gptneo = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B', device=0)
 
     print('generate model loaded ==>{}'.format(args.genm))
 
@@ -590,9 +590,12 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
             t0 = time.time()
             if args.filter == 'nlinsp':
-                result_syn = nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp)
+                if args.genm == 'gpt':
+                    result_syn = nlinsp_gen(row, gen_nlp_gpt2, nli_nlp, bert_nsp)
+                elif args.genm == 't5':
+                    result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
             elif args.filter == 'clsembed':
-                result_syn = lambda_gen(row, gen_nlp, enc, model_cls)
+                result_syn = lambda_gen(row, gen_nlp_gpt2, enc, model_cls)
 
             print("gen===>")
             for fmark, content in result_syn.items():
@@ -799,34 +802,34 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
 
 
-# if not args.boost:
-# print("augmentating... boost:", args.boost )
+ds.df_train['fmark'] = 'ori'
+filter_gems = {'clsembed':['gpt'], 'nlinsp':['gpt', 't5']}
 
 for args.aug in ['generate']:
     for args.filter in ['clsembed', 'nlinsp']:
-        print("=====>aug:{} filter:{}<=====".format(args.aug, args.filter))
-        syn_df_ll = []
-        for augi in range(args.max_aug_times):
-            print("augi==>{}".format(augi))
-            df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
-            syn_df_ll.append(df_synthesize)
+        for args.genm in filter_gems[args.filter]:
+            print("=====>aug:{} filter:{} genm:{} <=====".format(args.aug, args.filter, args.genm))
+            syn_df_ll = []
+            for augi in range(args.max_aug_times):
+                print("augi==>{}".format(augi))
+                df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
+                syn_df_ll.append(df_synthesize)
+      
+            df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
+            print("begin_to_test_aug")
 
-        ds.df_train['fmark'] = 'ori'
-        df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
-        print("begin_to_test_aug")
 
+            for fmark in df_synthesize['fmark'].unique():
+                acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
 
-        for fmark in df_synthesize['fmark'].unique():
-            acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
+                # if acc_noaug > 0:
+                #     gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
+                # else:
+                #     gain = -1
 
-            # if acc_noaug > 0:
-            #     gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
-            # else:
-            #     gain = -1
+                summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
+                    ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
 
-            summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-                ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
-
-            # if args.testbed and args.epochs > 10 and gain != -1 :
-            #     record_log('log__baselines', summary)
-            print('success', ' '.join(summary))
+                # if args.testbed and args.epochs > 10 and gain != -1 :
+                #     record_log('log__baselines', summary)
+                print('success', ' '.join(summary))

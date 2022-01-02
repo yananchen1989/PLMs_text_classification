@@ -28,8 +28,8 @@ for file in error_files:
 import pandas as pd
 import glob 
 infos = []
-#folder = "log_arxiv_nlinsp" "log_baselines",
-for folder in [ "log_arxiv_nlinsp_noner"]:
+#folder = "log_arxiv_nlinsp" "log_baselines", log_arxiv_nlinsp_noner
+for folder in [ "log_arxiv_nlinsp"]:
     files = glob.glob("./{}/*.log".format(folder))
     for file in files:
         with open(file,'r') as f: 
@@ -56,6 +56,7 @@ for col in ['acc_base','acc_aug','gain']:
 
 
 for samplecnt in [32, 64, 128]:
+    print("samplecnt:", samplecnt)
     for dsn in ['uci','ag','nyt']:
         # # baselines : eda uci cbert
         # for aug in ['eda', 'bt', 'cbert']:
@@ -79,7 +80,7 @@ for samplecnt in [32, 64, 128]:
                     if dfi.shape[0] == 0:
                         continue
                     print(dsn, candidates, "{}-{}".format(genm, fmark), round(dfi['acc_base'].mean(),4), round(dfi['acc_aug'].mean(),4), \
-                        round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4),  dfi.shape[0])
+                          dfi.shape[0]) # round(dfi['gain'].mean(),4), round(dfi['gain'].std(),4),
         print()
 
 
