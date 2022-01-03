@@ -18,9 +18,9 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 
 
-nohup bash run.sh uci 5 &
-nohup bash run.sh ag 6 &
-nohup bash run.sh nyt 7 &
+nohup bash run.sh uci 3 &
+nohup bash run.sh ag 1 &
+nohup bash run.sh nyt 4 &
 
 
 for gpu in 0,1 2,3 
@@ -44,10 +44,9 @@ done
 
 
 
-
-
-
-
+python -u augf.py --dsn uci --samplecnt 16 --epochs 1 --max_aug_times 1 --aug generate \
+                        --genft no  --seed 333 --testbed 1 \
+                        --testvalid test --candidates 256 --gpu 1,3
 
 
 
@@ -62,7 +61,7 @@ nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl
 nohup python -u zsl_gpt.py --dsn yahoo --fbs_gen 64 --gpu 7 > zsl_gpt.yahoo.64.log & 
 nohup python -u zsl_gpt.py --dsn yahoo --fbs_gen 128 --gpu 5 > zsl_gpt.yahoo.128.log & 
 ############################################################################################################################################
-ps aux|grep "augf.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "augff.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
