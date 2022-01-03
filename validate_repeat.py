@@ -1,7 +1,7 @@
 import os,argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="nyt", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
+parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--gpu", default="6", type=str)
 args = parser.parse_args()
 
@@ -87,8 +87,8 @@ def thread_testing(testvalid, df_train, df_test):
     return best_test_accs
 
 for ite in range(12):
-    for samplecnt in [32, 64, 128]:
-        for candidates in [64, 256]:
+    for samplecnt in df_tmp['samplecnt'].unique():
+        for candidates in df_tmp['candidates'].unique():
 
             df_tmpi = df_tmp.loc[(df_tmp['samplecnt']==samplecnt) & (df_tmp['candidates']==candidates)]
 
@@ -96,8 +96,10 @@ for ite in range(12):
                 if fmark == 'ori':
                     continue
 
-                df_ori = sample_stratify(df_tmpi.loc[df_tmpi['fmark']=='ori'], 32)
-                df_fmark =  sample_stratify(df_tmpi.loc[df_tmpi['fmark']==fmark], 32)
+                df_ori = sample_stratify(df_tmpi.loc[df_tmpi['fmark']=='ori'], \
+                            min(df_tmpi.loc[df_tmpi['fmark']=='ori'].label_name.value_counts().min(), samplecnt) )
+                df_fmark =  sample_stratify(df_tmpi.loc[df_tmpi['fmark']==fmark], \
+                            min(df_tmpi.loc[df_tmpi['fmark']=='ori'].label_name.value_counts().min(), samplecnt))
 
                 df_train_aug = pd.concat([df_ori, df_fmark ] ).sample(frac=1)
 
