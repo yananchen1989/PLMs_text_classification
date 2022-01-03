@@ -100,7 +100,10 @@ for ite in range(12):
                             min(df_tmpi.loc[df_tmpi['fmark']=='ori'].label_name.value_counts().min(), samplecnt) )
                 df_fmark =  sample_stratify(df_tmpi.loc[df_tmpi['fmark']==fmark], \
                             min(df_tmpi.loc[df_tmpi['fmark']=='ori'].label_name.value_counts().min(), samplecnt))
-
+                print(samplecnt, candidates, fmark, "===>")
+                print(df_ori['label_name'].value_counts())
+                print(df_fmark['label_name'].value_counts())
+                
                 df_train_aug = pd.concat([df_ori, df_fmark ] ).sample(frac=1)
 
                 acc_aug = thread_testing("test", df_train_aug, ds.df_test)
