@@ -4,7 +4,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
-parser.add_argument("--samplecnt", default=32, type=int)
+parser.add_argument("--samplecnt", default=256, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
 parser.add_argument("--model", default="albert", type=str)
@@ -24,7 +24,7 @@ parser.add_argument("--candidates", default=64, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="1", type=str)
+parser.add_argument("--gpu", default="6", type=str)
 args = parser.parse_args()
 print('args==>', args)
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu

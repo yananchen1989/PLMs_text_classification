@@ -133,12 +133,6 @@ def thread_testing(testvalid, df_train, df_test):
     model_best = models[np.array(best_test_accs).argmax()]
     return  acc, model_best
 
-if args.testbed:
-    print("begin_to_test_noaug")
-    acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)
-else:
-    acc_noaug = -1
-
 
 if args.aug == 'eda':
     from utils.eda import *
@@ -187,7 +181,7 @@ if args.aug == 'generate':
                 --per_device_eval_batch_size 8 \
                 --output_dir {} \
                 --preprocessing_num_workers 8 --overwrite_cache True \
-                --block_size {}".format(len(gpus)-1, 12, train_file, validation_file, model_output_path, 64) ) 
+                --block_size {}".format(args.gpu, 12, train_file, validation_file, model_output_path, 64) ) 
         gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
 
     # elif args.genft == 'cc':
@@ -536,7 +530,11 @@ def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     return contents_syn
 '''
 
-
+if args.testbed:
+    print("begin_to_test_noaug")
+    acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)
+else:
+    acc_noaug = -1
 
 
 
