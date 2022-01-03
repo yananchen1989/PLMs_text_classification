@@ -132,7 +132,7 @@ for samplecnt in [32, 64]:
 
 
 args.samplecnt=256
-args.dsn = 'uci'
+args.dsn = 'ag'
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 ds, proper_len = process_ds(ds, 128)
@@ -157,16 +157,20 @@ print(eval_result)
 
 for samplecnt in [32, 64, 128]:
     for candidates in [64, 256]:
-        files = glob.glob("./log_arxiv_clsembednlinsp/uci.{}.{}.*.log".format(samplecnt, candidates))
-
+        files = glob.glob("./log_arxiv_clsembednlinsp/{}.{}.{}.*.log".format(args.dsn, samplecnt, candidates))
+        if not files:
+            continue
         infos = []
         for file in files:
 
             lines = []
             with open(file,'r') as f: 
                 for line in f:
+                    if not line.strip():
+                        continue
                     if 'ori====>' in line or 'ft-nlisp ==>' in line or 'ft-nli ==>' in line or 'ft-nsp ==>' in line or \
-                        'ft-cls ==>' in line or 'ft-embed ==>' in line:
+                        'ft-cls ==>' in line or 'ft-embed ==>' in line or 'nofil ==>' in line:
+                        print(line)
                         lines.append(line.strip())
 
             cutix = []
@@ -176,10 +180,9 @@ for samplecnt in [32, 64, 128]:
 
             
             for i in range(len(cutix)-1):
-                assert cutix[i+1] - cutix[i] == 11
+                assert cutix[i+1] - cutix[i] == 13
                 lines_ = lines[cutix[i]:cutix[i+1]]
                  
-
                 ori_content = lines_[0].split('ori====>')[-1].strip().split('<===')[0].strip()
                 label = lines_[0].split('ori====>')[-1].strip().split('<===')[1].strip()
                 infos.append((ori_content, 'ori',label))
@@ -196,7 +199,7 @@ for samplecnt in [32, 64, 128]:
         for fmark in  df_tmp['fmark'].unique():       
             x_train, y_train = get_keras_data(df_tmp.loc[df_tmp['fmark']==fmark])
             eval_result = model_cls.evaluate(x_train, y_train, batch_size=512, verbose=0)
-            print(samplecnt, candidates, fmark, eval_result)
+            print(samplecnt, candidates, fmark, x_train.shape[0], eval_result[0], eval_result[1])
 
 
 

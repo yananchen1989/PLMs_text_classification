@@ -3,7 +3,7 @@ from sklearn import metrics
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
+parser.add_argument("--dsn", default="nyt", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--samplecnt", default=256, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
@@ -82,7 +82,7 @@ def thread_testing(testvalid, df_train, df_test):
     best_test_accs = []
     models = []
 
-    for ddi in range(1):
+    for ddi in range(3):
         threads = []
         for di in range(1):
             t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
