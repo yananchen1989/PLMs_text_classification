@@ -1,9 +1,9 @@
 
 for i in {1..10}
 do
-	for candidates in 512  #2048
+	for candidates in 512 256 128 64 #2048
 	do
-		for samplecnt in 64 128
+		for samplecnt in 32 64 128
 		do
 		seed=$RANDOM
 		#seed=$(date +"%T")
