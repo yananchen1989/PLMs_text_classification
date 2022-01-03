@@ -309,19 +309,21 @@ for augi in range(args.max_aug_times):
 
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
+print("fmark distribution:", df_synthesize['fmark'].value_counts())
 
-for fmark in df_synthesize['fmark'].unique():
-    print("fmark:", fmark)
-    acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
 
-    # if acc_noaug > 0:
-    #     gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
-    # else:
-    #     gain = -1
+# for fmark in df_synthesize['fmark'].unique():
+#     print("fmark:", fmark)
+#     acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
 
-    summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-        ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
+#     # if acc_noaug > 0:
+#     #     gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
+#     # else:
+#     #     gain = -1
 
-    # if args.testbed and args.epochs > 10 and gain != -1 :
-    #     record_log('log__baselines', summary)
-    print('success', ' '.join(summary))
+#     summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
+#         ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
+
+#     # if args.testbed and args.epochs > 10 and gain != -1 :
+#     #     record_log('log__baselines', summary)
+#     print('success', ' '.join(summary))
