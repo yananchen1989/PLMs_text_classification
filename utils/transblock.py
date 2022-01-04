@@ -289,7 +289,6 @@ def do_train_test_thread(df_train, df_test, model_name='albert', bs=8):
     # else:
     #     val_acc = 'val_acc'
 
-    @print("do_train_test_thread di==>",  di)
     x_train, y_train = get_keras_data(df_train)
     x_test, y_test = get_keras_data(df_test)
 

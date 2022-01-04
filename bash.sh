@@ -59,13 +59,13 @@ nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl
 
 
 
-nohup python -u validate_repeat.py --dsn ag --gpu 5 > validate_repeat.ag.log & 
+nohup python -u validate_repeat.py --dsn ag --gpu 0 > validate_repeat.ag.log & 
 nohup python -u validate_repeat.py --dsn uci --gpu 6 > validate_repeat.uci.log &
 nohup python -u validate_repeat.py --dsn nyt --gpu 7 > validate_repeat.nyt.log & 
 
 
 ############################################################################################################################################
-ps aux|grep "validate_repeat.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "augff.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
