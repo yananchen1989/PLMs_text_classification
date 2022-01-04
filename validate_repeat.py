@@ -66,32 +66,12 @@ for col in ['samplecnt','candidates','max_aug_times','candidates']:
         df_tmp[col] = df_tmp[col].astype('int')
 
 
-from threading import Thread
-
-testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
-def thread_testing(testvalid, df_train, df_test):
-    best_test_accs = []
-    models = []
-
-    for ddi in range(2):
-        threads = []
-        for di in range(2):
-            t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
-                              100,  0, 'albert', 16))
-            t.start()
-            threads.append(t)
-        # join all threads
-        for t in threads:
-            t.join() 
-
-    return best_test_accs
 
 for ite in range(12):
     for samplecnt in df_tmp['samplecnt'].unique():
         for candidates in df_tmp['candidates'].unique():
 
             df_tmpi = df_tmp.loc[(df_tmp['samplecnt']==samplecnt) & (df_tmp['candidates']==candidates)]
-
             for fmark in df_tmp['fmark'].unique():
                 if fmark == 'ori':
                     continue
@@ -106,8 +86,11 @@ for ite in range(12):
 
                 df_train_aug = pd.concat([df_ori, df_fmark ] ).sample(frac=1)
 
-                acc_aug = thread_testing("test", df_train_aug, ds.df_test)
-                print("summary=={}".format(ite), args.dsn,  samplecnt, candidates, fmark, ' '.join([str(ii) for ii in acc_aug]))
+                acc_noaug  = do_train_test_thread(df_ori, ds.df_test, 'albert', 16)
+                acc_aug  = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
+
+                print("summary=={}".format(ite), args.dsn,  samplecnt, candidates, fmark, \
+                            acc_noaug, acc_aug)
 
 
 
