@@ -79,7 +79,7 @@ for ite in range(12):
                 df_ori = sample_stratify(df_tmpi.loc[df_tmpi['fmark']=='ori'], \
                             min(df_tmpi.loc[df_tmpi['fmark']=='ori'].label_name.value_counts().min(), samplecnt) )
                 df_fmark =  sample_stratify(df_tmpi.loc[df_tmpi['fmark']==fmark], \
-                            min(df_tmpi.loc[df_tmpi['fmark']=='ori'].label_name.value_counts().min(), samplecnt))
+                            min(df_tmpi.loc[df_tmpi['fmark']==fmark].label_name.value_counts().min(), samplecnt))
                 print(samplecnt, candidates, fmark, "===>")
                 print(df_ori['label_name'].value_counts())
                 print(df_fmark['label_name'].value_counts())
