@@ -77,31 +77,6 @@ ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates(
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 #seed = random.sample(list(range(10000)), 1)[0]
 
-testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
-def thread_testing(testvalid, df_train, df_test):
-    best_test_accs = []
-    models = []
-
-    for ddi in range(1):
-        threads = []
-        for di in range(1):
-            t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
-                              args.epochs,  args.verbose, 'albert', 8))
-            t.start()
-            threads.append(t)
-        # join all threads
-        for t in threads:
-            t.join() 
-
-    if args.basemode == 'mean':
-        acc = round(np.array(best_test_accs).mean(), 4)
-    elif args.basemode == 'max':
-        acc = round(np.array(best_test_accs).max(), 4)
-
-    model_best = models[np.array(best_test_accs).argmax()]
-    return  acc, model_best
-
-
 # with tf.distribute.MirroredStrategy().scope():
 #     model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 # model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
@@ -165,9 +140,7 @@ print('generate model loaded ==>{}'.format(args.genm))
 dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
 print("begin_to_test_noaug")
-acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)
-
-
+acc_noaug, model_cls = do_train_test_thread(ds.df_train, ds.df_test, 'albert', 16)
 ####################### filter setting ######################
 #if 'nlinsp' in args.filter: 
 #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=1) #  1.8.1+cu102
@@ -312,18 +285,3 @@ print("begin_to_test_aug")
 print("fmark distribution:", df_synthesize['fmark'].value_counts())
 
 
-# for fmark in df_synthesize['fmark'].unique():
-#     print("fmark:", fmark)
-#     acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
-
-#     # if acc_noaug > 0:
-#     #     gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
-#     # else:
-#     #     gain = -1
-
-#     summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-#         ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
-
-#     # if args.testbed and args.epochs > 10 and gain != -1 :
-#     #     record_log('log__baselines', summary)
-#     print('success', ' '.join(summary))

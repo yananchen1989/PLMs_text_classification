@@ -117,11 +117,11 @@ def get_model_bert(num_classes):
     # if num_classes == 2:
     #     out = layers.Dense(1, activation='sigmoid')(embed)
     #     model = tf.keras.Model(inputs=text_input, outputs=out)
-    #     model.compile(Adam(lr=2e-5), "binary_crossentropy", metrics=["binary_accuracy"])
+    #     model.compile(Adam(learning_rate=2e-5), "binary_crossentropy", metrics=["binary_accuracy"])
     # else:
     out = layers.Dense(num_classes, activation="softmax")(embed)
     model = tf.keras.Model(inputs=text_input, outputs=out)
-    model.compile(Adam(lr=2e-5), "sparse_categorical_crossentropy", metrics=["acc"])
+    model.compile(Adam(learning_rate=2e-5), "sparse_categorical_crossentropy", metrics=["acc"])
     return model
 
 
@@ -187,11 +187,11 @@ def get_model_mlp(x_train, num_classes):
     if num_classes == 2:
         out = tf.keras.layers.Dense(1, activation='sigmoid')(text_input)
         model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(tf.keras.optimizers.Adam(lr=0.01), "binary_crossentropy", metrics=["binary_accuracy"])
+        model.compile(tf.keras.optimizers.Adam(learning_rate=0.01), "binary_crossentropy", metrics=["binary_accuracy"])
     else:
         out = tf.keras.layers.Dense(num_classes, activation="softmax")(text_input)
         model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(tf.keras.optimizers.Adam(lr=0.01), "sparse_categorical_crossentropy", metrics=["acc"])
+        model.compile(tf.keras.optimizers.Adam(learning_rate=0.01), "sparse_categorical_crossentropy", metrics=["acc"])
     return model
 
 def get_keras_data(df):
@@ -323,9 +323,8 @@ def do_train_test_thread(df_train, df_test, model_name='albert', bs=8):
 
 
 
-def do_train_test_valid_thread(df_train_, df_test, best_test_accs, models,di,epochs=100,verbose=1,model_name='albert',bs=8):
+def do_train_test_valid_thread(df_train_, df_test, model_name='albert',bs=8):
 
-    print("do_train_test_valid_thread di==>",  di)
     df_train, df_valid = train_test_split(df_train_, test_size=0.2)
 
     x_train, y_train = get_keras_data(df_train)
@@ -347,18 +346,19 @@ def do_train_test_valid_thread(df_train_, df_test, best_test_accs, models,di,epo
             raise KeyError("input model illegal!")
 
     model.fit(
-        x_train, y_train, batch_size=bs, epochs=epochs, \
-        validation_data=(x_valid, y_valid), verbose=verbose, validation_batch_size=bs, 
-        callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=7, mode='max',restore_best_weights=True)]
+        x_train, y_train, batch_size=bs, epochs=100, \
+        validation_data=(x_valid, y_valid), verbose=0, validation_batch_size=bs, 
+        callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=5, mode='max',restore_best_weights=True)]
     )
 
-    result_test = model.evaluate(x_test, y_test, batch_size=8)
+    result_test = model.evaluate(x_test, y_test, batch_size=32)
 
-    best_test_accs.append(result_test[1])
-    models.append(model)
-    tf.keras.backend.clear_session()
+    return result_test[1], model
+    #best_test_accs.append(result_test[1])
+    #models.append(model)
+    #tf.keras.backend.clear_session()
 
-    print('do_train_test_valid iters test==>', best_test_accs)
+    #print('do_train_test_valid iters test==>', best_test_accs)
     #get_class_acc(model, x_test, y_test, ixl)
 
 

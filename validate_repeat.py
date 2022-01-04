@@ -86,8 +86,8 @@ for ite in range(12):
 
                 df_train_aug = pd.concat([df_ori, df_fmark ] ).sample(frac=1)
 
-                acc_noaug  = do_train_test_thread(df_ori, ds.df_test, 'albert', 16)
-                acc_aug  = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
+                acc_noaug, _  = do_train_test_thread(df_ori,       ds.df_test, 'albert', 16)
+                acc_aug, _  = do_train_test_thread(df_train_aug,   ds.df_test, 'albert', 16)
 
                 print("summary=={}".format(ite), args.dsn,  samplecnt, candidates, fmark, \
                             acc_noaug, acc_aug)

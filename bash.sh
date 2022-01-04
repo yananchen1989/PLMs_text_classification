@@ -59,9 +59,17 @@ nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl
 
 
 
-nohup python -u validate_repeat.py --dsn ag --gpu 0 > validate_repeat.ag.log & 
-nohup python -u validate_repeat.py --dsn uci --gpu 6 > validate_repeat.uci.log &
-nohup python -u validate_repeat.py --dsn nyt --gpu 7 > validate_repeat.nyt.log & 
+nohup python -u validate_repeat.py --dsn ag --gpu 0 > validate_repeat.ag.gpu0.log & 
+nohup python -u validate_repeat.py --dsn uci --gpu 1 > validate_repeat.uci.gpu1.log &
+nohup python -u validate_repeat.py --dsn nyt --gpu 2 > validate_repeat.nyt.gpu2.log & 
+
+nohup python -u validate_repeat.py --dsn ag --gpu 3 > validate_repeat.ag.gpu3.log & 
+nohup python -u validate_repeat.py --dsn uci --gpu 4 > validate_repeat.uci.gpu4.log &
+nohup python -u validate_repeat.py --dsn nyt --gpu 5 > validate_repeat.nyt.gpu5.log &
+
+nohup python -u validate_repeat.py --dsn ag --gpu 6 > validate_repeat.ag.gpu6.log & 
+nohup python -u validate_repeat.py --dsn uci --gpu 7 > validate_repeat.uci.gpu7.log &
+
 
 
 ############################################################################################################################################
