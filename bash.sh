@@ -16,7 +16,8 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 
 
-
+nohup bash run.sh uci 0 &
+nohup bash run.sh ag 2 &
 
 nohup bash run.sh uci 3 &
 nohup bash run.sh ag 1 &
@@ -58,10 +59,13 @@ nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl
 
 
 
-nohup python -u zsl_gpt.py --dsn yahoo --fbs_gen 64 --gpu 7 > zsl_gpt.yahoo.64.log & 
-nohup python -u zsl_gpt.py --dsn yahoo --fbs_gen 128 --gpu 5 > zsl_gpt.yahoo.128.log & 
+nohup python -u validate_repeat.py --dsn ag --gpu 5 > validate_repeat.ag.log & 
+nohup python -u validate_repeat.py --dsn uci --gpu 6 > validate_repeat.uci.log &
+nohup python -u validate_repeat.py --dsn nyt --gpu 7 > validate_repeat.nyt.log & 
+
+
 ############################################################################################################################################
-ps aux|grep "augff.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "validate_repeat.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 

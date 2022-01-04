@@ -2,7 +2,7 @@ import os,argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
-parser.add_argument("--gpu", default="6", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
@@ -22,7 +22,7 @@ ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplica
 
 infos = []
 for samplecnt in [32, 64, 128]:
-    for candidates in [64, 256]:
+    for candidates in [64, 256, 512]:
         files = glob.glob("./log_arxiv_clsembednlinsp/{}.{}.{}.*.log".format(args.dsn, samplecnt, candidates))
         if not files:
             continue
@@ -103,7 +103,7 @@ for ite in range(12):
                 print(samplecnt, candidates, fmark, "===>")
                 print(df_ori['label_name'].value_counts())
                 print(df_fmark['label_name'].value_counts())
-                
+
                 df_train_aug = pd.concat([df_ori, df_fmark ] ).sample(frac=1)
 
                 acc_aug = thread_testing("test", df_train_aug, ds.df_test)

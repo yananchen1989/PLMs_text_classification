@@ -315,11 +315,11 @@ def do_train_test_thread(df_train, df_test,  best_test_accs, models, di,  epochs
         validation_data=(x_test, y_test), verbose=verbose, validation_batch_size=bs, validation_freq=1,
         callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=4, mode='max',restore_best_weights=True)]
     )
+    return max(history.history['val_acc']), model
+    #best_test_accs.append(max(history.history['val_acc']))
+    #models.append(model)
 
-    best_test_accs.append(max(history.history['val_acc']))
-    models.append(model)
-
-    print('do_train_test iters test==>', best_test_accs)
+    #print('do_train_test iters test==>', best_test_accs)
 
 
 
