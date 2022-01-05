@@ -6,7 +6,9 @@ parser.add_argument("--backbone", default="albert", type=str)
 parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+
 import tensorflow as tf 
 gpus = tf.config.list_physical_devices('GPU')
 print('======>',gpus,'<=======')
