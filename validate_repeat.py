@@ -22,7 +22,7 @@ ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplica
 
 
 infos = []
-for samplecnt in [32, 64, 128]:
+for samplecnt in [ 64, 128]:
     for candidates in [64, 256, 512]:
         files = glob.glob("./log_arxiv_clsembednlinsp/{}.{}.{}.*.log".format(args.dsn, samplecnt, candidates))
         if not files:
