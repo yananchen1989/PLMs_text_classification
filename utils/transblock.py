@@ -292,12 +292,7 @@ def do_train_test_thread(df_train, df_test, model_name='albert', bs=8):
     x_train, y_train = get_keras_data(df_train)
     x_test, y_test = get_keras_data(df_test)
 
-    #with tf.distribute.MirroredStrategy().scope():
-    if gpus:
-        gpu_id = '/GPU:0'
-    else:
-        gpu_id = '/cpu:0'
-    with tf.device(gpu_id):
+    with tf.distribute.MirroredStrategy().scope():
         if model_name == 'albert':
             model = get_model_bert(df_test.label.unique().shape[0])
         elif model_name == 'former':
