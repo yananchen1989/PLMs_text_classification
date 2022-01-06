@@ -9,13 +9,13 @@ from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="yahoo", type=str)
-parser.add_argument("--128", default=64, type=int)
+parser.add_argument("--fbs_gpt", default=64, type=int)
+parser.add_argument("--fbs_t5", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 # parser.add_argument("--w1", default=0.5, type=float)
 # parser.add_argument("--w2", default=0.5, type=float)
 parser.add_argument("--gpu", default="7", type=str)
-#parser.add_argument("--para", default=0, type=int)
-parser.add_argument("--para_cnt", default=8, type=int)
+
 
 args = parser.parse_args()
 
@@ -75,7 +75,7 @@ def para_t5(content):
     dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128, 'imdb':128}
     result_gpt = gen_nlp_t5([remove_str(content)], max_length=dsn_maxlen[args.dsn], \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= args.para_cnt,\
+                                        repetition_penalty=1.2, num_return_sequences= args.fbs_t5,\
                                         clean_up_tokenization_spaces=True)
     ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] #+ [remove_str(content)]
     return ori_gen_contents
@@ -106,7 +106,7 @@ def gpt_ranking(contents_t5):
     for l in labels_candidates:
         scores_tmp = []
         # gpt generation
-        contents_syn = df_contents_arxiv.loc[df_contents_arxiv['label_name']==l].sample(args.fbs)['content'].tolist()
+        contents_syn = df_contents_arxiv.loc[df_contents_arxiv['label_name']==l].sample(args.fbs_gpt)['content'].tolist()
         pairs = list(itertools.product(contents_t5, contents_syn ))
         #for ii in range(0, args.fbs, 8):
             #pairs = [[row['content'], sent] for sent in contents_syn[ii:ii+8]]
@@ -173,8 +173,9 @@ for ix, row in ds.df_train.reset_index().iterrows():
             acc[col].append(0)
 
     if ix % 16 == 0 and ix > 0:
+        print(ix)
         for col in ['score_noexpand','score_w_t5', 'score_w_nsp', 'score_w_t5_nsp']:
-            print(ix, np.array(acc[col]).mean())
+            print(col, np.array(acc[col]).mean())
         print()
 
 print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]))
