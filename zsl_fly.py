@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="yahoo", type=str)
-parser.add_argument("--fbs_gpt", default=64, type=int)
+parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_t5", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 # parser.add_argument("--w1", default=0.5, type=float)
@@ -175,7 +175,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
     if ix % 16 == 0 and ix > 0:
         print(ix)
         for col in ['score_noexpand','score_w_t5', 'score_w_nsp', 'score_w_t5_nsp']:
-            print(col, np.array(acc[col]).mean())
+            print(col, round(np.array(acc[col]).mean(), 4))
         print()
 
 print("final_summary==>", ' '.join(['{}:{}'.format(k, v) for k, v in vars(args).items()]))
