@@ -12,6 +12,7 @@ parser.add_argument("--dsn", default="yahoo", type=str)
 parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_t5", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
+parser.add_argument("--norm", default=0, type=int)
 # parser.add_argument("--w1", default=0.5, type=float)
 # parser.add_argument("--w2", default=0.5, type=float)
 parser.add_argument("--gpu", default="7", type=str)
@@ -48,7 +49,7 @@ print(labels_candidates)
 
 if args.dsn == 'nyt':
     ds, proper_len = process_ds(ds, 128)
-    
+
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
 
@@ -103,7 +104,8 @@ def t5_ranking(contents_t5):
 
     ls_sort = sorted(ls.items(), key=operator.itemgetter(1), reverse=True)
     df_t5 = pd.DataFrame(ls_sort, columns=['label','score_t5'])
-    #df_t5['score_t5'] = df_t5['score_t5'] / len(contents_t5)
+    if args.norm:
+        df_t5['score_t5'] = df_t5['score_t5'] / len(contents_t5)
     return df_t5
 
 
