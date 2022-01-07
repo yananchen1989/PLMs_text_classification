@@ -63,9 +63,10 @@ nohup python -u zsl_fly.py --dsn yahoo --norm 1 --gpu 0  > zsl.fly.yahoo.norm.lo
 nohup python -u zsl_fly.py --dsn ag    --norm 1 --gpu 1  > zsl.fly.ag.norm.log & 
 
 
-nohup python -u validate_repeat.py --dsn ag --gpu 0,1,2,3,4,5,6,7 > validate_repeat.ag.__.log & 
-nohup python -u validate_repeat.py --dsn uci --gpu 0,1,2,3,4,5,6,7 > validate_repeat.uci.__.log &
-nohup python -u validate_repeat.py --dsn nyt --gpu 0,1,2,3,4,5,6,7 > validate_repeat.nyt.__.log & 
+
+
+nohup python -u validate_repeat.py --dsn ag --gpu 2  --samplecnt 64 --candidates 32  > validate_repeat.ag.64.32.log & 
+nohup python -u validate_repeat.py --dsn ag --gpu 4  --samplecnt 64 --candidates 256  > validate_repeat.ag.64.256.log &
 
 
 

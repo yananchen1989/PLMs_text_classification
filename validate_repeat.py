@@ -86,7 +86,7 @@ for col in ['samplecnt','candidates','max_aug_times','candidates']:
 
 
 
-df_tmpi = df_tmp.loc[(df_tmp['samplecnt']==args.samplecnt) & (df_tmp['candidates']==candidatesargs.)]
+df_tmpi = df_tmp.loc[(df_tmp['samplecnt']==args.samplecnt) & (df_tmp['candidates']==args.candidates)]
 for fmark in df_tmp['fmark'].unique():
     if fmark == 'ori':
         continue
