@@ -52,33 +52,32 @@ python -u augf.py --dsn uci --samplecnt 16 --epochs 1 --max_aug_times 1 --aug ge
 
 
 
-nohup python -u zsclassifier_fly.py --dsn uci --gpu 5 --fbs 64 --para 1 > zsl.fly.t5.uci.64.log & 
-nohup python -u zsclassifier_fly.py --dsn ag  --gpu 6 --fbs 64 --para 1 > zsl.fly.t5.ag.64.log & 
-nohup python -u zsclassifier_fly.py --dsn yahoo  --gpu 7 --fbs 64 --para 1 > zsl.fly.t5.yahoo.64.log & 
+nohup python -u zsl_fly.py --dsn yahoo --gpu 7  > zsl.fly.yahoo.log & 
+nohup python -u zsl_fly.py --dsn ag --gpu 3  > zsl.fly.ag.log & 
+
+nohup python -u zsl_fly.py --dsn uci --gpu 6  > zsl.fly.uci.log & 
+nohup python -u zsl_fly.py --dsn nyt --gpu 5  > zsl.fly.nyt.log & 
 
 
 
 
-nohup python -u validate_repeat.py --dsn ag --gpu 0,1,2,3,4,5,6,7 > validate_repeat.ag._.log & 
-nohup python -u validate_repeat.py --dsn uci --gpu 0,1,2,3,4,5,6,7 > validate_repeat.uci._.log &
-nohup python -u validate_repeat.py --dsn nyt --gpu 0,1,2,3,4,5,6,7 > validate_repeat.nyt._.log & 
+nohup python -u validate_repeat.py --dsn ag --gpu 0,1,2,3,4,5,6,7 > validate_repeat.ag.__.log & 
+nohup python -u validate_repeat.py --dsn uci --gpu 0,1,2,3,4,5,6,7 > validate_repeat.uci.__.log &
+nohup python -u validate_repeat.py --dsn nyt --gpu 0,1,2,3,4,5,6,7 > validate_repeat.nyt.__.log & 
 
 
 
-for i in 1 2 3 4 
+for gpu in  4 5 6 7
 do
-nohup python -u validate_repeat.py --dsn ag --gpu 6 --backbone former > validate_repeat.ag.former.gpu6.${i}.log &
+nohup python -u validate_repeat.py --dsn ag --gpu ${gpu}  > validate_repeat.ag.gpu.${gpu}_.log &
 done 
 
-for i in 0 1 2 3 4 
-do
-nohup python -u validate_repeat.py --dsn uci --gpu 7 --backbone former > validate_repeat.uci.former.gpu7.${i}.log &
-done 
+
 
 
 
 ############################################################################################################################################
-ps aux|grep "augff.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "validate_repeat.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 

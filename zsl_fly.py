@@ -98,6 +98,7 @@ def t5_ranking(contents_t5):
 
     ls_sort = sorted(ls.items(), key=operator.itemgetter(1), reverse=True)
     df_t5 = pd.DataFrame(ls_sort, columns=['label','score_t5'])
+    #df_t5['score_t5'] = df_t5['score_t5'] / len(contents_t5)
     return df_t5
 
 
