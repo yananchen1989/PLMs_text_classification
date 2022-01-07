@@ -10,12 +10,11 @@ from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="yahoo", type=str)
 parser.add_argument("--fbs_gpt", default=256, type=int)
-parser.add_argument("--fbs_t5", default=32, type=int)
+parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--norm", default=0, type=int)
-# parser.add_argument("--w1", default=0.5, type=float)
-# parser.add_argument("--w2", default=0.5, type=float)
-parser.add_argument("--gpu", default="7", type=str)
+parser.add_argument("--param", default='t5', type=str)
+parser.add_argument("--gpu", default="2", type=str)
 
 
 args = parser.parse_args()
@@ -71,23 +70,47 @@ bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', ca
 bert_nsp.to(device0)
 
 
-from transformers import T5Tokenizer, AutoModelWithLMHead
-tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-print(tokenizer_t5)
-t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
-gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+if args.param == 't5':
+    from transformers import T5Tokenizer, AutoModelWithLMHead
+    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    print(tokenizer_t5)
+    t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
+    gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+
+elif args.param == 'bt':
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
+    model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
+    tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
+    model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
+    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=len(gpus)-1)
+    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=len(gpus)-1)
+    print('bt model loaded')    
 
 def para_t5(content):
     dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128, 'imdb':128}
-    result_gpt = gen_nlp_t5([remove_str(content)], max_length=dsn_maxlen[args.dsn], \
+    result_gpt = gen_nlp_t5([content], max_length=dsn_maxlen[args.dsn], \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= args.fbs_t5,\
+                                        repetition_penalty=1.2, num_return_sequences= args.fbs_para,\
                                         clean_up_tokenization_spaces=True)
-    ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] #+ [remove_str(content)]
+    ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] 
     return ori_gen_contents
 
 
-def t5_ranking(contents_t5):
+def para_bt(content):
+    content_ =  nlp_forward([content], truncation=True, \
+                       do_sample=True, temperature=0.9, max_length=128, num_return_sequences=8)
+    content_ = list(set([ii['translation_text'] for ii in content_]))
+    content__ =  nlp_backward(content_, truncation=True, \
+                        do_sample=True, max_length=128, temperature=0.9, num_return_sequences=8 )
+    content__ = list(set([ii['translation_text'] for ii in content__]))
+    return random.sample(content__, args.fbs_para)
+
+
+
+
+
+def para_ranking(contents_t5):
     ls = {l:0 for l in labels_candidates}
     nli_result_ll = []
     for j in range(0, len(contents_t5), 16):
@@ -109,7 +132,7 @@ def t5_ranking(contents_t5):
     return df_t5
 
 
-def gpt_ranking(contents_t5):
+def continuation_ranking(contents_t5):
     infos = []
     for l in labels_candidates:
         scores_tmp = []
@@ -192,17 +215,20 @@ for ix, row in ds.df_train.reset_index().iterrows():
 
     # df_nsp_l = pd.DataFrame(zip(labels_candidates, list(score_nsp_l)), columns=['label','score_nsp_l'])
 
+    if args.param == 't5':
+        contents_para = para_t5(row['content'])
+    elif args.param == 'bt':
+        contents_para = para_bt(row['content'])
 
-    contents_t5 = para_t5(row['content'])
 
-    df_t5 = t5_ranking(contents_t5)
+    df_t5 = para_ranking(contents_para)
     
     # if row['label_name'] in df_t5.head(args.acc_topn)['label'].tolist():
     #     accs_expand_t5.append(1)
     # else:
     #     accs_expand_t5.append(0)
 
-    df_nsp = gpt_ranking([row['content']])
+    df_nsp = continuation_ranking([row['content']])
 
 
     df_fuse_ = pd.merge(df_noexpand, df_t5, on=['label'], how='inner')
@@ -228,7 +254,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
         else:
             acc[col].append(0)
 
-    if ix % 16 == 0 and ix > 0:
+    if ix % 64 == 0 and ix > 0:
         print(ix)
         for col in ['score_noexpand','score_w_t5', 'score_w_nsp', 'score_w_t5_nsp']:
             print(col, round(np.array(acc[col]).mean(), 4))

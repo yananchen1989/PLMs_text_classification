@@ -65,15 +65,12 @@ nohup python -u zsl_fly.py --dsn ag    --norm 1 --gpu 1  > zsl.fly.ag.norm.log &
 
 
 
-nohup python -u validate_repeat.py --dsn ag --gpu 2  --samplecnt 64 --candidates 32  > validate_repeat.ag.64.32.log & 
+nohup python -u validate_repeat.py --dsn ag --gpu 2  --samplecnt 64 --candidates 64  > validate_repeat.ag.64.64.log & 
 nohup python -u validate_repeat.py --dsn ag --gpu 4  --samplecnt 64 --candidates 256  > validate_repeat.ag.64.256.log &
 
 
 
-for gpu in  4 5 6 7
-do
-nohup python -u validate_repeat.py --dsn ag --gpu ${gpu}  > validate_repeat.ag.gpu.${gpu}_.log &
-done 
+
 
 
 

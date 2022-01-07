@@ -87,45 +87,45 @@ for samplecnt in [32, 64, 128]:
 
 import glob
 import pandas as pd 
-files = glob.glob("nyt.*.*.*.log")
+files = glob.glob("validate_repeat.ag.*.log")
 
 infos = []
 for file in files:
     with open(file,'r') as f: 
         for line in f:
-            if 'success summary===>' in line:
-                print(line) 
-                line = line.strip().split('summary===>')[-1] 
-                # if 'testvalid:valid' in line:
-                #     continue 
-                tokens = line.strip().replace('"','').split(' ') 
-                dic = {ii.split(':')[0]:ii.split(':')[1] for ii in tokens if ':' in ii}
-                infos.append(dic)
-df = pd.DataFrame(infos)
+            if 'summary==' in line:
+                #print(line)  
+                if 'keras.engine.functional.Functional' in line:
+                    tokens = line.strip().replace('keras.engine.functional.Functional','')\
+                            .replace('(','').replace(')','').replace('<','').replace('>','').replace(',','').split(' ')
+                    samplecnt = int(tokens[2])
+                    candidates = int(tokens[3])
+                    fmark = tokens[4]
+                    acc_base = float(tokens[5])
+                    acc_aug = float(tokens[10])
+                else:
+
+                    tokens = line.strip().split('summary==')[-1].split(' ')
+                    samplecnt = int(tokens[2])
+                    candidates = int(tokens[3])
+                    fmark = tokens[4]
+                    acc_base = float(tokens[5])
+                    acc_aug = float(tokens[6])
+                infos.append((samplecnt, candidates, fmark, acc_base, acc_aug))
+
+df = pd.DataFrame(infos, columns=['samplecnt','candidates','fmark','acc_base','acc_aug'])
 
 
-for col in ['samplecnt','candidates','max_aug_times','candidates']:
-    if col in df.columns:
-        print(col)
-        df[col] = df[col].astype('int')
-
-for col in ['acc_base','acc_aug','gain']:
-    if col in df.columns:
-        df[col] = df[col].astype('float')
 
 
-for samplecnt in [32, 64]:
-    for candidates in [64, 256]:
-        
-        dfi = df.loc[(df['samplecnt']==samplecnt) & (df['candidates']==candidates)]
-        if dfi.shape[0] == 0:
-            continue
-        print(samplecnt, candidates)    
-        print("acc_base:", dfi['acc_base'].mean())
-        for fmark in dfi['fmark'].unique():
-            dfii = dfi.loc[dfi['fmark']==fmark]
-            print(fmark, dfii.shape[0], dfii['acc_aug'].mean())
-        print()
+for samplecnt in df['samplecnt'].unique():
+    for candidates in df['candidates'].unique():
+        for fmark in df['fmark'].unique():
+            dfi = df.loc[(df['fmark']==fmark) & (df['samplecnt']==samplecnt) & (df['candidates']==candidates)]
+            print(samplecnt, candidates, fmark, dfi.shape[0], dfi['acc_base'].mean(), dfi['acc_aug'].mean()) 
+
+
+
 
 
 

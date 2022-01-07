@@ -2,7 +2,7 @@ sent = "Edelman Partners. New York NY J.D. Shaw gets $18 million at JPMorgan Cha
 
 sent = "The dollar has hit its highest level against the euro in almost three months after the Federal Reserve head said the US trade deficit is set to stabilise."
 
-sent = '''
+content = '''
 They are fed up with slow speeds, high prices and the level of customer service they receive. 17% of readers have switched suppliers and a further 16% are considering changing in the near future. It is particularly bad news for BT, the UK's biggest internet supplier, with almost three times as many people trying to leave as joining.
 '''
 sent = "Federal jury orders tech giant Samsung to pay"
@@ -30,6 +30,89 @@ sent = "Virus to cause spike in pork prices"
 # gpt2 = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
 
 
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+tokenizer = AutoTokenizer.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache")  
+model = AutoModelForSeq2SeqLM.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache")
+
+sentence = "This is something which i cannot understand at all"
+
+text =  "paraphrase: " + sentence + " </s>"
+
+encoding = tokenizer.encode_plus(text,pad_to_max_length=True, return_tensors="pt")
+input_ids, attention_masks = encoding["input_ids"].to("cuda"), encoding["attention_mask"].to("cuda")
+
+
+outputs = model.generate(
+    input_ids=input_ids, attention_mask=attention_masks,
+    max_length=128,
+    do_sample=True,
+    top_k=120,
+    top_p=0.95,
+    early_stopping=True,
+    num_return_sequences=5
+)
+
+for output in outputs:
+    line = tokenizer.decode(output, skip_special_tokens=True,clean_up_tokenization_spaces=True)
+    print(line)
+
+
+
+
+
+
+
+import torch
+from transformers import PegasusForConditionalGeneration, PegasusTokenizer
+model_name = 'tuner007/pegasus_paraphrase'
+torch_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+tokenizer = PegasusTokenizer.from_pretrained(model_name, cache_dir="./cache")
+model = PegasusForConditionalGeneration.from_pretrained(model_name, cache_dir="./cache").to(torch_device)
+
+def get_response(input_text,num_return_sequences,num_beams):
+  batch = tokenizer([input_text],truncation=True,padding='longest',max_length=128, return_tensors="pt").to(torch_device)
+  translated = model.generate(**batch,max_length=128,num_beams=num_beams, num_return_sequences=num_return_sequences, temperature=1.5)
+  tgt_text = tokenizer.batch_decode(translated, skip_special_tokens=True)
+  return tgt_text
+
+
+num_beams = 10
+num_return_sequences = 10
+context = "The ultimate test of your knowledge is your capacity to convey it to another."
+get_response(context,num_return_sequences,num_beams)
+
+
+
+
+
+import torch
+from transformers import BartForConditionalGeneration, BartTokenizer
+
+input_sentence = "They were there to enjoy us and they were there to pray for us."
+
+model = BartForConditionalGeneration.from_pretrained('eugenesiow/bart-paraphrase')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = model.to(device)
+tokenizer = BartTokenizer.from_pretrained('eugenesiow/bart-paraphrase')
+batch = tokenizer(input_sentence, return_tensors='pt')
+generated_ids = model.generate(batch['input_ids'])
+generated_sentence = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+
+print(generated_sentence)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -42,33 +125,6 @@ input_ids = tokenizer_gpt2.encode(sent, return_tensors="tf")
 # get logits of last hidden state
 next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
 
-
-
-
-
-
-
-
-
-
-# x_ori = np.array([sent]).reshape(-1,1)
-# y_ori = np.array([label] * 1)
-# eval_result_ori = model.evaluate(x_ori, y_ori, batch_size=1)
-
-# t5
-import glob
-from transformers import pipeline
-from transformers import T5Tokenizer, AutoModelWithLMHead
-tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-print(tokenizer_t5)
-# no ft
-t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-
-# ft:tc pp
-# ft_model_path = 'ft_model_{}_{}'.format('t5', 'tc')
-# checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
-# list.sort(checkpoint_files)
-# t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
 
 ########
 gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
