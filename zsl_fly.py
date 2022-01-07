@@ -110,11 +110,17 @@ def para_bt(content):
 
 
 
-def para_ranking(contents_t5):
+def para_ranking(content_ori):
+
+    if args.param == 't5':
+        contents_para = para_t5(content_ori)
+    elif args.param == 'bt':
+        contents_para = para_bt(content_ori)
+
     ls = {l:0 for l in labels_candidates}
     nli_result_ll = []
-    for j in range(0, len(contents_t5), 16):
-        contents_tmp = contents_t5[j:j+16] 
+    for j in range(0, len(contents_para), 16):
+        contents_tmp = contents_para[j:j+16] 
         nli_result = nli_nlp(contents_tmp,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
         if isinstance(nli_result, dict):
             nli_result_ll.append(nli_result)
@@ -128,17 +134,17 @@ def para_ranking(contents_t5):
     ls_sort = sorted(ls.items(), key=operator.itemgetter(1), reverse=True)
     df_t5 = pd.DataFrame(ls_sort, columns=['label','score_t5'])
     if args.norm:
-        df_t5['score_t5'] = df_t5['score_t5'] / len(contents_t5)
+        df_t5['score_t5'] = df_t5['score_t5'] / len(contents_para)
     return df_t5
 
 
-def continuation_ranking(contents_t5):
+def continuation_ranking(content_ori):
     infos = []
     for l in labels_candidates:
         scores_tmp = []
         # gpt generation
         contents_syn = df_contents_arxiv.loc[df_contents_arxiv['label_name']==l].sample(args.fbs_gpt)['content'].tolist()
-        pairs = list(itertools.product(contents_t5, contents_syn ))
+        pairs = list(itertools.product([content_ori], contents_syn ))
         #for ii in range(0, args.fbs, 8):
             #pairs = [[row['content'], sent] for sent in contents_syn[ii:ii+8]]
         for j in range(0, len(pairs), 8):
@@ -210,25 +216,9 @@ for ix, row in ds.df_train.reset_index().iterrows():
     df_noexpand = pd.DataFrame(nli_result)
     df_noexpand = df_noexpand.rename(columns={'labels': 'label', 'scores':'score_noexpand'})
 
-    # pairs_l = [[row['content'], "This text is about {}".format(l)] for l in labels_candidates]
-    # score_nsp_l = nsp_infer_pairs(pairs_l, bert_nsp, bert_tokenizer)[:,0]
 
-    # df_nsp_l = pd.DataFrame(zip(labels_candidates, list(score_nsp_l)), columns=['label','score_nsp_l'])
-
-    if args.param == 't5':
-        contents_para = para_t5(row['content'])
-    elif args.param == 'bt':
-        contents_para = para_bt(row['content'])
-
-
-    df_t5 = para_ranking(contents_para)
-    
-    # if row['label_name'] in df_t5.head(args.acc_topn)['label'].tolist():
-    #     accs_expand_t5.append(1)
-    # else:
-    #     accs_expand_t5.append(0)
-
-    df_nsp = continuation_ranking([row['content']])
+    df_t5 = para_ranking(row['content'])
+    df_nsp = continuation_ranking(row['content'])
 
 
     df_fuse_ = pd.merge(df_noexpand, df_t5, on=['label'], how='inner')
