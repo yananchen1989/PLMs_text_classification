@@ -104,7 +104,7 @@ def para_bt(content):
     content__ =  nlp_backward(content_, truncation=True, \
                         do_sample=True, max_length=128, temperature=0.9, num_return_sequences=8 )
     content__ = list(set([ii['translation_text'] for ii in content__]))
-    return random.sample(content__, args.fbs_para)
+    return random.sample(content__, min(args.fbs_para, len(content__)))
 
 
 

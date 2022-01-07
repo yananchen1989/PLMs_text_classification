@@ -45,11 +45,6 @@ done
 
 
 
-python -u augf.py --dsn uci --samplecnt 16 --epochs 1 --max_aug_times 1 --aug generate \
-                        --genft no  --seed 333 --testbed 1 \
-                        --testvalid test --candidates 256 --gpu 1,3
-
-
 
 
 nohup python -u zsl_fly.py --dsn yahoo --gpu 7  > zsl.fly.yahoo.log & 
@@ -63,10 +58,9 @@ nohup python -u zsl_fly.py --dsn yahoo --norm 1 --gpu 0  > zsl.fly.yahoo.norm.lo
 nohup python -u zsl_fly.py --dsn ag    --norm 1 --gpu 1  > zsl.fly.ag.norm.log & 
 
 
+nohup python -u zsl_fly.py --dsn yahoo --param bt --norm 1 --gpu 2  > zsl.fly.yahoo.norm.bt.log & 
+nohup python -u zsl_fly.py --dsn ag    --param bt --norm 1 --gpu 4  > zsl.fly.ag.norm.bt.log & 
 
-
-nohup python -u validate_repeat.py --dsn ag --gpu 2  --samplecnt 64 --candidates 64  > validate_repeat.ag.64.64.log & 
-nohup python -u validate_repeat.py --dsn ag --gpu 4  --samplecnt 64 --candidates 256  > validate_repeat.ag.64.256.log &
 
 
 

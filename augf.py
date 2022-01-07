@@ -109,31 +109,6 @@ ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates(
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 #seed = random.sample(list(range(10000)), 1)[0]
 
-testbed_func = {"test":do_train_test_thread, "valid":do_train_test_valid_thread}
-def thread_testing(testvalid, df_train, df_test):
-    best_test_accs = []
-    models = []
-
-    for ddi in range(1):
-        threads = []
-        for di in range(1):
-            t = Thread(target=testbed_func[testvalid], args=(df_train, df_test, best_test_accs, models, di + ddi*2, \
-                              args.epochs,  args.verbose, 'albert', 8))
-            t.start()
-            threads.append(t)
-        # join all threads
-        for t in threads:
-            t.join() 
-
-    if args.basemode == 'mean':
-        acc = round(np.array(best_test_accs).mean(), 4)
-    elif args.basemode == 'max':
-        acc = round(np.array(best_test_accs).max(), 4)
-
-    model_best = models[np.array(best_test_accs).argmax()]
-    return  acc, model_best
-
-
 if args.aug == 'eda':
     from utils.eda import *
 
@@ -297,7 +272,7 @@ if args.aug == 'cbert':
 #         return 1, result['scores'][0]
 #     else:
 #         return 0, result['scores'][0]
-
+'''
 def run_dvrl_thread(dsn, ii, seed):
     os.system('python dvrl_iter.py --dsn {} --ite {} --seed {} '.format(dsn, ii, seed))
 
@@ -331,32 +306,6 @@ def nli_classify(generated_text, label_name, labels_candidates, ln_extend__rev, 
             return 1, score 
         else:
             return 0, score        
-
-def enc_classify(content, ori_label, enc_dic):
-    embed = enc.infer([content])
-    result = {}
-    for l, embeds in enc_dic.items():
-        score = cosine_similarity(embed, embeds).mean()
-        result[l] = score
-    pred_label = max(result, key=result.get)
-    if pred_label == ori_label:
-        return 1,  result[pred_label]
-    else:
-        return 0,  result[pred_label]
-
-def bertcls_classify(generated_text, label_name):
-    pred = model_cls.predict([generated_text], batch_size=1, verbose=0)  
-
-    pred_label_name = ixl[pred[0].argmax()]
-    pred_label_score = float(pred[0].max())
-
-    ori_label_score = float(pred[0][ixl_rev[label_name]])
-
-    if pred_label_name == label_name and pred_label_score >= 0.8:
-        assert ori_label_score == pred_label_score
-        return 1, ori_label_score
-    else:
-        return 0, ori_label_score
 
 def dvrl_inner_join(files):
 
@@ -392,7 +341,7 @@ def dvrl_inner_join(files):
         print('after:', df_merge.shape[0]) 
 
     return df_merge
-
+'''
 # if not args.testbed:
 #     with tf.distribute.MirroredStrategy().scope():
 #         model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
@@ -477,7 +426,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     return result_syn
 
-'''
+
 def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     # get mc scores
     df_future_sel_ll = []
@@ -528,11 +477,11 @@ def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     print("mc done:", len(contents_syn))
     return contents_syn
-'''
+
 
 if args.testbed:
     print("begin_to_test_noaug")
-    acc_noaug, model_cls = thread_testing(args.testvalid, ds.df_train, ds.df_test)
+    acc_noaug, model_cls  = do_train_test_thread(ds.df_train, ds.df_test, args.model, 16)
 else:
     acc_noaug = -1
 
@@ -673,9 +622,9 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         for i in range(0, ds.df_train.shape[0], fbs):
             contents_trunk = ds.df_train['content'].tolist()[i:i+fbs]
             content_ =  nlp_forward(contents_trunk, truncation=True, \
-                       do_sample=True, temperature=0.9, max_length=256, num_return_sequences=1)
+                       do_sample=True, temperature=0.9, max_length=128, num_return_sequences=1)
             content__ =  nlp_backward([ii['translation_text'] for ii in content_], truncation=True, \
-                        do_sample=True, max_length=256, temperature=0.9, num_return_sequences=1 )
+                        do_sample=True, max_length=128, temperature=0.9, num_return_sequences=1 )
             contents_syn.extend([ii['translation_text'] for ii in content__])
             print('translate trunk==>', i, i+fbs, 'of', ds.df_train.shape[0])
 
@@ -817,12 +766,8 @@ for args.aug in ['generate']:
             print("begin_to_test_aug")
 
             for fmark in df_synthesize['fmark'].unique():
-                acc_aug, _ = thread_testing(args.testvalid, df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test)
+                acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test, args.model, 16)
 
-                # if acc_noaug > 0:
-                #     gain = round((acc_aug - acc_noaug) / acc_noaug * 100, 2)
-                # else:
-                #     gain = -1
 
                 summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
                     ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]

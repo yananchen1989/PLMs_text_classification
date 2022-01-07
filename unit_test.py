@@ -74,8 +74,6 @@ def get_response(input_text,num_return_sequences,num_beams):
   translated = model.generate(**batch,max_length=128,num_beams=num_beams, num_return_sequences=num_return_sequences, temperature=1.5)
   tgt_text = tokenizer.batch_decode(translated, skip_special_tokens=True)
   return tgt_text
-
-
 num_beams = 10
 num_return_sequences = 10
 context = "The ultimate test of your knowledge is your capacity to convey it to another."
