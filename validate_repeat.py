@@ -84,10 +84,8 @@ for col in ['samplecnt','candidates','max_aug_times','candidates']:
 
 
 
-for samplecnt in df_tmp['samplecnt'].unique():
-    for candidates in df_tmp['candidates'].unique():
 
-df_tmpi = df_tmp.loc[(df_tmp['samplecnt']==args.samplecnt) & (df_tmp['candidates']==candidates)]
+df_tmpi = df_tmp.loc[(df_tmp['samplecnt']==args.samplecnt) & (df_tmp['candidates']==candidatesargs.)]
 for fmark in df_tmp['fmark'].unique():
     if fmark == 'ori':
         continue
@@ -96,16 +94,16 @@ for fmark in df_tmp['fmark'].unique():
                 min(df_tmpi.loc[df_tmpi['fmark']=='ori'].label_name.value_counts().min(), args.samplecnt) )
     df_fmark =  sample_stratify(df_tmpi.loc[df_tmpi['fmark']==fmark], \
                 min(df_tmpi.loc[df_tmpi['fmark']==fmark].label_name.value_counts().min(), args.samplecnt))
-    print(args.samplecnt, candidates, fmark, "===>")
+    print(args.samplecnt, args.candidates, fmark, "===>")
     print(df_ori['label_name'].value_counts())
     print(df_fmark['label_name'].value_counts())
 
     df_train_aug = pd.concat([df_ori, df_fmark ] ).sample(frac=1)
 
-    acc_noaug, _  = do_train_test_thread(df_ori,       ds.df_test, args.backbone, 8)
-    acc_aug, _  = do_train_test_thread(df_train_aug,   ds.df_test, args.backbone, 8)
+    acc_noaug, _  = do_train_test_thread(df_ori,       ds.df_test, args.backbone, 16)
+    acc_aug, _  = do_train_test_thread(df_train_aug,   ds.df_test, args.backbone, 16)
 
-    print("summary=={}".format(ite), args.dsn,  args.samplecnt, candidates, fmark, \
+    print("summary=={}".format(ite), args.dsn,  args.samplecnt, args.candidates, fmark, \
                 acc_noaug, acc_aug)
 
 

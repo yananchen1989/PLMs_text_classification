@@ -307,7 +307,7 @@ def do_train_test_thread(df_train, df_test, model_name='albert', bs=8):
 
     history = model.fit(
         x_train, y_train, batch_size=bs, epochs=72, \
-        validation_data=(x_test, y_test), verbose=0, validation_batch_size=8, validation_freq=72,
+        validation_data=(x_test, y_test), verbose=0, validation_batch_size=bs, validation_freq=72,
         #callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=4, mode='max',restore_best_weights=True)]
     )
     return max(history.history['val_acc']), model
