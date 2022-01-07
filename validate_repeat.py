@@ -3,7 +3,8 @@ import os,argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--backbone", default="albert", type=str)
-
+parser.add_argument("--samplecnt", default=32, type=int)
+parser.add_argument("--candidates", default=32, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 
