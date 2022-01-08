@@ -123,11 +123,17 @@ def para_bt(content):
 
 
 def para_bart(content):
-    batch = tokenizer_bart(content, return_tensors='pt', truncation=True, padding='longest',max_length=128)
-    generated_ids = model_bart.generate(batch['input_ids'].to(device0), max_length=128,
-                            do_sample=True, num_return_sequences=args.fbs_para)
-    generated_sentence = tokenizer_bart.batch_decode(generated_ids, skip_special_tokens=True)
-    return [sent for sent in list(set(generated_sentence)) if sent != content]
+    result = set()
+    while 1:
+        batch = tokenizer_bart(content, return_tensors='pt', truncation=True, padding='longest',max_length=128)
+        generated_ids = model_bart.generate(batch['input_ids'].to(device0), max_length=128,
+                                do_sample=True, num_return_sequences=8)
+        generated_sentence = tokenizer_bart.batch_decode(generated_ids, skip_special_tokens=True)
+
+        result.update([sent for sent in generated_sentence if sent != content])
+        if len(result) >= args.fbs_para:
+            break 
+    return random.sample(list(result), args.fbs_para)
 
 
 def para_peg(content):
