@@ -536,11 +536,11 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
 
             t0 = time.time()
-            if args.filter == 'nlinsp':
-                if args.genm == 'gpt':
-                    result_syn = nlinsp_gen(row, gen_nlp_gpt2, nli_nlp, bert_nsp)
-                elif args.genm == 't5':
-                    result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
+            # if args.filter == 'nlinsp':
+            #     if args.genm == 'gpt':
+            #         result_syn = nlinsp_gen(row, gen_nlp_gpt2, nli_nlp, bert_nsp)
+            #     elif args.genm == 't5':
+            #         result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
             elif args.filter == 'clsembed':
                 result_syn = lambda_gen(row, gen_nlp_gpt2, enc, model_cls)
 

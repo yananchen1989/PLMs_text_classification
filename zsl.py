@@ -13,7 +13,7 @@ parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--param", default='t5', type=str)
-parser.add_argument("--gpu", default="2", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -99,7 +99,7 @@ elif args.param == 'peg':
 elif args.param == 't5paws':
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
     tokenizer_t5paws = AutoTokenizer.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache", local_files_only=True)  
-    model_t5paws = AutoModelForSeq2SeqLM.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache", local_files_only=True)
+    model_t5paws = AutoModelForSeq2SeqLM.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache", local_files_only=True).to(device0)
 
 
 def para_t5(content):
@@ -124,7 +124,7 @@ def para_bt(content):
 
 def para_bart(content):
     batch = tokenizer_bart(content, return_tensors='pt', truncation=True, padding='longest',max_length=128)
-    generated_ids = model_bart.generate(batch['input_ids'], max_length=128,
+    generated_ids = model_bart.generate(batch['input_ids'].to(device0), max_length=128,
                             do_sample=True, num_return_sequences=args.fbs_para)
     generated_sentence = tokenizer_bart.batch_decode(generated_ids, skip_special_tokens=True)
     return [sent for sent in list(set(generated_sentence)) if sent != content]

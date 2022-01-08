@@ -89,42 +89,9 @@ class fillInmask():
         
 
 
-# unit test
 
 
 
-fillin_nlp = pipeline("fill-mask" , model = 'google/bigbird-roberta-base')
-fillin_nlp = pipeline("fill-mask" , model = 'distilbert-base-uncased')
-
-content = 'Mitsubishi to have second-largest stake after GM -report TOKYO (CBS.MW) - Shares of Japan #39;s Isuzu Motors Ltd. rose Thursday after a published report that trading house Mitsubishi Corp.'
-
-content = ds.df_train.sample(1).content.tolist()[0]
-content_mask = content.replace('Karen Gillan', fillin_nlp.tokenizer.mask_token, 1)
-fillin_nlp(content_mask)
-
-
-
-
-[{'sequence': 'bush campaign trail stops at george washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
-  'score': 0.21938802301883698,
-  'token': 2577,
-  'token_str': 'george'},
- {'sequence': 'bush campaign trail stops at mount washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
-  'score': 0.2040329873561859,
-  'token': 4057,
-  'token_str': 'mount'},
- {'sequence': 'bush campaign trail stops at downtown washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
-  'score': 0.1190764307975769,
-  'token': 5116,
-  'token_str': 'downtown'},
- {'sequence': 'bush campaign trail stops at fort washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
-  'score': 0.05357954278588295,
-  'token': 3481,
-  'token_str': 'fort'},
- {'sequence': 'bush campaign trail stops at capitol washington - enmeshed in his re - election campaign, president bush rarely spends a full day at the white house. but even when he does, presidential politics and campaign pitches remain close at hand...',
-  'score': 0.04831065610051155,
-  'token': 9424,
-  'token_str': 'capitol'}]
 
 
 

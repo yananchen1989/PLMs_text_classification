@@ -24,12 +24,32 @@ sent = "Virus to cause spike in pork prices"
 
 
 
+
+
+
 # gpt neo
 # from transformers import GPT2Tokenizer, GPTNeoForCausalLM
 # tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
 # gpt2 = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
 
 
+import pandas as pd 
+from transformers import pipeline
+unmasker = pipeline('fill-mask', model='roberta-large')
+
+
+sent = "Federal jury orders tech giant Samsung to pay"
+
+sent = 'FDA gives green light to migraine prevention tool'
+
+filled_result = unmasker("Federal jury orders tech giant {} to pay".format(unmasker.tokenizer.mask_token))
+
+filled_result = unmasker("Federal jury orders business giant {} to pay".format(unmasker.tokenizer.mask_token))
+
+filled_result = unmasker("Federal jury orders military giant {} to pay".format(unmasker.tokenizer.mask_token))
+
+df = pd.DataFrame(filled_result)
+print(df)
 
 
 
@@ -41,14 +61,11 @@ sent = "Virus to cause spike in pork prices"
 
 
 
+from transformers import BartForConditionalGeneration, BartTokenizer
+model_bart = BartForConditionalGeneration.from_pretrained('eugenesiow/bart-paraphrase', cache_dir="./cache", mirror='bfsu')
 
 
-
-
-
-
-
-
+tokenizer_bart = BartTokenizer.from_pretrained('eugenesiow/bart-paraphrase', cache_dir="./cache", local_files_only=True)
 
 
 
