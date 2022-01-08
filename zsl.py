@@ -264,9 +264,9 @@ for ix, row in ds.df_train.reset_index().iterrows():
 
     df_t5 = para_ranking(row['content'])
 
-    if df_t5['score_t5'].min() ==0:
-        print(row['content'], "===> no para")
-        continue
+    if df_t5['score_t5'].min() ==0 and df_t5['score_t5'].max()==0:
+        df_t5['score_t5'] = 1
+
     df_nsp = continuation_ranking(row['content'])
 
 

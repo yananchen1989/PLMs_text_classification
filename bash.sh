@@ -52,7 +52,7 @@ done
 nohup python -u zsl.py --dsn yahoo --param 'bart' --gpu 0  > zsl.fly.yahoo.bart.log & 
 nohup python -u zsl.py --dsn ag    --param 'bart' --gpu 1  > zsl.fly.ag.bart.log & 
 nohup python -u zsl.py --dsn uci   --param 'bart' --gpu 3  > zsl.fly.uci.bart.log & 
-nohup python -u zsl.py --dsn nyt   --param 'bart' --gpu 5  > zsl.fly.uci.bart.log & 
+nohup python -u zsl.py --dsn nyt   --param 'bart' --gpu 5  > zsl.fly.nyt.bart.log & 
 
 
 
