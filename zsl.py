@@ -43,7 +43,7 @@ ds = load_data(dataset=args.dsn, samplecnt= samplecnt)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
 
-if args.dsn == 'nyt':
+if args.dsn in ['nyt','yahoo']:
     ds, proper_len = process_ds(ds, 128)
 
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
