@@ -12,11 +12,8 @@ parser.add_argument("--dsn", default="yahoo", type=str)
 parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
-parser.add_argument("--norm", default=0, type=int)
 parser.add_argument("--param", default='t5', type=str)
 parser.add_argument("--gpu", default="2", type=str)
-
-
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -52,6 +49,9 @@ if args.dsn == 'nyt':
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
 
+import torch
+device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+
 # nli model
 from transformers import pipeline
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -63,8 +63,6 @@ nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokeni
 
 #nsp model
 from transformers import BertTokenizer, BertForNextSentencePrediction
-import torch
-device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
 bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
 bert_nsp.to(device0)
@@ -87,6 +85,23 @@ elif args.param == 'bt':
     nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=len(gpus)-1)
     print('bt model loaded')    
 
+
+elif args.param == 'bart':
+    from transformers import BartForConditionalGeneration, BartTokenizer
+    model_bart = BartForConditionalGeneration.from_pretrained('eugenesiow/bart-paraphrase', cache_dir="./cache", local_files_only=True).to(device0)
+    tokenizer_bart = BartTokenizer.from_pretrained('eugenesiow/bart-paraphrase', cache_dir="./cache", local_files_only=True)
+
+elif args.param == 'peg':
+    from transformers import PegasusForConditionalGeneration, PegasusTokenizer
+    tokenizer_peg = PegasusTokenizer.from_pretrained('tuner007/pegasus_paraphrase', cache_dir="./cache", local_files_only=True)
+    model_peg = PegasusForConditionalGeneration.from_pretrained('tuner007/pegasus_paraphrase', cache_dir="./cache", local_files_only=True).to(device0)
+
+elif args.param == 't5paws':
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    tokenizer_t5paws = AutoTokenizer.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache", local_files_only=True)  
+    model_t5paws = AutoModelForSeq2SeqLM.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache", local_files_only=True)
+
+
 def para_t5(content):
     dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128, 'imdb':128}
     result_gpt = gen_nlp_t5([content], max_length=dsn_maxlen[args.dsn], \
@@ -107,15 +122,47 @@ def para_bt(content):
     return random.sample(content__, min(args.fbs_para, len(content__)))
 
 
+def para_bart(content):
+    batch = tokenizer_bart(content, return_tensors='pt', truncation=True, padding='longest',max_length=128)
+    generated_ids = model_bart.generate(batch['input_ids'], max_length=128,
+                            do_sample=True, num_return_sequences=args.fbs_para)
+    generated_sentence = tokenizer_bart.batch_decode(generated_ids, skip_special_tokens=True)
+    return [sent for sent in list(set(generated_sentence)) if sent != content]
 
 
+def para_peg(content):
+    batch = tokenizer_peg([content], truncation=True,padding='longest', max_length=128, return_tensors="pt").to(device0)
+    translated = model_peg.generate(**batch, max_length=128, num_beams=args.fbs_para, num_return_sequences=args.fbs_para, temperature=1.5)
+    tgt_text = tokenizer_peg.batch_decode(translated, skip_special_tokens=True)
+    return [sent for sent in list(set(tgt_text)) if sent != content]
+
+
+def para_t5paws(content):
+    text =  "paraphrase: " + content + " {}".format(tokenizer_t5paws.eos_token)
+    encoding = tokenizer_t5paws.encode_plus(text, pad_to_max_length=True, truncation=True, max_length=128, return_tensors="pt")
+    input_ids, attention_masks = encoding["input_ids"].to(device0), encoding["attention_mask"].to(device0)
+
+    outputs = model_t5paws.generate(
+        input_ids=input_ids, attention_mask=attention_masks,
+        max_length=128,
+        do_sample=True,
+        top_k=120,
+        top_p=0.95,
+        early_stopping=True,
+        num_return_sequences=args.fbs_para)
+
+    results = []
+    for output in outputs:
+        line = tokenizer_t5paws.decode(output, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        if line != content:
+            results.append(line)
+    return results
+
+
+para_func = {'t5':para_t5, 'bt':para_bt, 'bart':para_bart, 'peg':para_peg, 't5paws':para_t5paws}
 
 def para_ranking(content_ori):
-
-    if args.param == 't5':
-        contents_para = para_t5(content_ori)
-    elif args.param == 'bt':
-        contents_para = para_bt(content_ori)
+    contents_para = para_func[args.param](content_ori)
 
     ls = {l:0 for l in labels_candidates}
     nli_result_ll = []
@@ -133,8 +180,6 @@ def para_ranking(content_ori):
 
     ls_sort = sorted(ls.items(), key=operator.itemgetter(1), reverse=True)
     df_t5 = pd.DataFrame(ls_sort, columns=['label','score_t5'])
-    if args.norm:
-        df_t5['score_t5'] = df_t5['score_t5'] / len(contents_para)
     return df_t5
 
 

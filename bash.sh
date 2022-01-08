@@ -47,15 +47,13 @@ done
 
 
 
-nohup python -u zsl_fly.py --dsn yahoo --gpu 7  > zsl.fly.yahoo.log & 
-nohup python -u zsl_fly.py --dsn ag --gpu 3  > zsl.fly.ag.log & 
-
-nohup python -u zsl_fly.py --dsn uci --gpu 6  > zsl.fly.uci.log & 
-nohup python -u zsl_fly.py --dsn nyt --gpu 5  > zsl.fly.nyt.log & 
 
 # norm
-nohup python -u zsl_fly.py --dsn yahoo --norm 1 --gpu 0  > zsl.fly.yahoo.norm.log & 
-nohup python -u zsl_fly.py --dsn ag    --norm 1 --gpu 1  > zsl.fly.ag.norm.log & 
+nohup python -u zsl_fly.py --dsn yahoo --param 'bart' --gpu 0  > zsl.fly.yahoo.bart.log & 
+nohup python -u zsl_fly.py --dsn ag    --param 'bart' --gpu 1  > zsl.fly.ag.bart.log & 
+nohup python -u zsl_fly.py --dsn uci    --param 'bart' --gpu 1  > zsl.fly.uci.bart.log & 
+nohup python -u zsl_fly.py --dsn nyt    --param 'bart' --gpu 1  > zsl.fly.uci.bart.log & 
+
 
 
 nohup python -u zsl_fly.py --dsn yahoo --param bt --norm 1 --gpu 2  > zsl.fly.yahoo.norm.bt.log & 

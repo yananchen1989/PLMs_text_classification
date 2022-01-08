@@ -376,7 +376,7 @@ def lambda_gen(row, gen_nlp, enc, model_cls):
     result_syn['embed'] = df_tmp.sort_values(by=['embed_score'], ascending=False).head(1)['content'].tolist()[0] 
     return result_syn
 
-
+'''
 def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     prompt = decorate_sent(row['content'], row['label_name'])
             
@@ -425,7 +425,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     result_syn['00'] = df_tmp.sample(1)['content'].tolist()[0] 
 
     return result_syn
-
+'''
 
 def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     # get mc scores
