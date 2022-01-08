@@ -8,11 +8,11 @@ import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="yahoo", type=str)
+parser.add_argument("--dsn", default="uci", type=str)
 parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
-parser.add_argument("--param", default='t5', type=str)
+parser.add_argument("--param", default='bart', type=str)
 parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 
@@ -263,6 +263,10 @@ for ix, row in ds.df_train.reset_index().iterrows():
 
 
     df_t5 = para_ranking(row['content'])
+
+    if df_t5['score_t5'].min() ==0:
+        print(row['content'], "===> no para")
+        continue
     df_nsp = continuation_ranking(row['content'])
 
 
