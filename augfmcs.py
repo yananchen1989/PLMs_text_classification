@@ -6,7 +6,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--samplecnt", default=128, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
-
+parser.add_argument("--testmode", default=0, type=int)
 parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 parser.add_argument("--test_beams", default=32, type=int)
@@ -95,10 +95,11 @@ if not args.testmode:
     acc_noaug, model_cls = do_train_test_thread(ds.df_train, ds.df_test, 'albert', 16)
     print("base acc==>", acc_noaug)
 
-with tf.distribute.MirroredStrategy().scope():
-    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-    model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
-    acc_noaug = -1
+else:
+    with tf.distribute.MirroredStrategy().scope():
+        model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+        model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
+        acc_noaug = -1
 
 def mc_gen(row):
     # get mc scores
