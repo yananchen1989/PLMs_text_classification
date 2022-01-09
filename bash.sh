@@ -16,38 +16,6 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 
 
-nohup bash run.sh uci 0 &
-nohup bash run.sh ag 2 &
-
-nohup bash run.sh uci 3 &
-nohup bash run.sh ag 1 &
-nohup bash run.sh nyt 4 &
-
-
-for gpu in 0,1 2,3 
-do
-nohup bash run_cbert.sh ${gpu} & 
-done
-
-
-
-
-seed=$RANDOM
-for dsn in uci ag nyt 
-do
-nohup envcbert/bin/python -u augf.py --dsn ${dsn} --samplecnt 128 --aug cbert \
-      --max_aug_times 1 --seed ${seed} --testvalid test  \
- > ./log_baselines/${dsn}.cbert.128.1.${seed}.log 2>&1 &
-done
-
-
-
-
-
-
-
-
-
 # norm
 
 nohup python -u zsl.py --dsn yahoo --param 't5paws'  --gpu 2  > zsl.fly.yahoo.t5paws.log & 
@@ -59,15 +27,16 @@ nohup python -u zsl.py --dsn nyt   --param 't5paws'  --gpu 7  > zsl.fly.nyt.t5pa
 python -u augfmcs.py --dsn uci --samplecnt 128 --genm t5 --candidates 64 --test_beams 32 --testmode 1 --gpu 0
 
 
+nohup bash run.sh uci 0 & 
+nohup bash run.sh ag 1 & 
 
-
-
-
+nohup bash run.sh uci 3 & 
+nohup bash run.sh ag 5 & 
 
 
 
 ############################################################################################################################################
-ps aux|grep "validate_repeat.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "augfmcs.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 

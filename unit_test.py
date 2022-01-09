@@ -31,29 +31,36 @@ content = "Grand Budapest Hotel'not grand, but still stylish"
 # from transformers import GPT2Tokenizer, GPTNeoForCausalLM
 # tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
 # gpt2 = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
-
-
+import os 
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import pandas as pd 
 from transformers import pipeline
-
 from transformers import AutoTokenizer, AutoModelWithLMHead
 
 tokenizer = AutoTokenizer.from_pretrained('roberta-large',cache_dir="./cache",local_files_only=True) 
 model = AutoModelWithLMHead.from_pretrained('roberta-large',cache_dir="./cache",local_files_only=True)
-    
-nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1)
+nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0)
 
+sent = "Emergence of community - acquired infections due to ESBL" # health
+sent = "100 bodies found at the scene of plane disaster" # health
 
+Castle'Season 6 Spoilers : Season Finale Sees'Trouble'With Beckett's Past <=== entertainment
+Fitch Publishes Sector Credit Factors for Japanese Insurers <=== business
+Obama announces new sanctions on Russia <=== business
 
+sent = "U. S. senator demands compensation fund for recalled GM cars" # science and technology
 sent = "Federal jury orders tech giant Samsung to pay"
 
 sent = 'FDA gives green light to migraine prevention tool'
 
-filled_result = unmasker("Federal jury orders tech giant {} to pay".format(unmasker.tokenizer.mask_token))
+filled_result = nlp_fill("Federal jury orders tech giant {} to pay".format(nlp_fill.tokenizer.mask_token))
 
-filled_result = unmasker("Federal jury orders business giant {} to pay".format(unmasker.tokenizer.mask_token))
+filled_result = nlp_fill("Federal jury orders business giant {} to pay".format(nlp_fill.tokenizer.mask_token))
 
-filled_result = unmasker("Federal jury orders military giant {} to pay".format(unmasker.tokenizer.mask_token))
+filled_result = nlp_fill("Federal jury orders military giant {} to pay".format(nlp_fill.tokenizer.mask_token))
+
+
+filled_result = nlp_fill("{} 6 Spoilers : Season Finale Sees'Trouble'With Beckett's Past".format(nlp_fill.tokenizer.mask_token), top_k=10)
 
 df = pd.DataFrame(filled_result)
 print(df)
