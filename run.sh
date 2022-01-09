@@ -38,7 +38,7 @@ do
 	seed=$RANDOM
 	for genm in gpt t5
 	do
-	python -u augfmcs.py --dsn ${1} --samplecnt 128 --genm ${genm} --candidates 64 --test_beams 32 --gpu ${2}
+	python -u augfmcs.py --dsn ${1} --samplecnt 128 --genm ${genm} --candidates 64 --test_beams 32 --gpu ${2} \
 			> ./log_mcs/${1}.128.${genm}.64.32.${seed}.log 2>&1
 	done
 done
