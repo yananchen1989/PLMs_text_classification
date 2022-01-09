@@ -56,7 +56,7 @@ nohup python -u zsl.py --dsn uci   --param 't5paws'  --gpu 6  > zsl.fly.uci.t5pa
 nohup python -u zsl.py --dsn nyt   --param 't5paws'  --gpu 7  > zsl.fly.nyt.t5paws.log & 
 
 
-
+python -u augfmcs.py --dsn uci --samplecnt 128 --genm t5 --candidates 64 --test_beams 32 --testmode 1 --gpu 0
 
 
 
