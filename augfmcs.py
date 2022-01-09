@@ -78,7 +78,7 @@ if args.genm == 'gpt':
     gpt2_noft.config.pad_token_id=50256
     gen_nlp  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
-elif:
+elif  args.genm == 't5':
     from transformers import T5Tokenizer, AutoModelWithLMHead
     tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
     print(tokenizer_t5)
@@ -166,8 +166,7 @@ print("final generated==>", df_synthesize.shape[0]/ds.df_train.shape[0])
 df_train_aug = pd.concat([ds.df_train, df_synthesize] ).sample(frac=1)
 print("begin_to_test_aug")
 acc_aug, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
-summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] + \
-                    ['acc_base:{} acc_aug:{} '.format( acc_noaug, acc_aug )]
+summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] +  ['acc_base:{} acc_aug:{}'.format( acc_noaug, acc_aug )]
 print('success', ' '.join(summary))
 
 
