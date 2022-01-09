@@ -211,8 +211,7 @@ if args.aug == 'generate':
     tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
     nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
-    # with tf.distribute.MirroredStrategy().scope():
-    #     bert_nsp  = get_model_nsp(256)
+
     from transformers import BertTokenizer, BertForNextSentencePrediction
     import torch
     device0 = torch.device("cuda:{}".format(len(gpus)-1) if torch.cuda.is_available() else "cpu")
@@ -426,57 +425,6 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
     return result_syn
 '''
-
-def mc_nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
-    # get mc scores
-    df_future_sel_ll = []
-    contents_syn = []
-    fbs_gen = 32
-    mc_candidates = args.candidates * 2
-    for _ in range(0, mc_candidates //fbs_gen):
-        torch.cuda.empty_cache()
-        result_gpt = gen_nlp([row['content']], max_length=dsn_maxlen[args.dsn], \
-                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= fbs_gen,\
-                                        clean_up_tokenization_spaces=True)
-
-        contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
-        contents_syn.extend(contents_syn_tmp)
-
-    contents_syn_mc_trunk = []
-    fbs_mc = 8
-
-    for ii in range(0, len(contents_syn), fbs_mc):
-        result_mc = gen_nlp(contents_syn[ii:ii+fbs_mc], max_length=dsn_maxlen[args.dsn], \
-                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= args.test_beams,\
-                                        clean_up_tokenization_spaces=True)
-        if args.genm == 'gpt':
-            for s in result_mc:
-                samples = [ss['generated_text'] for ss in s ]
-                contents_syn_mc_trunk.extend(samples)
-        elif args.genm == 't5':
-            contents_syn_mc_trunk.extend([s['generated_text'] for s in result_mc ])
-        
-    assert len(contents_syn_mc_trunk) == len(contents_syn) * args.test_beams
-    preds = model_cls.predict(np.array(contents_syn_mc_trunk),  batch_size=32, verbose=0) 
-
-    mc_scores_tmp = []
-    for j in range(0, len(contents_syn_mc_trunk), args.test_beams):
-        pred_mean = preds[j:j+args.test_beams, row['label']].mean()
-        mc_scores_tmp.append(pred_mean)
-    assert len(mc_scores_tmp) == len(contents_syn)
-
-    df_future = pd.DataFrame(zip(contents_syn, mc_scores_tmp), columns=['content','mc_score'])
-    df_future_sel_ll.append(df_future)
-
-    df_future_all = pd.concat(df_future_sel_ll)
-    df_future_sel = df_future_all.sort_values(by=['mc_score'], ascending=False).head(args.candidates)
-
-    contents_syn = df_future_sel['content'].tolist()
-
-    print("mc done:", len(contents_syn))
-    return contents_syn
 
 
 if args.testbed:

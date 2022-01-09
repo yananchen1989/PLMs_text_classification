@@ -49,11 +49,16 @@ done
 
 
 # norm
-nohup python -u zsl.py --dsn yahoo --param 'bart' --fbs_para 16 --gpu 0  > zsl.fly.yahoo.bart.log & 
-nohup python -u zsl.py --dsn ag    --param 'bart' --fbs_para 16 --gpu 1  > zsl.fly.ag.bart.log & 
-nohup python -u zsl.py --dsn uci   --param 'bart' --fbs_para 16 --gpu 3  > zsl.fly.uci.bart.log & 
-nohup python -u zsl.py --dsn nyt   --param 'bart' --fbs_para 16 --gpu 5  > zsl.fly.nyt.bart.log & 
+nohup python -u zsl.py --dsn yahoo --param 'bart'  --gpu 0  > zsl.fly.yahoo.bart.log & 
+nohup python -u zsl.py --dsn ag    --param 'bart'  --gpu 1  > zsl.fly.ag.bart.log & 
+nohup python -u zsl.py --dsn uci   --param 'bart'  --gpu 3  > zsl.fly.uci.bart.log & 
+nohup python -u zsl.py --dsn nyt   --param 'bart'  --gpu 5  > zsl.fly.nyt.bart.log & 
 
+
+nohup python -u zsl.py --dsn yahoo --param 't5paws'  --gpu 2  > zsl.fly.yahoo.t5paws.log & 
+nohup python -u zsl.py --dsn ag    --param 't5paws'  --gpu 4  > zsl.fly.ag.t5paws.log & 
+nohup python -u zsl.py --dsn uci   --param 't5paws'  --gpu 6  > zsl.fly.uci.t5paws.log & 
+nohup python -u zsl.py --dsn nyt   --param 't5paws'  --gpu 7  > zsl.fly.nyt.t5paws.log & 
 
 
 

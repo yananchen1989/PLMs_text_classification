@@ -13,7 +13,7 @@ parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--param", default='bart', type=str)
-parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"

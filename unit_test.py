@@ -16,13 +16,13 @@ sent = "Why BlackBerry ( BBRY ) Stock Is Up Today"
 sent = "Doctor warns Arizonans about colorectal cancer"
 
 
-sent = "Facebook acquires video ad company LiveRail for between US $ 500m"
+content = "Facebook acquires video ad company LiveRail for between US $ 500m"
 
 sent = "Autism wave keeps growing"
 
 sent = "Virus to cause spike in pork prices"
 
-
+content = "Grand Budapest Hotel'not grand, but still stylish"
 
 
 
@@ -35,7 +35,14 @@ sent = "Virus to cause spike in pork prices"
 
 import pandas as pd 
 from transformers import pipeline
-unmasker = pipeline('fill-mask', model='roberta-large')
+
+from transformers import AutoTokenizer, AutoModelWithLMHead
+
+tokenizer = AutoTokenizer.from_pretrained('roberta-large',cache_dir="./cache",local_files_only=True) 
+model = AutoModelWithLMHead.from_pretrained('roberta-large',cache_dir="./cache",local_files_only=True)
+    
+nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1)
+
 
 
 sent = "Federal jury orders tech giant Samsung to pay"
@@ -55,26 +62,31 @@ print(df)
 
 
 
+def para_bart(content):
+    #result = set()
+    #while 1:
+    batch = tokenizer_bart(content, return_tensors='pt', truncation=True, padding='longest',max_length=128)
+    generated_ids = model_bart.generate(batch['input_ids'].to(device0), max_length=128,
+                            do_sample=True, num_return_sequences=args.fbs_para)
+    generated_sentence = tokenizer_bart.batch_decode(generated_ids, skip_special_tokens=True)
+
+    #result.update([sent for sent in generated_sentence if sent != content])
+
+    #return random.sample(list(result), args.fbs_para)
 
 
 
 
-
-
-from transformers import BartForConditionalGeneration, BartTokenizer
-model_bart = BartForConditionalGeneration.from_pretrained('eugenesiow/bart-paraphrase', cache_dir="./cache", mirror='bfsu')
-
-
-tokenizer_bart = BartTokenizer.from_pretrained('eugenesiow/bart-paraphrase', cache_dir="./cache", local_files_only=True)
+contents_para = para_func['bart'](content)
 
 
 
+contents_para = para_func['bt'](content)
 
 
+contents_para = para_func['t5paws'](content)
 
-
-
-
+contents_para = para_func['t5'](content)
 
 input_ids = tokenizer_gpt2.encode(sent, return_tensors="tf")
 # get logits of last hidden state
