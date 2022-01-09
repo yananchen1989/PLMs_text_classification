@@ -166,4 +166,9 @@ print("final generated==>", df_synthesize.shape[0]/ds.df_train.shape[0])
 df_train_aug = pd.concat([ds.df_train, df_synthesize] ).sample(frac=1)
 print("begin_to_test_aug")
 acc_aug, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
+summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] + \
+                    ['acc_base:{} acc_aug:{} '.format( acc_noaug, acc_aug )]
+print('success', ' '.join(summary))
+
+
 
