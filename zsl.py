@@ -140,11 +140,15 @@ def para_bart(content):
 
 
 def para_peg(content):
-    batch = tokenizer_peg([content], truncation=True,padding='longest', max_length=128, return_tensors="pt").to(device0)
-    translated = model_peg.generate(**batch, max_length=128, num_beams=args.fbs_para, num_return_sequences=args.fbs_para, temperature=1.5)
-    tgt_text = tokenizer_peg.batch_decode(translated, skip_special_tokens=True)
-    return [sent for sent in list(set(tgt_text)) if sent != content]
-
+    result = set()
+    while 1:
+        batch = tokenizer_peg([content], truncation=True,padding='longest', max_length=128, return_tensors="pt").to(device0)
+        translated = model_peg.generate(**batch, max_length=128, num_beams=8, num_return_sequences=8, temperature=1.5)
+        tgt_text = tokenizer_peg.batch_decode(translated, skip_special_tokens=True)
+        result.update([sent for sent in list(set(tgt_text)) if sent != content])
+        if len(result) >= args.fbs_para:
+            break 
+    return random.sample(list(result), args.fbs_para)
 
 def para_t5paws(content):
     text =  "paraphrase: " + content + " {}".format(tokenizer_t5paws.eos_token)
