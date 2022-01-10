@@ -69,31 +69,20 @@ print(df)
 
 
 
-def para_bart(content):
-    #result = set()
-    #while 1:
-    batch = tokenizer_bart(content, return_tensors='pt', truncation=True, padding='longest',max_length=128)
-    generated_ids = model_bart.generate(batch['input_ids'].to(device0), max_length=128,
-                            do_sample=True, num_return_sequences=args.fbs_para)
-    generated_sentence = tokenizer_bart.batch_decode(generated_ids, skip_special_tokens=True)
-
-    #result.update([sent for sent in generated_sentence if sent != content])
-
-    #return random.sample(list(result), args.fbs_para)
+import transformers
+model = transformers.GPT2LMHeadModel.from_pretrained('gpt2-medium', output_hidden_states=True, cache_dir='./cache_gpt')
+# load tokenizer
+tokenizer = transformers.GPT2Tokenizer.from_pretrained('gpt2-medium', cache_dir='./cache_gpt')
 
 
 
 
-contents_para = para_func['bart'](content)
 
 
 
-contents_para = para_func['bt'](content)
 
 
-contents_para = para_func['t5paws'](content)
 
-contents_para = para_func['t5'](content)
 
 input_ids = tokenizer_gpt2.encode(sent, return_tensors="tf")
 # get logits of last hidden state
