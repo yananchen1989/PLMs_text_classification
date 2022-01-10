@@ -756,7 +756,7 @@ def generate_text_pplm(
 # np.random.seed(seed)
 
 # set verbosiry
-verbosity_level = VERBOSITY_LEVELS.get(verbosity.lower(), REGULAR)
+verbosity_level = VERBOSITY_LEVELS.get(args.verbosity.lower(), REGULAR)
 
 # set the device
 device = "cuda" if torch.cuda.is_available() and not no_cuda else "cpu"

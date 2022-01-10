@@ -18,13 +18,10 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 
 # norm
 
-python pplm.py --bag_of_words space --cond_text "The president" --length 100 --gamma 1.5 \
-   --num_iterations 3 --num_samples 1 --stepsize 0.01 --window_length 5 --kl_scale 0.01 --gm_scale 0.95 --gpu 7
 
-
-python run_pplm.py  --pretrained_model gpt2 --bag_of_words military --cond_text "The president" --length 128 --gamma 1.5 \
-   --num_iterations 3 --num_samples 3 --stepsize 0.03 --window_length 5 --kl_scale 0.01 \
-   --gm_scale 0.99 --colorama --sample
+python pplm.py  --pretrained_model gpt2 --bag_of_words military --cond_text "The president" --length 128 --gamma 1.5 \
+   --num_iterations 3 --num_samples 7 --stepsize 0.03 --window_length 5 --kl_scale 0.01 \
+   --gm_scale 0.99  --sample
 
 
 
