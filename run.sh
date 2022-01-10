@@ -35,11 +35,9 @@
 
 for i in {1..10}
 do
-	for genm in gpt t5
-	do
-	python -u augfmcs.py --dsn ${1} --samplecnt 128 --genm ${genm} --candidates 64 --test_beams 32 --gpu ${2} \
-			> ./log_mcs/${1}.128.${genm}.64.32.${2}.${i}.log 2>&1
-	done
+	seed=$RANDOM
+	python -u augfmcs.py --dsn ${1} --samplecnt 128 --genm gpt --candidates 64 --test_beams 32 --gpu ${2} \
+			> ./log_mcs/${1}.128.gpt.64.32.${2}.${seed}.log 2>&1
 done
 
 

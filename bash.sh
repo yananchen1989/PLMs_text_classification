@@ -34,7 +34,6 @@ nohup bash run.sh uci 3 &
 nohup bash run.sh ag 5 & 
 
 
-
 ############################################################################################################################################
 ps aux|grep "augfmcs.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
