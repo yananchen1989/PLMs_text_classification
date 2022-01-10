@@ -23,8 +23,8 @@ Example command with discriminator:
 python run_pplm.py -D sentiment --class_label 3 --cond_text "The lake" --length 10 --gamma 1.0 --num_iterations 30 --num_samples 10 --stepsize 0.01 --kl_scale 0.01 --gm_scale 0.95
 """
 
-import argparse
-import json
+import argparse,os
+import json,joblib
 from operator import add
 from typing import List, Optional, Tuple, Union
 
@@ -33,7 +33,7 @@ import torch
 from torch import nn
 from tqdm import trange
 
-from pplm_classification_head import ClassificationHead
+# from pplm_classification_head import ClassificationHead
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from transformers.file_utils import cached_path
 
@@ -159,9 +159,11 @@ parser.add_argument(
     default=1.0,
     help="Penalize repetition. More than 1.0 -> less repetition",
 )
+parser.add_argument("--gpu", default="", type=str)
 
 args = parser.parse_args()
-run_pplm_example(**vars(args))
+os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+
 
 def top_k_filter(logits, k, probs=False):
     """
@@ -201,7 +203,7 @@ def perturb_past(
     device="cuda",
 ):
     # Generate inital perturbed past
-    grad_accumulator = [(np.zeros(p.shape).astype("float32")) for p in past]
+    grad_accumulator = [(np.zeros(p[0].shape).astype("float32")) for p in past]
 
     if accumulated_hidden is None:
         accumulated_hidden = 0
@@ -342,45 +344,6 @@ def perturb_past(
     return pert_past, new_accumulated_hidden, grad_norms, loss_per_iter
 
 
-# def get_classifier(
-#     name: Optional[str], class_label: Union[str, int], device: str
-# ) -> Tuple[Optional[ClassificationHead], Optional[int]]:
-#     if name is None:
-#         return None, None
-
-#     params = DISCRIMINATOR_MODELS_PARAMS[name]
-#     classifier = ClassificationHead(class_size=params["class_size"], embed_size=params["embed_size"]).to(device)
-#     if "url" in params:
-#         resolved_archive_file = cached_path(params["url"])
-#     elif "path" in params:
-#         resolved_archive_file = params["path"]
-#     else:
-#         raise ValueError("Either url or path have to be specified in the discriminator model parameters")
-#     classifier.load_state_dict(torch.load(resolved_archive_file, map_location=device))
-#     classifier.eval()
-
-#     if isinstance(class_label, str):
-#         if class_label in params["class_vocab"]:
-#             label_id = params["class_vocab"][class_label]
-#         else:
-#             label_id = params["default_class"]
-#             print("class_label {} not in class_vocab".format(class_label))
-#             print("available values are: {}".format(params["class_vocab"]))
-#             print("using default class {}".format(label_id))
-
-#     elif isinstance(class_label, int):
-#         if class_label in set(params["class_vocab"].values()):
-#             label_id = class_label
-#         else:
-#             label_id = params["default_class"]
-#             print("class_label {} not in class_vocab".format(class_label))
-#             print("available values are: {}".format(params["class_vocab"]))
-#             print("using default class {}".format(label_id))
-
-#     else:
-#         label_id = params["default_class"]
-
-#     return classifier, label_id
 
 
 def get_bag_of_words_indices(bag_of_words_ids_or_paths: List[str], tokenizer) -> List[List[List[int]]]:
@@ -410,7 +373,46 @@ def build_bows_one_hot_vectors(bow_indices, tokenizer, device="cuda"):
         one_hot_bows_vectors.append(one_hot_bow)
     return one_hot_bows_vectors
 
+'''
+def get_classifier(
+    name: Optional[str], class_label: Union[str, int], device: str) -> Tuple[Optional[ClassificationHead], Optional[int]]:
+    if name is None:
+        return None, None
 
+    params = DISCRIMINATOR_MODELS_PARAMS[name]
+    classifier = ClassificationHead(class_size=params["class_size"], embed_size=params["embed_size"]).to(device)
+    if "url" in params:
+        resolved_archive_file = cached_path(params["url"])
+    elif "path" in params:
+        resolved_archive_file = params["path"]
+    else:
+        raise ValueError("Either url or path have to be specified in the discriminator model parameters")
+    classifier.load_state_dict(torch.load(resolved_archive_file, map_location=device))
+    classifier.eval()
+
+    if isinstance(class_label, str):
+        if class_label in params["class_vocab"]:
+            label_id = params["class_vocab"][class_label]
+        else:
+            label_id = params["default_class"]
+            print("class_label {} not in class_vocab".format(class_label))
+            print("available values are: {}".format(params["class_vocab"]))
+            print("using default class {}".format(label_id))
+
+    elif isinstance(class_label, int):
+        if class_label in set(params["class_vocab"].values()):
+            label_id = class_label
+        else:
+            label_id = params["default_class"]
+            print("class_label {} not in class_vocab".format(class_label))
+            print("available values are: {}".format(params["class_vocab"]))
+            print("using default class {}".format(label_id))
+
+    else:
+        label_id = params["default_class"]
+
+    return classifier, label_id
+'''
 def full_text_generation(
     model,
     tokenizer,
@@ -436,7 +438,7 @@ def full_text_generation(
     repetition_penalty=1.0,
     **kwargs
 ):
-    # classifier, class_id = get_classifier(discrim, class_label, device)
+    classifier, class_id = None, None#= get_classifier(discrim, class_label, device)
 
     bow_indices = []
     if bag_of_words:
@@ -467,8 +469,8 @@ def full_text_generation(
         perturb=False,
         repetition_penalty=repetition_penalty,
     )
-    if device == "cuda":
-        torch.cuda.empty_cache()
+
+    torch.cuda.empty_cache()
 
     pert_gen_tok_texts = []
     discrim_losses = []
@@ -505,8 +507,7 @@ def full_text_generation(
             discrim_losses.append(discrim_loss.data.cpu().numpy())
         losses_in_time.append(loss_in_time)
 
-    if device == "cuda":
-        torch.cuda.empty_cache()
+    torch.cuda.empty_cache()
 
     return unpert_gen_tok_text, pert_gen_tok_texts, discrim_losses, losses_in_time
 
@@ -585,6 +586,9 @@ def generate_text_pplm(
             accumulated_hidden = torch.sum(accumulated_hidden, dim=1)
 
             if past is not None:
+                print("past==>")
+                print(len(past))
+                joblib.dump(past, 'past_351')
                 pert_past, _, grad_norms, loss_this_iter = perturb_past(
                     past,
                     model,
@@ -660,169 +664,129 @@ def generate_text_pplm(
         # update context/output_so_far appending the new token
         output_so_far = last if output_so_far is None else torch.cat((output_so_far, last), dim=1)
 
-        print(tokenizer.decode(output_so_far.tolist()[0]))
+        # print(tokenizer.decode(output_so_far.tolist()[0]))
 
     return output_so_far, unpert_discrim_loss, loss_in_time
 
 
-# def set_generic_model_params(discrim_weights, discrim_meta):
-#     if discrim_weights is None:
-#         raise ValueError("When using a generic discriminator, discrim_weights need to be specified")
-#     if discrim_meta is None:
-#         raise ValueError("When using a generic discriminator, discrim_meta need to be specified")
+# set Random seed
+torch.manual_seed(args.seed)
+np.random.seed(args.seed)
 
-#     with open(discrim_meta, "r") as discrim_meta_file:
-#         meta = json.load(discrim_meta_file)
-#     meta["path"] = discrim_weights
-#     DISCRIMINATOR_MODELS_PARAMS["generic"] = meta
+# set the device
+device = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 
+# if discrim == "generic":
+#     set_generic_model_params(discrim_weights, discrim_meta)
 
-def run_pplm_example(
-    pretrained_model="gpt2",
-    cond_text="",
-    uncond=False,
-    num_samples=1,
-    bag_of_words=None,
-    discrim=None,
-    discrim_weights=None,
-    discrim_meta=None,
-    class_label=-1,
-    length=100,
-    stepsize=0.02,
-    temperature=1.0,
-    top_k=10,
-    sample=False,
-    num_iterations=3,
-    grad_length=10000,
-    horizon_length=1,
-    window_length=0,
-    decay=False,
-    gamma=1.5,
-    gm_scale=0.9,
-    kl_scale=0.01,
-    seed=0,
-    no_cuda=False,
-    colorama=False,
-    repetition_penalty=1.0,
-):
-    # set Random seed
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+# if discrim is not None:
+#     pretrained_model = DISCRIMINATOR_MODELS_PARAMS[discrim]["pretrained_model"]
+#     print("discrim = {}, pretrained_model set to discriminator's = {}".format(discrim, pretrained_model))
 
-    # set the device
-    device = "cuda" if torch.cuda.is_available() and not no_cuda else "cpu"
+# load pretrained model
+model = GPT2LMHeadModel.from_pretrained(args.pretrained_model, output_hidden_states=True, cache_dir='./cache', local_files_only=True)
+model.to(device)
+model.eval()
 
-    # if discrim == "generic":
-    #     set_generic_model_params(discrim_weights, discrim_meta)
+# load tokenizer
+tokenizer = GPT2Tokenizer.from_pretrained(args.pretrained_model, cache_dir='./cache', local_files_only=True)
 
-    # if discrim is not None:
-    #     pretrained_model = DISCRIMINATOR_MODELS_PARAMS[discrim]["pretrained_model"]
-    #     print("discrim = {}, pretrained_model set to discriminator's = {}".format(discrim, pretrained_model))
+# Freeze GPT-2 weights
+for param in model.parameters():
+    param.requires_grad = False
 
-    # load pretrained model
-    model = GPT2LMHeadModel.from_pretrained(pretrained_model, output_hidden_states=True, cache_dir='./cache', local_files_only=True)
-    model.to(device)
-    model.eval()
+# figure out conditioning text
+if args.uncond:
+    tokenized_cond_text = tokenizer.encode([tokenizer.bos_token])
+else:
+    # raw_text = cond_text
+    # while not raw_text:
+    #     print("Did you forget to add `--cond_text`? ")
+    #     raw_text = input("Model prompt >>> ")
+    tokenized_cond_text = tokenizer.encode(tokenizer.bos_token + args.cond_text)
 
-    # load tokenizer
-    tokenizer = GPT2Tokenizer.from_pretrained(pretrained_model, cache_dir='./cache', local_files_only=True)
+print("= Prefix of sentence =")
+print(tokenizer.decode(tokenized_cond_text))
+print()
 
-    # Freeze GPT-2 weights
-    for param in model.parameters():
-        param.requires_grad = False
+# generate unperturbed and perturbed texts
 
-    # figure out conditioning text
-    if uncond:
-        tokenized_cond_text = tokenizer.encode([tokenizer.bos_token])
-    else:
-        # raw_text = cond_text
-        # while not raw_text:
-        #     print("Did you forget to add `--cond_text`? ")
-        #     raw_text = input("Model prompt >>> ")
-        tokenized_cond_text = tokenizer.encode(tokenizer.bos_token + cond_text)
+# full_text_generation returns:
+# unpert_gen_tok_text, pert_gen_tok_texts, discrim_losses, losses_in_time
+unpert_gen_tok_text, pert_gen_tok_texts, _, _ = full_text_generation(
+    model=model,
+    tokenizer=tokenizer,
+    context=tokenized_cond_text,
+    device=device,
+    num_samples=args.num_samples,
+    bag_of_words=args.bag_of_words,
+    discrim=args.discrim,
+    class_label=args.class_label,
+    length=args.length,
+    stepsize=args.stepsize,
+    temperature=args.temperature,
+    top_k=args.top_k,
+    sample=args.sample,
+    num_iterations=args.num_iterations,
+    grad_length=args.grad_length,
+    horizon_length=args.horizon_length,
+    window_length=args.window_length,
+    decay=args.decay,
+    gamma=args.gamma,
+    gm_scale=args.gm_scale,
+    kl_scale=args.kl_scale,
+    repetition_penalty= args.repetition_penalty,
+)
 
-    print("= Prefix of sentence =")
-    print(tokenizer.decode(tokenized_cond_text))
+# untokenize unperturbed text
+unpert_gen_text = tokenizer.decode(unpert_gen_tok_text.tolist()[0])
+
+print("=" * 80)
+print("= Unperturbed generated text =")
+print(unpert_gen_text)
+print()
+
+# generated_texts = []
+
+# bow_word_ids = set()
+# if bag_of_words:
+#     bow_indices = get_bag_of_words_indices(bag_of_words.split(";"), tokenizer)
+#     for single_bow_list in bow_indices:
+#         # filtering all words in the list composed of more than 1 token
+#         filtered = list(filter(lambda x: len(x) <= 1, single_bow_list))
+#         # w[0] because we are sure w has only 1 item because previous fitler
+#         bow_word_ids.update(w[0] for w in filtered)
+
+# iterate through the perturbed texts
+for i, pert_gen_tok_text in enumerate(pert_gen_tok_texts):
+    # try:
+        # untokenize unperturbed text
+        # if colorama:
+        #     import colorama
+
+        #     pert_gen_text = ""
+        #     for word_id in pert_gen_tok_text.tolist()[0]:
+        #         if word_id in bow_word_ids:
+        #             pert_gen_text += "{}{}{}".format(
+        #                 colorama.Fore.RED,
+        #                 tokenizer.decode([word_id]),
+        #                 colorama.Style.RESET_ALL,
+        #             )
+        #         else:
+        #             pert_gen_text += tokenizer.decode([word_id])
+        # else:
+    pert_gen_text = tokenizer.decode(pert_gen_tok_text.tolist()[0])
+
+    print("= Perturbed generated text {} =".format(i + 1))
+    print(pert_gen_text)
     print()
+    # except Exception as exc:
+    #     print("Ignoring error while generating perturbed text:", exc)
 
-    # generate unperturbed and perturbed texts
+    # keep the prefix, perturbed seq, original seq for each index
+#     generated_texts.append((tokenized_cond_text, pert_gen_tok_text, unpert_gen_tok_text))
 
-    # full_text_generation returns:
-    # unpert_gen_tok_text, pert_gen_tok_texts, discrim_losses, losses_in_time
-    unpert_gen_tok_text, pert_gen_tok_texts, _, _ = full_text_generation(
-        model=model,
-        tokenizer=tokenizer,
-        context=tokenized_cond_text,
-        device=device,
-        num_samples=num_samples,
-        bag_of_words=bag_of_words,
-        discrim=discrim,
-        class_label=class_label,
-        length=length,
-        stepsize=stepsize,
-        temperature=temperature,
-        top_k=top_k,
-        sample=sample,
-        num_iterations=num_iterations,
-        grad_length=grad_length,
-        horizon_length=horizon_length,
-        window_length=window_length,
-        decay=decay,
-        gamma=gamma,
-        gm_scale=gm_scale,
-        kl_scale=kl_scale,
-        repetition_penalty=repetition_penalty,
-    )
-
-    # untokenize unperturbed text
-    unpert_gen_text = tokenizer.decode(unpert_gen_tok_text.tolist()[0])
-
-    print("=" * 80)
-    print("= Unperturbed generated text =")
-    print(unpert_gen_text)
-    print()
-
-    generated_texts = []
-
-    bow_word_ids = set()
-    if bag_of_words and colorama:
-        bow_indices = get_bag_of_words_indices(bag_of_words.split(";"), tokenizer)
-        for single_bow_list in bow_indices:
-            # filtering all words in the list composed of more than 1 token
-            filtered = list(filter(lambda x: len(x) <= 1, single_bow_list))
-            # w[0] because we are sure w has only 1 item because previous fitler
-            bow_word_ids.update(w[0] for w in filtered)
-
-    # iterate through the perturbed texts
-    for i, pert_gen_tok_text in enumerate(pert_gen_tok_texts):
-        try:
-            # untokenize unperturbed text
-            if colorama:
-                import colorama
-
-                pert_gen_text = ""
-                for word_id in pert_gen_tok_text.tolist()[0]:
-                    if word_id in bow_word_ids:
-                        pert_gen_text += "{}{}{}".format(
-                            colorama.Fore.RED,
-                            tokenizer.decode([word_id]),
-                            colorama.Style.RESET_ALL,
-                        )
-                    else:
-                        pert_gen_text += tokenizer.decode([word_id])
-            else:
-                pert_gen_text = tokenizer.decode(pert_gen_tok_text.tolist()[0])
-
-            print("= Perturbed generated text {} =".format(i + 1))
-            print(pert_gen_text)
-            print()
-        except Exception as exc:
-            print("Ignoring error while generating perturbed text:", exc)
-
-        # keep the prefix, perturbed seq, original seq for each index
-        generated_texts.append((tokenized_cond_text, pert_gen_tok_text, unpert_gen_tok_text))
-
-    return
+# print(generated_texts)
 
 
 
