@@ -247,7 +247,7 @@ def get_seed_words():
         print(l, label_expands_auto[l], '\n')
     return label_expands_auto
 
-
+'''
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -283,12 +283,13 @@ while True:
                 continue
             if label in df_tmp_sel['labels'].tolist():
                 infos.append((remove_str(ii['sequence']), label))
-
+    if len(infos) > 0 and len(infos) % 100:
+        df = pd.DataFrame(infos, columns = ['content','label_name'])
     if df['label_name'].value_counts().min() >= 2048:
         break 
-df = pd.DataFrame(infos, columns = ['content','label_name'])
-df.to_csv("df_gen_{}.csv".format(args.dsn), index=False)
 
+df.to_csv("df_gen_{}.csv".format(args.dsn), index=False)
+'''
 
 df_contents_arxiv = pd.read_csv("df_gen_{}.csv".format(args.dsn))
 

@@ -750,20 +750,6 @@ def generate_text_pplm(
     return output_so_far, unpert_discrim_loss, loss_in_time
 
 
-def set_generic_model_params(discrim_weights, discrim_meta):
-    if discrim_weights is None:
-        raise ValueError('When using a generic discriminator, '
-                         'discrim_weights need to be specified')
-    if discrim_meta is None:
-        raise ValueError('When using a generic discriminator, '
-                         'discrim_meta need to be specified')
-
-    with open(discrim_meta, 'r') as discrim_meta_file:
-        meta = json.load(discrim_meta_file)
-    meta['path'] = discrim_weights
-    DISCRIMINATOR_MODELS_PARAMS['generic'] = meta
-
-
 
 # set Random seed
 # torch.manual_seed(seed)
