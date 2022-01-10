@@ -6,13 +6,16 @@ import datasets,re,operator,joblib
 from sklearn.feature_extraction.text import CountVectorizer
 import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
+import joblib,gensim
+assert gensim.__version__ == '4.1.2'
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="uci", type=str)
+parser.add_argument("--dsn", default="yahoo", type=str)
 parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
-parser.add_argument("--param", default='bart', type=str)
+parser.add_argument("--topk", default=64, type=int)
+parser.add_argument("--param", default='t5', type=str)
 parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 
@@ -209,9 +212,42 @@ def continuation_ranking(content_ori):
     return df_nsp
 
 
+def get_seed_words():
+    gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
+    model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/GoogleNews-vectors-negative300.bin',binary=True)
+
+    vocab_w2v = set(list(model_w2v.index_to_key))
+    label_expands_auto = {}
+    for l, gram_scores in gram_diff.items():
+        gram_scores_sum = {g:round(np.array(scores).sum(),4) for g, scores in gram_scores.items() }
+        gram_scores_sum_sort = sorted(gram_scores_sum.items(), key=operator.itemgetter(1), reverse=True) 
+
+        gram_scores_mean = {g:round(np.array(scores).mean(),4) for g, scores in gram_scores.items() }
+        gram_scores_mean_sort = sorted(gram_scores_mean.items(), key=operator.itemgetter(1), reverse=True) 
+
+        gram_scores_sort = gram_scores_sum_sort + gram_scores_mean_sort
+        label_expands_auto[l] = set()
+
+        for j in gram_scores_sort:
+            if j[0] not in vocab_w2v or j[0] in ['news']:
+                #print(j[0])
+                continue
+
+            if ' and ' in l:
+                w0 = l.split('and')[0].strip().lower()
+                w1 = l.split('and')[1].strip().lower()
+                simi = max(model_w2v.similarity(w0, j[0]), model_w2v.similarity(w1, j[0]) )
+            else:
+                simi = model_w2v.similarity(l.lower(), j[0])
+
+            if simi >= 0.1:
+                label_expands_auto[l].add(j[0])
+            if len(label_expands_auto[l])-1 == args.topk:
+                break 
+        print(l, label_expands_auto[l], '\n')
+    return label_expands_auto
 
 
-'''
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -239,22 +275,20 @@ while True:
         for sent in contents:
             infos.append((remove_str(sent) , label ))
 
-        # result_nlp = nli_nlp(contents, labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-        # for ii in  result_nlp:
-        #     df_tmp = pd.DataFrame(ii)
-        #     df_tmp_sel = df_tmp.loc[df_tmp['scores']>=0.9]
-        #     if df_tmp_sel.shape[0] == 0:
-        #         continue
-        #     if label in df_tmp_sel['labels'].tolist():
-        #         infos.append((remove_str(ii['sequence']), label))
+        result_nlp = nli_nlp(contents, labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        for ii in  result_nlp:
+            df_tmp = pd.DataFrame(ii)
+            df_tmp_sel = df_tmp.loc[df_tmp['scores']>=0.9]
+            if df_tmp_sel.shape[0] == 0:
+                continue
+            if label in df_tmp_sel['labels'].tolist():
+                infos.append((remove_str(ii['sequence']), label))
 
-    if len(infos) > 0 and len(infos) % 1000:
-        df = pd.DataFrame(infos, columns = ['content','label_name'])
-        print(df['label_name'].value_counts())
-        df.to_csv("df_gen_ctrl_{}.csv".format(args.dsn), index=False)
-        if df['label_name'].value_counts().min() >= 2048:
-            break 
-'''
+    if df['label_name'].value_counts().min() >= 2048:
+        break 
+df = pd.DataFrame(infos, columns = ['content','label_name'])
+df.to_csv("df_gen_{}.csv".format(args.dsn), index=False)
+
 
 df_contents_arxiv = pd.read_csv("df_gen_{}.csv".format(args.dsn))
 
