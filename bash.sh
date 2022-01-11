@@ -19,23 +19,24 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 # norm
 
 
-nohup python -u pplm.py --pretrained_model gpt2-medium  --dsn yahoo  --length 64 --gamma 1.5 \
+ CUDA_VISIBLE_DEVICES=5 nohup envcbert/bin/python -u pplm.py --pretrained_model gpt2-medium  --dsn yahoo  --length 64 --gamma 1.5 \
    --num_iterations 3 --num_samples 64 --stepsize 0.03 --window_length 5 --kl_scale 0.01 \
-   --gm_scale 0.99  --gpu 7  --sample --uncond > pplm.yahoo.0.03.log & 
+   --gm_scale 0.99   --sample  > pplm.yahoo.log & 
 
-nohup python -u pplm.py --pretrained_model gpt2-medium  --dsn yahoo  --length 64 --gamma 1.5 \
-   --num_iterations 3 --num_samples 64 --stepsize 0.1 --window_length 5 --kl_scale 0.01 \
-   --gm_scale 0.99  --gpu 6  --sample --uncond > pplm.yahoo.0.1.log & 
-
-
-nohup python -u pplm.py  --pretrained_model gpt2-medium  --dsn ag  --length 64 --gamma 1.5 \
-   --num_iterations 3 --num_samples 64 --stepsize 0.03 --window_length 5 --kl_scale 0.01 \
-   --gm_scale 0.99  --gpu 7  --sample --uncond > pplm.ag.0.03.log & 
-
-nohup python -u pplm.py  --pretrained_model gpt2-medium  --dsn ag  --length 64 --gamma 1.5 \
-   --num_iterations 3 --num_samples 64 --stepsize 0.1 --window_length 5 --kl_scale 0.01 \
-   --gm_scale 0.99  --gpu 6  --sample --uncond > pplm.ag.0.1.log & 
-
+for dsn in ag yahoo 
+do
+   for i in 1 2 3 
+   do
+      for gpu in 4 5 6 7
+      do
+         seed=$RANDOM
+         CUDA_VISIBLE_DEVICES=${gpu} nohup envcbert/bin/python -u pplm.py  --pretrained_model gpt2-medium  \
+            --dsn ${dsn}  --length 64 --gamma 1.5 \
+         --num_iterations 3 --num_samples 64 --stepsize 0.03 --window_length 5 --kl_scale 0.01 \
+         --gm_scale 0.99 --seed ${seed} --sample  > pplm.${dsn}.${seed} .log & 
+      done
+   done
+done 
 
 
 nohup bash run.sh uci 0 & 
@@ -48,8 +49,10 @@ nohup bash run.sh ag 3 &
 
 nohup python -u zsl.py --dsn uci --param peg --gpu 4 > zsl.uci.peg.log & 
 nohup python -u zsl.py --dsn ag --param peg --gpu 5 > zsl.ag.peg.log & 
-nohup python -u zsl.py --dsn yahoo --param peg --gpu 6 > zsl.ag.yahoo.log & 
+nohup python -u zsl.py --dsn yahoo --param peg --gpu 6 > zsl.yahoo.peg.log & 
 
+
+nohup python -u zsl.py --dsn uci --param bart --gpu 4 > zsl.uci.bart.log & 
 ############################################################################################################################################
 ps aux|grep "augfmcs.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9

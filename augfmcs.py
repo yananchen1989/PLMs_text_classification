@@ -140,7 +140,7 @@ def mc_gen(row):
     pred_ori = model_cls.predict(df_future['content'].values,  batch_size=64, verbose=0)
     df_future['ori_score'] = pred_ori[:,row['label'] ]
 
-    contents_syn_sort = df_future.loc[df_future['ori_score']>=0.95].sort_values(by=['mc_score'], ascending=False)['content'].tolist()
+    contents_syn_sort = df_future.loc[df_future['ori_score']>=0.9].sort_values(by=['mc_score'], ascending=False)['content'].tolist()
 
     print("corr:", df_future[['ori_score','mc_score']].corr().values[0][1] )
     return contents_syn_sort
@@ -156,12 +156,13 @@ for ix, row in ds.df_train.reset_index().iterrows():
     print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
 
     contents_syn_sort = mc_gen(row)
+    print(len(contents_syn_sort))
     print("mc0==>", contents_syn_sort[0])
     print("mc1==>", contents_syn_sort[1])
     print("mc2==>", contents_syn_sort[2])
     print('\n')
 
-    for i in range(4):
+    for i in range(min(4, len(contents_syn_sort))):
         infos.append((contents_syn_sort[i], row['label_name'], row['label'], i+1))
 
 df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
@@ -170,15 +171,15 @@ print("final generated==>", df_synthesize.shape[0]/ds.df_train.shape[0])
 
 
 df_train_aug = pd.concat([ds.df_train, df_synthesize.loc[df_synthesize['fmark'].isin([1])]] ).sample(frac=1)
-assert df_train_aug.shape[0] == ds.df_train.shape[0] * 2
+print(df_train_aug.shape[0],  ds.df_train.shape[0] * 2)
 acc_aug_1, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
 
 df_train_aug = pd.concat([ds.df_train, df_synthesize.loc[df_synthesize['fmark'].isin([1,2])]] ).sample(frac=1)
-assert df_train_aug.shape[0] == ds.df_train.shape[0] * 3
+print(df_train_aug.shape[0], ds.df_train.shape[0] * 3)
 acc_aug_2, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
 
 df_train_aug = pd.concat([ds.df_train, df_synthesize.loc[df_synthesize['fmark'].isin([1,2,3,4])]] ).sample(frac=1)
-assert df_train_aug.shape[0] == ds.df_train.shape[0] * 4
+print(df_train_aug.shape[0], ds.df_train.shape[0] * 4)
 acc_aug_4, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
 
 summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \

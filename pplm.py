@@ -511,6 +511,8 @@ def full_text_generation(
     if bag_of_words:
         #bow_indices = get_bag_of_words_indices(bag_of_words.split("_"), tokenizer)
         bow_indices = get_bag_of_words_indices_dsn_label(bag_of_words, tokenizer)
+        print("bow_indices==>", bow_indices)
+
     if bag_of_words and classifier:
         loss_type = PPLM_BOW_DISCRIM
         print("Both PPLM-BoW and PPLM-Discrim are on. "
@@ -726,10 +728,9 @@ def generate_text_pplm(
     return output_so_far, unpert_discrim_loss, loss_in_time
 
 
-
 # set Random seed
-# torch.manual_seed(seed)
-# np.random.seed(seed)
+torch.manual_seed(args.seed)
+np.random.seed(args.seed)
 
 
 # set the device
@@ -795,7 +796,7 @@ while True:
                 infos.append((label_name, bag_of_words, unpert_gen_text.replace('\n', ' ').strip(), pert_gen_text.replace('\n', ' ').strip() ))
 
     df = pd.DataFrame(infos, columns=['label_name', 'bag_of_words', 'content_ori', 'content_pplm_syn'])    
-    df.to_csv("{}_pplm_gen.csv".format(args.dsn), index=False)
+    df.to_csv("./pplm_syns/{}_pplm_gen_{}.csv".format(args.dsn, args.seed), index=False)
     ite += 1
 
 
