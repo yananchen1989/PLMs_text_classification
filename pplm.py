@@ -154,6 +154,7 @@ parser.add_argument("--gm_scale", type=float, default=0.9)
 parser.add_argument("--kl_scale", type=float, default=0.01)
 parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--gpu", default=7, type=int)
+parser.add_argument("--topn", default=64, type=int)
 
 args = parser.parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
@@ -427,7 +428,7 @@ def get_seed_words():
                 simi = model_w2v.similarity(l.lower(), j[0])
             if simi >= 0.1:
                 label_expands_auto[l].add(j[0])
-            if len(label_expands_auto[l])-1 == 64:
+            if len(label_expands_auto[l]) == args.topn:
                 break 
         if ' and ' in l:
             label_expands_auto[l].add(l.split('and')[0].strip())
@@ -755,7 +756,7 @@ infos = []
 
 while True:
     for label_name in labels_candidates:
-        bag_of_words = label_expands_auto[label_name]
+        bag_of_words = list(label_expands_auto[label_name])
         print("ite:{}".format(ite), "bow:{}".format(bag_of_words))
 
         for cond_text in prefix_cond:
