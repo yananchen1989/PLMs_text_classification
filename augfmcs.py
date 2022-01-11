@@ -135,8 +135,14 @@ def mc_gen(row):
     assert len(mc_scores_tmp) == len(contents_syn)
 
     df_future = pd.DataFrame(zip(contents_syn, mc_scores_tmp), columns=['content','mc_score'])
-    contents_syn_sort = df_future.sort_values(by=['mc_score'], ascending=False)['content'].tolist()
+    
 
+    pred_ori = model_cls.predict(df_future['content'].values,  batch_size=64, verbose=0)
+    df_future['ori_score'] = pred_ori[:,row['label'] ]
+
+    contents_syn_sort = df_future.loc[df_future['ori_score']>=0.95].sort_values(by=['mc_score'], ascending=False)['content'].tolist()
+
+    print("corr:", df_future[['ori_score','mc_score']].corr().values[0][1] )
     return contents_syn_sort
 
 

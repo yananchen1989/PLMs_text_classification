@@ -48,7 +48,7 @@ nohup bash run.sh ag 3 &
 
 nohup python -u zsl.py --dsn uci --param peg --gpu 4 > zsl.uci.peg.log & 
 nohup python -u zsl.py --dsn ag --param peg --gpu 5 > zsl.ag.peg.log & 
-
+nohup python -u zsl.py --dsn yahoo --param peg --gpu 6 > zsl.ag.yahoo.log & 
 
 ############################################################################################################################################
 ps aux|grep "augfmcs.py"|grep -v grep | awk '{print $2}'|xargs kill -9
