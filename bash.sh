@@ -19,9 +19,22 @@ nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pat
 # norm
 
 
-python pplm.py  --pretrained_model gpt2-medium  --dsn yahoo  --length 64 --gamma 1.5 \
+nohup python -u pplm.py --pretrained_model gpt2-medium  --dsn yahoo  --length 64 --gamma 1.5 \
    --num_iterations 3 --num_samples 64 --stepsize 0.03 --window_length 5 --kl_scale 0.01 \
-   --gm_scale 0.99  --gpu 7  --sample --uncond 
+   --gm_scale 0.99  --gpu 7  --sample --uncond > pplm.yahoo.0.03.log & 
+
+nohup python -u pplm.py --pretrained_model gpt2-medium  --dsn yahoo  --length 64 --gamma 1.5 \
+   --num_iterations 3 --num_samples 64 --stepsize 0.1 --window_length 5 --kl_scale 0.01 \
+   --gm_scale 0.99  --gpu 6  --sample --uncond > pplm.yahoo.0.1.log & 
+
+
+nohup python -u pplm.py  --pretrained_model gpt2-medium  --dsn ag  --length 64 --gamma 1.5 \
+   --num_iterations 3 --num_samples 64 --stepsize 0.03 --window_length 5 --kl_scale 0.01 \
+   --gm_scale 0.99  --gpu 7  --sample --uncond > pplm.ag.0.03.log & 
+
+nohup python -u pplm.py  --pretrained_model gpt2-medium  --dsn ag  --length 64 --gamma 1.5 \
+   --num_iterations 3 --num_samples 64 --stepsize 0.1 --window_length 5 --kl_scale 0.01 \
+   --gm_scale 0.99  --gpu 6  --sample --uncond > pplm.ag.0.1.log & 
 
 
 
@@ -33,7 +46,7 @@ nohup bash run.sh ag 3 &
 
 
 
-nohup python -u zsl.py --dsn yahoo --param peg --gpu 4 > zsl.yahoo.peg.log & 
+nohup python -u zsl.py --dsn uci --param peg --gpu 4 > zsl.uci.peg.log & 
 nohup python -u zsl.py --dsn ag --param peg --gpu 5 > zsl.ag.peg.log & 
 
 

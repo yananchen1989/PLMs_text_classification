@@ -10,13 +10,13 @@ import joblib,gensim
 assert gensim.__version__ == '4.1.2'
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="yahoo", type=str)
+parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--topk", default=64, type=int)
 parser.add_argument("--param", default='t5', type=str)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="7", type=str)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -143,9 +143,10 @@ def para_peg(content):
     result = set()
     while 1:
         batch = tokenizer_peg([content], truncation=True,padding='longest', max_length=128, return_tensors="pt").to(device0)
-        translated = model_peg.generate(**batch, max_length=128, num_beams=8, num_return_sequences=8, temperature=1.5)
+        translated = model_peg.generate(**batch, do_sample=True, max_length=128, num_beams=8, num_return_sequences=8, temperature=1.5)
         tgt_text = tokenizer_peg.batch_decode(translated, skip_special_tokens=True)
         result.update([sent for sent in list(set(tgt_text)) if sent != content])
+        print(len(result))
         if len(result) >= args.fbs_para:
             break 
     return random.sample(list(result), args.fbs_para)
