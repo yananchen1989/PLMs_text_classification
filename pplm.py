@@ -55,10 +55,27 @@ BAG_OF_WORDS_ARCHIVE_MAP = {
     'space': "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/space.txt",
     'technology': "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/technology.txt",
 }
+BASE_NLI ={
+    'politics':['Politics','War', 'Election','Constitution','Democracy','Conflict','Military',\
+                'Terrorism', 'Government', 'Ideology', 'fascism', 'Socialism', 'Totalitarian', 'Religion'],
+    'law':      ['Law', 'Legitimacy','Court','Crime','Murder','Jurisdiction'],
+    'science':  ['Science','Aerospace','Physics','Chemistry','Biology','Scientist','Astronomy','Universe','Big Bang'],
+    'technology':['Technology','Biotech', 'IT','Computers','Internet','Algorithm','Space','Bitcoin','artificial Intelligence','Robot'],
+    'health': ['Health','Healthcare','Medicine','Clinics','Vaccine','Wellness','Nutrition','Dental','HIV','Disease'],
+    'business': ['Business','Finance','Oil price','Supply','Inflation','Dollars','Bank','Wall Street','Bitcoin',
+                        'Federal Reserve','Accrual','Accountancy','Sluggishness','Consumerism','Trade','Quarterly earnings',\
+                         'Deposit','Revenue','Stocks','Recapitalization','Marketing','Futures'],
+    'sports': ['Sports','Athletics','Championships','Football','Olympic','Tournament','Chelsea','League','Golf',
+                            'NFL','Super bowl','World Cup']
+}
 
+prefix_cond = ["In summary", "This essay discusses", "Views on", "The connection", "Foundational to this is",\
+     "To review,", "In brief,", "An illustration of", "Furthermore,", "The central theme", \
+     "To conclude,", "The key aspect", "Prior to this", "Emphasised are", "To summarise", \
+     "The relationship", "More importantly,", "It has been shown", "The issue focused on", "In this essay"]
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="yahoo", type=str)
+parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument(
     "--pretrained_model",
     "-M",
@@ -67,7 +84,7 @@ parser.add_argument(
     help="pretrained model name or path to local checkpoint",
 )
 parser.add_argument(
-    "--cond_text", type=str, default="The lake",
+    "--cond_text", type=str, default="To conclude",
     help="Prefix texts to condition on"
 )
 parser.add_argument(
@@ -418,9 +435,13 @@ def get_seed_words():
         else:
             label_expands_auto[l].add(l)
         for ll in BAG_OF_WORDS_ARCHIVE_MAP:
-            if ll in l.lower():
+            if (ll in l.lower()) or ('world' in l.lower() and ll == 'politics') or \
+                (('science' in l.lower() or 'technology' in l.lower()) and ll == 'space'):
                 words_s3 = get_s3_words(ll)
                 label_expands_auto[l].update(words_s3)
+        for ll, expands in BASE_NLI.items():
+            if ll in l.lower():
+                label_expands_auto[l].update( [w.lower() for w in expands ] )
         print(l, label_expands_auto[l], '\n')
     return label_expands_auto
 
@@ -431,9 +452,8 @@ labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
 
 label_expands_auto = get_seed_words()
-
-def get_bag_of_words_indices_dsn_label(label_name, tokenizer):
-    words = label_expands_auto[label_name]
+print(label_expands_auto)
+def get_bag_of_words_indices_dsn_label(words, tokenizer):
     bow_indices = []
     bow_indices.append(
         [tokenizer.encode(word.strip(),
@@ -461,7 +481,7 @@ def build_bows_one_hot_vectors(bow_indices, tokenizer, device='cuda'):
 def full_text_generation(
         model,
         tokenizer,
-        context=None,
+        cond_text=None,
         num_samples=1,
         device="cuda",
         bag_of_words=None,
@@ -507,6 +527,11 @@ def full_text_generation(
 
     else:
         raise Exception("Specify either a bag of words or a discriminator")
+
+    context = tokenizer.encode(
+                tokenizer.bos_token + cond_text,
+                add_special_tokens=False
+            )
 
     unpert_gen_tok_text, _, _ = generate_text_pplm(
         model=model,
@@ -711,88 +736,68 @@ def generate_text_pplm(
 # set the device
 
 # load pretrained model
-model = GPT2LMHeadModel.from_pretrained(
-    args.pretrained_model, output_hidden_states=True, cache_dir='./cache'
-)
+model = GPT2LMHeadModel.from_pretrained(args.pretrained_model, output_hidden_states=True, cache_dir='./cache')
 model.to(device)
 model.eval()
-
 # load tokenizer
 tokenizer = GPT2Tokenizer.from_pretrained(args.pretrained_model, cache_dir='./cache')
-
 # Freeze GPT-2 weights
 for param in model.parameters():
     param.requires_grad = False
 
-# figure out conditioning text
-if args.uncond:
-    tokenized_cond_text = tokenizer.encode(
-        [tokenizer.bos_token],
-        add_special_tokens=False
-    )
-else:
-    # raw_text = cond_text
-    # while not raw_text:
-    #     print("Did you forget to add `--cond_text`? ")
-    #     raw_text = input("Model prompt >>> ")
-    tokenized_cond_text = tokenizer.encode(
-        tokenizer.bos_token + args.cond_text,
-        add_special_tokens=False
-    )
 
-print("= Prefix of sentence =")
-print(tokenizer.decode(tokenized_cond_text, skip_special_tokens=True))
-print()
 
-# generate unperturbed and perturbed texts
 
-# full_text_generation returns:
-# unpert_gen_tok_text, pert_gen_tok_texts, discrim_losses, losses_in_time
+
+
+ite = 0
 infos = []
-for bag_of_words in labels_candidates:
-    print("bow:{}".format(bag_of_words))
-    unpert_gen_tok_text, pert_gen_tok_texts, _, _ = full_text_generation(
-        model=model,
-        tokenizer=tokenizer,
-        context=tokenized_cond_text,
-        device=device,
-        num_samples=args.num_samples,
-        bag_of_words= bag_of_words,
-        discrim= args.discrim,
-        class_label= args.class_label,
-        length= args.length,
-        stepsize= args.stepsize,
-        temperature= args.temperature,
-        top_k= args.top_k,
-        sample= args.sample,
-        num_iterations= args.num_iterations,
-        grad_length= args.grad_length,
-        horizon_length= args.horizon_length,
-        window_length= args.window_length,
-        decay= args.decay,
-        gamma= args.gamma,
-        gm_scale= args.gm_scale,
-        kl_scale= args.kl_scale
-    )
 
-    # untokenize unperturbed text
-    unpert_gen_text = tokenizer.decode(unpert_gen_tok_text.tolist()[0], skip_special_tokens=True)
-    print("ori===>", unpert_gen_text.replace('\n', ' ').strip())
-    print()
+while True:
+    for label_name in labels_candidates:
+        bag_of_words = label_expands_auto[label_name]
+        print("ite:{}".format(ite), "bow:{}".format(bag_of_words))
 
-    contents_syn = []
-    for i, pert_gen_tok_text in enumerate(pert_gen_tok_texts):
-        pert_gen_text = tokenizer.decode(pert_gen_tok_text.tolist()[0], skip_special_tokens=True)
-        print("{}-Perturbed===>".format(i + 1), pert_gen_text.replace('\n', ' ').strip() )
-        print()
-        contents_syn.append(pert_gen_text.replace('\n', ' ').strip())
+        for cond_text in prefix_cond:
+            
+            unpert_gen_tok_text, pert_gen_tok_texts, _, _ = full_text_generation(
+                model=model,
+                tokenizer=tokenizer,
+                cond_text=cond_text,
+                device=device,
+                num_samples=args.num_samples,
+                bag_of_words= bag_of_words,
+                discrim= args.discrim,
+                class_label= args.class_label,
+                length= args.length,
+                stepsize= args.stepsize,
+                temperature= args.temperature,
+                top_k= args.top_k,
+                sample= args.sample,
+                num_iterations= args.num_iterations,
+                grad_length= args.grad_length,
+                horizon_length= args.horizon_length,
+                window_length= args.window_length,
+                decay= args.decay,
+                gamma= args.gamma,
+                gm_scale= args.gm_scale,
+                kl_scale= args.kl_scale
+            )
 
-    infos.append((bag_of_words, unpert_gen_text.replace('\n', ' ').strip(), '<sep>'.join(contents_syn) ))
+            # untokenize unperturbed text
+            unpert_gen_text = tokenizer.decode(unpert_gen_tok_text.tolist()[0], skip_special_tokens=True)
+            print("ori===>", unpert_gen_text.replace('\n', ' ').strip())
+            print()
 
+            for i, pert_gen_tok_text in enumerate(pert_gen_tok_texts):
+                pert_gen_text = tokenizer.decode(pert_gen_tok_text.tolist()[0], skip_special_tokens=True)
+                print("{}-Perturbed===>".format(i + 1), pert_gen_text.replace('\n', ' ').strip() )
+                print()
+                infos.append((label_name, bag_of_words, unpert_gen_text.replace('\n', ' ').strip(), pert_gen_text.replace('\n', ' ').strip() ))
 
-df = pd.DataFrame(infos, columns=['label_name', 'content_ori', 'contents_syn'])
-df.to_csv("{}_pplm_gen.csv".format(args.dsn), index=False)
-    
+    df = pd.DataFrame(infos, columns=['label_name', 'bag_of_words', 'content_ori', 'content_pplm_syn'])    
+    df.to_csv("{}_pplm_gen.csv".format(args.dsn), index=False)
+    ite += 1
 
 
 
