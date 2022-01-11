@@ -150,6 +150,7 @@ def mc_gen(row):
 
 
 infos = []
+
 for ix, row in ds.df_train.reset_index().iterrows():
     torch.cuda.empty_cache()
     print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
@@ -160,19 +161,28 @@ for ix, row in ds.df_train.reset_index().iterrows():
     print("mc2==>", contents_syn_sort[2])
     print('\n')
 
-    for i in range(args.max_aug_times):
-        infos.append((contents_syn_sort[i], row['label_name'], row['label']))
+    for i in range(4):
+        infos.append((contents_syn_sort[i], row['label_name'], row['label'], i+1))
 
-df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label'])
+df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
 
 print("final generated==>", df_synthesize.shape[0]/ds.df_train.shape[0])
 
 
+df_train_aug = pd.concat([ds.df_train, df_synthesize.loc[df_synthesize['fmark'].isin([1])]] ).sample(frac=1)
+assert df_train_aug.shape[0] == ds.df_train.shape[0] * 2
+acc_aug_1, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
 
-df_train_aug = pd.concat([ds.df_train, df_synthesize] ).sample(frac=1)
-print("begin_to_test_aug")
-acc_aug, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
-summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] +  ['acc_base:{} acc_aug:{}'.format( acc_noaug, acc_aug )]
+df_train_aug = pd.concat([ds.df_train, df_synthesize.loc[df_synthesize['fmark'].isin([1,2])]] ).sample(frac=1)
+assert df_train_aug.shape[0] == ds.df_train.shape[0] * 3
+acc_aug_2, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
+
+df_train_aug = pd.concat([ds.df_train, df_synthesize.loc[df_synthesize['fmark'].isin([1,2,3,4])]] ).sample(frac=1)
+assert df_train_aug.shape[0] == ds.df_train.shape[0] * 4
+acc_aug_4, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
+
+summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
++  ['acc_base:{} acc_aug_1:{} acc_aug_2:{} acc_aug_4:{}'.format( acc_noaug, acc_aug_1, acc_aug_2, acc_aug_4 )]
 print('success', ' '.join(summary))
 
 
