@@ -146,7 +146,6 @@ def para_peg(content):
         translated = model_peg.generate(**batch, do_sample=True, max_length=128, num_beams=8, num_return_sequences=8, temperature=1.5)
         tgt_text = tokenizer_peg.batch_decode(translated, skip_special_tokens=True)
         result.update([sent for sent in list(set(tgt_text)) if sent != content])
-        print(len(result))
         if len(result) >= args.fbs_para:
             break 
     return random.sample(list(result), args.fbs_para)
