@@ -69,12 +69,6 @@ print(df)
 
 
 
-import transformers
-model = transformers.GPT2LMHeadModel.from_pretrained('gpt2-medium', output_hidden_states=True, cache_dir='./cache_gpt')
-# load tokenizer
-tokenizer = transformers.GPT2Tokenizer.from_pretrained('gpt2-medium', cache_dir='./cache_gpt')
-
-
 
 
 

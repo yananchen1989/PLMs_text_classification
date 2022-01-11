@@ -153,12 +153,10 @@ parser.add_argument("--gamma", type=float, default=1.5)
 parser.add_argument("--gm_scale", type=float, default=0.9)
 parser.add_argument("--kl_scale", type=float, default=0.01)
 parser.add_argument("--seed", type=int, default=0)
-parser.add_argument("--gpu", default=7, type=int)
 parser.add_argument("--topn", default=64, type=int)
 
 args = parser.parse_args()
-os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
-device = torch.device("cuda:{}".format(args.gpu) if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 
 
 
