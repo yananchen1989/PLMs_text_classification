@@ -63,7 +63,7 @@ for ix, row in df.iterrows():
         infos.append((row['content'], l)) 
 
 
-    if len(infos) > 0 and len(infos) % 2000 == 0:
+    if len(infos) > 0 and len(infos) % 10000 == 0:
         df_nli_pred = pd.DataFrame(infos, columns=['content','label_name'])
         df_nli_pred['label'] = df_nli_pred['label_name'].map(lambda x: ixl_rev[x])
         print("nli labelling completed==>", df_nli_pred.shape[0])
