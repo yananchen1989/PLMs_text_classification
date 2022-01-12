@@ -63,8 +63,12 @@ for ix, row in df.iterrows():
 df_nli_pred = pd.DataFrame(infos, columns=['content','label_name'])
 df_nli_pred['label'] = df_nli_pred['label_name'].map(lambda x: ixl_rev[x])
 print("nli labelling completed==>", df_nli_pred.shape[0])
+print(df_nli_pred['label_name'].value_counts())
 
 df_nli_pred.to_csv("./df_cc_pred_nli/df_nli_pred_{}.csv".format(args.dsn), index=False)
 
-acc_aug_nli, _ = do_train_test_thread(df_nli_pred, ds.df_test, 'albert', 32)
+
+df_nli_pred_sample = sample_stratify(df_nli_pred, df_nli_pred['label_name'].value_counts().min())
+
+acc_aug_nli, _ = do_train_test_thread(df_nli_pred_sample, ds.df_test, 'albert', 32)
 print(args.dsn, acc_aug_nli)
