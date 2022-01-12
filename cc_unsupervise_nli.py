@@ -48,7 +48,7 @@ df = get_cc_news(1)
 df = df.loc[(~df['title'].isnull()) & (~df['content'].isnull())]
 
 infos = []
-for ix, row in df.sample(100).iterrows():
+for ix, row in df.iterrows():
     result_ori = nli_nlp(row['content'], labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
     result_ori.pop('sequence')
     df_nli_row = pd.DataFrame(result_ori)
@@ -61,10 +61,10 @@ for ix, row in df.sample(100).iterrows():
         infos.append((row['content'], l)) 
 
 df_nli_pred = pd.DataFrame(infos, columns=['content','label_name'])
+df_nli_pred['label'] = df_nli_pred['label_name'].map(lambda x: ixl_rev[x])
+print("nli labelling completed==>", df_nli_pred.shape[0])
 
 df_nli_pred.to_csv("./df_cc_pred_nli/df_nli_pred_{}.csv".format(args.dsn), index=False)
-
-df_nli_pred['label'] = df_nli_pred['label_name'].map(lambda x: ixl_rev[x])
 
 acc_aug_nli, _ = do_train_test_thread(df_nli_pred, ds.df_test, 'albert', 32)
 print(args.dsn, acc_aug_nli)
