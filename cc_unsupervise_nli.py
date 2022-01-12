@@ -62,15 +62,16 @@ for ix, row in df.iterrows():
     for l in pred_label_names:
         infos.append((row['content'], l)) 
 
-df_nli_pred = pd.DataFrame(infos, columns=['content','label_name'])
-df_nli_pred['label'] = df_nli_pred['label_name'].map(lambda x: ixl_rev[x])
-print("nli labelling completed==>", df_nli_pred.shape[0])
-print(df_nli_pred['label_name'].value_counts())
 
-df_nli_pred.to_csv("./df_cc_pred_nli/df_nli_pred_{}.csv".format(args.dsn), index=False)
+    if len(infos) > 0 and len(infos) % 2000 == 0:
+        df_nli_pred = pd.DataFrame(infos, columns=['content','label_name'])
+        df_nli_pred['label'] = df_nli_pred['label_name'].map(lambda x: ixl_rev[x])
+        print("nli labelling completed==>", df_nli_pred.shape[0])
+        print(df_nli_pred['label_name'].value_counts())
 
+        df_nli_pred.to_csv("./df_cc_pred_nli/df_nli_pred_{}.csv".format(args.dsn), index=False)
 
-df_nli_pred_sample = sample_stratify(df_nli_pred, df_nli_pred['label_name'].value_counts().min())
+        df_nli_pred_sample = sample_stratify(df_nli_pred, df_nli_pred['label_name'].value_counts().min())
 
-acc_aug_nli, _ = do_train_test_thread(df_nli_pred_sample, ds.df_test, 'albert', 16)
-print(args.dsn, acc_aug_nli)
+        acc_aug_nli, _ = do_train_test_thread(df_nli_pred_sample, ds.df_test, 'albert', 16)
+        print(args.dsn, df_nli_pred['label_name'].value_counts().min(),  acc_aug_nli)
