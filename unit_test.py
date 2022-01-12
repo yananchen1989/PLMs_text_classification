@@ -102,6 +102,8 @@ print(df)
 
 
 
+
+
 input_ids = tokenizer_gpt2.encode(sent, return_tensors="tf")
 # get logits of last hidden state
 next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
