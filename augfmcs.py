@@ -160,7 +160,7 @@ for ix, row in ds.df_train.reset_index().iterrows():
     for i in range(min(4, len(contents_syn_sort))):
         print("mc{}==>".format(i), contents_syn_sort[i])
         infos.append((contents_syn_sort[i], row['label_name'], row['label'], i+1))
-
+    print()
 df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
 
 print("final generated==>", df_synthesize.shape[0]/ds.df_train.shape[0])

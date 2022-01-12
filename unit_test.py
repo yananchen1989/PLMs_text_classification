@@ -32,7 +32,7 @@ content = "Grand Budapest Hotel'not grand, but still stylish"
 # tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
 # gpt2 = GPTNeoForCausalLM.from_pretrained('EleutherAI/gpt-neo-2.7B', cache_dir="./cache")
 import os 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 import pandas as pd 
 from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelWithLMHead
@@ -40,6 +40,30 @@ from transformers import AutoTokenizer, AutoModelWithLMHead
 tokenizer = AutoTokenizer.from_pretrained('roberta-large',cache_dir="./cache",local_files_only=True) 
 model = AutoModelWithLMHead.from_pretrained('roberta-large',cache_dir="./cache",local_files_only=True)
 nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0)
+
+
+from utils.load_data import * 
+ds = load_data(dataset='ag', samplecnt= 1024)
+
+
+
+row = ds.df_train.sample(1)
+print(row['content'].tolist()[0], row['label_name'].tolist()[0])
+
+filled_result = nlp_fill("{} are melting faster than before in some regions from the Arctic to the Alps \
+    but others are getting bigger, scientists said on Friday.".format(nlp_fill.tokenizer.mask_token))
+df = pd.DataFrame(filled_result)
+print(df)
+
+
+
+
+with tf.distribute.MirroredStrategy().scope():
+    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
+    model_cls.load_weights("./model_cls/model_full_{}.h5".format('ag'))   
+
+
+
 
 sent = "Emergence of community - acquired infections due to ESBL" # health
 sent = "100 bodies found at the scene of plane disaster" # health
@@ -53,7 +77,7 @@ sent = "Federal jury orders tech giant Samsung to pay"
 
 sent = 'FDA gives green light to migraine prevention tool'
 
-filled_result = nlp_fill("Federal jury orders tech giant {} to pay".format(nlp_fill.tokenizer.mask_token))
+filled_result = nlp_fill("Glaciers Shrink, But Some Resist Global Warming (Reuters) Reuters - Glaciers are melting faster than before in\some regions from the Arctic to the Alps but others are getting\bigger, scientists said on Friday.".format(nlp_fill.tokenizer.mask_token))
 
 filled_result = nlp_fill("Federal jury orders business giant {} to pay".format(nlp_fill.tokenizer.mask_token))
 

@@ -27,7 +27,7 @@ for dsn in ag yahoo
 do
    for i in 1  
    do
-      for gpu in 7 #2 3 4 5 6 7
+      for gpu in 2 #2 3 4 5 6 7
       do
          seed=$RANDOM
          CUDA_VISIBLE_DEVICES=${gpu} nohup envcbert/bin/python -u pplm.py  --pretrained_model gpt2-medium  \
