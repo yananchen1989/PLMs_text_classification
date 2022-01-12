@@ -10,6 +10,7 @@ import tensorflow as tf
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="yahoo", type=str)
 parser.add_argument("--gpu", default="1", type=str)
+parser.add_argument("--sampler", default=1, type=float)
 args = parser.parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
@@ -44,7 +45,7 @@ nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokeni
 
 
 
-df = get_cc_news(1)
+df = get_cc_news(args.sampler)
 df = df.loc[(~df['title'].isnull()) & (~df['content'].isnull())]
 
 infos = []
