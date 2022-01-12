@@ -756,7 +756,7 @@ infos = []
 while True:
     for label_name in labels_candidates:
         bag_of_words = list(label_expands_auto[label_name])
-        print("ite:{}".format(ite), "bow:{}".format(bag_of_words))
+        print("ite:{}".format(ite), label_name, "bow:{}".format(bag_of_words))
 
         for cond_text in prefix_cond:
             
