@@ -2,7 +2,7 @@
 
 import pandas as pd
 import time,argparse
-import os,math
+import os,math,torch
 import numpy as np
 import datasets,re,operator,joblib
 import tensorflow as tf
@@ -50,6 +50,7 @@ df = df.loc[(~df['title'].isnull()) & (~df['content'].isnull())]
 
 infos = []
 for ix, row in df.iterrows():
+    torch.cuda.empty_cache()
     result_ori = nli_nlp(row['content'], labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
     result_ori.pop('sequence')
     df_nli_row = pd.DataFrame(result_ori)
@@ -71,5 +72,5 @@ df_nli_pred.to_csv("./df_cc_pred_nli/df_nli_pred_{}.csv".format(args.dsn), index
 
 df_nli_pred_sample = sample_stratify(df_nli_pred, df_nli_pred['label_name'].value_counts().min())
 
-acc_aug_nli, _ = do_train_test_thread(df_nli_pred_sample, ds.df_test, 'albert', 32)
+acc_aug_nli, _ = do_train_test_thread(df_nli_pred_sample, ds.df_test, 'albert', 16)
 print(args.dsn, acc_aug_nli)
