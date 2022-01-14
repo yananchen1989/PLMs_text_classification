@@ -259,7 +259,7 @@ def get_pplm_df():
         df_pplm_tmp = pd.read_csv(file)
         df_ll.append(df_pplm_tmp)
     df_pplm = pd.concat(df_ll).sample(frac=1)
-    print(df_pplm['label_name']value_counts())
+    print(df_pplm['label_name'].value_counts())
 
     if args.nli_ensure:
         infos = []
