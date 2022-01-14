@@ -57,14 +57,6 @@ print(df)
 
 
 
-
-with tf.distribute.MirroredStrategy().scope():
-    model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
-    model_cls.load_weights("./model_cls/model_full_{}.h5".format('ag'))   
-
-
-
-
 sent = "Emergence of community - acquired infections due to ESBL" # health
 sent = "100 bodies found at the scene of plane disaster" # health
 
@@ -92,9 +84,19 @@ print(df)
 
 
 
+import pandas as pd 
+import glob
 
 
-
+def get_pplm_df():
+    files = glob.glob("./pplm_syns/{}_pplm_gen_*.csv".format(args.dsn))
+    df_ll = []
+    for file in files:
+        df_pplm_tmp = pd.read_csv(file)
+        df_ll.append(df_pplm_tmp)
+    df_pplm = pd.concat(df_ll)
+    print(df_pplm.label_name.value_counts())
+    return df_pplm
 
 
 

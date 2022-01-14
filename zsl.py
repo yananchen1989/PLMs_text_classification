@@ -2,7 +2,7 @@ import pandas as pd
 import time,argparse
 import os,math,itertools
 import numpy as np
-import datasets,re,operator,joblib
+import re,operator,joblib
 from sklearn.feature_extraction.text import CountVectorizer
 import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
@@ -15,8 +15,9 @@ parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--topk", default=64, type=int)
-parser.add_argument("--param", default='t5', type=str)
-parser.add_argument("--gpu", default="7", type=str)
+parser.add_argument("--nli_ensure", default=0, type=int)
+parser.add_argument("--expand", default='gpt', type=str)
+parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -71,13 +72,13 @@ bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', ca
 bert_nsp.to(device0)
 
 
-if args.param == 't5':
-    from transformers import T5Tokenizer, AutoModelWithLMHead
-    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-    print(tokenizer_t5)
-    t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
-    gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
-
+#if args.param == 't5':
+from transformers import T5Tokenizer, AutoModelWithLMHead
+tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+print(tokenizer_t5)
+t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
+gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+'''
 elif args.param == 'bt':
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
     tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
@@ -105,14 +106,6 @@ elif args.param == 't5paws':
     model_t5paws = AutoModelForSeq2SeqLM.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache", local_files_only=True).to(device0)
 
 
-def para_t5(content):
-    dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128, 'imdb':128}
-    result_gpt = gen_nlp_t5([content], max_length=dsn_maxlen[args.dsn], \
-                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= args.fbs_para,\
-                                        clean_up_tokenization_spaces=True)
-    ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] 
-    return ori_gen_contents
 
 
 def para_bt(content):
@@ -170,12 +163,20 @@ def para_t5paws(content):
         if line != content:
             results.append(line)
     return results
+'''
 
-
-para_func = {'t5':para_t5, 'bt':para_bt, 'bart':para_bart, 'peg':para_peg, 't5paws':para_t5paws}
+#para_func = {'t5':para_t5, 'bt':para_bt, 'bart':para_bart, 'peg':para_peg, 't5paws':para_t5paws}
+def para_t5(content):
+    dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128, 'imdb':128}
+    result_gpt = gen_nlp_t5([content], max_length=dsn_maxlen[args.dsn], \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= args.fbs_para,\
+                                        clean_up_tokenization_spaces=True)
+    ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] 
+    return ori_gen_contents
 
 def para_ranking(content_ori):
-    contents_para = para_func[args.param](content_ori)
+    contents_para = para_t5(content_ori)
 
     ls = {l:0 for l in labels_candidates}
     nli_result_ll = []
@@ -251,6 +252,37 @@ def get_seed_words():
         print(l, label_expands_auto[l], '\n')
     return label_expands_auto
 
+def get_pplm_df():
+    files = glob.glob("./pplm_syns/{}_pplm_gen_*.csv".format(args.dsn))
+    df_ll = []
+    for file in files:
+        df_pplm_tmp = pd.read_csv(file)
+        df_ll.append(df_pplm_tmp)
+    df_pplm = pd.concat(df_ll).sample(frac=1)
+    print(df_pplm['label_name']value_counts())
+
+    if args.nli_ensure:
+        infos = []
+        for ix in range(0, df_pplm.shape[0], 64):
+            df_pplm_tmp = df_pplm[ix:ix+64]
+            result_nli = nli_nlp(df_pplm_tmp['content_pplm_syn'].tolist(), labels_candidates, \
+                        multi_label=True, hypothesis_template="This text is about {}.")
+
+            for r,l,sent in zip(result_nli, df_pplm_tmp['label_name'].tolist(), df_pplm_tmp['content_pplm_syn'].tolist()):
+                r.pop('sequence')
+                dfr = pd.DataFrame(r)
+                dfrf = dfr.loc[dfr['scores']>=0.9]
+                if l in dfrf['labels'].tolist():
+                    infos.append((sent, l ))
+
+            torch.cuda.empty_cache()
+            if len(infos) > 0 and len(infos) % 1000 == 0:
+                df_pplm_f = pd.DataFrame(infos, columns=['content', 'label_name'])
+                if df_pplm_f['label_name']value_counts().min() >= 2048:
+                    break 
+        return df_pplm_f
+    return df_pplm
+
 '''
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -279,8 +311,8 @@ while True:
         for sent in contents:
             infos.append((remove_str(sent) , label ))
 
-        result_nlp = nli_nlp(contents, labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-        for ii in  result_nlp:
+        result_nli = nli_nlp(contents, labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+        for ii in  result_nli:
             df_tmp = pd.DataFrame(ii)
             df_tmp_sel = df_tmp.loc[df_tmp['scores']>=0.9]
             if df_tmp_sel.shape[0] == 0:
@@ -295,7 +327,13 @@ while True:
 df.to_csv("df_gen_{}.csv".format(args.dsn), index=False)
 '''
 
-df_contents_arxiv = pd.read_csv("df_gen_{}.csv".format(args.dsn))
+if args.expand == 'gpt':
+    df_contents_arxiv = pd.read_csv("df_gen_{}.csv".format(args.dsn))
+elif args.expand == 'pplm':
+    df_contents_arxiv = get_pplm_df()
+
+
+
 
 acc = {}
 for ix, row in ds.df_train.reset_index().iterrows():

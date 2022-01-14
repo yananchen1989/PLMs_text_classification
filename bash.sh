@@ -39,8 +39,9 @@ do
 done 
 
 
-nohup bash run.sh uci 0 & 
-nohup bash run.sh ag 1 & 
+
+nohup python -u cc_unsupervise_nli.py --gpu 0 --dsn ag --sampler 1 >  cc_unsupervise_nli.ag.log & 
+nohup python -u cc_unsupervise_nli.py --gpu 1 --dsn yahoo --sampler 1 >  cc_unsupervise_nli.yahoo.log & 
 
 
 

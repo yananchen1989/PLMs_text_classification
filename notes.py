@@ -209,3 +209,50 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger()
+
+
+# write and read json
+import json
+data = {
+    'employees' : [
+        {
+            'name' : 'John Doe',
+            'department' : 'Marketing',
+            'place' : [1,2,3,4]
+        },
+        {
+            'name' : 'Jane Doe',
+            'department' : 'Software Engineering',
+            'place' : [1,2,3,4]
+        },
+        {
+            'name' : 'Don Joe',
+            'department' : 'Software Engineering',
+            'place' : 'Office'
+        }
+    ]
+}
+
+
+json_string = json.dumps(data)
+
+for _ in range(5):
+    with open('test.json', 'a') as f:
+        f.write(json_string+'\n')
+
+
+with open('test.json', 'r') as f:
+    for line in f:
+        data = json.loads(line.strip()) 
+        print(data)
+
+
+
+
+
+
+
+
+
+
+
