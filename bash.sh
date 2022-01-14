@@ -43,12 +43,11 @@ done
 
 
 
-python -u zsl.py --dsn ag --expand pplm --nli_ensure 0 --gpu 0 > zsl.pplm.0.log & 
-
-python -u zsl.py --dsn ag --expand pplm --nli_ensure 1 --gpu 1 > zsl.pplm.1.log & 
-
+nohup python -u zsl.py --dsn ag --expand pplm --nli_ensure 0 --gpu 0 > zsl.pplm.0.log & 
+nohup python -u zsl.py --dsn ag --expand pplm --nli_ensure 1 --gpu 1 > zsl.pplm.1.log & 
 
 
+nohup python -u augf_pplm.py --dsn ag --samplecnt 128 --gpu 6 > augf_pplm.ag.128.log & 
 
 
 

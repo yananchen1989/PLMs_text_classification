@@ -3,7 +3,7 @@ from sklearn import metrics
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dsn", default="uci", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
+parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--samplecnt", default=128, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--testmode", default=0, type=int)
@@ -11,7 +11,7 @@ parser.add_argument("--model", default="albert", type=str)
 parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 parser.add_argument("--test_beams", default=32, type=int)
 parser.add_argument("--candidates", default=64, type=int)
-parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--gpu", default="6", type=str)
 args = parser.parse_args()
 print('args==>', args)
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
@@ -65,34 +65,26 @@ ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplica
 
 
 ####################### generation setting ######################
-if args.genm == 'gpt':
-    from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-    tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-    #tokenizer_gpt2.padding_side = "left" 
-    tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-    tokenizer_gpt2.sep_token = '<|sep|>'
-    #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
-    print(tokenizer_gpt2)
-    gpt2_noft = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-    gpt2_noft.trainable = False
-    gpt2_noft.config.pad_token_id=50256
-    gen_nlp  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
-
-elif  args.genm == 't5':
-    from transformers import T5Tokenizer, AutoModelWithLMHead
-    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-    print(tokenizer_t5)
-    t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-    gen_nlp  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
-
-print('generate model loaded ==>{}'.format(args.genm))
+'''
+from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+tokenizer_gpt2.sep_token = '<|sep|>'
+#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+print(tokenizer_gpt2)
+gpt2_noft = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2_noft.trainable = False
+gpt2_noft.config.pad_token_id=50256
+gen_nlp  = pipeline("text-generation", model=gpt2_noft, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
+'''
 
 dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
 print("begin_to_test_noaug")
 
 if not args.testmode: 
-    acc_noaug, model_cls = do_train_test_thread(ds.df_train, ds.df_test, 'albert', 16)
+    acc_noaug, model_cls = do_train_test_thread(ds.df_train, ds.df_test, 'albert', 32)
     print("base acc==>", acc_noaug)
 
 else:
@@ -147,8 +139,44 @@ def mc_gen(row):
 
 
 
+files = glob.glob("./pplm_syns/{}_pplm_gen_*.csv".format(args.dsn))
+df_ll = []
+for file in files:
+    df_pplm_tmp = pd.read_csv(file)
+    df_ll.append(df_pplm_tmp)
+df_pplm = pd.concat(df_ll).sample(frac=1)
+print(df_pplm['label_name'].value_counts())
+df_pplm = df_pplm.rename(columns={ 'content_pplm_syn':'content'})[['content','label_name']]
+df_pplm['label'] = df_pplm['label_name'].map(lambda x: ixl_rev[x])
 
 
+preds = model_cls.predict(df_pplm['content'].values,  batch_size=512, verbose=0) 
+
+pred_l = preds.argmax(axis=1)
+pred_score = preds.max(axis=1)
+
+
+df_pplm['pred_score'] = pred_score
+df_pplm['pred_l'] = pred_l
+
+
+df_pplm_f = df_pplm.loc[(df_pplm['pred_l']==df_pplm['label']) & (df_pplm['pred_l']>=0.9)]
+
+df_pplm_f_b = sample_stratify(df_pplm_f, args.samplecnt)
+
+df_pplm_b = sample_stratify(df_pplm, args.samplecnt)
+
+
+df_train_aug = pd.concat([ds.df_train, df_pplm_b] ).sample(frac=1)
+acc_aug_pplm_nof, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 32)
+
+df_train_aug = pd.concat([ds.df_train, df_pplm_f_b] ).sample(frac=1)
+acc_aug_pplm_f, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 32)
+
+print(acc_noaug, acc_aug_pplm_nof, acc_aug_pplm_f)
+
+
+'''
 infos = []
 
 for ix, row in ds.df_train.reset_index().iterrows():
@@ -181,6 +209,6 @@ acc_aug_4, _ = do_train_test_thread(df_train_aug, ds.df_test, 'albert', 16)
 summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] \
 +  ['acc_base:{} acc_aug_1:{} acc_aug_2:{} acc_aug_4:{}'.format( acc_noaug, acc_aug_1, acc_aug_2, acc_aug_4 )]
 print('success', ' '.join(summary))
-
+'''
 
 

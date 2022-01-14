@@ -278,10 +278,12 @@ def get_pplm_df():
             torch.cuda.empty_cache()
             if len(infos) > 0 and len(infos) % 1000 == 0:
                 df_pplm_f = pd.DataFrame(infos, columns=['content', 'label_name'])
-                if df_pplm_f['label_name']value_counts().min() >= 2048:
+                if df_pplm_f['label_name'].value_counts().min() >= 2048:
                     break 
         return df_pplm_f
-    return df_pplm
+
+    else:
+        return df_pplm.rename(columns={ 'content_pplm_syn':'content'})
 
 '''
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
@@ -337,9 +339,8 @@ elif args.expand == 'pplm':
 
 acc = {}
 for ix, row in ds.df_train.reset_index().iterrows():
-    torch.cuda.empty_cache()
-
-    nli_result = nli_nlp([row['content']],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+    torch.cuda.empty_cache() 
+    nli_result = nli_nlp(row['content'],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
     nli_result.pop('sequence')
     df_noexpand = pd.DataFrame(nli_result)
     df_noexpand = df_noexpand.rename(columns={'labels': 'label', 'scores':'score_noexpand'})
