@@ -43,7 +43,7 @@ nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0)
 
 
 from utils.load_data import * 
-ds = load_data(dataset='ag', samplecnt= 1024)
+ds = load_data(dataset='yahoo', samplecnt= 1024)
 
 
 
@@ -84,19 +84,13 @@ print(df)
 
 
 
-import pandas as pd 
-import glob
 
 
-def get_pplm_df():
-    files = glob.glob("./pplm_syns/{}_pplm_gen_*.csv".format(args.dsn))
-    df_ll = []
-    for file in files:
-        df_pplm_tmp = pd.read_csv(file)
-        df_ll.append(df_pplm_tmp)
-    df_pplm = pd.concat(df_ll)
-    print(df_pplm.label_name.value_counts())
-    return df_pplm
+
+
+
+
+
 
 
 
