@@ -83,4 +83,25 @@ print(args.dsn, sum(accs) / len(accs))
     
 
 
+from sklearn import metrics
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
 
+enc = encoder('cmlm-base', 'gpu')
+
+
+ds = load_data(dataset=args.dsn, samplecnt= 256)
+labels_candidates = ds.df_train['label_name'].unique().tolist()
+print(labels_candidates)
+
+embed_label = enc.infer(labels_candidates)
+
+embed_contents = enc.infer(ds.df_train['content'].tolist(), batch_size=512)
+
+embeds_score = cosine_similarity(embed_contents, embed_label)
+
+preds = embeds_score.argmax(axis=1)
+
+preds_labels = [labels_candidates[p] for p in preds]
+
+acc_embed = metrics.accuracy_score(ds.df_train['label_name'].values, preds_labels)
+print(args.dsn,  'acc_embed:',  acc_embed)

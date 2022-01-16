@@ -252,38 +252,6 @@ def get_seed_words():
         print(l, label_expands_auto[l], '\n')
     return label_expands_auto
 
-def get_pplm_df():
-    files = glob.glob("./pplm_syns/{}_pplm_gen_*.csv".format(args.dsn))
-    df_ll = []
-    for file in files:
-        df_pplm_tmp = pd.read_csv(file)
-        df_ll.append(df_pplm_tmp)
-    df_pplm = pd.concat(df_ll).sample(frac=1)
-    print(df_pplm['label_name'].value_counts())
-
-    if args.nli_ensure:
-        infos = []
-        for ix in range(0, df_pplm.shape[0], 64):
-            df_pplm_tmp = df_pplm[ix:ix+64]
-            result_nli = nli_nlp(df_pplm_tmp['content_pplm_syn'].tolist(), labels_candidates, \
-                        multi_label=True, hypothesis_template="This text is about {}.")
-
-            for r,l,sent in zip(result_nli, df_pplm_tmp['label_name'].tolist(), df_pplm_tmp['content_pplm_syn'].tolist()):
-                r.pop('sequence')
-                dfr = pd.DataFrame(r)
-                dfrf = dfr.loc[dfr['scores']>=0.9]
-                if l in dfrf['labels'].tolist():
-                    infos.append((sent, l ))
-
-            torch.cuda.empty_cache()
-            if len(infos) > 0 and len(infos) % 1000 == 0:
-                df_pplm_f = pd.DataFrame(infos, columns=['content', 'label_name'])
-                if df_pplm_f['label_name'].value_counts().min() >= 2048:
-                    break 
-        return df_pplm_f
-
-    else:
-        return df_pplm.rename(columns={ 'content_pplm_syn':'content'})
 
 '''
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
@@ -332,9 +300,7 @@ df.to_csv("df_gen_{}.csv".format(args.dsn), index=False)
 if args.expand == 'gpt':
     df_contents_arxiv = pd.read_csv("df_gen_{}.csv".format(args.dsn))
 elif args.expand == 'pplm':
-    df_contents_arxiv = get_pplm_df()
-
-
+    df_contents_arxiv = pd.read_csv("df_gen_pplm_{}.csv".format(args.dsn))
 
 
 acc = {}

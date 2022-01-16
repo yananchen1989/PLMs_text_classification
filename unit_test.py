@@ -86,6 +86,76 @@ print(df)
 
 
 
+import pandas as pd
+import time,argparse
+import os,math,itertools
+import numpy as np
+import re,operator,joblib
+from sklearn.feature_extraction.text import CountVectorizer
+import tensorflow as tf
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
+import joblib,gensim
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--dsn", default="ag", type=str)
+parser.add_argument("--fbs_gpt", default=256, type=int)
+parser.add_argument("--fbs_para", default=32, type=int)
+parser.add_argument("--acc_topn", default=1, type=int)
+parser.add_argument("--topk", default=64, type=int)
+parser.add_argument("--nli_ensure", default=0, type=int)
+parser.add_argument("--expand", default='gpt', type=str)
+parser.add_argument("--gpu", default="0", type=str)
+args = parser.parse_args()
+
+from transformers import pipeline
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+nli_model_name = 'vicgalle/xlm-roberta-large-xnli-anli' #"facebook/bart-large-mnli"
+model_nli = AutoModelForSequenceClassification.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
+tokenizer_nli = AutoTokenizer.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
+nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=0)
+
+
+from utils.load_data import * 
+ds = load_data(dataset=args.dsn, samplecnt= 32)
+labels_candidates = ds.df_train['label_name'].unique().tolist()
+print(labels_candidates)
+
+import glob
+files = glob.glob("./pplm_syns/{}_pplm_gen_*.csv".format(args.dsn))
+df_ll = []
+for file in files:
+    df_pplm_tmp = pd.read_csv(file)
+    df_ll.append(df_pplm_tmp)
+df_pplm = pd.concat(df_ll).sample(frac=1)
+print(df_pplm['label_name'].value_counts())
+
+
+infos = []
+for ix in range(0, df_pplm.shape[0], 64):
+    df_pplm_tmp = df_pplm[ix:ix+64]
+    result_nli = nli_nlp(df_pplm_tmp['content_pplm_syn'].tolist(), labels_candidates, \
+                multi_label=True, hypothesis_template="This text is about {}.")
+
+    for r,l,sent in zip(result_nli, df_pplm_tmp['label_name'].tolist(), df_pplm_tmp['content_pplm_syn'].tolist()):
+        r.pop('sequence')
+        dfr = pd.DataFrame(r)
+        dfrf = dfr.loc[dfr['scores']>=0.9]
+        if l in dfrf['labels'].tolist():
+            infos.append((sent, l ))
+
+    torch.cuda.empty_cache()
+
+
+df_pplm_f = pd.DataFrame(infos, columns=['content', 'label_name'])
+df_pplm_f.to_csv("df_gen_pplm_{}.csv".format(args.dsn))
+
+
+
+
+
+
+
+
 
 
 
