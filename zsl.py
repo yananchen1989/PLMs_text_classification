@@ -345,7 +345,7 @@ def gen_gpt_expansions():
         if df['label_name'].value_counts().min() >= args.fbs_para * 4  :
             break 
 
-    df.to_csv("df_gen_{}_{}.csv".format(args.dsn, args.expand), index=False)
+    df.to_csv("df_gen_{}_{}_{}.csv".format(args.dsn, args.expand, args.seed_sample), index=False)
     return df
 
 
