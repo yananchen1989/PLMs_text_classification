@@ -40,7 +40,7 @@ done
 
 
 
-CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
+CUDA_VISIBLE_DEVICES=0 nohup python -u ./run_clm_no_trainer.py \
                 --num_train_epochs 3 \
                 --train_file './df_nat_train.txt' \
                 --validation_file './df_nat_test.txt' \
@@ -49,12 +49,12 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
                 --per_device_eval_batch_size 16 \
                 --output_dir './gpt2_natcat' \
                 --preprocessing_num_workers 1 --overwrite_cache True \
-                --block_size 64  > ft_gpt_nat.log & 
+                --block_size 128  > ft_gpt_nat.log & 
 
 
 
-CUDA_VISIBLE_DEVICES=0 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 12 \
+CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
+                --num_train_epochs 4 \
                 --train_file './df_nat_train_sample.txt' \
                 --validation_file './df_nat_test.txt' \
                 --model_name_or_path gpt2 \
@@ -62,7 +62,30 @@ CUDA_VISIBLE_DEVICES=0 nohup python -u ./run_clm_no_trainer.py \
                 --per_device_eval_batch_size 16 \
                 --output_dir './gpt2_natcat_sample' \
                 --preprocessing_num_workers 1 --overwrite_cache True \
-                --block_size 64 > ft_gpt_nat_sample.log &
+                --block_size 128 > ft_gpt_nat_sample.log &
+
+
+
+CUDA_VISIBLE_DEVICES=2  python -u ./run_summarization_no_trainer.py \
+            --num_train_epochs 3 \
+            --train_file {} \
+            --validation_file {} \
+            --source_prefix 'summarize: ' \
+            --model_name_or_path t5-base \
+            --per_device_train_batch_size 16 \
+            --per_device_eval_batch_size 16 \
+            --output_dir './t5_natcat' \
+            --max_target_length 256 \
+            --val_max_target_length 256 \
+            --preprocessing_num_workers 16 --overwrite_cache True \
+            --text_column text1 \
+            --summary_column text2 \
+            --max_length {} \
+            --model_type t5   train_file, validation_file, output_dir,
+                args.maxlen, args.maxlen, args.maxlen
+
+
+
 
 
 
@@ -85,7 +108,7 @@ nohup python -u zsl.py --dsn yahoo --expand seeds  --fbs_gpt 128 --seed_sample 8
 
 
 ############################################################################################################################################
-ps aux|grep "run_clm_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "pplm.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 

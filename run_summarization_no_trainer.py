@@ -376,11 +376,12 @@ def main():
     # Preprocessing the datasets.
     # First we tokenize all the texts.
     column_names = raw_datasets["train"].column_names
+    print("columns==>", column_names)
 
     # Get the column names for input/target.
     dataset_columns = summarization_name_mapping.get(args.dataset_name, None)
     if args.text_column is None:
-        text_column = dataset_columns[0] if dataset_columns is not None else column_names[0]
+        text_column = column_names[0] #if dataset_columns is not None else column_names[0]
     else:
         text_column = args.text_column
         if text_column not in column_names:
@@ -388,7 +389,7 @@ def main():
                 f"--text_column' value '{args.text_column}' needs to be one of: {', '.join(column_names)}"
             )
     if args.summary_column is None:
-        summary_column = dataset_columns[1] if dataset_columns is not None else column_names[1]
+        summary_column = column_names[1] #if dataset_columns is not None else column_names[1]
     else:
         summary_column = args.summary_column
         if summary_column not in column_names:

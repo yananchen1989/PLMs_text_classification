@@ -66,37 +66,6 @@ print('data loaded', df_train.shape[0], df_valid.shape[0])
 
 output_dir = 'ft_model_{}_{}'.format(args.genm, args.ft_pattern) 
 
-if args.genm =='gpt2':
-    train_file = './fintune_csvs/{}_train.txt'.format(args.genm)
-    validation_file = './fintune_csvs/{}_test.txt'.format(args.genm)
-
-    file_df_map = {train_file:df_train, validation_file:df_valid}
-
-    for file, df_ in file_df_map.items():
-
-        with open (file, 'w') as f:
-            for ix, row in df_.iterrows():
-                if args.ft_pattern in ['summary', 'tc','pp','ep']:
-                    f.write("{} {} {} {}".format(row['text1'], tokenizer_gpt2.sep_token, row['text2'], tokenizer_gpt2.eos_token ) )
-                elif args.ft_pattern in ['entire']: 
-                    f.write("{} {}".format(row['text'], tokenizer_gpt2.eos_token ) )
-        print('{} written'.format(file))
-
-    #   
-    os.system(
-    "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
-            --num_train_epochs {} \
-            --train_file {} \
-            --validation_file {} \
-            --model_name_or_path gpt2 \
-            --per_device_train_batch_size {} \
-            --per_device_eval_batch_size {} \
-            --output_dir {} \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --model_type gpt2 \
-            --block_size {}".format(args.gpu, args.num_train_epochs, train_file, validation_file, \
-                    args.batch_size,  args.batch_size, \
-                output_dir, 128) ) 
 
 
 
@@ -125,6 +94,13 @@ df_nat_train, df_nat_test =  train_test_split(df_nat, test_size=0.001)
 
 print(df_nat_train.shape[0], df_nat_test.shape[0])
 
+
+
+
+
+
+###### for gpt
+
 from utils.load_data import * 
 with open ("df_nat_train.txt", 'w') as f:
     for line in df_nat_train['text'].tolist():
@@ -134,7 +110,6 @@ with open ("df_nat_test.txt", 'w') as f:
     for line in df_nat_test['text'].tolist():
         f.write(remove_str(line) + '\n')
 
-
 with open ("df_nat_train_sample.txt", 'w') as f:
     for line in df_nat_train.sample(200000)['text'].tolist():
         f.write(remove_str(line) + '\n')
@@ -143,6 +118,25 @@ with open ("df_nat_train_sample.txt", 'w') as f:
 
 
 
+####### for t5
+
+
+
+df_nat['prefix'] = df_nat['label'].map(lambda x: "This document is about {}".format(x))
+
+df_nat_train, df_nat_test =  train_test_split(df_nat[['prefix', 'content']], test_size=0.001)
+
+df_nat_train.to_csv("df_nat_train.csv", index=False)
+df_nat_test.to_csv("df_nat_test.csv", index=False)
+
+df_nat_train.sample(200000).to_csv("df_nat_train_sample.csv", index=False)
+
+
+from datasets import load_dataset
+data_files = {}
+data_files["train"] = "df_nat_train_sample.csv"
+data_files["validation"] = "df_nat_test.csv"
+raw_datasets = load_dataset("csv", data_files=data_files)
 
 
 
@@ -150,42 +144,6 @@ with open ("df_nat_train_sample.txt", 'w') as f:
 
 
 
-
-
-
-
-
-
-
-
-
-
-elif args.genm == 't5':
-    train_file = './fintune_csvs/{}_train_ft.csv'.format(args.genm)
-    validation_file = './fintune_csvs/{}_test_ft.csv'.format(args.genm)
-
-    df_train.to_csv(train_file, index=False)
-    df_valid.to_csv(validation_file, index=False)
-    print('train_file validation_file written')
-    #  
-    os.system(
-    "CUDA_VISIBLE_DEVICES={}  python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs {} \
-            --train_file {} \
-            --validation_file {} \
-            --source_prefix 'summarize: ' \
-            --model_name_or_path t5-base \
-            --per_device_train_batch_size 16 \
-            --per_device_eval_batch_size 16 \
-            --output_dir {} \
-            --max_target_length {} \
-            --val_max_target_length {} \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column text1 \
-            --summary_column text2 \
-            --max_length {} \
-            --model_type t5 ".format(args.gpu, args.num_train_epochs, train_file, validation_file, output_dir,
-                args.maxlen, args.maxlen, args.maxlen   ) ) 
 
 
 
