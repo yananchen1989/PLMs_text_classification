@@ -40,12 +40,45 @@ done
 
 
 
+CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
+                --num_train_epochs 12 \
+                --train_file './df_nat_train.txt' \
+                --validation_file './df_nat_test.txt' \
+                --model_name_or_path gpt2 \
+                --per_device_train_batch_size 16 \
+                --per_device_eval_batch_size 16 \
+                --output_dir './gpt2_natcat' \
+                --preprocessing_num_workers 8 --overwrite_cache True \
+                --block_size 64  > ft_gpt_nat.log & 
+
+
+
+CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_clm_no_trainer.py \
+                --num_train_epochs 12 \
+                --train_file './df_nat_train_sample.txt' \
+                --validation_file './df_nat_test_sample.txt' \
+                --model_name_or_path gpt2 \
+                --per_device_train_batch_size 16 \
+                --per_device_eval_batch_size 16 \
+                --output_dir './gpt2_natcat_sample' \
+                --preprocessing_num_workers 8 --overwrite_cache True \
+                --block_size 64 > ft_gpt_nat_sample.log &
 
 
 
 nohup python -u zsl.py --dsn ag --expand pplm --nli_ensure 1 --fbs_gpt 512  --gpu 0 > zsl.pplm.ag.512.log & 
 nohup python -u zsl.py --dsn ag --expand pplm --nli_ensure 1 --fbs_gpt 1024 --gpu 1 > zsl.pplm.ag.1024.log & 
 nohup python -u zsl.py --dsn ag --expand pplm --nli_ensure 1 --fbs_gpt 2048 --gpu 6 > zsl.pplm.ag.2048.log & 
+
+
+
+
+
+
+
+
+
+
 
 
 
