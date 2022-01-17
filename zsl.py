@@ -17,8 +17,8 @@ parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--nli_ensure", default=0, type=int)
 parser.add_argument("--expand", default='gpt', type=str)
 parser.add_argument("--topn", default=64, type=int)
-
-parser.add_argument("--gpu", default="5", type=str)
+parser.add_argument("--seed_sample", default=8, type=int)
+parser.add_argument("--gpu", default="1", type=str)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -318,7 +318,7 @@ def gen_gpt_expansions():
         #prompts = ["topic {} source strait stimes title".format(label) for label in labels_candidates]
         
         if args.expand == 'seeds':
-            prompts = ["This is {} News: ".format(" ".join(random.sample(label_expands_auto[label], 16))) for label in labels_candidates] # gpt-seed words
+            prompts = ["This is {} News: ".format(" ".join(random.sample(label_expands_auto[label], args.seed_sample))) for label in labels_candidates] # gpt-seed words
         elif args.expand == 'gpt':
             prompts = ["This is {} News: ".format(label) for label in labels_candidates] # gpt
         #prompts = ["Links In {} : ".format(label) for label in labels_candidates] # ctrl
