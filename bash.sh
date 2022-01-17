@@ -41,36 +41,36 @@ done
 
 
 CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 12 \
+                --num_train_epochs 3 \
                 --train_file './df_nat_train.txt' \
                 --validation_file './df_nat_test.txt' \
                 --model_name_or_path gpt2 \
                 --per_device_train_batch_size 16 \
                 --per_device_eval_batch_size 16 \
                 --output_dir './gpt2_natcat' \
-                --preprocessing_num_workers 8 --overwrite_cache True \
+                --preprocessing_num_workers 1 --overwrite_cache True \
                 --block_size 64  > ft_gpt_nat.log & 
 
 
 
-CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_clm_no_trainer.py \
+CUDA_VISIBLE_DEVICES=0 nohup python -u ./run_clm_no_trainer.py \
                 --num_train_epochs 12 \
                 --train_file './df_nat_train_sample.txt' \
-                --validation_file './df_nat_test_sample.txt' \
+                --validation_file './df_nat_test.txt' \
                 --model_name_or_path gpt2 \
                 --per_device_train_batch_size 16 \
                 --per_device_eval_batch_size 16 \
                 --output_dir './gpt2_natcat_sample' \
-                --preprocessing_num_workers 8 --overwrite_cache True \
+                --preprocessing_num_workers 1 --overwrite_cache True \
                 --block_size 64 > ft_gpt_nat_sample.log &
 
 
 
-nohup python -u zsl.py --dsn ag --expand pplm --nli_ensure 1 --fbs_gpt 512  --gpu 0 > zsl.pplm.ag.512.log & 
-nohup python -u zsl.py --dsn ag --expand pplm --nli_ensure 1 --fbs_gpt 1024 --gpu 1 > zsl.pplm.ag.1024.log & 
-nohup python -u zsl.py --dsn ag --expand pplm --nli_ensure 1 --fbs_gpt 2048 --gpu 6 > zsl.pplm.ag.2048.log & 
+nohup python -u zsl.py --dsn ag --expand seeds  --fbs_gpt 128 --seed_sample 1   --gpu 1 > zsl.pplm.ag.seed.128.1.log & 
+nohup python -u zsl.py --dsn ag --expand seeds  --fbs_gpt 128 --seed_sample 8   --gpu 4 > zsl.pplm.ag.seed.128.8.log & 
 
-
+nohup python -u zsl.py --dsn yahoo --expand seeds  --fbs_gpt 128 --seed_sample 1  --gpu 5 > zsl.pplm.yahoo.seed.128.1.log & 
+nohup python -u zsl.py --dsn yahoo --expand seeds  --fbs_gpt 128 --seed_sample 8  --gpu 7 > zsl.pplm.yahoo.seed.128.8.log & 
 
 
 
@@ -85,7 +85,7 @@ nohup python -u zsl.py --dsn ag --expand pplm --nli_ensure 1 --fbs_gpt 2048 --gp
 
 
 ############################################################################################################################################
-ps aux|grep "augfmcs.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run_clm_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 

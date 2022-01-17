@@ -6,7 +6,7 @@ import re,operator,joblib
 from sklearn.feature_extraction.text import CountVectorizer
 import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
-import joblib,gensim
+import joblib,gensim,transformers
 assert gensim.__version__ == '4.1.2'
 
 parser = argparse.ArgumentParser()
@@ -14,7 +14,6 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
-parser.add_argument("--nli_ensure", default=0, type=int)
 parser.add_argument("--expand", default='gpt', type=str)
 parser.add_argument("--topn", default=64, type=int)
 parser.add_argument("--seed_sample", default=8, type=int)
@@ -24,6 +23,7 @@ args = parser.parse_args()
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
+transformers.logging.set_verbosity_error()
 #from utils.flair_ners import *
 
 gpus = tf.config.list_physical_devices('GPU')
@@ -345,7 +345,7 @@ def gen_gpt_expansions():
         if df['label_name'].value_counts().min() >= args.fbs_para * 4  :
             break 
 
-    df.to_csv("df_gen_{}_{}_{}.csv".format(args.dsn, args.expand, args.seed_sample), index=False)
+    #df.to_csv("df_gen_{}_{}_{}.csv".format(args.dsn, args.expand, args.seed_sample), index=False)
     return df
 
 
@@ -354,7 +354,7 @@ if args.expand == 'gpt':
 elif args.expand == 'pplm':
     df_contents_arxiv = pd.read_csv("df_gen_pplm_{}.csv".format(args.dsn))
 elif args.expand == 'seeds':
-    df_contents_arxiv = pd.read_csv("df_gen_{}_{}.csv".format(args.dsn, args.expand))
+    df_contents_arxiv = gen_gpt_expansions()
 
 
 

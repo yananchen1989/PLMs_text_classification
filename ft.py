@@ -100,6 +100,66 @@ if args.genm =='gpt2':
 
 
 
+
+
+import pandas as pd 
+import glob
+from sklearn.model_selection import train_test_split
+
+
+files = glob.glob("./torch_ds/natcat-data/*/train.tsv*.data")
+infos = []
+for file in files:
+    with open(file, 'r') as f:
+        for line in f: 
+            tokens = line.strip().split('\t')
+            assert len(tokens) == 9 
+            infos.append(tokens)
+
+df_nat = pd.DataFrame(infos, columns=['label'] + ['neg_label_{}'.format(i) for i in range(7)] + ['content'] )
+
+df_nat['text'] = df_nat['label'].map(lambda x: "This document is about {} : ".format(x)) \
+                    + df_nat['content']  
+
+df_nat_train, df_nat_test =  train_test_split(df_nat, test_size=0.001)
+
+print(df_nat_train.shape[0], df_nat_test.shape[0])
+
+from utils.load_data import * 
+with open ("df_nat_train.txt", 'w') as f:
+    for line in df_nat_train['text'].tolist():
+        f.write(remove_str(line) + '\n')
+
+with open ("df_nat_test.txt", 'w') as f:
+    for line in df_nat_test['text'].tolist():
+        f.write(remove_str(line) + '\n')
+
+
+with open ("df_nat_train_sample.txt", 'w') as f:
+    for line in df_nat_train.sample(200000)['text'].tolist():
+        f.write(remove_str(line) + '\n')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 elif args.genm == 't5':
     train_file = './fintune_csvs/{}_train_ft.csv'.format(args.genm)
     validation_file = './fintune_csvs/{}_test_ft.csv'.format(args.genm)

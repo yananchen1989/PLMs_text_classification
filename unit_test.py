@@ -181,64 +181,6 @@ print(sentence)
 
 
 
-import pandas as pd 
-import glob
-
-files = glob.glob("./torch_ds/natcat-data/*/train.tsv*.data")
-df_ll = []
-for file in files:
-    df_nat_tmp = pd.read_csv(file, engine='python' , sep='\t', header=None, error_bad_lines=False)
-    df_nat_tmp.columns = ['label'] + ['neg_label_{}'.format(i) for i in range(7)] + ['content']
-    df_ll.append(df_nat_tmp[['label', 'content']])
-
-df_nat = pd.concat(df_ll)
-
-
-
-files = glob.glob("./torch_ds/natcat-data/*/train.tsv*.data")
-infos = []
-for file in files:
-    with open(file, 'r') as f:
-        for line in f: 
-            tokens = line.strip().split('\t')
-            assert len(tokens) == 9 
-            infos.append(tokens)
-
-df_nat = pd.DataFrame(infos, columns=['label'] + ['neg_label_{}'.format(i) for i in range(7)] + ['content'] )
-
-
-
-
-from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-#tokenizer_gpt2.padding_side = "left" 
-tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-tokenizer_gpt2.sep_token = '<|sep|>'
-
-
-from sklearn.model_selection import train_test_split
-
-
-
-df_nat['text'] = df_nat['label'].map(lambda x: "This document is about {} : ".format(x)) \
-                    + df_nat['content']  
-
-df_nat_train, df_nat_test =  train_test_split(df_nat, test_size=0.01)
-
-with open ("df_nat_train.txt", 'w') as f:
-    f.write(tokenizer_gpt2.eos_token.join(df_nat_train['text'].tolist()))
-
-with open ("df_nat_test.txt", 'w') as f:
-    f.write(tokenizer_gpt2.eos_token.join(df_nat_test['text'].tolist()))
-
-
-
-with open ("df_nat_train_sample.txt", 'w') as f:
-    f.write(tokenizer_gpt2.eos_token.join(df_nat_train.sample(30000)['text'].tolist()))
-
-with open ("df_nat_test_sample.txt", 'w') as f:
-    f.write(tokenizer_gpt2.eos_token.join(df_nat_test.sample(3000)['text'].tolist()))
-
 
 
 
