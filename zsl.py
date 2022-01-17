@@ -342,7 +342,7 @@ def gen_gpt_expansions():
                     infos.append((remove_str(ii['sequence']), label))
         if len(infos) > 0 and len(infos) % 100:
             df = pd.DataFrame(infos, columns = ['content','label_name'])
-        if df['label_name'].value_counts().min() >= args.fbs_para *2  :
+        if df['label_name'].value_counts().min() >= args.fbs_para * 4  :
             break 
 
     df.to_csv("df_gen_{}_{}.csv".format(args.dsn, args.expand), index=False)
