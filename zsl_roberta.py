@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--fillm", default="roberta-large", type=str) # bert-base-uncased
 parser.add_argument("--topk", default = 1024, type=int)
+parser.add_argument("--top_k_seeds", default = 64, type=int)
 parser.add_argument("--gpu", default="6", type=str)
 args = parser.parse_args()
 
@@ -61,14 +62,14 @@ if args.topk == -1:
     top_k = len(tokenizer.vocab)
 else:
     top_k = args.topk
-    
+
 nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0, top_k = top_k ) 
 id_token = {ix:token for token, ix in tokenizer.vocab.items()}
 
 stopwords = joblib.load("./utils/stopwords")
 stopwords = set(stopwords)
 
-'''
+
 from transformers.file_utils import cached_path
 gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
 model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/GoogleNews-vectors-negative300.bin',binary=True)
@@ -127,7 +128,7 @@ def get_seed_words():
                 simi = model_w2v.similarity(l.lower(), j[0])
             if simi >= 0.1:
                 label_expands_auto[l].add(j[0])
-            if len(label_expands_auto[l]) == args.topn:
+            if len(label_expands_auto[l]) == args.top_k_seeds:
                 break 
         if ' and ' in l:
             label_expands_auto[l].add(l.split('and')[0].strip())
@@ -148,11 +149,32 @@ def get_seed_words():
 
 label_expands_auto = get_seed_words()
 print(label_expands_auto)
-'''
+
+from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
+enc = encoder('cmlm-base')
+
+
+label_expands_embed = {}
+for l, seeds in label_expands_auto.items():
+    embeds = enc.infer(list(seeds))
+    label_expands_embed[l.lower()] = embeds
+    print(l, embeds.shape)
+
+
+
+def get_embed_ls(token):
+    info_ls = []
+    token_embed = enc.infer([token])
+    for l, embeds in label_expands_embed.items():
+        simi = cosine_similarity(token_embed, embeds)
+        info_ls.append((l, simi.mean()))
+    return info_ls
+
 
 
 acc_base = []
 acc_embed = []
+acc_kpt = []
 for ix, row in ds.df_test.reset_index().iterrows(): 
 
     template1 = "{}. This News is about {}".format(row['content'], nlp_fill.tokenizer.mask_token)
@@ -160,28 +182,53 @@ for ix, row in ds.df_test.reset_index().iterrows():
     template3 = "[Category: {} ] {}.".format(nlp_fill.tokenizer.mask_token, row['content'])
 
     ls = {l:0 for l in labels_candidates}
+    ls_embed = {l:0 for l in labels_candidates}
+    ls_kpt = {l:[] for l in labels_candidates}
 
     filled_results = nlp_fill([template1, template2, template3])
     
     for filled_result in filled_results:
-        for r in filled_result:
-            if r['token_str'] in stopwords:
-                continue 
+
+        tokens, scores = [], []
+        for r in filled_result :
             token = r['token_str'].lower().strip()
+            if token  in stopwords:
+                continue
+                
+            tokens.append(token)
+            scores.append(r['score'])
+
+            # base
             if token in labels_candidates:
                 ls[token] += r['score']
             if token in ['science', 'technology']:
                 ls['science and technology'] += r['score']
+
+        tokens_embeds = enc.infer(tokens)
+
+        
+        for l, embeds in label_expands_embed.items():
+            tokens_simis = cosine_similarity(tokens_embeds, embeds)
+            l_scores = tokens_simis.mean(axis=1) * np.array(scores)
+            ls_embed[l] += l_scores.mean()
+            
+
 
     if max(ls, key=ls.get) == row['label_name']:
         acc_base.append(1)
     else:
         acc_base.append(0)
 
+    if max(ls_embed, key=ls_embed.get) == row['label_name']:
+        acc_embed.append(1)
+    else:
+        acc_embed.append(0)
+
+
     if ix > 0 and ix % 100 == 0:
-        print(ix, sum(acc_base) / len(acc_base))
+        print(ix, sum(acc_base) / len(acc_base), sum(acc_embed) / len(acc_embed) )
 
-
+print(ix, sum(acc_base) / len(acc_base), sum(acc_embed) / len(acc_embed) )
 
 
 
