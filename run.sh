@@ -36,8 +36,11 @@
 for i in {1..10}
 do
 	seed=$RANDOM
-	python -u augfmcs.py --dsn ${1} --samplecnt 128 --genm gpt --candidates 64 --test_beams 32 --gpu ${2} \
-			> ./log_mcs/${1}.128.gpt.64.32.${2}.${seed}.log 2>&1
+	 python -u augf.py --dsn ${1} --samplecnt ${2} --max_aug_times 1 --aug generate \
+           --genft lambda  --genm gpt --filter clsembed --seed ${seed}  \
+           --testvalid test --candidates 128 --gpu ${3}  \
+ > ./log_lambda/${1}.${2}.128.lambda.clsembed.${seed}.log 2>&1 
+  
 done
 
 

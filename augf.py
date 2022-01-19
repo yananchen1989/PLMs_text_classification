@@ -353,7 +353,7 @@ def lambda_gen(row, gen_nlp, enc, model_cls):
     fbs_gen = 64
     for _ in range(0, args.candidates//fbs_gen):
         torch.cuda.empty_cache()
-        result_gpt = gen_nlp([prompt], max_length=dsn_maxlen[args.dsn], \
+        result_gpt = gen_nlp(prompt, max_length=dsn_maxlen[args.dsn], \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                         repetition_penalty=1.2, num_return_sequences= fbs_gen,\
                                         clean_up_tokenization_spaces=True)
@@ -476,83 +476,83 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
     #     labels_candidates = set()
     #     for v in ln_extend.values():
     #         labels_candidates.update(v)   
-    
-    infos = []
-    for ix, row in ds.df_train.reset_index().iterrows():
-        torch.cuda.empty_cache()
-        print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
+    if args.aug == 'generate':
+        infos = []
+        for ix, row in ds.df_train.reset_index().iterrows():
+            torch.cuda.empty_cache()
+            print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
 
-        t0 = time.time()
-        # if args.filter == 'nlinsp':
-        #     if args.genm == 'gpt':
-        #         result_syn = nlinsp_gen(row, gen_nlp_gpt2, nli_nlp, bert_nsp)
-        #     elif args.genm == 't5':
-        #         result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
-        #elif args.filter == 'clsembed':
-        result_syn = lambda_gen(row, gen_nlp_gpt2, enc, model_cls)
+            t0 = time.time()
+            # if args.filter == 'nlinsp':
+            #     if args.genm == 'gpt':
+            #         result_syn = nlinsp_gen(row, gen_nlp_gpt2, nli_nlp, bert_nsp)
+            #     elif args.genm == 't5':
+            #         result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
+            #elif args.filter == 'clsembed':
+            result_syn = lambda_gen(row, gen_nlp_gpt2, enc, model_cls)
 
-        print("gen===>")
-        for fmark, content in result_syn.items():
-            print("{} ==>{}".format(fmark, content) )
-            infos.append((content, row['label_name'], row['label'], fmark))
-        print('\n')
-        t1 = time.time()
-        print("timecost:", (t1-t0)/60 )
+            print("gen===>", row['label_name'] )
+            for fmark, content in result_syn.items():
+                print("{} ==>{}".format(fmark, content) )
+                infos.append((content, row['label_name'], row['label'], fmark))
+            print('\n')
+            t1 = time.time()
+            print("timecost:", (t1-t0)/60 )
 
-    df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
+        df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
 
-    print("final generated==>", df_synthesize.shape[0], ds.df_train.shape[0], df_synthesize.shape[0]/ds.df_train.shape[0])
-    '''
-    if 'dvrl' in args.filter:
-        # trim to balance the samples
-        #df_syn_tmp = sample_stratify(df_syn_tmp, args.samplecnt * args.abundance)
+        print("final generated==>", df_synthesize.shape[0], ds.df_train.shape[0], df_synthesize.shape[0]/ds.df_train.shape[0])
+        '''
+        if 'dvrl' in args.filter:
+            # trim to balance the samples
+            #df_syn_tmp = sample_stratify(df_syn_tmp, args.samplecnt * args.abundance)
 
-        # use dvrl to calculate score
-        ds.df_train['groudtruth'] = 1
-        df_syn_tmp['groudtruth'] = 9
+            # use dvrl to calculate score
+            ds.df_train['groudtruth'] = 1
+            df_syn_tmp['groudtruth'] = 9
 
-        df_train_valid_noise = pd.concat([ds.df_train,  df_syn_tmp])
+            df_train_valid_noise = pd.concat([ds.df_train,  df_syn_tmp])
 
-        embeds = enc.infer(df_train_valid_noise['content'].values)
-        for j in range(embeds.shape[1]):
-            df_train_valid_noise['embed_{}'.format(j)] = embeds[:, j]
+            embeds = enc.infer(df_train_valid_noise['content'].values)
+            for j in range(embeds.shape[1]):
+                df_train_valid_noise['embed_{}'.format(j)] = embeds[:, j]
 
-        if os.path.exists("./dvrl_np_array/csvs_{}".format(seed)):
-            shutil.rmtree("./dvrl_np_array/csvs_{}".format(seed))
-        os.makedirs("./dvrl_np_array/csvs_{}".format(seed), exist_ok=False)
+            if os.path.exists("./dvrl_np_array/csvs_{}".format(seed)):
+                shutil.rmtree("./dvrl_np_array/csvs_{}".format(seed))
+            os.makedirs("./dvrl_np_array/csvs_{}".format(seed), exist_ok=False)
 
-        df_train_valid_noise.to_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv".format(seed, args.dsn, seed), index=False)
+            df_train_valid_noise.to_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv".format(seed, args.dsn, seed), index=False)
 
-        t0 = time.time()
-        valid_files = []
-        dvrl_iter = 0
-        while True:
-            threads = []
-            for di in range(args.threads):
-                t = Thread(target=run_dvrl_thread, args=(args.dsn, di+dvrl_iter, seed))
-                t.start()
-                threads.append(t)
+            t0 = time.time()
+            valid_files = []
+            dvrl_iter = 0
+            while True:
+                threads = []
+                for di in range(args.threads):
+                    t = Thread(target=run_dvrl_thread, args=(args.dsn, di+dvrl_iter, seed))
+                    t.start()
+                    threads.append(t)
 
-            # join all threads
-            for t in threads:
-                t.join()
-            print("dvrl after join")
+                # join all threads
+                for t in threads:
+                    t.join()
+                print("dvrl after join")
 
-            files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
-            print("valid_output==>", len(files), files, 'dvrl_iter:', dvrl_iter)
+                files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
+                print("valid_output==>", len(files), files, 'dvrl_iter:', dvrl_iter)
 
-            valid_files.extend(files)
-            if len(valid_files) >= args.valid_files_cnt:
-                print("valid_files_cnt OK:", len(valid_files))
-                print("final_valid_output==>",  valid_files)
-                break 
-            dvrl_iter += args.threads
-        t1 = time.time()
-        print("dvrl_cost_sec:", (t1-t0)/3600, "hour" )
-        df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
-    '''
-    assert df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0],'label_name'].value_counts().min() >= args.samplecnt
-    print(df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0], 'label_name'].value_counts())
+                valid_files.extend(files)
+                if len(valid_files) >= args.valid_files_cnt:
+                    print("valid_files_cnt OK:", len(valid_files))
+                    print("final_valid_output==>",  valid_files)
+                    break 
+                dvrl_iter += args.threads
+            t1 = time.time()
+            print("dvrl_cost_sec:", (t1-t0)/3600, "hour" )
+            df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
+        '''
+        assert df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0],'label_name'].value_counts().min() >= args.samplecnt
+        print(df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0], 'label_name'].value_counts())
 
 
 

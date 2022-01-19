@@ -54,26 +54,6 @@ CUDA_VISIBLE_DEVICES=0 nohup python -u ./run_clm_no_trainer.py \
 
 
 
-
-
-
-CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 3 \
-            --train_file "df_nat_train_sample.csv" \
-            --validation_file "df_nat_test.csv" \
-            --model_name_or_path t5-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
-            --output_dir './t5_natcat_sample' \
-            --max_target_length 256 \
-            --val_max_target_length 256 \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column prefix \
-            --summary_column content \
-            --max_length 256 \
-            --model_type t5  --use_slow_tokenizer > ft_t5_nat_sample.log &
-
-
 CUDA_VISIBLE_DEVICES=2 nohup python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 3 \
             --train_file "df_nat_train.csv" \
@@ -98,15 +78,15 @@ CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_summarization_no_trainer.py \
             --train_file "df_cc_ners_train.csv" \
             --validation_file "df_cc_ners_test.csv" \
             --model_name_or_path t5-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
+            --per_device_train_batch_size 4 \
+            --per_device_eval_batch_size 4 \
             --output_dir './t5_ners_cc' \
-            --max_target_length 256 \
-            --val_max_target_length 256 \
+            --max_target_length 128 \
+            --val_max_target_length 128 \
             --preprocessing_num_workers 16 --overwrite_cache True \
             --text_column ners \
             --summary_column content \
-            --max_length 256 \
+            --max_length 128 \
             --model_type t5  --use_slow_tokenizer > ft_t5_cc_ners.log &
 
 
@@ -119,12 +99,12 @@ CUDA_VISIBLE_DEVICES=4 nohup python -u ./run_summarization_no_trainer.py \
             --per_device_train_batch_size 8 \
             --per_device_eval_batch_size 8 \
             --output_dir './t5_title_cc' \
-            --max_target_length 256 \
-            --val_max_target_length 256 \
+            --max_target_length 128 \
+            --val_max_target_length 128 \
             --preprocessing_num_workers 16 --overwrite_cache True \
             --text_column title \
             --summary_column content \
-            --max_length 256 \
+            --max_length 128 \
             --model_type t5  --use_slow_tokenizer > ft_t5_cc_title.log &
 
 
@@ -132,16 +112,28 @@ CUDA_VISIBLE_DEVICES=4 nohup python -u ./run_summarization_no_trainer.py \
 
 
 
-CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 4 \
-                --train_file './df_nat_train_sample.txt' \
-                --validation_file './df_nat_test.txt' \
+CUDA_VISIBLE_DEVICES=5 nohup python -u ./run_clm_no_trainer.py \
+                --num_train_epochs 3 \
+                --train_file './df_cc_ners_train.txt' \
+                --validation_file './df_cc_ners_test.txt' \
                 --model_name_or_path gpt2 \
                 --per_device_train_batch_size 16 \
                 --per_device_eval_batch_size 16 \
-                --output_dir './gpt2_natcat_sample' \
+                --output_dir './gpt2_cc_ners' \
                 --preprocessing_num_workers 1 --overwrite_cache True \
-                --block_size 128 > ft_gpt_nat_sample.log &
+                --block_size 128 > ft_gpt_cc_ners.log &
+
+
+CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
+                --num_train_epochs 3 \
+                --train_file './df_cc_title_train.txt' \
+                --validation_file './df_cc_title_test.txt' \
+                --model_name_or_path gpt2 \
+                --per_device_train_batch_size 16 \
+                --per_device_eval_batch_size 16 \
+                --output_dir './gpt2_cc_title' \
+                --preprocessing_num_workers 1 --overwrite_cache True \
+                --block_size 128 > ft_gpt_cc_title.log &
 
 
 
@@ -151,11 +143,7 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
 
 
 
-
-
-
-
-
+nohup bash run.sh ag 64 7 &
 
 
 
