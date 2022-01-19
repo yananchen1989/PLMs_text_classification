@@ -12,6 +12,7 @@ assert gensim.__version__ == '4.1.2'
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--fillm", default="roberta-large", type=str) # bert-base-uncased
+parser.add_argument("--topk", default = 1024, type=int)
 parser.add_argument("--gpu", default="6", type=str)
 args = parser.parse_args()
 
@@ -56,7 +57,12 @@ from transformers import AutoTokenizer, AutoModelWithLMHead
 tokenizer = AutoTokenizer.from_pretrained(args.fillm,cache_dir="./cache",local_files_only=True) 
 model = AutoModelWithLMHead.from_pretrained(args.fillm,cache_dir="./cache",local_files_only=True)
 
-nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0, top_k = 1024 ) # len(tokenizer.vocab)
+if args.topk == -1:
+    top_k = len(tokenizer.vocab)
+else:
+    top_k = args.topk
+    
+nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0, top_k = top_k ) 
 id_token = {ix:token for token, ix in tokenizer.vocab.items()}
 
 stopwords = joblib.load("./utils/stopwords")
@@ -146,6 +152,7 @@ print(label_expands_auto)
 
 
 acc_base = []
+acc_embed = []
 for ix, row in ds.df_test.reset_index().iterrows(): 
 
     template1 = "{}. This News is about {}".format(row['content'], nlp_fill.tokenizer.mask_token)
