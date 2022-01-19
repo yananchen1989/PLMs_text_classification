@@ -21,7 +21,7 @@ parser.add_argument("--verbose", default=0, type=int)
 parser.add_argument("--basemode", default="max", type=str) # rank or thres
 
 #parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
-parser.add_argument("--epochs", default=100, type=int)
+parser.add_argument("--epochs", default=72, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 parser.add_argument("--testvalid", default='test', type=str)
 parser.add_argument("--filter", default="nlinsp", type=str, choices=['nlinsp', 'clsembed'])
