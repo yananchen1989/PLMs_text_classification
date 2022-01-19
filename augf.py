@@ -95,7 +95,7 @@ from utils.transblock import *
 from utils.encoders import *
 from utils.cbert_cgpt_config import * 
 #from utils.dpp_model import * 
-from utils.flair_ners import *
+#from utils.flair_ners import *
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
@@ -464,97 +464,95 @@ def decorate_sent(content, label_name):
     return prompt
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
+    # # nli config
+    # if args.dsn in ['ag','uci', 'nyt']:
+    #     ln_extend = {}
+    #     for l in ds.df_test['label_name'].unique():
+    #         ln_extend[l] = expand_label_nli[l]
+    #     ln_extend__rev = {}
+    #     for i, j in ln_extend.items():
+    #         for jj in j:
+    #             ln_extend__rev[jj] = i
+    #     labels_candidates = set()
+    #     for v in ln_extend.values():
+    #         labels_candidates.update(v)   
+    
+    infos = []
+    for ix, row in ds.df_train.reset_index().iterrows():
+        torch.cuda.empty_cache()
+        print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
 
-    if args.aug == 'generate':
-        # # nli config
-        # if args.dsn in ['ag','uci', 'nyt']:
-        #     ln_extend = {}
-        #     for l in ds.df_test['label_name'].unique():
-        #         ln_extend[l] = expand_label_nli[l]
-        #     ln_extend__rev = {}
-        #     for i, j in ln_extend.items():
-        #         for jj in j:
-        #             ln_extend__rev[jj] = i
-        #     labels_candidates = set()
-        #     for v in ln_extend.values():
-        #         labels_candidates.update(v)   
-        
-        infos = []
-        for ix, row in ds.df_train.reset_index().iterrows():
-            torch.cuda.empty_cache()
-            print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
+        t0 = time.time()
+        # if args.filter == 'nlinsp':
+        #     if args.genm == 'gpt':
+        #         result_syn = nlinsp_gen(row, gen_nlp_gpt2, nli_nlp, bert_nsp)
+        #     elif args.genm == 't5':
+        #         result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
+        #elif args.filter == 'clsembed':
+        result_syn = lambda_gen(row, gen_nlp_gpt2, enc, model_cls)
 
-            t0 = time.time()
-            # if args.filter == 'nlinsp':
-            #     if args.genm == 'gpt':
-            #         result_syn = nlinsp_gen(row, gen_nlp_gpt2, nli_nlp, bert_nsp)
-            #     elif args.genm == 't5':
-            #         result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
-            #elif args.filter == 'clsembed':
-            result_syn = lambda_gen(row, gen_nlp_gpt2, enc, model_cls)
+        print("gen===>")
+        for fmark, content in result_syn.items():
+            print("{} ==>{}".format(fmark, content) )
+            infos.append((content, row['label_name'], row['label'], fmark))
+        print('\n')
+        t1 = time.time()
+        print("timecost:", (t1-t0)/60 )
 
-            print("gen===>")
-            for fmark, content in result_syn.items():
-                print("{} ==>{}".format(fmark, content) )
-                infos.append((content, row['label_name'], row['label'], fmark))
-            print('\n')
-            t1 = time.time()
-            print("timecost:", (t1-t0)/60 )
+    df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
 
-        df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
+    print("final generated==>", df_synthesize.shape[0], ds.df_train.shape[0], df_synthesize.shape[0]/ds.df_train.shape[0])
+    '''
+    if 'dvrl' in args.filter:
+        # trim to balance the samples
+        #df_syn_tmp = sample_stratify(df_syn_tmp, args.samplecnt * args.abundance)
 
-        print("final generated==>", df_synthesize.shape[0], ds.df_train.shape[0], df_synthesize.shape[0]/ds.df_train.shape[0])
-        '''
-        if 'dvrl' in args.filter:
-            # trim to balance the samples
-            #df_syn_tmp = sample_stratify(df_syn_tmp, args.samplecnt * args.abundance)
+        # use dvrl to calculate score
+        ds.df_train['groudtruth'] = 1
+        df_syn_tmp['groudtruth'] = 9
 
-            # use dvrl to calculate score
-            ds.df_train['groudtruth'] = 1
-            df_syn_tmp['groudtruth'] = 9
+        df_train_valid_noise = pd.concat([ds.df_train,  df_syn_tmp])
 
-            df_train_valid_noise = pd.concat([ds.df_train,  df_syn_tmp])
+        embeds = enc.infer(df_train_valid_noise['content'].values)
+        for j in range(embeds.shape[1]):
+            df_train_valid_noise['embed_{}'.format(j)] = embeds[:, j]
 
-            embeds = enc.infer(df_train_valid_noise['content'].values)
-            for j in range(embeds.shape[1]):
-                df_train_valid_noise['embed_{}'.format(j)] = embeds[:, j]
+        if os.path.exists("./dvrl_np_array/csvs_{}".format(seed)):
+            shutil.rmtree("./dvrl_np_array/csvs_{}".format(seed))
+        os.makedirs("./dvrl_np_array/csvs_{}".format(seed), exist_ok=False)
 
-            if os.path.exists("./dvrl_np_array/csvs_{}".format(seed)):
-                shutil.rmtree("./dvrl_np_array/csvs_{}".format(seed))
-            os.makedirs("./dvrl_np_array/csvs_{}".format(seed), exist_ok=False)
+        df_train_valid_noise.to_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv".format(seed, args.dsn, seed), index=False)
 
-            df_train_valid_noise.to_csv("./dvrl_np_array/csvs_{}/df_train_valid_noise_{}_{}.csv".format(seed, args.dsn, seed), index=False)
+        t0 = time.time()
+        valid_files = []
+        dvrl_iter = 0
+        while True:
+            threads = []
+            for di in range(args.threads):
+                t = Thread(target=run_dvrl_thread, args=(args.dsn, di+dvrl_iter, seed))
+                t.start()
+                threads.append(t)
 
-            t0 = time.time()
-            valid_files = []
-            dvrl_iter = 0
-            while True:
-                threads = []
-                for di in range(args.threads):
-                    t = Thread(target=run_dvrl_thread, args=(args.dsn, di+dvrl_iter, seed))
-                    t.start()
-                    threads.append(t)
+            # join all threads
+            for t in threads:
+                t.join()
+            print("dvrl after join")
 
-                # join all threads
-                for t in threads:
-                    t.join()
-                print("dvrl after join")
+            files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
+            print("valid_output==>", len(files), files, 'dvrl_iter:', dvrl_iter)
 
-                files = glob.glob("./dvrl_np_array/csvs_{}/df_train_noise_{}_{}_*_0.9*.csv".format(seed, args.dsn, seed))
-                print("valid_output==>", len(files), files, 'dvrl_iter:', dvrl_iter)
-
-                valid_files.extend(files)
-                if len(valid_files) >= args.valid_files_cnt:
-                    print("valid_files_cnt OK:", len(valid_files))
-                    print("final_valid_output==>",  valid_files)
-                    break 
-                dvrl_iter += args.threads
-            t1 = time.time()
-            print("dvrl_cost_sec:", (t1-t0)/3600, "hour" )
-            df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
-        '''
-        assert df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0],'label_name'].value_counts().min() >= args.samplecnt
-        print(df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0], 'label_name'].value_counts())
+            valid_files.extend(files)
+            if len(valid_files) >= args.valid_files_cnt:
+                print("valid_files_cnt OK:", len(valid_files))
+                print("final_valid_output==>",  valid_files)
+                break 
+            dvrl_iter += args.threads
+        t1 = time.time()
+        print("dvrl_cost_sec:", (t1-t0)/3600, "hour" )
+        df_syn_tmp = dvrl_inner_join(random.sample(valid_files, args.valid_files_cnt) )
+    '''
+    assert df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0],'label_name'].value_counts().min() >= args.samplecnt
+    print(df_synthesize.loc[df_synthesize['fmark']==df_synthesize['fmark'].unique()[0], 'label_name'].value_counts())
 
 
 
@@ -700,25 +698,23 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
 ds.df_train['fmark'] = 'ori'
 
-for args.aug in ['generate']:
-    for args.genm in filter_gems[args.filter]:
-        print("=====>aug:{} filter:{} genm:{} <=====".format(args.aug, args.filter, args.genm))
-        syn_df_ll = []
-        for augi in range(args.max_aug_times):
-            print("augi==>{}".format(augi))
-            df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
-            syn_df_ll.append(df_synthesize)
-  
-        df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
-        print("begin_to_test_aug")
 
-        for fmark in df_synthesize['fmark'].unique():
-            acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
-                        ds.df_test, args.model, 16, args.epochs)
+syn_df_ll = []
+for augi in range(args.max_aug_times):
+    print("augi==>{}".format(augi))
+    df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
+    syn_df_ll.append(df_synthesize)
 
-            summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-                ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
+df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
+print("begin_to_test_aug")
 
-            # if args.testbed and args.epochs > 10 and gain != -1 :
-            #     record_log('log__baselines', summary)
-            print('success', ' '.join(summary))
+for fmark in df_synthesize['fmark'].unique():
+    acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
+                ds.df_test, args.model, 16, args.epochs)
+
+    summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
+        ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
+
+    # if args.testbed and args.epochs > 10 and gain != -1 :
+    #     record_log('log__baselines', summary)
+    print('success', ' '.join(summary))
