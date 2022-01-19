@@ -162,15 +162,6 @@ for l, seeds in label_expands_auto.items():
 
 
 
-def get_embed_ls(token):
-    info_ls = []
-    token_embed = enc.infer([token])
-    for l, embeds in label_expands_embed.items():
-        simi = cosine_similarity(token_embed, embeds)
-        info_ls.append((l, simi.mean()))
-    return info_ls
-
-
 
 acc_base = []
 acc_embed = []
@@ -194,7 +185,7 @@ for ix, row in ds.df_test.reset_index().iterrows():
             token = r['token_str'].lower().strip()
             if token  in stopwords:
                 continue
-                
+
             tokens.append(token)
             scores.append(r['score'])
 
