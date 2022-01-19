@@ -282,7 +282,7 @@ def get_class_acc(model, x_test, y_test, ixl):
 #     elif basemode == 'max':
 #         return round(np.array(best_test_accs).max(), 4), best_model
 
-def do_train_test_thread(df_train, df_test, model_name='albert', bs=8):
+def do_train_test_thread(df_train, df_test, model_name='albert', bs=8, epochs=72):
 
     # if df_test.label.unique().shape[0] == 2:
     #     val_acc = 'val_binary_accuracy'   
@@ -306,8 +306,8 @@ def do_train_test_thread(df_train, df_test, model_name='albert', bs=8):
             raise KeyError("input model illegal!")
 
     history = model.fit(
-        x_train, y_train, batch_size=bs, epochs=72, \
-        validation_data=(x_test, y_test), verbose=0, validation_batch_size=bs, validation_freq=72,
+        x_train, y_train, batch_size=bs, epochs=epochs, \
+        validation_data=(x_test, y_test), verbose=0, validation_batch_size=bs, validation_freq=epochs,
         #callbacks = [tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=4, mode='max',restore_best_weights=True)]
     )
     return max(history.history['val_acc']), model

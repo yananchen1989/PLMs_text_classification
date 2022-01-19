@@ -22,7 +22,6 @@ parser.add_argument("--basemode", default="max", type=str) # rank or thres
 
 #parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--epochs", default=100, type=int)
-#parser.add_argument("--freq", default=25, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 parser.add_argument("--testvalid", default='test', type=str)
 parser.add_argument("--filter", default="nlinsp", type=str, choices=['nlinsp', 'clsembed'])
@@ -171,23 +170,23 @@ if args.aug == 'generate':
         raise KeyError("args.genft illegal!")
     gpt2.trainable = False
     gpt2.config.pad_token_id=50256
-    gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-2, return_full_text=False)
+    gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
 
     #elif args.genm == 't5':
-    from transformers import T5Tokenizer, AutoModelWithLMHead
-    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-    print(tokenizer_t5)
-    if args.genft == 'no':
-        t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-    elif args.genft in ['tc', 'pp', 'ep']:
-        ft_model_path = 'ft_model_{}_{}'.format(args.genm, args.genft)
-        checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
-        list.sort(checkpoint_files)
-        t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
-    else:
-        raise KeyError("args.genft illegal!")
+    # from transformers import T5Tokenizer, AutoModelWithLMHead
+    # tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    # print(tokenizer_t5)
+    # if args.genft == 'no':
+    #     t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    # elif args.genft in ['tc', 'pp', 'ep']:
+    #     ft_model_path = 'ft_model_{}_{}'.format(args.genm, args.genft)
+    #     checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
+    #     list.sort(checkpoint_files)
+    #     t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
+    # else:
+    #     raise KeyError("args.genft illegal!")
 
-    gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-2)
+    # gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-2)
 
     # elif args.genm == 'ctrl':
     #     from transformers import CTRLTokenizer, TFCTRLLMHeadModel
@@ -208,18 +207,18 @@ if args.aug == 'generate':
     #if 'nlinsp' in args.filter: 
     #nli_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=1) #  1.8.1+cu102
     # vicgalle/xlm-roberta-large-xnli-anli joeddav/xlm-roberta-large-xnli 
-    from transformers import AutoModelForSequenceClassification, AutoTokenizer
-    model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-    tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
-    nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
+    # from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    # model_nli = AutoModelForSequenceClassification.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+    # tokenizer_nli = AutoTokenizer.from_pretrained('vicgalle/xlm-roberta-large-xnli-anli', cache_dir='./cache', local_files_only=True)
+    # nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
 
 
-    from transformers import BertTokenizer, BertForNextSentencePrediction
-    import torch
-    device0 = torch.device("cuda:{}".format(len(gpus)-1) if torch.cuda.is_available() else "cpu")
-    bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
-    bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
-    bert_nsp.to(device0)
+    # from transformers import BertTokenizer, BertForNextSentencePrediction
+    # import torch
+    # device0 = torch.device("cuda:{}".format(len(gpus)-1) if torch.cuda.is_available() else "cpu")
+    # bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+    # bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
+    # bert_nsp.to(device0)
 
     #if 'clsembed' in args.filter or 'dvrl' in args.filter:
     enc = encoder('cmlm-base')
@@ -230,8 +229,8 @@ if args.aug == 'generate':
         centroid = embeds.mean(axis=0).reshape(1, -1) 
         enc_dic[l] = centroid
 
-    if 'dvrl' in args.filter:
-        os.makedirs('dvrl_np_array', exist_ok=True)
+    # if 'dvrl' in args.filter:
+    #     os.makedirs('dvrl_np_array', exist_ok=True)
         
     print('filter==> {} model loaded'.format(args.filter))
 
@@ -431,7 +430,7 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
 
 if args.testbed:
     print("begin_to_test_noaug")
-    acc_noaug, model_cls  = do_train_test_thread(ds.df_train, ds.df_test, args.model, 16)
+    acc_noaug, model_cls  = do_train_test_thread(ds.df_train, ds.df_test, args.model, 16, args.epochs)
 else:
     acc_noaug = -1
 
@@ -491,8 +490,8 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             #         result_syn = nlinsp_gen(row, gen_nlp_gpt2, nli_nlp, bert_nsp)
             #     elif args.genm == 't5':
             #         result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
-            elif args.filter == 'clsembed':
-                result_syn = lambda_gen(row, gen_nlp_gpt2, enc, model_cls)
+            #elif args.filter == 'clsembed':
+            result_syn = lambda_gen(row, gen_nlp_gpt2, enc, model_cls)
 
             print("gen===>")
             for fmark, content in result_syn.items():
@@ -700,28 +699,26 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
 
 ds.df_train['fmark'] = 'ori'
-filter_gems = {'clsembed':['gpt'], 'nlinsp':['gpt', 't5']}
 
 for args.aug in ['generate']:
-    for args.filter in ['nlinsp', 'clsembed']:
-        for args.genm in filter_gems[args.filter]:
-            print("=====>aug:{} filter:{} genm:{} <=====".format(args.aug, args.filter, args.genm))
-            syn_df_ll = []
-            for augi in range(args.max_aug_times):
-                print("augi==>{}".format(augi))
-                df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
-                syn_df_ll.append(df_synthesize)
-      
-            df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
-            print("begin_to_test_aug")
+    for args.genm in filter_gems[args.filter]:
+        print("=====>aug:{} filter:{} genm:{} <=====".format(args.aug, args.filter, args.genm))
+        syn_df_ll = []
+        for augi in range(args.max_aug_times):
+            print("augi==>{}".format(augi))
+            df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
+            syn_df_ll.append(df_synthesize)
+  
+        df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
+        print("begin_to_test_aug")
 
-            for fmark in df_synthesize['fmark'].unique():
-                acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], ds.df_test, args.model, 16)
+        for fmark in df_synthesize['fmark'].unique():
+            acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
+                        ds.df_test, args.model, 16, args.epochs)
 
+            summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
+                ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
 
-                summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-                    ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
-
-                # if args.testbed and args.epochs > 10 and gain != -1 :
-                #     record_log('log__baselines', summary)
-                print('success', ' '.join(summary))
+            # if args.testbed and args.epochs > 10 and gain != -1 :
+            #     record_log('log__baselines', summary)
+            print('success', ' '.join(summary))
