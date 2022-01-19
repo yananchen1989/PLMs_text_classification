@@ -39,7 +39,7 @@ do
 	 python -u augf.py --dsn ${1} --samplecnt ${2} --max_aug_times 1 --aug generate \
            --genft lambda  --genm gpt --filter clsembed --seed ${seed}  \
            --testvalid test --candidates 128 --gpu ${3}  \
- > ./log_lambda/${1}.${2}.128.lambda.clsembed.${seed}.log 2>&1 
+ > ./log_lambda/${1}.${2}.128.${seed}.log 2>&1 
   
 done
 
