@@ -14,7 +14,7 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--fillm", default="roberta-large", type=str) # bert-base-uncased
 parser.add_argument("--topk", default = 1024, type=int)
 parser.add_argument("--top_k_seeds", default = 64, type=int)
-parser.add_argument("--gpu", default="6", type=str)
+parser.add_argument("--gpu", default="4", type=str)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -150,16 +150,20 @@ def get_seed_words():
 label_expands_auto = get_seed_words()
 print(label_expands_auto)
 
-from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
-enc = encoder('cmlm-base')
-
-
-label_expands_embed = {}
+label_expands_auto_lower = {}
 for l, seeds in label_expands_auto.items():
-    embeds = enc.infer(list(seeds))
-    label_expands_embed[l.lower()] = embeds
-    print(l, embeds.shape)
+    label_expands_auto_lower[l.lower()] = set([w.lower() for w in list(seeds)])
 
+
+# from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
+# enc = encoder('cmlm-base')
+
+
+# label_expands_embed = {}
+# for l, seeds in label_expands_auto.items():
+#     embeds = enc.infer(list(seeds))
+#     label_expands_embed[l.lower()] = embeds
+#     print(l, embeds.shape)
 
 
 
@@ -183,9 +187,8 @@ for ix, row in ds.df_test.reset_index().iterrows():
         tokens, scores = [], []
         for r in filled_result :
             token = r['token_str'].lower().strip()
-            if token  in stopwords:
+            if token  in stopwords or token in string.punctuation or token.isdigit() :
                 continue
-
             tokens.append(token)
             scores.append(r['score'])
 
@@ -195,13 +198,19 @@ for ix, row in ds.df_test.reset_index().iterrows():
             if token in ['science', 'technology']:
                 ls['science and technology'] += r['score']
 
-        tokens_embeds = enc.infer(tokens)
+
+            for l, seeds in label_expands_auto_lower.items():
+                if token in seeds:
+                    ls_kpt[l].append(r['score'])
+
+    ls_kpt_reduce = {l:sum(scores)/len(scores) for l, scores in ls_kpt.items()}
+        # tokens_embeds = enc.infer(tokens)
 
         
-        for l, embeds in label_expands_embed.items():
-            tokens_simis = cosine_similarity(tokens_embeds, embeds)
-            l_scores = tokens_simis.mean(axis=1) * np.array(scores)
-            ls_embed[l] += l_scores.mean()
+        # for l, embeds in label_expands_embed.items():
+        #     tokens_simis = cosine_similarity(tokens_embeds, embeds)
+        #     l_scores = tokens_simis.mean(axis=1) * np.array(scores)
+        #     ls_embed[l] += l_scores.mean()
             
 
 
@@ -210,16 +219,16 @@ for ix, row in ds.df_test.reset_index().iterrows():
     else:
         acc_base.append(0)
 
-    if max(ls_embed, key=ls_embed.get) == row['label_name']:
-        acc_embed.append(1)
+    if max(ls_kpt_reduce, key=ls_kpt_reduce.get) == row['label_name']:
+        acc_kpt.append(1)
     else:
-        acc_embed.append(0)
+        acc_kpt.append(0)
 
 
-    if ix > 0 and ix % 100 == 0:
-        print(ix, sum(acc_base) / len(acc_base), sum(acc_embed) / len(acc_embed) )
+    if ix > 0 and ix % 20 == 0:
+        print(ix, sum(acc_base) / len(acc_base), sum(acc_kpt) / len(acc_kpt) )
 
-print(ix, sum(acc_base) / len(acc_base), sum(acc_embed) / len(acc_embed) )
+print(ix, sum(acc_base) / len(acc_base), sum(acc_kpt) / len(acc_kpt) )
 
 
 

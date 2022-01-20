@@ -136,16 +136,9 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
                 --block_size 128 > ft_gpt_cc_title.log &
 
 
+nohup bash run.sh uci 64 1 &
 
-
-
-
-
-
-
-nohup bash run.sh ag 64 7 &
-
-
+nohup bash run.sh nyt 64 3 &
 
 
 

@@ -26,6 +26,18 @@ df_cc_test[['title', 'content']].to_csv("df_cc_title_test.csv", index=False)
 
 
 
+from datasets import load_dataset
+
+
+data_files = {}
+
+data_files["train"] = './df_cc_ners_train.txt'
+data_files["validation"] = './df_cc_ners_test.txt'
+
+extension = "text"
+raw_datasets = load_dataset(extension, data_files=data_files)
+
+
 
 
 with open ("df_cc_ners_train.txt", 'w') as f:
