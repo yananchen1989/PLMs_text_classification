@@ -31,10 +31,10 @@ df_raw_recipes['ingredient_content'] = df_raw_recipes['ingredients']\
                     .map(lambda x: '; '.join(eval(x)) )
 
 df_raw_recipes['recipe'] = df_raw_recipes['steps']\
-                    .map(lambda x: ', '.join(eval(x)) + '.' )
+                    .map(lambda x: ', '.join(eval(x)) + '.' ) + tokenizer_gpt2.eos_token
 
 df_raw_recipes['ingre_recipe'] = df_raw_recipes['ingredient_content'] + " {} ".format(tokenizer_gpt2.eos_token)\
-                                 + df_raw_recipes['recipe'] 
+                                 + df_raw_recipes['recipe'] + tokenizer_gpt2.eos_token
 
 from sklearn.model_selection import train_test_split
 
@@ -45,8 +45,8 @@ ic_train, ic_test =  train_test_split(df_raw_recipes['ingre_recipe'].unique(), t
 
 ic_csv_train, ic_csv_test = train_test_split(df_raw_recipes[['ingredient_content', 'recipe']], test_size=0.1)
 
-ic_csv_train.to_csv("ic_csv_train.csv", index=False)
-ic_csv_test.to_csv("ic_csv_test.csv", index=False)
+ic_csv_train.to_csv("./food/ic_csv_train.csv", index=False)
+ic_csv_test.to_csv("./food/ic_csv_test.csv", index=False)
 
 
 

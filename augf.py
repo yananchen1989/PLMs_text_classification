@@ -140,11 +140,11 @@ if args.aug == 'generate':
 
         with open (train_file, 'w') as f:
             for line in df_train_ft['text'].tolist():
-                f.write(line + '\n')
+                f.write(line + tokenizer_gpt2.eos_token + '\n')
 
         with open (validation_file, 'w') as f:
             for line in df_test_ft['text'].tolist():
-                f.write(line + '\n')
+                f.write(line + tokenizer_gpt2.eos_token + '\n')
 
         model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
         os.system(
