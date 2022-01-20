@@ -136,10 +136,55 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
                 --block_size 128 > ft_gpt_cc_title.log &
 
 
-nohup bash run.sh uci 64 1 &
 
-nohup bash run.sh nyt 64 3 &
 
+########## food
+
+CUDA_VISIBLE_DEVICES=7 nohup python run_mlm_no_trainer.py \
+    --num_train_epochs 12 \
+    --train_file './food/indgredients_train.txt' \
+    --validation_file './food/indgredients_test.txt' \
+    --model_name_or_path bert-base-uncased \
+    --per_device_train_batch_size 4 \
+    --per_device_eval_batch_size 4 \
+    --output_dir './food/bert_indgredients' \
+    --preprocessing_num_workers 8 --overwrite_cache True \
+    --mlm_probability 0.15 \
+    --use_slow_tokenizer \
+         > ./food/bert_indgredients.log &
+
+
+
+CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
+                --num_train_epochs 12 \
+                --train_file './food/recipe_train.txt' \
+                --validation_file './food/recipe_test.txt' \
+                --model_name_or_path gpt2 \
+                --per_device_train_batch_size 8 \
+                --per_device_eval_batch_size 8 \
+                --output_dir './food/gpt_recipe' \
+                --preprocessing_num_workers 8 --overwrite_cache True \
+                --block_size 128 > ./food/gpt_recipe.log &
+
+
+CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_clm_no_trainer.py \
+                --num_train_epochs 12 \
+                --train_file './food/ingre_recipe_train.txt' \
+                --validation_file './food/ingre_recipe_test.txt' \
+                --model_name_or_path gpt2 \
+                --per_device_train_batch_size 8 \
+                --per_device_eval_batch_size 8 \
+                --output_dir './food/gpt_ingre_recipe' \
+                --preprocessing_num_workers 8 --overwrite_cache True \
+                --block_size 128 > ./food/gpt_ingre_recipe.log &
+
+
+
+
+
+nohup bash run.sh uci 128 1 &
+nohup bash run.sh ag  128 4 &
+nohup bash run.sh nyt 128 5 &
 
 
 
