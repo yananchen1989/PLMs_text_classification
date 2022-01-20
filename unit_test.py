@@ -25,6 +25,17 @@ sent = "Virus to cause spike in pork prices"
 content = "Grand Budapest Hotel'not grand, but still stylish"
 
 
+tokenizer("Why BlackBerry ( BBRY ) Stock Is Up Today", return_special_tokens_mask=True)
+
+tokenizer_gpt2("Why BlackBerry ( BBRY ) Stock Is Up Today \n<|endoftext|>", return_special_tokens_mask=True)
+
+tokenizer_t5("Why BlackBerry ( BBRY ) Stock Is Up Today"+tokenizer_t5.eos_token, max_length=100,\
+         padding=True, truncation=True, return_special_tokens_mask=True)
+
+
+tokenizer_t5.convert_ids_to_tokens([2])
+tokenizer_gpt2.convert_ids_to_tokens([6288])
+tokenizer_t5.convert_tokens_to_ids(['up'])
 
 
 # gpt neo
@@ -61,13 +72,6 @@ classes = ["health", "politics"] + ['Business', 'science and technology', 'Sport
 tars.predict_zero_shot(sentence, classes)
 
 print(sentence)
-
-
-
-
-
-
-
 
 
 

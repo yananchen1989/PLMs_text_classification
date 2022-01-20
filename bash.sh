@@ -181,6 +181,27 @@ CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_clm_no_trainer.py \
 
 
 
+CUDA_VISIBLE_DEVICES=5 nohup python -u ./run_summarization_no_trainer.py \
+            --num_train_epochs 12 \
+            --train_file "./food/ic_csv_train.csv" \
+            --validation_file "./food/ic_csv_test.csv" \
+            --model_name_or_path t5-base \
+            --per_device_train_batch_size 8 \
+            --per_device_eval_batch_size 8 \
+            --output_dir './food/t5_ingre_recipe' \
+            --max_target_length 128 \
+            --val_max_target_length 128 \
+            --preprocessing_num_workers 8 --overwrite_cache True \
+            --text_column ingredient_content \
+            --summary_column recipe \
+            --max_length 128 \
+            --model_type t5  --use_slow_tokenizer > ./food/t5_ingre_recipe.log &
+
+
+
+
+
+
 
 nohup bash run.sh uci 128 1 &
 nohup bash run.sh ag  128 4 &

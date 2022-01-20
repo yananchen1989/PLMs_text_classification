@@ -18,23 +18,11 @@ tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased', cache_dir="./cach
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 
-
 from transformers import T5Tokenizer, AutoModelWithLMHead
 tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
 print(tokenizer_t5)
 
 
-tokenizer("Why BlackBerry ( BBRY ) Stock Is Up Today", return_special_tokens_mask=True)
-
-tokenizer_gpt2("Why BlackBerry ( BBRY ) Stock Is Up Today<|endoftext|>")
-
-tokenizer_t5("Why BlackBerry ( BBRY ) Stock Is Up Today", max_length=100,\
-         padding=True, truncation=True)
-
-
-tokenizer_t5.convert_ids_to_tokens([2])
-tokenizer_gpt2.convert_ids_to_tokens([6288])
-tokenizer_t5.convert_tokens_to_ids(['up'])
 
 
 
@@ -46,13 +34,20 @@ df_raw_recipes['recipe'] = df_raw_recipes['steps']\
                     .map(lambda x: ', '.join(eval(x)) + '.' )
 
 df_raw_recipes['ingre_recipe'] = df_raw_recipes['ingredient_content'] + " {} ".format(tokenizer_gpt2.eos_token)\
-                                 + df_raw_recipes['recipe'] + tokenizer_gpt2.eos_token
+                                 + df_raw_recipes['recipe'] 
 
 from sklearn.model_selection import train_test_split
 
 i_train, i_test =  train_test_split(df_raw_recipes['ingredient_content'].unique(), test_size=0.1)
 c_train, c_test =  train_test_split(df_raw_recipes['recipe'].unique(), test_size=0.1)
 ic_train, ic_test =  train_test_split(df_raw_recipes['ingre_recipe'].unique(), test_size=0.1)
+
+
+ic_csv_train, ic_csv_test = train_test_split(df_raw_recipes[['ingredient_content', 'recipe']], test_size=0.1)
+
+ic_csv_train.to_csv("ic_csv_train.csv", index=False)
+ic_csv_test.to_csv("ic_csv_test.csv", index=False)
+
 
 
 
