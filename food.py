@@ -1,19 +1,13 @@
 import pandas as pd 
-df = pd.read_csv("RAW_recipes.csv")
 
-df_interact = pd.read_csv("interactions_train.csv")
+#df_interact_train = pd.read_csv("./food/interactions_train.csv")
 
-Index(['name', 'id', 'minutes', 'contributor_id', 'submitted', 'tags',
-       'nutrition', 'n_steps', 'steps', 'description', 'ingredients',
-       'n_ingredients'],
-      dtype='object')
-
-df_pp_recipes = pd.read_csv("PP_recipes.csv")
-df_pp_users = pd.read_csv("PP_users.csv")
+# df_pp_recipes = pd.read_csv("PP_recipes.csv")
+# df_pp_users = pd.read_csv("PP_users.csv")
 
 
-df_raw_interact = pd.read_csv("RAW_interactions.csv")
-df_raw_recipes = pd.read_csv("RAW_recipes.csv")
+df_raw_interact = pd.read_csv("./food/RAW_interactions.csv")
+df_raw_recipes = pd.read_csv("./food/RAW_recipes.csv")
 
 
 for ix, row in df_pp_users.sample(10).iterrows():
@@ -23,5 +17,50 @@ for ix, row in df_pp_users.sample(10).iterrows():
 
 
 
-df_raw_interact.loc[(df_raw_interact['user_id']==252205) & (df_raw_interact['recipe_id']==81398)]
+from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelWithLMHead
+tokenizer = AutoTokenizer.from_pretrained('roberta-large', cache_dir="./cache",local_files_only=True) 
+
+
+df_raw_recipes['ingredient_content'] = df_raw_recipes['ingredients']\
+                    .map(lambda x: tokenizer.sep_token.join(eval(x)) + tokenizer.eos_token )
+
+df_raw_recipes['recipe'] = df_raw_recipes['steps']\
+                    .map(lambda x: ', '.join(eval(x)) + '.' )
+
+from sklearn.model_selection import train_test_split
+
+indgredients_train, indgredients_test =  train_test_split(df_raw_recipes['ingredient_content'].unique(), test_size=0.1)
+recipe_train, recipe_test =  train_test_split(df_raw_recipes['recipe'].unique(), test_size=0.1)
+
+
+
+with open("./food/indgredients_train.txt",'w') as f:
+    for line in indgredients_train:
+        f.write(line + '\n')
+
+with open("./food/indgredients_test.txt",'w') as f:
+    for line in indgredients_test:
+        f.write(line + '\n')
+
+
+
+with open("./food/recipe_train.txt",'w') as f:
+    for line in recipe_train:
+        f.write(line + '\n')
+
+with open("./food/recipe_test.txt",'w') as f:
+    for line in recipe_test:
+        f.write(line + '\n')
+
+
+# from datasets import load_dataset
+
+# data_files = {}
+# data_files["train"] = './food/indgredients_train.txt'
+# data_files["validation"] = './food/indgredients_test.txt'
+
+# raw_datasets = load_dataset("text", data_files=data_files)
+
+
 
