@@ -73,7 +73,7 @@ CUDA_VISIBLE_DEVICES=2 nohup python -u ./run_summarization_no_trainer.py \
 
 
 
-CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_summarization_no_trainer.py \
+CUDA_VISIBLE_DEVICES=4 nohup python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 3 \
             --train_file "df_cc_ners_train.csv" \
             --validation_file "df_cc_ners_test.csv" \
@@ -81,12 +81,12 @@ CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_summarization_no_trainer.py \
             --per_device_train_batch_size 4 \
             --per_device_eval_batch_size 4 \
             --output_dir './t5_ners_cc' \
-            --max_target_length 128 \
-            --val_max_target_length 128 \
+            --max_target_length 100 \
+            --val_max_target_length 100 \
             --preprocessing_num_workers 16 --overwrite_cache True \
             --text_column ners \
             --summary_column content \
-            --max_length 128 \
+            --max_length 100 \
             --model_type t5  --use_slow_tokenizer > ft_t5_cc_ners.log &
 
 
@@ -181,7 +181,7 @@ CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_clm_no_trainer.py \
 
 
 
-CUDA_VISIBLE_DEVICES=5 nohup python -u ./run_summarization_no_trainer.py \
+CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
             --train_file "./food/ic_csv_train.csv" \
             --validation_file "./food/ic_csv_test.csv" \
@@ -211,7 +211,7 @@ nohup bash run.sh nyt 128 5 &
 
 
 ############################################################################################################################################
-ps aux|grep "pplm.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "augf.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 

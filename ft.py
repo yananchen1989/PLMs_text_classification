@@ -141,6 +141,32 @@ df_nat_train.sample(200000).to_csv("df_nat_train_sample.csv", index=False)
 
 
 
+import os  
+os.environ['CUDA_VISIBLE_DEVICES'] = '7'
+
+from transformers import pipeline
+from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+tokenizer_gpt2.sep_token = '<|sep|>'
+#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+print(tokenizer_gpt2)
+
+gen_nlp_gpt2 = {}
+
+gpt2_recipe = GPT2LMHeadModel.from_pretrained('./gpt2_natcat')
+gen_nlp_gpt2['gpt2_natcat']  = pipeline("text-generation", model=gpt2_recipe, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -37,10 +37,9 @@ for i in {1..10}
 do
 	seed=$RANDOM
 	python -u augf.py --dsn ${1} --samplecnt ${2} --max_aug_times 1 --aug generate \
-           --genft lambda  --genm gpt --filter clsembed --seed ${seed}  \
-            --candidates 128 --gpu ${3}  \
- 	> ./log_lambda/${1}.${2}.128.${seed}.log 2>&1 
-  
+            --seed ${seed}  \
+            --candidates ${3} --gpu ${4}  \
+ 	> ./log_lambda/${1}.${2}.${3}.${seed}.log 2>&1 
 done
 
 

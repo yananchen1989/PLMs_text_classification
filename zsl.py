@@ -173,6 +173,7 @@ def para_t5(content):
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                         repetition_penalty=1.2, num_return_sequences= args.fbs_para,\
                                         clean_up_tokenization_spaces=True)
+    assert len(result_gpt) == args.fbs_para
     ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] 
     return ori_gen_contents
 

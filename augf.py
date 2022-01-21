@@ -41,7 +41,7 @@ parser.add_argument("--candidates", default=64, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="7", type=str)
+parser.add_argument("--gpu", default="6,7", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -95,7 +95,7 @@ from utils.transblock import *
 from utils.encoders import *
 from utils.cbert_cgpt_config import * 
 #from utils.dpp_model import * 
-#from utils.flair_ners import *
+from utils.flair_ners import *
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
@@ -113,7 +113,8 @@ if args.aug == 'eda':
 
 if args.aug == 'generate':
     ####################### generation setting ######################
-    #if args.genm == 'gpt':
+    gen_nlp = {}
+
     from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
     tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
     #tokenizer_gpt2.padding_side = "left" 
@@ -122,71 +123,77 @@ if args.aug == 'generate':
     #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
     print(tokenizer_gpt2)
 
-    if args.genft == 'no':
-        gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    # ori
+    gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    gen_nlp['gpt2_noft']  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-    elif args.genft == 'lambda' :
-        if not os.path.exists('ft_tmp'):
-            os.makedirs('ft_tmp')
 
-        train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, args.seed)
-        validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, args.seed)
+    # lambda
+    if not os.path.exists('ft_tmp'):
+        os.makedirs('ft_tmp')
 
-        df_train_ft = ds.df_train.copy()
-        df_test_ft = ds.df_test.copy()
+    train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, args.seed)
+    validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, args.seed)
 
-        df_train_ft['text'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_train_ft['content']
-        df_test_ft['text'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_test_ft['content']
+    df_train_ft = ds.df_train.copy()
+    df_test_ft = ds.df_test.copy()
 
-        with open (train_file, 'w') as f:
-            for line in df_train_ft['text'].tolist():
-                f.write(line + tokenizer_gpt2.eos_token + '\n')
+    df_train_ft['text'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_train_ft['content']
+    df_test_ft['text'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_test_ft['content']
 
-        with open (validation_file, 'w') as f:
-            for line in df_test_ft['text'].tolist():
-                f.write(line + tokenizer_gpt2.eos_token + '\n')
+    with open (train_file, 'w') as f:
+        for line in df_train_ft['text'].tolist():
+            f.write(line + tokenizer_gpt2.eos_token + '\n')
 
-        model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
-        os.system(
-        "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
-                --num_train_epochs {} \
-                --train_file {} \
-                --validation_file {} \
-                --model_name_or_path gpt2 \
-                --per_device_train_batch_size 8 \
-                --per_device_eval_batch_size 8 \
-                --output_dir {} \
-                --preprocessing_num_workers 8 --overwrite_cache True \
-                --block_size {}".format(args.gpu, 12, train_file, validation_file, model_output_path, 64) ) 
-        gpt2 = GPT2LMHeadModel.from_pretrained(model_output_path)
+    with open (validation_file, 'w') as f:
+        for line in df_test_ft['text'].tolist():
+            f.write(line + tokenizer_gpt2.eos_token + '\n')
 
-    # elif args.genft == 'cc':
-    #     gpt2 = GPT2LMHeadModel.from_pretrained(args.ft_model_path)
+    model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
+    os.system(
+    "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
+            --num_train_epochs {} \
+            --train_file {} \
+            --validation_file {} \
+            --model_name_or_path gpt2 \
+            --per_device_train_batch_size 8 \
+            --per_device_eval_batch_size 8 \
+            --output_dir {} \
+            --preprocessing_num_workers 8 --overwrite_cache True \
+            --block_size {}".format(args.gpu, 12, train_file, validation_file, model_output_path, 64) ) 
+    gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
+    gpt2_lambda.config.pad_token_id=50256
+    gen_nlp['gpt2_lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-    # elif args.genft in ['tc', 'pp', 'ep']:
-    #     gpt2 = GPT2LMHeadModel.from_pretrained('ft_model_{}_{}'.format(args.genm, args.genft) )
+    gpt2_cc_ners = GPT2LMHeadModel.from_pretrained('./gpt2_cc_ners')
+    gpt2_cc_ners.config.pad_token_id=50256
+    gen_nlp['gpt2_cc_ners']  = pipeline("text-generation", model=gpt2_cc_ners, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-    else:
-        raise KeyError("args.genft illegal!")
-    gpt2.trainable = False
-    gpt2.config.pad_token_id=50256
-    gen_nlp_gpt2  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=len(gpus)-1, return_full_text=False)
+    gpt2_cc_title = GPT2LMHeadModel.from_pretrained('./gpt2_cc_title')
+    gpt2_cc_title.config.pad_token_id=50256
+    gen_nlp['gpt2_cc_title']  = pipeline("text-generation", model=gpt2_cc_title, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+    
+    gpt2_natcat = GPT2LMHeadModel.from_pretrained('./gpt2_natcat')
+    gpt2_natcat.config.pad_token_id=50256
+    gen_nlp['gpt2_natcat']  = pipeline("text-generation", model=gpt2_natcat, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+       
 
-    #elif args.genm == 't5':
-    # from transformers import T5Tokenizer, AutoModelWithLMHead
-    # tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-    # print(tokenizer_t5)
-    # if args.genft == 'no':
-    #     t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-    # elif args.genft in ['tc', 'pp', 'ep']:
-    #     ft_model_path = 'ft_model_{}_{}'.format(args.genm, args.genft)
-    #     checkpoint_files = glob.glob(ft_model_path+"/checkpoint_loss_*")
-    #     list.sort(checkpoint_files)
-    #     t5 = AutoModelWithLMHead.from_pretrained(checkpoint_files[0])  
-    # else:
-    #     raise KeyError("args.genft illegal!")
 
-    # gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-2)
+    from transformers import T5Tokenizer, AutoModelWithLMHead
+    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    print(tokenizer_t5)
+    
+    t5_noft = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    gen_nlp['t5_noft']  = pipeline("text2text-generation", model=t5_noft, tokenizer=tokenizer_t5, device=0)
+
+    # t5_cc_ners = AutoModelWithLMHead.from_pretrained("t5_ners_cc")
+    # gen_nlp['t5_cc_ners']  = pipeline("text2text-generation", model=t5_cc_ners, tokenizer=tokenizer_t5, device=1)
+
+    t5_cc_title = AutoModelWithLMHead.from_pretrained("t5_title_cc")
+    gen_nlp['t5_cc_title']  = pipeline("text2text-generation", model=t5_cc_title, tokenizer=tokenizer_t5, device=0)
+    
+    # t5_natcat = AutoModelWithLMHead.from_pretrained("t5_natcat")
+    # gen_nlp['t5_natcat']  = pipeline("text2text-generation", model=t5_natcat, tokenizer=tokenizer_t5, device=1)
 
     # elif args.genm == 'ctrl':
     #     from transformers import CTRLTokenizer, TFCTRLLMHeadModel
@@ -199,7 +206,7 @@ if args.aug == 'generate':
     # elif args.genm == 'neo':
     #     gen_nlp_gptneo = pipeline('text-generation', model='EleutherAI/gpt-neo-1.3B', device=0)
 
-    print('generate model loaded ==>{}'.format(args.genm))
+    #print('generate model loaded ==>{}'.format(args.genm))
 
     dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
@@ -232,7 +239,7 @@ if args.aug == 'generate':
     # if 'dvrl' in args.filter:
     #     os.makedirs('dvrl_np_array', exist_ok=True)
         
-    print('filter==> {} model loaded'.format(args.filter))
+    #print('filter==> {} model loaded'.format(args.filter))
 
 
 
@@ -347,34 +354,50 @@ def dvrl_inner_join(files):
 #         model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 #     model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
-def lambda_gen(row, gen_nlp, enc, model_cls):
-    prompt = decorate_sent(row['content'], row['label_name'])
-    contents_syn = []
-    fbs_gen = 64
-    for _ in range(0, args.candidates//fbs_gen):
+def lambda_gen(row):
+    ners = get_ners(row['content'])
+
+    prompt = {}
+    prompt['gpt2_lambda'] = '[{}]'.format(row['label_name']) +  ' '.join(row['content'].split(' ')[:3] )
+    prompt['gpt2_noft'] = row['content']
+    prompt['gpt2_cc_ners'] = "This document is about {}, {} :".format(row['label_name'], ', '.join(get_ners(content)))
+    prompt['gpt2_cc_title'] = "This document is about {} :".format(row['content'])
+
+    prompt['gpt2_natcat'] = "This document is about {}, {} :".format(row['label_name'], ', '.join(get_ners(content)))
+    
+    prompt['t5_noft'] = row['content']
+    prompt['t5_cc_title'] = row['content']
+
+    infos = []
+    for genm in gen_nlp.keys():
+ 
+        contents_syn = []
+        fbs_gen = 64
+        for _ in range(0, args.candidates//fbs_gen):
+            torch.cuda.empty_cache()
+            result_gpt = gen_nlp[genm](prompt[genm], max_length=dsn_maxlen[args.dsn], \
+                                            do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                            repetition_penalty=1.2, num_return_sequences= fbs_gen,\
+                                            clean_up_tokenization_spaces=True)
+            assert len(result_gpt) == fbs_gen
+            contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
+            contents_syn.extend(contents_syn_tmp)
         torch.cuda.empty_cache()
-        result_gpt = gen_nlp(prompt, max_length=dsn_maxlen[args.dsn], \
-                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= fbs_gen,\
-                                        clean_up_tokenization_spaces=True)
 
-        contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
-        contents_syn.extend(contents_syn_tmp)
-    torch.cuda.empty_cache()
+        embeds_syn = enc.infer(contents_syn)
+        embeds_score = cosine_similarity(embeds_syn, enc_dic[row['label']])
 
-    embeds_syn = enc.infer(contents_syn)
-    embeds_score = cosine_similarity(embeds_syn, enc_dic[row['label']])
+        preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
+        cls_score = preds[:, row['label'] ]
 
-    preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
-    cls_score = preds[:, row['label'] ]
+        df_tmp = pd.DataFrame(zip(contents_syn, list(embeds_score.reshape(-1)), list(cls_score)),\
+                     columns=['content', 'embed_score', 'cls_score'])
 
-    df_tmp = pd.DataFrame(zip(contents_syn, list(embeds_score.reshape(-1)), list(cls_score)),\
-                 columns=['content', 'embed_score', 'cls_score'])
-
-    result_syn = {}
-    result_syn['cls'] = df_tmp.sort_values(by=['cls_score'], ascending=False).head(1)['content'].tolist()[0] 
-    result_syn['embed'] = df_tmp.sort_values(by=['embed_score'], ascending=False).head(1)['content'].tolist()[0] 
-    return result_syn
+        result_syn_cls = df_tmp.sort_values(by=['cls_score'], ascending=False).head(1)['content'].tolist()[0] 
+        result_syn_embed = df_tmp.sort_values(by=['embed_score'], ascending=False).head(1)['content'].tolist()[0] 
+        infos.append((genm+'_cls', result_syn_cls))
+        infos.append((genm+'_embed', result_syn_embed))
+    return infos
 
 '''
 def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
@@ -436,32 +459,6 @@ else:
 
 
 
-def decorate_sent(content, label_name):
-    if args.genm == 'gpt':
-        if args.genft == 'lambda':
-            prompt = '[{}]'.format(label_name) +  ' '.join(content.split(' ')[:3] )
-
-        elif args.genft in ['tc', 'pp']:
-            prompt = '{} {}'.format(content, tokenizer_gpt2.sep_token)
-
-        elif args.genft in ['ep']:
-            ners = get_ners(content)
-            ners_join = '<=>'.join(ners)
-            prompt = ners_join + tokenizer_gpt2.sep_token
-        else:
-            prompt = content
-
-    elif args.genm == 'ctrl':
-        prompt = "Links in {}. ".format(content)
-        
-    elif args.genm == 't5':
-        if args.genft in ['ep']:
-            ners = get_ners(content)
-            ners_join = '<=>'.join(ners)
-            prompt = ners_join + tokenizer_t5.eos_token
-        else:
-            prompt = content + tokenizer_t5.eos_token
-    return prompt
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
     # # nli config
@@ -489,10 +486,10 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             #     elif args.genm == 't5':
             #         result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
             #elif args.filter == 'clsembed':
-            result_syn = lambda_gen(row, gen_nlp_gpt2, enc, model_cls)
+            result_syn = lambda_gen(row)
 
             print("gen===>", row['label_name'] )
-            for fmark, content in result_syn.items():
+            for fmark, content in result_syn:
                 print("{} ==>{}".format(fmark, content) )
                 infos.append((content, row['label_name'], row['label'], fmark))
             print('\n')

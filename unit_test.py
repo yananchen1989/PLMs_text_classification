@@ -146,14 +146,6 @@ input_ids = tokenizer_gpt2.encode(sent, return_tensors="tf")
 next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
 
 
-########
-gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
-
-prompts = ds.df_train['content'].map(lambda x: '{} {}'.format(x, tokenizer_t5.eos_token)).tolist()
-labels =  ds.df_train['label'].tolist()
-
-contents_trunk_ = gen_nlp_t5([prompts[11]], max_length=256, do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                          repetition_penalty=1.2, num_return_sequences=1, clean_up_tokenization_spaces=True)
 
 
 ################ t5 token generation ###################
