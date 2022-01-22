@@ -81,16 +81,6 @@ print(sentence)
 
 
 
-
-
-
-
-
-
-
-
-
-
 from utils.load_data import * 
 ds = load_data(dataset='uci', samplecnt= 8)
 print(ds.df_test['label_name'].value_counts())

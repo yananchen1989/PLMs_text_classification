@@ -162,18 +162,22 @@ if args.aug == 'generate':
             --preprocessing_num_workers 8 --overwrite_cache True \
             --block_size {}".format(args.gpu, 12, train_file, validation_file, model_output_path, 64) ) 
     gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
+    gpt2_lambda.trainable = False
     gpt2_lambda.config.pad_token_id=50256
     gen_nlp['gpt2_lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
     gpt2_cc_ners = GPT2LMHeadModel.from_pretrained('./gpt2_cc_ners')
+    gpt2_cc_ners.trainable = False
     gpt2_cc_ners.config.pad_token_id=50256
     gen_nlp['gpt2_cc_ners']  = pipeline("text-generation", model=gpt2_cc_ners, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
     gpt2_cc_title = GPT2LMHeadModel.from_pretrained('./gpt2_cc_title')
+    gpt2_cc_title.trainable = False
     gpt2_cc_title.config.pad_token_id=50256
     gen_nlp['gpt2_cc_title']  = pipeline("text-generation", model=gpt2_cc_title, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
     
     gpt2_natcat = GPT2LMHeadModel.from_pretrained('./gpt2_natcat')
+    gpt2_natcat.trainable = False
     gpt2_natcat.config.pad_token_id=50256
     gen_nlp['gpt2_natcat']  = pipeline("text-generation", model=gpt2_natcat, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
        
@@ -360,10 +364,10 @@ def lambda_gen(row):
     prompt = {}
     prompt['gpt2_lambda'] = '[{}]'.format(row['label_name']) +  ' '.join(row['content'].split(' ')[:3] )
     prompt['gpt2_noft'] = row['content']
-    prompt['gpt2_cc_ners'] = "This document is about {}, {} :".format(row['label_name'], ', '.join(get_ners(content)))
+    prompt['gpt2_cc_ners'] = "This document is about {}, {} :".format(row['label_name'], ', '.join(ners))
     prompt['gpt2_cc_title'] = "This document is about {} :".format(row['content'])
 
-    prompt['gpt2_natcat'] = "This document is about {}, {} :".format(row['label_name'], ', '.join(get_ners(content)))
+    prompt['gpt2_natcat'] = "This document is about {}, {} :".format(row['label_name'], ', '.join(ners))
     
     prompt['t5_noft'] = row['content']
     prompt['t5_cc_title'] = row['content']
@@ -372,7 +376,7 @@ def lambda_gen(row):
     for genm in gen_nlp.keys():
  
         contents_syn = []
-        fbs_gen = 64
+        fbs_gen = 8
         for _ in range(0, args.candidates//fbs_gen):
             torch.cuda.empty_cache()
             result_gpt = gen_nlp[genm](prompt[genm], max_length=dsn_maxlen[args.dsn], \
