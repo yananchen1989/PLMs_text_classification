@@ -16,6 +16,7 @@ parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--expand", default='gpt', type=str)
 parser.add_argument("--topn", default=64, type=int)
+parser.add_argument("--backbone", default='nli', type=int, choices=['nli','tars','roberta','nspbert','similarity'])
 parser.add_argument("--seed_sample", default=8, type=int)
 parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
@@ -40,30 +41,31 @@ from utils.load_data import *
 from utils.transblock import * 
 from utils.encoders import *
 
-if args.dsn == 'nyt':
-    samplecnt = 256
-else:
-    samplecnt = 2048
-ds = load_data(dataset=args.dsn, samplecnt= samplecnt)
+
+ds = load_data(dataset=args.dsn, samplecnt= 8)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
-
 if args.dsn in ['nyt','yahoo']:
-    ds, proper_len = process_ds(ds, 128)
-
+    ds, proper_len = process_ds(ds, 512)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
-
+from transformers import pipeline
 import torch
 device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 
-# nli model
-from transformers import pipeline
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-nli_model_name = 'vicgalle/xlm-roberta-large-xnli-anli' #"facebook/bart-large-mnli"
-model_nli = AutoModelForSequenceClassification.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
-tokenizer_nli = AutoTokenizer.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
-nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
+if args.backbone == 'nli':
+    # nli model
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    nli_model_name = 'vicgalle/xlm-roberta-large-xnli-anli' #"facebook/bart-large-mnli"
+    model_nli = AutoModelForSequenceClassification.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
+    tokenizer_nli = AutoTokenizer.from_pretrained(nli_model_name, cache_dir='./cache', local_files_only=True)
+    nli_nlp = pipeline("zero-shot-classification", model=model_nli, tokenizer=tokenizer_nli, device=len(gpus)-1)
+
+elif args.backbone == 'roberta':
+    from transformers import AutoTokenizer, AutoModelWithLMHead
+    tokenizer = AutoTokenizer.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True) 
+    model = AutoModelWithLMHead.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True)
+
 
 
 #nsp model
@@ -79,6 +81,9 @@ tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local
 print(tokenizer_t5)
 t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
 gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+
+
+
 '''
 elif args.param == 'bt':
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
@@ -105,8 +110,6 @@ elif args.param == 't5paws':
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
     tokenizer_t5paws = AutoTokenizer.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache", local_files_only=True)  
     model_t5paws = AutoModelForSeq2SeqLM.from_pretrained("Vamsi/T5_Paraphrase_Paws", cache_dir="./cache", local_files_only=True).to(device0)
-
-
 
 
 def para_bt(content):
@@ -360,7 +363,7 @@ elif args.expand == 'seeds':
 
 
 acc = {}
-for ix, row in ds.df_train.reset_index().iterrows():
+for ix, row in ds.df_test.reset_index().iterrows():
     torch.cuda.empty_cache() 
     nli_result = nli_nlp(row['content'],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
     nli_result.pop('sequence')

@@ -1,6 +1,6 @@
 import pandas as pd 
 import os  
-os.environ['CUDA_VISIBLE_DEVICES'] = '7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 #df_interact_train = pd.read_csv("./food/interactions_train.csv")
 
 # df_pp_recipes = pd.read_csv("PP_recipes.csv")
@@ -9,6 +9,28 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 
 df_raw_interact = pd.read_csv("./food/RAW_interactions.csv")
 df_raw_recipes = pd.read_csv("./food/RAW_recipes.csv")
+
+
+
+df_raw_interact.user_id.value_counts().reset_index()
+
+
+
+recips_cnts = []
+for uid in df_raw_interact.user_id.unique():
+    dfu = df_raw_interact.loc[df_raw_interact['user_id']==uid]
+    recips_cnts.append(dfu.recipe_id.unique().shape[0]) 
+    if dfu.shape==10:
+        break
+
+
+
+pd.merge(dfu, df_raw_recipes, left_on='recipe_id', right_on='id', how='inner')
+
+
+
+
+
 
 
 
@@ -181,6 +203,62 @@ for k in results.keys():
 results = rouge.compute(predictions=preds_ingre_recipe_gpt, references=references)
 for k in results.keys():
     print(k, results[k].mid.fmeasure)
+
+
+
+
+
+
+
+import transformers
+from transformers import T5Tokenizer, AutoModelWithLMHead
+tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+print(tokenizer_t5)
+
+t5 = AutoModelWithLMHead.from_pretrained("./food/t5_ingre_recipe/")
+gen_nlp_t5  = transformers.pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=0)
+
+
+
+
+df_t5_test = pd.read_csv("./food/ic_csv_test.csv")
+
+preds_recipe_t5 = []
+references = []
+
+for ix, row in df_t5_test.sample(frac=1).reset_index().iterrows():
+    ingre = row['ingredient_content']
+    recipe = row['recipe']
+    result_recipe = gen_nlp_t5(ingre, max_length=256, \
+                                                    do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                                    repetition_penalty=1.2, num_return_sequences= 1,\
+                                                    clean_up_tokenization_spaces=True)
+    pre_recipe = result_recipe[0]['generated_text'] 
+    references.append(recipe)
+    preds_recipe_t5.append(pre_recipe)
+
+    if ix % 100 == 0:
+        print(ix)
+        results = rouge.compute(predictions=preds_recipe_t5, references=references)
+        for k in results.keys():
+            print(k, results[k].mid.fmeasure)
+
+
+df_raw_recipes['recipe'] = df_raw_recipes['steps'].map(lambda x: ' '.join(df_raw_recipes))
+
+
+for steps in df_raw_recipes.steps.tolist():
+    recipe = ','.join(eval(steps))
+    if  'preheat the oven to 400 degrees' in recipe:
+        print (recipe)
+
+
+
+dividing it evenl
+
+
+
+
 
 
 
