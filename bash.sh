@@ -203,21 +203,9 @@ CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_summarization_no_trainer.py \
 
 
 
-nohup bash run.sh uci 128 64 0 &
 
-
-nohup bash run.sh ag  128 64 2 &
-nohup bash run.sh nyt 128 64 3 &
-
-nohup bash run.sh uci 64 64 4 &
-nohup bash run.sh ag  64 64 5 &
-nohup bash run.sh nyt 64 64 6 &
-
-
-nohup bash run.sh ag  64 64 7 &
-
-nohup bash run.sh ag  128 64 1 &
-nohup bash run.sh ag  128 64 5 &
+nohup bash run.sh ag   1 &
+nohup bash run.sh ag   5 &
 
 
 
@@ -226,6 +214,16 @@ nohup python -u zsl.py --dsn ag    --backbone roberta --gpu 1 > ./log_zsl/ag.rob
 
 nohup python -u zsl.py --dsn yahoo --backbone nspbert --gpu 2 > ./log_zsl/yahoo.nspbert.log & 
 nohup python -u zsl.py --dsn ag    --backbone nspbert --gpu 3 > ./log_zsl/ag.nspbert.log & 
+
+
+nohup python -u zsl.py --dsn yahoo --backbone simi --gpu 4 > ./log_zsl/yahoo.simi.log & 
+nohup python -u zsl.py --dsn ag    --backbone simi --gpu 5 > ./log_zsl/ag.simi.log & 
+
+nohup python -u zsl.py --dsn yahoo --backbone nli --gpu 6 > ./log_zsl/yahoo.nli.log & 
+nohup python -u zsl.py --dsn ag    --backbone nli --gpu 7 > ./log_zsl/ag.nli.log & 
+
+
+
 
 
 

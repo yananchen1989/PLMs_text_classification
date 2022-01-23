@@ -36,10 +36,16 @@
 for i in {1..10}
 do
 	seed=$RANDOM
-	python -u augf.py --dsn ${1} --samplecnt ${2} --max_aug_times 1 --aug generate \
-            --seed ${seed}  \
-            --candidates ${3} --gpu ${4}  \
- 	> ./log_lambda/${1}.${2}.${3}.${seed}.log 2>&1 
+	for samplecnt in 64 128 
+	do
+		for candidates in 64 128 256 
+		do
+			python -u augf.py --dsn ${1} --samplecnt ${samplecnt} --max_aug_times 1 --aug generate \
+		            --seed ${seed}  \
+		            --candidates ${candidates} --gpu ${4}  \
+		 	> ./log_lambda/${1}.${samplecnt}.${candidates}.${seed}.log 2>&1 
+		done
+ 	done
 done
 
 

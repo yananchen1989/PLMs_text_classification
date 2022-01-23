@@ -46,7 +46,7 @@ ds = load_data(dataset=args.dsn, samplecnt= 8)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
 if args.dsn in ['nyt','yahoo']:
-    ds, proper_len = process_ds(ds, 256)
+    ds, proper_len = process_ds(ds, 256, True)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
 from transformers import pipeline
