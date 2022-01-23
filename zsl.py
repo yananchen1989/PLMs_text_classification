@@ -432,7 +432,7 @@ elif args.expand == 'seeds':
 
 acc = {}
 
-for ix, row in ds.df_test.reset_index().iterrows():
+for ix, row in ds.df_test.sample(frac=1).reset_index().iterrows():
     torch.cuda.empty_cache() 
 
     df_noexpand = ZSL_FUNC[args.backbone](row['content'])
