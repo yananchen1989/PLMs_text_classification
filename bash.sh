@@ -203,24 +203,27 @@ CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_summarization_no_trainer.py \
 
 
 
-nohup bash run.sh uci 128 128 1 &
-nohup bash run.sh ag  128 128 4 &
-nohup bash run.sh nyt 128 128 5 &
+nohup bash run.sh uci 128 64 0 &
+
+
+nohup bash run.sh ag  128 64 2 &
+nohup bash run.sh nyt 128 64 3 &
+
+nohup bash run.sh uci 64 64 4 &
+nohup bash run.sh ag  64 64 5 &
+nohup bash run.sh nyt 64 64 6 &
+
+
+nohup bash run.sh ag  64 64 7 &
+
+nohup bash run.sh ag  128 64 1 &
+nohup bash run.sh ag  128 64 5 &
 
 
 
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-            --seed 3429  \
-            --candidates 128 --gpu 6,7 --epochs 2
+nohup python -u zsl_roberta.py --dsn yahoo --fillm bert-base-uncased --gpu 0 > zsl_roberta.yahoo.bert.log & 
 
-
-
-
-
-
-
-
-
+nohup python -u zsl_roberta.py --dsn yahoo --fillm roberta-large --gpu 1 > zsl_roberta.yahoo.roberta.log & 
 
 
 

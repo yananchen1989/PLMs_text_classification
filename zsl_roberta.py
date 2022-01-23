@@ -70,30 +70,7 @@ stopwords = set(stopwords)
 
 
 
-def zsl_roberta(row, labels_candidates):
 
-    template1 = "{}. This News is about {}".format(row['content'], nlp_fill.tokenizer.mask_token)
-    template2 = "{} News: {}.".format(nlp_fill.tokenizer.mask_token, row['content'])
-    template3 = "[Category: {} ] {}.".format(nlp_fill.tokenizer.mask_token, row['content'])
-
-    ls = {l:0 for l in labels_candidates}
-
-    filled_results = nlp_fill([template1, template2, template3])
-    
-    for filled_result in filled_results:
-
-        for r in filled_result :
-            token = r['token_str'].lower().strip()
-
-            if token  in stopwords or token in string.punctuation or token.isdigit() :
-                continue
-
-            for l in ls.keys():
-                if token in l.lower():
-                    ls[l] += r['score']  
-
-    df_noexpand = pd.DataFrame(ls.items(), columns=['label','score_noexpand'])
-    return df_noexpand
 
 
 

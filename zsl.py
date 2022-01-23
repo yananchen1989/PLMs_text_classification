@@ -16,9 +16,9 @@ parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--expand", default='gpt', type=str)
 parser.add_argument("--topn", default=64, type=int)
-parser.add_argument("--backbone", default='nli', type=int, choices=['nli','tars','roberta','nspbert','similarity'])
+parser.add_argument("--backbone", default='nli', type=str, choices=['nli','tars','roberta','nspbert','simi'])
 parser.add_argument("--seed_sample", default=8, type=int)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -46,7 +46,7 @@ ds = load_data(dataset=args.dsn, samplecnt= 8)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
 if args.dsn in ['nyt','yahoo']:
-    ds, proper_len = process_ds(ds, 512)
+    ds, proper_len = process_ds(ds, 400)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
 from transformers import pipeline
@@ -65,8 +65,23 @@ elif args.backbone == 'roberta':
     from transformers import AutoTokenizer, AutoModelWithLMHead
     tokenizer = AutoTokenizer.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True) 
     model = AutoModelWithLMHead.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True)
+    nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0, top_k = 2048 ) 
+    id_token = {ix:token for token, ix in tokenizer.vocab.items()}
 
+    stopwords = joblib.load("./utils/stopwords")
+    stopwords = set(stopwords)
 
+elif args.backbone == 'tars':
+    import flair
+    from flair.models import TARSClassifier
+    from flair.data import Sentence
+    flair.device = torch.device('cuda:{}'.format(args.gpu))
+    # 1. Load our pre-trained TARS model for English
+    tars = TARSClassifier.load("./resource/my-tars.pt")
+
+elif args.backbone == 'simi':
+    enc = encoder('cmlm-base', 'gpu')
+    embed_label = enc.infer(labels_candidates)
 
 #nsp model
 from transformers import BertTokenizer, BertForNextSentencePrediction
@@ -184,21 +199,14 @@ def para_ranking(content_ori):
     contents_para = para_t5(content_ori)
 
     ls = {l:0 for l in labels_candidates}
-    nli_result_ll = []
-    for j in range(0, len(contents_para), 16):
-        contents_tmp = contents_para[j:j+16] 
-        nli_result = nli_nlp(contents_tmp,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-        if isinstance(nli_result, dict):
-            nli_result_ll.append(nli_result)
-        else:
-            nli_result_ll.extend(nli_result)
 
-    for r in nli_result_ll:
-        for l,s in zip(r['labels'], r['scores']):
-            ls[l] += s
+    for sent in contents_para:
+        dfi = zsl_nspbert(sent)
+        for ix, row in dfi.iterrows():
+            ls[row['label']] += row['score_noexpand']
 
-    ls_sort = sorted(ls.items(), key=operator.itemgetter(1), reverse=True)
-    df_t5 = pd.DataFrame(ls_sort, columns=['label','score_t5'])
+    #ls_sort = sorted(ls.items(), key=operator.itemgetter(1), reverse=True)
+    df_t5 = pd.DataFrame(ls.items(), columns=['label','score_t5'])
     return df_t5
 
 
@@ -303,7 +311,7 @@ label_expands_auto = get_seed_words()
 print(label_expands_auto)
 
 
-
+'''
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -352,6 +360,66 @@ def gen_gpt_expansions():
     #df.to_csv("df_gen_{}_{}_{}.csv".format(args.dsn, args.expand, args.seed_sample), index=False)
     return df
 
+'''
+
+def zsl_roberta(content):
+
+    template1 = "{}. This News is about {}".format(content, nlp_fill.tokenizer.mask_token)
+    template2 = "{} News: {}.".format(nlp_fill.tokenizer.mask_token, content)
+    template3 = "[Category: {} ] {}.".format(nlp_fill.tokenizer.mask_token, content)
+
+    ls = {l:0 for l in labels_candidates}
+
+    filled_results = nlp_fill([template1, template2, template3])
+    
+    for filled_result in filled_results:
+
+        for r in filled_result :
+            token = r['token_str'].lower().strip()
+
+            if token  in stopwords or token in string.punctuation or token.isdigit() :
+                continue
+
+            for l in ls.keys():
+                if token in l.lower():
+                    ls[l] += r['score']  
+
+    df_noexpand = pd.DataFrame(ls.items(), columns=['label','score_noexpand'])
+    return df_noexpand
+
+
+def zsl_nli(content):
+    nli_result = nli_nlp(content,  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
+    nli_result.pop('sequence')
+    df_noexpand = pd.DataFrame(nli_result)
+    df_noexpand = df_noexpand.rename(columns={'labels': 'label', 'scores':'score_noexpand'})
+    return df_noexpand
+
+
+def zsl_tars(content):
+    sentence = Sentence(content)
+    tars.predict_zero_shot(sentence, labels_candidates)
+    result = sentence.to_dict()
+    print(l, '===>', result['labels'])
+
+def zsl_simi(content):
+    embed_contents = enc.infer([content], batch_size=1)
+    embeds_score = cosine_similarity(embed_contents, embed_label)
+    df_noexpand = pd.DataFrame(zip(labels_candidates, list(embeds_score[0])), columns=['label', 'score_noexpand'])
+    return df_noexpand
+
+def zsl_nspbert(content):
+    prompt_1 = [["This document is about {}".format(l), content] for l in labels_candidates]
+    prompt_2 = [["It is {} News".format(l), content] for l in labels_candidates]
+    score_nsp_1 = nsp_infer_pairs(prompt_1, bert_nsp, bert_tokenizer, device0)[:,0]    
+    score_nsp_2 = nsp_infer_pairs(prompt_2, bert_nsp, bert_tokenizer, device0)[:,0]    
+    
+    score_nsp = (score_nsp_1  + score_nsp_2 ) / 2
+    df_noexpand = pd.DataFrame(zip(labels_candidates, list(score_nsp)), columns=['label', 'score_noexpand'])
+    return df_noexpand
+
+
+ZSL_FUNC = {'nli':zsl_nli, 'roberta':zsl_roberta, 'tars':zsl_tars, 'simi':zsl_simi, 'nspbert':zsl_nspbert}
 
 if args.expand == 'gpt':
     df_contents_arxiv = pd.read_csv("df_gen_{}.csv".format(args.dsn))
@@ -363,21 +431,17 @@ elif args.expand == 'seeds':
 
 
 acc = {}
+
 for ix, row in ds.df_test.reset_index().iterrows():
     torch.cuda.empty_cache() 
-    nli_result = nli_nlp(row['content'],  labels_candidates, multi_label=True, hypothesis_template="This text is about {}.")
-    nli_result.pop('sequence')
-    df_noexpand = pd.DataFrame(nli_result)
-    df_noexpand = df_noexpand.rename(columns={'labels': 'label', 'scores':'score_noexpand'})
 
-
+    df_noexpand = ZSL_FUNC[args.backbone](row['content'])
     df_t5 = para_ranking(row['content'])
 
     if df_t5['score_t5'].min() ==0 and df_t5['score_t5'].max()==0:
         df_t5['score_t5'] = 1
 
     df_nsp = continuation_ranking(row['content'])
-
 
     df_fuse_ = pd.merge(df_noexpand, df_t5, on=['label'], how='inner')
     df_fuse  = pd.merge(df_fuse_, df_nsp, on=['label'], how='inner')

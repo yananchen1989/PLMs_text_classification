@@ -50,70 +50,8 @@ tokenizer_t5.convert_tokens_to_ids(['up'])
 
 
 
-from flair.models import TARSClassifier
-from flair.data import Sentence
 
 
-tars = TARSClassifier.load('tars-base')
-
-
-tars = TARSClassifier.load('./resource/tars-base-v8.pt')
-
-
-sent = 'FDA gives green light to migraine prevention tool'
-
-sent = "U. S. senator demands compensation fund for recalled GM cars"
-sentence = Sentence(sent)
-
-# 3. Define some classes that you want to predict using descriptive names
-classes = ["health", "politics"] + ['Business', 'science and technology', 'Sports', 'World']
-
-#4. Predict for these classes
-tars.predict_zero_shot(sentence, classes)
-
-print(sentence)
-
-
-
-
-
-
-
-
-
-from utils.load_data import * 
-ds = load_data(dataset='uci', samplecnt= 8)
-print(ds.df_test['label_name'].value_counts())
-labels_candidates = ds.df_train['label_name'].unique().tolist()
-print(labels_candidates)
-
-
-
-import flair,torch
-from flair.models import TARSClassifier
-from flair.data import Sentence
-flair.device = torch.device('cuda:7')
-# 1. Load our pre-trained TARS model for English
-tars = TARSClassifier.load("./resource/my-tars.pt")
-
-accs = []
-for ix, row in ds.df_test.iterrows():
-    sent = row['content']
-    label_name = row['label_name']
-    sentence = Sentence(sent)
-    tars.predict_zero_shot(sentence, labels_candidates)
-    result = sentence.to_dict()
-    if len(result['labels']) == 0:
-        accs.append(0)
-
-    else:
-        print(result['labels'][0]['value'], result['labels'][0]['confidence'])
-        if result['labels'][0]['value'] == label_name:
-            accs.append(1)
-        else:
-            accs.append(0)
-
-print(sum(accs) / len(accs))
 
 
 
