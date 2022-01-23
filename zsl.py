@@ -46,7 +46,7 @@ ds = load_data(dataset=args.dsn, samplecnt= 8)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
 if args.dsn in ['nyt','yahoo']:
-    ds, proper_len = process_ds(ds, 400)
+    ds, proper_len = process_ds(ds, 256)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
 from transformers import pipeline
@@ -229,7 +229,7 @@ def continuation_ranking(content_ori):
     df_nsp = pd.DataFrame(infos, columns=['label','score_nsp'])
     return df_nsp
 
-
+'''
 from transformers.file_utils import cached_path
 gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
 model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/GoogleNews-vectors-negative300.bin',binary=True)
@@ -310,7 +310,7 @@ def get_seed_words():
 label_expands_auto = get_seed_words()
 print(label_expands_auto)
 
-
+'''
 '''
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)

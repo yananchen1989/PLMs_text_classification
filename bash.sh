@@ -221,10 +221,11 @@ nohup bash run.sh ag  128 64 5 &
 
 
 
-nohup python -u zsl_roberta.py --dsn yahoo --fillm bert-base-uncased --gpu 0 > zsl_roberta.yahoo.bert.log & 
+nohup python -u zsl.py --dsn yahoo --backbone roberta --gpu 0 > ./log_zsl/yahoo.roberta.log & 
+nohup python -u zsl.py --dsn ag    --backbone roberta --gpu 1 > ./log_zsl/ag.roberta.log & 
 
-nohup python -u zsl_roberta.py --dsn yahoo --fillm roberta-large --gpu 1 > zsl_roberta.yahoo.roberta.log & 
-
+nohup python -u zsl.py --dsn yahoo --backbone nspbert --gpu 2 > ./log_zsl/yahoo.nspbert.log & 
+nohup python -u zsl.py --dsn ag    --backbone nspbert --gpu 3 > ./log_zsl/ag.nspbert.log & 
 
 
 
