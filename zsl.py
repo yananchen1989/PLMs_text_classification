@@ -406,6 +406,7 @@ def zsl_simi(content):
     embed_contents = enc.infer([content], batch_size=1)
     embeds_score = cosine_similarity(embed_contents, embed_label)
     df_noexpand = pd.DataFrame(zip(labels_candidates, list(embeds_score[0])), columns=['label', 'score_noexpand'])
+    df_noexpand['score_noexpand'] = df_noexpand['score_noexpand'] + 1
     return df_noexpand
 
 def zsl_nspbert(content):
@@ -435,26 +436,30 @@ acc = {}
 for ix, row in ds.df_test.sample(frac=1).reset_index().iterrows():
     torch.cuda.empty_cache() 
 
-    df_noexpand = ZSL_FUNC[args.backbone](row['content'])
-    df_t5 = para_ranking(row['content'])
+    try:
+        df_noexpand = ZSL_FUNC[args.backbone](row['content'])
+        df_t5 = para_ranking(row['content'])
 
-    if df_t5['score_t5'].min() ==0 and df_t5['score_t5'].max()==0:
-        df_t5['score_t5'] = 1
+        df_nsp = continuation_ranking(row['content'])
 
-    df_nsp = continuation_ranking(row['content'])
+        df_fuse_ = pd.merge(df_noexpand, df_t5, on=['label'], how='inner')
+        df_fuse  = pd.merge(df_fuse_, df_nsp, on=['label'], how='inner')
 
-    df_fuse_ = pd.merge(df_noexpand, df_t5, on=['label'], how='inner')
-    df_fuse  = pd.merge(df_fuse_, df_nsp, on=['label'], how='inner')
+        df_fuse['score_w_nsp'] =  df_fuse['score_noexpand'].map(lambda x: math.log(x)) \
+                                + df_fuse['score_nsp'].map(lambda x: math.log(x)) 
 
-    df_fuse['score_w_nsp'] =  df_fuse['score_noexpand'].map(lambda x: math.log(x)) \
-                            + df_fuse['score_nsp'].map(lambda x: math.log(x)) 
+        df_fuse['score_w_t5'] =  df_fuse['score_noexpand'].map(lambda x: math.log(x)) \
+                                + df_fuse['score_t5'].map(lambda x: math.log(x)) 
 
-    df_fuse['score_w_t5'] =  df_fuse['score_noexpand'].map(lambda x: math.log(x)) \
-                            + df_fuse['score_t5'].map(lambda x: math.log(x)) 
-
-    df_fuse['score_w_t5_nsp'] =  df_fuse['score_noexpand'].map(lambda x: math.log(x)) \
-                            + df_fuse['score_t5'].map(lambda x: math.log(x))    \
-                            + df_fuse['score_nsp'].map(lambda x: math.log(x))     
+        df_fuse['score_w_t5_nsp'] =  df_fuse['score_noexpand'].map(lambda x: math.log(x)) \
+                                + df_fuse['score_t5'].map(lambda x: math.log(x))    \
+                                + df_fuse['score_nsp'].map(lambda x: math.log(x))   
+    except:
+        print("error==>")
+        print(df_noexpand)
+        print(df_t5)
+        print(df_nsp)
+        continue  
 
     for col in ['score_noexpand','score_w_t5', 'score_w_nsp', 'score_w_t5_nsp']:
         if col not in acc.keys():

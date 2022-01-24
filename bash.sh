@@ -200,7 +200,7 @@ CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_summarization_no_trainer.py \
 
 
 
-
+ssh ah-pc@10.19.19.249
 
 
 
