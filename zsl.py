@@ -66,7 +66,7 @@ elif args.backbone == 'roberta':
     from transformers import AutoTokenizer, AutoModelWithLMHead
     tokenizer = AutoTokenizer.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True) 
     model = AutoModelWithLMHead.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True)
-    nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0, top_k = 2048 ) 
+    nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=len(gpus)-1, top_k = 2048 ) 
     id_token = {ix:token for token, ix in tokenizer.vocab.items()}
 
     stopwords = joblib.load("./utils/stopwords")
@@ -81,7 +81,7 @@ elif args.backbone == 'tars':
     tars = TARSClassifier.load("./resource/my-tars.pt")
 
 elif args.backbone == 'simi':
-    enc = encoder('cmlm-base', 'gpu')
+    enc = encoder('cmlm-base', 'cpu')
     embed_label = enc.infer(labels_candidates)
 
 #nsp model
