@@ -190,8 +190,8 @@ nohup python -u zsl.py --dsn ag    --backbone nspbert --gpu 4 > ./log_zsl/ag.nsp
 nohup python -u zsl.py --dsn yahoo --backbone nli --gpu 5 > ./log_zsl/yahoo.nli.log & 
 nohup python -u zsl.py --dsn ag    --backbone nli --gpu 6 > ./log_zsl/ag.nli.log & 
 
-nohup python -u zsl.py --dsn yahoo --backbone simi  > ./log_zsl/yahoo.simi.log & 
-nohup python -u zsl.py --dsn ag    --backbone simi   > ./log_zsl/ag.simi.log & 
+nohup python -u zsl.py --dsn yahoo --backbone simi --gpu 7 > ./log_zsl/yahoo.simi.log & 
+nohup python -u zsl.py --dsn ag    --backbone simi  --gpu 7 > ./log_zsl/ag.simi.log & 
 
 
 
@@ -244,7 +244,7 @@ CUDA_VISIBLE_DEVICES=7 nohup python -u ./run_summarization_no_trainer.py \
 
 
 ############################################################################################################################################
-ps aux|grep "zsl.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run_summarization_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
