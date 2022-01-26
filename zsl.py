@@ -19,7 +19,7 @@ parser.add_argument("--softmax_score", default=0, type=int)
 parser.add_argument("--topn", default=64, type=int)
 parser.add_argument("--backbone", default='nli', type=str, choices=['nli','tars','roberta','nspbert','simi'])
 parser.add_argument("--seed_sample", default=8, type=int)
-parser.add_argument("--gpu", default="3", type=str)
+parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
