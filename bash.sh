@@ -170,12 +170,6 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
 #             --model_type t5  --use_slow_tokenizer > ./food/t5_ingre_recipe.log &
 
 
-
-
-ssh ah-pc@10.19.19.249
-
-
-
 nohup bash run.sh ag   1 &
 nohup bash run.sh ag   5 &
 
@@ -190,8 +184,8 @@ nohup python -u zsl.py --dsn ag    --backbone nspbert --gpu 4 > ./log_zsl/ag.nsp
 nohup python -u zsl.py --dsn yahoo --backbone nli --gpu 5 > ./log_zsl/yahoo.nli.log & 
 nohup python -u zsl.py --dsn ag    --backbone nli --gpu 6 > ./log_zsl/ag.nli.log & 
 
-nohup python -u zsl.py --dsn yahoo --backbone simi --gpu 7 > ./log_zsl/yahoo.simi.log & 
-nohup python -u zsl.py --dsn ag    --backbone simi  --gpu 7 > ./log_zsl/ag.simi.log & 
+nohup python -u zsl.py --dsn yahoo --backbone simi  > ./log_zsl/yahoo.simi.log & 
+nohup python -u zsl.py --dsn ag    --backbone simi  > ./log_zsl/ag.simi.log & 
 
 
 
