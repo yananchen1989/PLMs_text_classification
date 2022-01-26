@@ -193,7 +193,7 @@ nohup python -u zsl.py --dsn ag    --backbone simi  > ./log_zsl/ag.simi.log &
 
 #  nat for zsl
 CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 12 \
+                --num_train_epochs 7 \
                 --train_file './finetunes/nat4gptzsl_train.txt' \
                 --validation_file './finetunes/nat4gptzsl_test.txt' \
                 --model_name_or_path gpt2 \
@@ -206,7 +206,7 @@ CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_clm_no_trainer.py \
 
 #  nat for generation
 CUDA_VISIBLE_DEVICES=7 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 12 \
+            --num_train_epochs 7 \
             --train_file "./finetunes/df_nat_train.csv" \
             --validation_file "./finetunes/df_nat_test.csv" \
             --model_name_or_path t5-base \

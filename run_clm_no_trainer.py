@@ -503,16 +503,20 @@ def main():
             logger.info("<==perplexity dropped==>")
             cur_perplexity = perplexity
             best_model = model
-        else:
-            perplexiy_ll.append(-1)
 
-        if sum(perplexiy_ll) <= -3:
-            break 
+            accelerator.wait_for_everyone()
+            unwrapped_model = accelerator.unwrap_model(model)
+            epoch_output_dir = "{}/epoch_{}_ppl_{}".format(args.output_dir, epoch, perplexity)
+            os.makedirs(epoch_output_dir, exist_ok=True)
+            unwrapped_model.save_pretrained(epoch_output_dir, save_function=accelerator.save)
+
+        # else:
+        #     perplexiy_ll.append(-1)
+
+        # if sum(perplexiy_ll) <= -3:
+        #     break 
             
-    if args.output_dir is not None:
-        accelerator.wait_for_everyone()
-        unwrapped_model = accelerator.unwrap_model(best_model)
-        unwrapped_model.save_pretrained(args.output_dir, save_function=accelerator.save)
+
 
 
 if __name__ == "__main__":

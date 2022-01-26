@@ -167,11 +167,6 @@ for fmark in df['fmark'].unique():
 
 
 
-from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache")
-gpt2 = GPT2LMHeadModel.from_pretrained('gpt2-large', cache_dir="./cache")
-
-
 
 
 
