@@ -40,35 +40,12 @@ done
 
 
 
-CUDA_VISIBLE_DEVICES=0 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 3 \
-                --train_file './df_nat_train.txt' \
-                --validation_file './df_nat_test.txt' \
-                --model_name_or_path gpt2 \
-                --per_device_train_batch_size 16 \
-                --per_device_eval_batch_size 16 \
-                --output_dir './gpt2_natcat' \
-                --preprocessing_num_workers 1 --overwrite_cache True \
-                --block_size 128  > ft_gpt_nat.log & 
 
 
 
 
-CUDA_VISIBLE_DEVICES=2 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 3 \
-            --train_file "df_nat_train.csv" \
-            --validation_file "df_nat_test.csv" \
-            --model_name_or_path t5-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
-            --output_dir './t5_natcat' \
-            --max_target_length 256 \
-            --val_max_target_length 256 \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column prefix \
-            --summary_column content \
-            --max_length 256 \
-            --model_type t5  --use_slow_tokenizer > ft_t5_nat.log &
+
+
 
 
 
@@ -108,10 +85,6 @@ CUDA_VISIBLE_DEVICES=4 nohup python -u ./run_summarization_no_trainer.py \
             --model_type t5  --use_slow_tokenizer > ft_t5_cc_title.log &
 
 
-
-
-
-
 CUDA_VISIBLE_DEVICES=5 nohup python -u ./run_clm_no_trainer.py \
                 --num_train_epochs 3 \
                 --train_file './df_cc_ners_train.txt' \
@@ -139,63 +112,62 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
 
 
 ########## food
-
-CUDA_VISIBLE_DEVICES=7 nohup python run_mlm_no_trainer.py \
-    --num_train_epochs 12 \
-    --train_file './food/indgredients_train.txt' \
-    --validation_file './food/indgredients_test.txt' \
-    --model_name_or_path bert-base-uncased \
-    --per_device_train_batch_size 4 \
-    --per_device_eval_batch_size 4 \
-    --output_dir './food/bert_indgredients' \
-    --preprocessing_num_workers 8 --overwrite_cache True \
-    --mlm_probability 0.15 \
-    --use_slow_tokenizer \
-         > ./food/bert_indgredients.log &
-
-
-
-CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 12 \
-                --train_file './food/recipe_train.txt' \
-                --validation_file './food/recipe_test.txt' \
-                --model_name_or_path gpt2 \
-                --per_device_train_batch_size 8 \
-                --per_device_eval_batch_size 8 \
-                --output_dir './food/gpt_recipe' \
-                --preprocessing_num_workers 8 --overwrite_cache True \
-                --block_size 128 > ./food/gpt_recipe.log &
-
-
-CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 12 \
-                --train_file './food/ingre_recipe_train.txt' \
-                --validation_file './food/ingre_recipe_test.txt' \
-                --model_name_or_path gpt2 \
-                --per_device_train_batch_size 8 \
-                --per_device_eval_batch_size 8 \
-                --output_dir './food/gpt_ingre_recipe' \
-                --preprocessing_num_workers 8 --overwrite_cache True \
-                --block_size 128 > ./food/gpt_ingre_recipe.log &
+# CUDA_VISIBLE_DEVICES=7 nohup python run_mlm_no_trainer.py \
+#     --num_train_epochs 12 \
+#     --train_file './food/indgredients_train.txt' \
+#     --validation_file './food/indgredients_test.txt' \
+#     --model_name_or_path bert-base-uncased \
+#     --per_device_train_batch_size 4 \
+#     --per_device_eval_batch_size 4 \
+#     --output_dir './food/bert_indgredients' \
+#     --preprocessing_num_workers 8 --overwrite_cache True \
+#     --mlm_probability 0.15 \
+#     --use_slow_tokenizer \
+#          > ./food/bert_indgredients.log &
 
 
 
+# CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
+#                 --num_train_epochs 12 \
+#                 --train_file './food/recipe_train.txt' \
+#                 --validation_file './food/recipe_test.txt' \
+#                 --model_name_or_path gpt2 \
+#                 --per_device_train_batch_size 8 \
+#                 --per_device_eval_batch_size 8 \
+#                 --output_dir './food/gpt_recipe' \
+#                 --preprocessing_num_workers 8 --overwrite_cache True \
+#                 --block_size 128 > ./food/gpt_recipe.log &
 
-CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 12 \
-            --train_file "./food/ic_csv_train.csv" \
-            --validation_file "./food/ic_csv_test.csv" \
-            --model_name_or_path t5-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
-            --output_dir './food/t5_ingre_recipe' \
-            --max_target_length 128 \
-            --val_max_target_length 128 \
-            --preprocessing_num_workers 8 --overwrite_cache True \
-            --text_column ingredient_content \
-            --summary_column recipe \
-            --max_length 128 \
-            --model_type t5  --use_slow_tokenizer > ./food/t5_ingre_recipe.log &
+
+# CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_clm_no_trainer.py \
+#                 --num_train_epochs 12 \
+#                 --train_file './food/ingre_recipe_train.txt' \
+#                 --validation_file './food/ingre_recipe_test.txt' \
+#                 --model_name_or_path gpt2 \
+#                 --per_device_train_batch_size 8 \
+#                 --per_device_eval_batch_size 8 \
+#                 --output_dir './food/gpt_ingre_recipe' \
+#                 --preprocessing_num_workers 8 --overwrite_cache True \
+#                 --block_size 128 > ./food/gpt_ingre_recipe.log &
+
+
+
+
+# CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_summarization_no_trainer.py \
+#             --num_train_epochs 12 \
+#             --train_file "./food/ic_csv_train.csv" \
+#             --validation_file "./food/ic_csv_test.csv" \
+#             --model_name_or_path t5-base \
+#             --per_device_train_batch_size 8 \
+#             --per_device_eval_batch_size 8 \
+#             --output_dir './food/t5_ingre_recipe' \
+#             --max_target_length 128 \
+#             --val_max_target_length 128 \
+#             --preprocessing_num_workers 8 --overwrite_cache True \
+#             --text_column ingredient_content \
+#             --summary_column recipe \
+#             --max_length 128 \
+#             --model_type t5  --use_slow_tokenizer > ./food/t5_ingre_recipe.log &
 
 
 
@@ -221,6 +193,49 @@ nohup python -u zsl.py --dsn ag    --backbone simi --gpu 5 > ./log_zsl/ag.simi.l
 
 nohup python -u zsl.py --dsn yahoo --backbone nli --gpu 6 > ./log_zsl/yahoo.nli.log & 
 nohup python -u zsl.py --dsn ag    --backbone nli --gpu 7 > ./log_zsl/ag.nli.log & 
+
+
+
+#  nat for zsl
+CUDA_VISIBLE_DEVICES=""  python -u ./run_clm_no_trainer.py \
+                --num_train_epochs 12 \
+                --train_file './finetunes/nat4gptzsl_train.txt' \
+                --validation_file './finetunes/nat4gptzsl_test.txt' \
+                --model_name_or_path gpt2 \
+                --per_device_train_batch_size 16 \
+                --per_device_eval_batch_size 16 \
+                --output_dir './finetunes/gpt_nat_zsl' \
+                --preprocessing_num_workers 8 --overwrite_cache True \
+                --block_size 128  > ./finetunes/ft_gpt_nat_zsl.log & 
+
+
+#  nat for generation
+CUDA_VISIBLE_DEVICES="" nohup python -u ./run_summarization_no_trainer.py \
+            --num_train_epochs 12 \
+            --train_file "./finetunes/df_nat_train.csv" \
+            --validation_file "./finetunes/df_nat_test.csv" \
+            --model_name_or_path t5-base \
+            --per_device_train_batch_size 16 \
+            --per_device_eval_batch_size 16 \
+            --output_dir './finetunes/t5_natcat' \
+            --max_target_length 128 \
+            --val_max_target_length 128 \
+            --preprocessing_num_workers 8 --overwrite_cache True \
+            --text_column prefix \
+            --summary_column content \
+            --max_length 128 \
+            --model_type t5  --use_slow_tokenizer > ./finetunes/ft_t5_nat.log &
+
+
+
+
+
+
+
+
+
+
+
 
 
 

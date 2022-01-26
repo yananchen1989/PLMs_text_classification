@@ -72,10 +72,6 @@ with open ("df_cc_title_test.txt", 'w') as f:
 
 #######natcat
 
-
-
-
-
 files = glob.glob("./torch_ds/natcat-data/*/train.tsv*.data")
 infos = []
 for file in files:
@@ -135,6 +131,26 @@ df_nat_train.to_csv("df_nat_train.csv", index=False)
 df_nat_test.to_csv("df_nat_test.csv", index=False)
 
 df_nat_train.sample(200000).to_csv("df_nat_train_sample.csv", index=False)
+
+
+
+
+
+df_nat_train = pd.read_csv("df_nat_train.csv")
+df_nat_test = pd.read_csv("df_nat_test.csv")
+
+
+
+with open("nat4gptzsl_train.txt", 'w') as f:
+    for ix, row in df_nat_train.iterrows():
+        line = row['content'] + '. ' + row['prefix'] + tokenizer.eos_token
+        f.write(line+'\n')
+
+
+with open("nat4gptzsl_test.txt", 'w') as f:
+    for ix, row in df_nat_test.iterrows():
+        line = row['content'] + '. ' + row['prefix'] + tokenizer.eos_token
+        f.write(line+'\n')
 
 
 

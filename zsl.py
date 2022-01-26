@@ -15,10 +15,11 @@ parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--expand", default='gpt', type=str)
+parser.add_argument("--softmax_score", default=0, type=int)
 parser.add_argument("--topn", default=64, type=int)
 parser.add_argument("--backbone", default='nli', type=str, choices=['nli','tars','roberta','nspbert','simi'])
 parser.add_argument("--seed_sample", default=8, type=int)
-parser.add_argument("--gpu", default="0", type=str)
+parser.add_argument("--gpu", default="3", type=str)
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -96,6 +97,7 @@ tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local
 print(tokenizer_t5)
 t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
 gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+
 
 
 
@@ -201,12 +203,13 @@ def para_ranking(content_ori):
     ls = {l:0 for l in labels_candidates}
 
     for sent in contents_para:
-        dfi = zsl_nspbert(sent)
+        dfi = ZSL_FUNC[args.backbone](sent)
         for ix, row in dfi.iterrows():
             ls[row['label']] += row['score_noexpand']
 
     #ls_sort = sorted(ls.items(), key=operator.itemgetter(1), reverse=True)
     df_t5 = pd.DataFrame(ls.items(), columns=['label','score_t5'])
+    df_t5['score_t5'] = df_t5['score_t5'] / len(contents_para)
     return df_t5
 
 
@@ -419,8 +422,8 @@ def zsl_nspbert(content):
     df_noexpand = pd.DataFrame(zip(labels_candidates, list(score_nsp)), columns=['label', 'score_noexpand'])
     return df_noexpand
 
-
 ZSL_FUNC = {'nli':zsl_nli, 'roberta':zsl_roberta, 'tars':zsl_tars, 'simi':zsl_simi, 'nspbert':zsl_nspbert}
+
 
 if args.expand == 'gpt':
     df_contents_arxiv = pd.read_csv("df_gen_{}.csv".format(args.dsn))
@@ -444,6 +447,13 @@ for ix, row in ds.df_test.sample(frac=1).reset_index().iterrows():
 
         df_fuse_ = pd.merge(df_noexpand, df_t5, on=['label'], how='inner')
         df_fuse  = pd.merge(df_fuse_, df_nsp, on=['label'], how='inner')
+
+
+        if args.softmax_score:
+            for col in df_fuse.columns:
+                if col.startswith('score_'):
+                    softmax_v = np.exp(df_fuse[col].values) / np.sum(np.exp(df_fuse[col].values))
+                    df_fuse[col] = softmax_v
 
         df_fuse['score_w_nsp'] =  df_fuse['score_noexpand'].map(lambda x: math.log(x)) \
                                 + df_fuse['score_nsp'].map(lambda x: math.log(x)) 
