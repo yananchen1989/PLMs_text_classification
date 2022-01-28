@@ -49,7 +49,14 @@ tokenizer_t5.convert_tokens_to_ids(['up'])
 
 
 
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
+tokenizer = AutoTokenizer.from_pretrained("bigscience/T0pp")
+model = AutoModelForSeq2SeqLM.from_pretrained("bigscience/T0pp")
+
+inputs = tokenizer.encode("Is this review positive or negative? Review: this is the best cast iron skillet you will ever buy", return_tensors="pt")
+outputs = model.generate(inputs)
+print(tokenizer.decode(outputs[0]))
 
 
 
@@ -164,6 +171,21 @@ df = pd.DataFrame(infos, columns=['fmark','acc_base','acc_aug'])
 for fmark in df['fmark'].unique():
     dfi = df.loc[df['fmark']==fmark]
     print( fmark, dfi.shape[0], dfi['acc_base'].mean(), dfi['acc_aug'].mean()) 
+
+
+
+from transformers import AutoTokenizer, AutoModelWithLMHead,pipeline
+tokenizer = AutoTokenizer.from_pretrained("SpanBERT/spanbert-large-cased",cache_dir="./cache",local_files_only=False) 
+model = AutoModelWithLMHead.from_pretrained("SpanBERT/spanbert-large-cased",cache_dir="./cache",local_files_only=False)
+nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1, top_k = 2048 ) 
+
+
+
+
+sent = "A premium is the amount of money that an individual or business pays to an insurance company for coverage.\
+ Health insurance premiums are typically paid monthly. Employers that offer an employer-sponsored health \
+ insurance plan typically cover part of the insurance premiums. If you need to insure yourself, \
+ you’ll be paying the full cost of the premiums."
 
 
 

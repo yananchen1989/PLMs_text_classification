@@ -31,6 +31,48 @@ de2en = torch.hub.load('pytorch/fairseq', 'transformer.wmt19.de-en',
 
 
 
+# convolution
+import keras
+from keras.models import Sequential
+from keras.layers import Conv2D
+# create model
+model = Sequential()
+model.add(Conv2D(512, (3,3), padding='same', activation='relu', input_shape=(256, 256, 3)))
+# summarize model
+model.summary()
+
+model = Sequential()
+model.add(Conv2D(512, (3,3), padding='valid', activation='relu', input_shape=(256, 256, 3)))
+# summarize model
+model.summary()
+
+
+title_ids = keras.layers.Input(shape=(100, ), name = 'title_ids')
+embedding = keras.layers.Embedding(10000, 300,  trainable=True)
+title_embed = embedding(title_ids) # (None, 100, 300)
+
+# (None, 98, 128)
+title_conv3 = keras.layers.Conv1D(128, kernel_size = 3, padding = "valid", kernel_initializer = "glorot_uniform")(title_embed)
+
+# (None, 99, 64)
+title_conv2 =  keras.layers.Conv1D(64, kernel_size = 2, padding = "valid", kernel_initializer = "glorot_uniform")(title_embed)
+
+# (None, 128)
+avg_pool_3 = keras.layers.GlobalAveragePooling1D()(title_conv3)
+
+# (None, 64)
+max_pool_2 = keras.layers.GlobalMaxPooling1D()(title_conv2)
+
+
+
+
+
+
+
+
+
+
+
 
 
 

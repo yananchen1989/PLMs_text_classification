@@ -578,10 +578,14 @@ def main():
 
         logger.info(result)
 
-    if args.output_dir is not None:
+    
         accelerator.wait_for_everyone()
         unwrapped_model = accelerator.unwrap_model(model)
-        unwrapped_model.save_pretrained(args.output_dir, save_function=accelerator.save)
+
+        epoch_output_dir = "{}/epoch_{}".format(args.output_dir, epoch)
+        os.makedirs(epoch_output_dir, exist_ok=True)
+        unwrapped_model.save_pretrained(epoch_output_dir, save_function=accelerator.save)
+
 
 
 if __name__ == "__main__":

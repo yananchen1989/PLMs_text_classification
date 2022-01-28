@@ -184,8 +184,8 @@ nohup python -u zsl.py --dsn ag    --backbone nspbert --gpu 4 > ./log_zsl/ag.nsp
 nohup python -u zsl.py --dsn yahoo --backbone nli --gpu 5 > ./log_zsl/yahoo.nli.log & 
 nohup python -u zsl.py --dsn ag    --backbone nli --gpu 6 > ./log_zsl/ag.nli.log & 
 
-nohup python -u zsl.py --dsn yahoo --backbone simi  > ./log_zsl/yahoo.simi.log & 
-nohup python -u zsl.py --dsn ag    --backbone simi  > ./log_zsl/ag.simi.log & 
+nohup python -u zsl.py --dsn yahoo --backbone simi --gpu 4 > ./log_zsl/yahoo.simi.log & 
+nohup python -u zsl.py --dsn ag    --backbone simi --gpu 7 > ./log_zsl/ag.simi.log & 
 
 
 
@@ -193,7 +193,7 @@ nohup python -u zsl.py --dsn ag    --backbone simi  > ./log_zsl/ag.simi.log &
 
 #  nat for zsl
 CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 7 \
+                --num_train_epochs 12 \
                 --train_file './finetunes/nat4gptzsl_train.txt' \
                 --validation_file './finetunes/nat4gptzsl_test.txt' \
                 --model_name_or_path gpt2 \
@@ -205,7 +205,7 @@ CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_clm_no_trainer.py \
 
 
 #  nat for generation
-CUDA_VISIBLE_DEVICES=7 nohup python -u ./run_summarization_no_trainer.py \
+CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 7 \
             --train_file "./finetunes/df_nat_train.csv" \
             --validation_file "./finetunes/df_nat_test.csv" \
@@ -236,9 +236,8 @@ CUDA_VISIBLE_DEVICES=7 nohup python -u ./run_summarization_no_trainer.py \
 
 
 
-
 ############################################################################################################################################
-ps aux|grep "run_summarization_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run_clm_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
