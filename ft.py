@@ -125,12 +125,11 @@ with open ("df_nat_train_sample.txt", 'w') as f:
 
 df_nat['prefix'] = df_nat['label'].map(lambda x: "This document is about {}".format(x))
 
-df_nat_train, df_nat_test =  train_test_split(df_nat[['prefix', 'content']], test_size=0.001)
+df_nat_train, df_nat_test =  train_test_split(df_nat[['label', 'content']], test_size=0.001)
 
-df_nat_train.to_csv("df_nat_train.csv", index=False)
-df_nat_test.to_csv("df_nat_test.csv", index=False)
+df_nat_train.to_csv("./finetunes/nat4zsl_train.csv", index=False)
+df_nat_test.to_csv("./finetunes/nat4zsl_test.csv", index=False)
 
-df_nat_train.sample(200000).to_csv("df_nat_train_sample.csv", index=False)
 
 
 
@@ -155,5 +154,5 @@ with open("nat4gptzsl_test.txt", 'w') as f:
 
 
 
-
+df_nat_train = pd.read_csv("df_nat_train.csv")
 

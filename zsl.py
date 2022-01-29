@@ -481,7 +481,7 @@ for ix, row in ds.df_test.sample(frac=1).reset_index().iterrows():
         else:
             acc[col].append(0)
 
-    if ix % 64 == 0 and ix > 0:
+    if (ix % 64 == 0 and ix > 0) or (ix == ds.df_test.shape[0]-1):
         print(ix)
         for col in ['score_noexpand','score_w_t5', 'score_w_nsp', 'score_w_t5_nsp']:
             print(col, round(np.array(acc[col]).mean(), 4))

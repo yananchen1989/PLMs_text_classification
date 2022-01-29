@@ -8,24 +8,40 @@ import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 import joblib,gensim,transformers
 assert gensim.__version__ == '4.1.2'
-os.environ['CUDA_VISIBLE_DEVICES'] = ''
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 from transformers import AutoModelForCausalLM, AutoTokenizer, top_k_top_p_filtering
-import torch
+import torch,operator
 from torch import nn
 from transformers import pipeline
 
 
 
 
-from transformers import T5Tokenizer, AutoModelWithLMHead
-tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-print(tokenizer_t5)
-t5 = AutoModelWithLMHead.from_pretrained("./finetunes/t5_natcat")    
-gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=-1)
+# from transformers import T5Tokenizer, AutoModelWithLMHead
+# tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+# print(tokenizer_t5)
+# t5 = AutoModelWithLMHead.from_pretrained("./finetunes/t5_natcat")    
+# gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=-1)
 
 
 
-import numpy as np 
+from transformers import GPT2LMHeadModel, GPT2TokenizerFast
+
+import torch,transformers
+device = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+
+model = GPT2LMHeadModel.from_pretrained("./finetunes/gpt_nat_zsl/epoch_1_ppl_11.918800044184868").to(device)
+
+#model = GPT2LMHeadModel.from_pretrained("./finetunes/gpt2_natcat").to(device)
+
+tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+
+# model.trainable = False
+# model.config.pad_token_id=50256
+# gen_nlp  = transformers.pipeline("text-generation", model=model, tokenizer=tokenizer, device=0, return_full_text=False)
+
+
+
 from transformers.file_utils import cached_path
 gram_diff = joblib.load("gram_diff___{}".format('ag'))
 model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/GoogleNews-vectors-negative300.bin',binary=True)
@@ -103,7 +119,7 @@ def get_seed_words(topk):
     return label_expands_auto
 
 
-label_expands_auto = get_seed_words(128)
+label_expands_auto = get_seed_words(32)
 print(label_expands_auto)
 
 stopwords = joblib.load("./utils/stopwords")
@@ -111,36 +127,55 @@ stopwords = set(stopwords)
 
 id_token = {ix:token for token, ix in tokenizer.vocab.items()}
 
-sent = "FDA gives green light to migraine prevention tool. This News is about "
-
-sent = "This document is about HIV vaccine health:"
-result_gpt = gen_nlp_gpt2(sent, max_length=64, \
-                                                    do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                                    repetition_penalty=1.2, num_return_sequences= 16,\
-                                                    clean_up_tokenization_spaces=True)
 
 
 
 
-import os 
-os.environ['CUDA_VISIBLE_DEVICES'] = ''
-from transformers import GPT2LMHeadModel, GPT2TokenizerFast
-
-device = 'cpu'
-model = GPT2LMHeadModel.from_pretrained("./finetunes/gpt2_natcat", cache_dir="./cache", local_files_only=True).to(device)
-tokenizer = GPT2TokenizerFast.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
 
 
-import torch
-from tqdm import tqdm
 
-def get_ppl(sent):
+from utils.load_data import * 
+
+ds = load_data(dataset='yahoo', samplecnt= 8)
+labels_candidates = ds.df_train['label_name'].unique().tolist()
+
+
+def gpt4zsl_pred(sent):
+    prompt = "{}. This document is about".format(remove_str(sent))
+    inputs = tokenizer(prompt, \
+                     truncation=True, max_length=64, return_tensors="pt").to(device)
+
+    output_sequences = model.generate(
+            input_ids = inputs['input_ids'],
+            attention_mask = inputs['attention_mask'] ,
+            max_length= 54,
+            temperature=1,
+            top_k=0,
+            top_p=0.99,
+            repetition_penalty=1,
+            do_sample=True,
+            num_return_sequences=64
+        )
+
+    preds = []
+    for output_ids in output_sequences:
+        #syn_sent = tokenizer.batch_decode(output_ids[inputs['input_ids'][0].shape[0]:], clean_up_tokenization_spaces=True, skip_special_tokens=True)
+        
+        syn_sent = tokenizer.batch_decode(output_ids, clean_up_tokenization_spaces=True, skip_special_tokens=True)
+        
+        preds.append(''.join(syn_sent).strip().split('This document is about')[-1].strip() )
+    return preds 
+
+def get_ppl(sent, ori_sent):
+    encodings_ori = tokenizer(ori_sent, return_tensors='pt')
+    ori_tokens_cnt = encodings_ori.input_ids.size(1)
+
     encodings = tokenizer(sent, return_tensors='pt')
 
     max_length = model.config.n_positions
     stride = 1
     nlls = []
-    for i in tqdm(range(1, encodings.input_ids.size(1), stride)):
+    for i in range(1, encodings.input_ids.size(1), stride):
         begin_loc = max(i + stride - max_length, 0)
         end_loc = min(i + stride, encodings.input_ids.size(1))
         trg_len = end_loc - i    # may be different from stride on last loop
@@ -156,25 +191,48 @@ def get_ppl(sent):
 
         nlls.append(neg_log_likelihood)
 
-    ppl = torch.exp(torch.stack(nlls).sum() / end_loc)
+    ppl = torch.exp(torch.stack(nlls)[-ori_tokens_cnt:].sum() / end_loc)
     #print(ppl.numpy().reshape(-1)[0])
-    return ppl.numpy().reshape(-1)[0]
+    return ppl.cpu().numpy().reshape(-1)[0]
 
 
-from utils.load_data import * 
 
-ds = load_data(dataset='ag', samplecnt= 8)
-labels_candidates = ds.df_train['label_name'].unique().tolist()
+for ix, row in ds.df_test.sample(frac=1).iterrows():
+    torch.cuda.empty_cache() 
+    preds = gpt4zsl_pred(remove_str(row['content']))
+    print(row['label_name'])
+    print(preds)
+    print('\n')
+    # embed_pred = enc.infer(preds)
+    # simis = cosine_similarity(embed_label, embed_pred)
 
+    # df_simi = pd.DataFrame( zip(labels_candidates, simis.mean(axis=1)), columns=['label', 'simi'])
 
-for ix, row in ds.df_test.sample(frac=1).iterrows(): 
+    # pred_label = df_simi.sort_values(by=['simi'], ascending=False).head(1)['label'].tolist()[0]
+    # print(row['label_name'], pred_label)
 
-    print(row['label_name']) 
+    infos = []
     for l in labels_candidates:
-        sent = "This document is about {} : ".format(l) + row['content']
-        ppl = get_ppl(sent)  
-        print(l, ppl)
-        print()
+        #seed_words = random.sample(list(label_expands_auto[l]), 16)
+
+        #template = "{}.  This document is about {}".format(remove_str(row['content']), ' and '.join(seed_words))
+        template = "This document is about {} : {}".format(l, remove_str(row['content']) )
+        ppl = get_ppl(template, remove_str(row['content']) )
+
+        infos.append((l, ppl ))
+        #print(l, ppl)
+    dfi = pd.DataFrame(infos, columns=['label','ppl'])
+    pred_label = dfi.sort_values(['ppl']).head(1)['label'].tolist()[0]
+    print(row['label_name'])
+    print( dfi.sort_values(['ppl']))
+    print()
+
+
+
+
+
+
+
 
 
 

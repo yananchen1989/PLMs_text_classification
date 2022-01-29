@@ -170,19 +170,19 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
 #             --model_type t5  --use_slow_tokenizer > ./food/t5_ingre_recipe.log &
 
 
-nohup bash run.sh ag   1 &
-nohup bash run.sh ag   5 &
-
 
 
 nohup python -u zsl.py --dsn yahoo --backbone roberta --gpu 0 > ./log_zsl/yahoo.roberta.log & 
-nohup python -u zsl.py --dsn ag    --backbone roberta --gpu 2 > ./log_zsl/ag.roberta.log & 
+nohup python -u zsl.py --dsn ag    --backbone roberta --softmax_score 1 --gpu 2 > ./log_zsl/ag.roberta.log & 
 
 nohup python -u zsl.py --dsn yahoo --backbone nspbert --gpu 3 > ./log_zsl/yahoo.nspbert.log & 
 nohup python -u zsl.py --dsn ag    --backbone nspbert --gpu 4 > ./log_zsl/ag.nspbert.log & 
 
 nohup python -u zsl.py --dsn yahoo --backbone nli --gpu 5 > ./log_zsl/yahoo.nli.log & 
-nohup python -u zsl.py --dsn ag    --backbone nli --gpu 6 > ./log_zsl/ag.nli.log & 
+nohup python -u zsl.py --dsn ag    --backbone nli --softmax_score 1 --gpu 7 > ./log_zsl/ag.nli.softmax.log & 
+
+
+
 
 nohup python -u zsl.py --dsn yahoo --backbone simi --gpu 4 > ./log_zsl/yahoo.simi.log & 
 nohup python -u zsl.py --dsn ag    --backbone simi --gpu 7 > ./log_zsl/ag.simi.log & 
@@ -220,9 +220,6 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_summarization_no_trainer.py \
             --summary_column content \
             --max_length 128 \
             --model_type t5  --use_slow_tokenizer > ./finetunes/ft_t5_nat.log &
-
-
-
 
 
 
