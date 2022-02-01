@@ -64,8 +64,19 @@ print(tokenizer.decode(outputs[0]))
 
 
 
+from transformers import pipeline
+from transformers import T5Tokenizer, AutoModelWithLMHead
+tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base")
+print(tokenizer_t5)
+t5 = AutoModelWithLMHead.from_pretrained("t5-base")    
+gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=-1)
 
-
+sent = "Why BlackBerry ( BBRY ) Stock Is Up Today"
+result_gpt = gen_nlp_t5([sent], max_length=32, \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= 16,\
+                                        clean_up_tokenization_spaces=True)
+print(result_gpt)
 
 
 
@@ -81,7 +92,7 @@ next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
 
 
 
-
+with open('arxiv-metadata-oai-snapshot.json', 'r') as f:
 
 
 

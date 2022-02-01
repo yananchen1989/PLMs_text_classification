@@ -192,4 +192,5 @@ for epoch in range(25):
 
     generated_sentence, groundtruth_sentence = evaluate(prompt_model, test_dataloader)
     print(random.sample(generated_sentence, 16))
+    print('\n\n')
 

@@ -135,6 +135,14 @@ df_nat_test.to_csv("./finetunes/nat4zsl_test.csv", index=False)
 
 
 
+
+
+
+
+
+
+
+
 df_nat_train = pd.read_csv("df_nat_train.csv")
 df_nat_test = pd.read_csv("df_nat_test.csv")
 
@@ -154,5 +162,37 @@ with open("nat4gptzsl_test.txt", 'w') as f:
 
 
 
-df_nat_train = pd.read_csv("df_nat_train.csv")
+df_nat_test = pd.read_csv("./finetunes/df_nat_test.csv")
+
+
+
+
+import fasttext
+model = fasttext.load_model('lid.176.bin')
+
+cc = 0
+for text in df_nat_test['content'].tolist():
+    preds = model.predict(text, k=5)
+    if (not preds[0][0].endswith("__en")) or (preds[0][0].endswith("__en") and preds[1][0] <= 0.5):
+        print(text)
+        cc += 1
+print(cc)
+
+
+
+
+'''
+t5:
+t5_natcat     This document is about [] [] [] ==> content
+t5_ners_cc     [] [] [] ==> content
+
+
+'''
+
+
+
+
+
+
+
 
