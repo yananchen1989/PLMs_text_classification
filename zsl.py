@@ -14,12 +14,14 @@ parser.add_argument("--dsn", default="ag", type=str)
 parser.add_argument("--fbs_gpt", default=256, type=int)
 parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
-parser.add_argument("--expand", default='gpt', type=str)
+parser.add_argument("--expand", default='gpt_filter', type=str)
 parser.add_argument("--softmax_score", default=0, type=int)
 parser.add_argument("--topn", default=64, type=int)
 parser.add_argument("--backbone", default='nli', type=str, choices=['nli','tars','roberta','nspbert','simi'])
 parser.add_argument("--seed_sample", default=8, type=int)
 parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--param", default='t5', type=str)
+
 args = parser.parse_args()
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -91,17 +93,13 @@ bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', ca
 bert_nsp.to(device0)
 
 
-#if args.param == 't5':
-from transformers import T5Tokenizer, AutoModelWithLMHead
-tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-print(tokenizer_t5)
-t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
-gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
+if args.param == 't5':
+    from transformers import T5Tokenizer, AutoModelWithLMHead
+    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    print(tokenizer_t5)
+    t5 = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)    
+    gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=len(gpus)-1)
 
-
-
-
-'''
 elif args.param == 'bt':
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
     tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
@@ -184,9 +182,9 @@ def para_t5paws(content):
         if line != content:
             results.append(line)
     return results
-'''
 
-#para_func = {'t5':para_t5, 'bt':para_bt, 'bart':para_bart, 'peg':para_peg, 't5paws':para_t5paws}
+
+
 def para_t5(content):
     dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'yahoo':128, 'nyt':128, 'amazon2':128, 'yelp2':128, 'imdb':128}
     result_gpt = gen_nlp_t5([content], max_length=dsn_maxlen[args.dsn], \
@@ -197,8 +195,10 @@ def para_t5(content):
     ori_gen_contents = [ii['generated_text'] for ii in result_gpt if ii['generated_text']] 
     return ori_gen_contents
 
+para_func = {'t5':para_t5, 'bt':para_bt, 'bart':para_bart, 'peg':para_peg, 't5paws':para_t5paws}
+
 def para_ranking(content_ori):
-    contents_para = para_t5(content_ori)
+    contents_para = para_func[args.param](content_ori)
 
     ls = {l:0 for l in labels_candidates}
 
@@ -233,8 +233,9 @@ def continuation_ranking(content_ori):
     return df_nsp
 
 '''
+import joblib
 from transformers.file_utils import cached_path
-gram_diff = joblib.load("gram_diff___{}".format(args.dsn))
+gram_diff = joblib.load("gram_diff___{}".format('ag'))
 model_w2v = gensim.models.KeyedVectors.load_word2vec_format('./resource/GoogleNews-vectors-negative300.bin',binary=True)
 
 BAG_OF_WORDS_ARCHIVE_MAP = {
@@ -291,7 +292,7 @@ def get_seed_words():
                 simi = model_w2v.similarity(l.lower(), j[0])
             if simi >= 0.1:
                 label_expands_auto[l].add(j[0])
-            if len(label_expands_auto[l]) == args.topn:
+            if len(label_expands_auto[l]) == 64:
                 break 
         if ' and ' in l:
             label_expands_auto[l].add(l.split('and')[0].strip())
@@ -314,6 +315,7 @@ label_expands_auto = get_seed_words()
 print(label_expands_auto)
 
 '''
+
 '''
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
 tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
@@ -334,7 +336,7 @@ def gen_gpt_expansions():
         
         if args.expand == 'seeds':
             prompts = ["This is {} News: ".format(" ".join(random.sample(label_expands_auto[label], args.seed_sample))) for label in labels_candidates] # gpt-seed words
-        elif args.expand == 'gpt':
+        elif args.expand == 'gpt_vanilla':
             prompts = ["This is {} News: ".format(label) for label in labels_candidates] # gpt
         #prompts = ["Links In {} : ".format(label) for label in labels_candidates] # ctrl
         result_gpt = gen_nlp(prompts, max_length=128, \
@@ -422,10 +424,11 @@ def zsl_nspbert(content):
     df_noexpand = pd.DataFrame(zip(labels_candidates, list(score_nsp)), columns=['label', 'score_noexpand'])
     return df_noexpand
 
+
 ZSL_FUNC = {'nli':zsl_nli, 'roberta':zsl_roberta, 'tars':zsl_tars, 'simi':zsl_simi, 'nspbert':zsl_nspbert}
 
 
-if args.expand == 'gpt':
+if args.expand == 'gpt_filter':
     df_contents_arxiv = pd.read_csv("df_gen_{}.csv".format(args.dsn))
 elif args.expand == 'pplm':
     df_contents_arxiv = pd.read_csv("df_gen_pplm_{}.csv".format(args.dsn))

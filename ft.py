@@ -3,43 +3,50 @@ import glob
 from sklearn.model_selection import train_test_split
 from utils.load_data import * 
 
+#ds = load_data(dataset='ag', samplecnt= -1)
 
+# cc
 df = pd.read_csv("./torch_ds/df_cc_news_ners.csv", lineterminator='\n')
-
-
-
 dfl = df.loc[(~df['ners'].isnull()) & (df['ners'].str.contains('<=>')) & (~df['title'].isnull()) ]
 
+dfl['ners'] = dfl['ners'].map(lambda x:  ' '.join(x.split("<=>")).lower() )
+
+dfl['title'] = dfl['title'].map(lambda x: remove_str(x.lower()) )
 
 
-dfl['ners'] = dfl['ners'].map(lambda x:  "This document is about {}".format(', '.join(x.split("<=>"))))
-
-df_cc_train, df_cc_test =  train_test_split(dfl, test_size=0.02)
+dfl['content'] = dfl['content'].map(lambda x: remove_str(x) )
 
 
-df_cc_train[['ners', 'content']].to_csv("df_cc_ners_train.csv", index=False)
-df_cc_test[['ners', 'content']].to_csv("df_cc_ners_test.csv", index=False)
+dfl.loc[dfl['content'].isnull()]
+
+df_cc_train, df_cc_test =  train_test_split(dfl, test_size=0.03)
 
 
-df_cc_train[['title', 'content']].to_csv("df_cc_title_train.csv", index=False)
-df_cc_test[['title', 'content']].to_csv("df_cc_title_test.csv", index=False)
+df_cc_train.to_csv("./finetunes/df_cc_train.csv", index=False)
+df_cc_test.to_csv("./finetunes/df_cc_test.csv", index=False)
+
+# ners ===> content
+# title ===> content
+
+# import fasttext
+# model = fasttext.load_model('lid.176.bin')
+
+# cc = 0
+# for text in df_cc_test['content'].tolist():
+#     preds = model.predict(text, k=5)
+#     if (not preds[0][0].endswith("__en")) or (preds[0][0].endswith("__en") and preds[1][0] <= 0.5):
+#         print(text)
+#         cc += 1
+# print(cc)
 
 
 
-from datasets import load_dataset
-
-
-data_files = {}
-
-data_files["train"] = './df_cc_ners_train.txt'
-data_files["validation"] = './df_cc_ners_test.txt'
-
-extension = "text"
-raw_datasets = load_dataset(extension, data_files=data_files)
 
 
 
 
+
+'''
 with open ("df_cc_ners_train.txt", 'w') as f:
     for ix, row in df_cc_train.iterrows():
         text = row['ners'] + ': '+ remove_str(row['content'])
@@ -62,9 +69,7 @@ with open ("df_cc_title_test.txt", 'w') as f:
     for ix, row in df_cc_test.iterrows():
         text = "This document is about {} :".format(row['title']) + remove_str(row['content']) 
         f.write(text + '\n')
-
-
-
+'''
 
 
 
@@ -87,13 +92,21 @@ df_nat = pd.DataFrame(infos, columns=['label'] + ['neg_label_{}'.format(i) for i
 
 df_nat = df_nat.loc[(~df_nat['content'].isnull()) & (df_nat['content']!='')]
 df_nat['content'] = df_nat['content'].map(lambda x: remove_str(x))
-
+df_nat['label'] = df_nat['label'].map(lambda x: x.replace('_',' ').lower())
 
 print(df_nat.loc[df_nat['content'].isnull()].shape[0])
 
 
+df_nat_train, df_nat_test =  train_test_split(df_nat, test_size=0.002)
+
+df_nat_train.to_csv("./finetunes/df_nat_train.csv", index=False)
+df_nat_test.to_csv("./finetunes/df_nat_test.csv", index=False)
+
+# label ===> content
 
 ###### for gpt
+
+'''
 df_nat['text'] = df_nat['label'].map(lambda x: "This document is about {} : ".format(x)) \
                     + df_nat['content']  
 
@@ -115,20 +128,7 @@ with open ("df_nat_train_sample.txt", 'w') as f:
     for line in df_nat_train.sample(200000)['text'].tolist():
         f.write(remove_str(line) + '\n')
 
-
-
-
-
-####### for t5
-
-
-
-df_nat['prefix'] = df_nat['label'].map(lambda x: "This document is about {}".format(x))
-
-df_nat_train, df_nat_test =  train_test_split(df_nat[['label', 'content']], test_size=0.001)
-
-df_nat_train.to_csv("./finetunes/nat4zsl_train.csv", index=False)
-df_nat_test.to_csv("./finetunes/nat4zsl_test.csv", index=False)
+'''
 
 
 
@@ -141,6 +141,8 @@ df_nat_test.to_csv("./finetunes/nat4zsl_test.csv", index=False)
 
 
 
+
+'''
 
 
 df_nat_train = pd.read_csv("df_nat_train.csv")
@@ -161,33 +163,9 @@ with open("nat4gptzsl_test.txt", 'w') as f:
 
 
 
-
-df_nat_test = pd.read_csv("./finetunes/df_nat_test.csv")
-
-
-
-
-import fasttext
-model = fasttext.load_model('lid.176.bin')
-
-cc = 0
-for text in df_nat_test['content'].tolist():
-    preds = model.predict(text, k=5)
-    if (not preds[0][0].endswith("__en")) or (preds[0][0].endswith("__en") and preds[1][0] <= 0.5):
-        print(text)
-        cc += 1
-print(cc)
-
-
-
-
 '''
-t5:
-t5_natcat     This document is about [] [] [] ==> content
-t5_ners_cc     [] [] [] ==> content
 
 
-'''
 
 
 

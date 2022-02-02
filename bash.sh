@@ -43,48 +43,6 @@ done
 
 
 
-
-
-
-
-
-
-
-CUDA_VISIBLE_DEVICES=4 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 3 \
-            --train_file "df_cc_ners_train.csv" \
-            --validation_file "df_cc_ners_test.csv" \
-            --model_name_or_path t5-base \
-            --per_device_train_batch_size 4 \
-            --per_device_eval_batch_size 4 \
-            --output_dir './t5_ners_cc' \
-            --max_target_length 100 \
-            --val_max_target_length 100 \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column ners \
-            --summary_column content \
-            --max_length 100 \
-            --model_type t5  --use_slow_tokenizer > ft_t5_cc_ners.log &
-
-
-
-CUDA_VISIBLE_DEVICES=4 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 3 \
-            --train_file "df_cc_title_train.csv" \
-            --validation_file "df_cc_title_test.csv" \
-            --model_name_or_path t5-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
-            --output_dir './t5_title_cc' \
-            --max_target_length 128 \
-            --val_max_target_length 128 \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column title \
-            --summary_column content \
-            --max_length 128 \
-            --model_type t5  --use_slow_tokenizer > ft_t5_cc_title.log &
-
-
 CUDA_VISIBLE_DEVICES=5 nohup python -u ./run_clm_no_trainer.py \
                 --num_train_epochs 3 \
                 --train_file './df_cc_ners_train.txt' \
@@ -169,21 +127,24 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
 #             --max_length 128 \
 #             --model_type t5  --use_slow_tokenizer > ./food/t5_ingre_recipe.log &
 
-ssh-copy-id 
+#nohup python -u zsl.py --dsn yahoo --backbone roberta  > ./log_zsl/yahoo.roberta.log & 
+nohup python -u zsl.py --dsn ag    --backbone roberta --expand pplm --gpu 0 > ./log_zsl/ag.roberta.pplm.log & 
+
+#nohup python -u zsl.py --dsn yahoo --backbone nspbert  --gpu 1 > ./log_zsl/yahoo.nspbert.softmax.log & 
+nohup python -u zsl.py --dsn ag    --backbone nspbert --expand pplm --gpu 1   > ./log_zsl/ag.nspbert.pplm.log & 
+
+#nohup python -u zsl.py --dsn yahoo --backbone nli --softmax_score 1  --gpu 5 > ./log_zsl/yahoo.nli.softmax.log & 
+nohup python -u zsl.py --dsn ag    --backbone nli --expand pplm --gpu 5  > ./log_zsl/ag.nli.pplm.log & 
+
+#nohup python -u zsl.py --dsn yahoo --backbone simi --gpu 4 > ./log_zsl/yahoo.simi.log & 
+nohup python -u zsl.py --dsn ag    --backbone simi --expand pplm --gpu 7 > ./log_zsl/ag.simi.pplm.log & 
 
 
-nohup python -u zsl.py --dsn yahoo --backbone roberta --gpu 0 > ./log_zsl/yahoo.roberta.log & 
-nohup python -u zsl.py --dsn ag    --backbone roberta --softmax_score 1 --gpu 2 > ./log_zsl/ag.roberta.softmax.log & 
 
-nohup python -u zsl.py --dsn yahoo --backbone nspbert --gpu 3 > ./log_zsl/yahoo.nspbert.log & 
-nohup python -u zsl.py --dsn ag    --backbone nspbert --softmax_score 1  --gpu 1  > ./log_zsl/ag.nspbert.softmax.log & 
-
-nohup python -u zsl.py --dsn yahoo --backbone nli --softmax_score 1  --gpu 5 > ./log_zsl/yahoo.nli.softmax.log & 
-nohup python -u zsl.py --dsn ag    --backbone nli --softmax_score 1  > ./log_zsl/ag.nli.softmax.log & 
+nohup python -u zsl.py --dsn ag    --backbone nspbert --param t5paws --gpu 2   > ./log_zsl/ag.nspbert.t5paws.log & 
+nohup python -u zsl.py --dsn yahoo --backbone nspbert --param t5paws --gpu 4   > ./log_zsl/yahoo.nspbert.t5paws.log & 
 
 
-nohup python -u zsl.py --dsn yahoo --backbone simi --gpu 4 > ./log_zsl/yahoo.simi.log & 
-nohup python -u zsl.py --dsn ag    --backbone simi --softmax_score 1 --gpu 7 > ./log_zsl/ag.simi.softmax.log & 
 
 
 
@@ -192,19 +153,19 @@ CUDA_VISIBLE_DEVICES=2 nohup python -u openprompt_gen_syns.py > openprompt_gen_s
 
 
 #  nat for zsl
-CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 12 \
-                --train_file './finetunes/nat4gptzsl_train.txt' \
-                --validation_file './finetunes/nat4gptzsl_test.txt' \
-                --model_name_or_path gpt2 \
-                --per_device_train_batch_size 16 \
-                --per_device_eval_batch_size 16 \
-                --output_dir './finetunes/gpt_nat_zsl' \
-                --preprocessing_num_workers 8 --overwrite_cache True \
-                --block_size 128  > ./finetunes/ft_gpt_nat_zsl.log & 
+# CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_clm_no_trainer.py \
+#                 --num_train_epochs 12 \
+#                 --train_file './finetunes/nat4gptzsl_train.txt' \
+#                 --validation_file './finetunes/nat4gptzsl_test.txt' \
+#                 --model_name_or_path gpt2 \
+#                 --per_device_train_batch_size 16 \
+#                 --per_device_eval_batch_size 16 \
+#                 --output_dir './finetunes/gpt_nat_zsl' \
+#                 --preprocessing_num_workers 8 --overwrite_cache True \
+#                 --block_size 128  > ./finetunes/ft_gpt_nat_zsl.log & 
 
 
-#  nat for generation
+# t5 nat label ==> content
 CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 7 \
             --train_file "./finetunes/df_nat_train.csv" \
@@ -215,23 +176,88 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_summarization_no_trainer.py \
             --output_dir './finetunes/t5_natcat' \
             --max_target_length 128 \
             --val_max_target_length 128 \
-            --preprocessing_num_workers 8 --overwrite_cache True \
-            --text_column prefix \
+            --preprocessing_num_workers 16 --overwrite_cache True \
+            --text_column label \
             --summary_column content \
             --max_length 128 \
             --model_type t5  --use_slow_tokenizer > ./finetunes/ft_t5_nat.log &
 
 
+# bart cc title ===> content
+CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_summarization_no_trainer.py \
+            --num_train_epochs 7 \
+            --train_file "./finetunes/df_cc_train.csv" \
+            --validation_file "./finetunes/df_cc_test.csv" \
+            --model_name_or_path facebook/bart-base \
+            --per_device_train_batch_size 8 \
+            --per_device_eval_batch_size 8 \
+            --output_dir './finetunes/bart_cc_title' \
+            --max_target_length 128 \
+            --val_max_target_length 128 \
+            --preprocessing_num_workers 16 --overwrite_cache True \
+            --text_column title \
+            --summary_column content \
+            --max_length 128 \
+            --model_type bart  --use_slow_tokenizer > ./finetunes/ft_bart_cc_title.log &
+
+
+# t5 cc title ===> content
+CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_summarization_no_trainer.py \
+            --num_train_epochs 7 \
+            --train_file "./finetunes/df_cc_train.csv" \
+            --validation_file "./finetunes/df_cc_test.csv" \
+            --model_name_or_path t5-base \
+            --per_device_train_batch_size 8 \
+            --per_device_eval_batch_size 8 \
+            --output_dir './finetunes/t5_cc_title' \
+            --max_target_length 128 \
+            --val_max_target_length 128 \
+            --preprocessing_num_workers 16 --overwrite_cache True \
+            --text_column title \
+            --summary_column content \
+            --max_length 128 \
+            --model_type t5  --use_slow_tokenizer > ./finetunes/ft_t5_cc_title.log &
 
 
 
+
+
+
+
+
+
+
+
+
+#################################################### mist ########################################################################################
+python -c "import torch;print(torch.__version__)"
+python -c "import transformers;print(transformers.__version__)"
+python -c "import tensorflow;print(tensorflow.__version__)"
+python -c "import datasets;print(datasets.__version__)"
+
+python -c "import tensorflow_hub;print(tensorflow_hub.__version__)"
+python -c "import tensorflow_text;print(tensorflow_text.__version__)"
 
 
 
 
 module load anaconda3
+conda create -n env python=3.8
 source activate env
 
+conda install -c /scinet/mist/ibm/open-ce tensorflow==2.7.0 cudatoolkit=11.2
+
+conda install -c /scinet/mist/ibm/open-ce nltk
+
+
+conda install -c /scinet/mist/ibm/open-ce pytorch=1.10.1 cudatoolkit=11.2
+conda install -c /scinet/mist/ibm/open-ce transformers==4.9.2
+
+conda install -c /scinet/mist/ibm/open-ce tensorflow_text
+conda install -c /scinet/mist/ibm/open-ce tensorflow_hub
+
+
+conda env remove --name myenv
 
 
 ############################################################################################################################################

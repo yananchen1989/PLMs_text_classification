@@ -66,21 +66,36 @@ print(tokenizer.decode(outputs[0]))
 
 from transformers import pipeline
 from transformers import T5Tokenizer, AutoModelWithLMHead
-tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base")
+tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir='./cache', local_files_only=True)
 print(tokenizer_t5)
-t5 = AutoModelWithLMHead.from_pretrained("t5-base")    
+t5 = AutoModelWithLMHead.from_pretrained("./finetunes/t5_cc_title/epoch_2")    
+
 gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=-1)
 
 sent = "Why BlackBerry ( BBRY ) Stock Is Up Today"
-result_gpt = gen_nlp_t5([sent], max_length=32, \
+
+sent = "This document is about business BlackBerry mobile phone tech "
+result_gpt = gen_nlp_t5([sent], max_length=64, \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                         repetition_penalty=1.2, num_return_sequences= 16,\
                                         clean_up_tokenization_spaces=True)
-print(result_gpt)
+
+for ii in result_gpt:
+    print(ii['generated_text'], '\n')
 
 
 
 
+from transformers import BartTokenizer, BartModel
+tokenizer_bart = BartTokenizer.from_pretrained('facebook/bart-base',  cache_dir='./cache', local_files_only=True)
+bart = BartModel.from_pretrained('facebook/bart-base',  cache_dir='./cache', local_files_only=True)
+
+gen_nlp_t5  = pipeline("text2text-generation", model=bart, tokenizer=tokenizer_t5, device=-1)
+
+
+from transformers import BartTokenizer, BartModel
+tokenizer_bart = BartTokenizer.from_pretrained('facebook/bart-base',  cache_dir='./cache')
+bart = BartModel.from_pretrained('facebook/bart-base',  cache_dir='./cache')
 
 
 
@@ -89,10 +104,6 @@ input_ids = tokenizer_gpt2.encode(sent, return_tensors="tf")
 next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
 
 
-
-
-
-with open('arxiv-metadata-oai-snapshot.json', 'r') as f:
 
 
 
@@ -185,20 +196,27 @@ for fmark in df['fmark'].unique():
 
 
 
-from transformers import AutoTokenizer, AutoModelWithLMHead,pipeline
-tokenizer = AutoTokenizer.from_pretrained("SpanBERT/spanbert-large-cased",cache_dir="./cache",local_files_only=False) 
-model = AutoModelWithLMHead.from_pretrained("SpanBERT/spanbert-large-cased",cache_dir="./cache",local_files_only=False)
-nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1, top_k = 2048 ) 
 
 
 
+import torch
+device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 
-sent = "A premium is the amount of money that an individual or business pays to an insurance company for coverage.\
- Health insurance premiums are typically paid monthly. Employers that offer an employer-sponsored health \
- insurance plan typically cover part of the insurance premiums. If you need to insure yourself, \
- you’ll be paying the full cost of the premiums."
+from transformers import CTRLTokenizer, CTRLLMHeadModel, pipeline
+tokenizer_ctrl = CTRLTokenizer.from_pretrained('ctrl', cache_dir='./cache')
+model_ctrl = CTRLLMHeadModel.from_pretrained('ctrl', cache_dir='./cache')
+print(tokenizer_ctrl)
+control_codes = tokenizer_ctrl.control_codes.keys()
+gen_nlp_ctrl  = pipeline("text-generation", model=model_ctrl, tokenizer=tokenizer_ctrl, device=0, return_full_text=False)
 
 
+'Sports', 'boxing', 'gymnastics', 'boxer'
+
+prompts = ["Links In Sports boxing gymnastics boxer : "] # ctrl
+result_gpt = gen_nlp_ctrl(prompts, max_length=128, \
+                                do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                repetition_penalty=1.2, num_return_sequences= 16,\
+                                clean_up_tokenization_spaces=True)
 
 
 
