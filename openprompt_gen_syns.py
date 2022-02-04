@@ -14,7 +14,7 @@ parser.add_argument("--lr", type=float, default=5e-5)
 parser.add_argument("--plm_eval_mode", action="store_true")
 parser.add_argument("--model", type=str, default='t5-base')  # tested model are gpt2/t5
 parser.add_argument("--freeze_plm", action="store_true")
-parser.add_argument("--template", type="prefix")
+parser.add_argument("--template", type=str)
 parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 
