@@ -1,4 +1,6 @@
 
+stopwords = joblib.load("./utils/stopwords")
+stopwords = set(stopwords)  
 
 from transformers.file_utils import cached_path
 # gram_diff = joblib.load("gram_diff___{}".format('ag'))

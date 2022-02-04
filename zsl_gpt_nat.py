@@ -6,30 +6,17 @@ import re,operator,joblib
 from sklearn.feature_extraction.text import CountVectorizer
 import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
-import joblib,gensim,transformers
+import joblib,transformers
 #assert gensim.__version__ == '4.1.2'
-os.environ['CUDA_VISIBLE_DEVICES'] = ''
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 from transformers import AutoModelForCausalLM, AutoTokenizer, top_k_top_p_filtering
 import torch,operator
 from torch import nn
 from transformers import pipeline
 
-
-
-
-# from transformers import T5Tokenizer, AutoModelWithLMHead
-# tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-# print(tokenizer_t5)
-# t5 = AutoModelWithLMHead.from_pretrained("./finetunes/t5_natcat")    
-# gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=-1)
-
-
-
-
 from utils.seed_words import *
 
-stopwords = joblib.load("./utils/stopwords")
-stopwords = set(stopwords)  
+
 
 id_token = {ix:token for token, ix in tokenizer.vocab.items()}
 
