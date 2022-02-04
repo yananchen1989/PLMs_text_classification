@@ -7,16 +7,21 @@
 # Which we do not include in it. 
 
 import argparse
-import torch
+import torch,os
 
 parser = argparse.ArgumentParser("")
 parser.add_argument("--lr", type=float, default=5e-5)
 parser.add_argument("--plm_eval_mode", action="store_true")
 parser.add_argument("--model", type=str, default='t5-base')  # tested model are gpt2/t5
 parser.add_argument("--freeze_plm", action="store_true")
+parser.add_argument("--template", type="prefix")
+parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
+
+
 print(args)
 
+os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 # from openprompt.data_utils.conditional_generation_dataset import WebNLGProcessor
 # dataset = {}
 # dataset['train'] = WebNLGProcessor().get_train_examples("/home/yanan/OpenPrompt/datasets/CondGen/webnlg_2017/")
