@@ -1,4 +1,4 @@
-
+import joblib
 stopwords = joblib.load("./utils/stopwords")
 stopwords = set(stopwords)  
 
