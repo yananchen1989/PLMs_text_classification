@@ -8,7 +8,7 @@ import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 import joblib,gensim,transformers
 assert gensim.__version__ == '4.1.2'
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = ''
 from transformers import AutoModelForCausalLM, AutoTokenizer, top_k_top_p_filtering
 import torch,operator
 from torch import nn
@@ -119,13 +119,17 @@ def get_seed_words(topk):
     return label_expands_auto
 
 
-label_expands_auto = get_seed_words(32)
+label_expands_auto = get_seed_words(64)
 print(label_expands_auto)
 
 stopwords = joblib.load("./utils/stopwords")
 stopwords = set(stopwords)  
 
 id_token = {ix:token for token, ix in tokenizer.vocab.items()}
+
+
+
+
 
 
 

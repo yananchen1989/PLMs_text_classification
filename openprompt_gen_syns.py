@@ -236,17 +236,17 @@ for epoch in range(25):
         generated_sentence_train, groundtruth_sentence_train = evaluate(prompt_model, train_dataloader)
 
         print('train set:')
-        for ii in random.sample(list(zip(df_train['label_name'].tolist(), generated_sentence_train, groundtruth_sentence_train)), 32):
-            print('label==>', ii[0])
-            print('syn==>\n', ii[1])
-            print('ref==>\n', ii[2])
+        for ii in random.sample(list(zip( generated_sentence_train, groundtruth_sentence_train)), 32):
+            #print('label==>', ii[0])
+            print('syn==>\n', ii[0])
+            print('ref==>\n', ii[1])
             print('\n')
         print('\n\n')
 
 
         generated_sentence_test, groundtruth_sentence_test = evaluate(prompt_model, test_dataloader)
         print('test set:')
-        for ii in random.sample(list(zip(df_test['label_name'].tolist(), generated_sentence_test, groundtruth_sentence_test)), 32):
+        for ii in random.sample(list(zip(generated_sentence_test, groundtruth_sentence_test)), 32):
             print('syn==>\n', ii[0])
             print('ref==>\n', ii[1])
             print('\n')
