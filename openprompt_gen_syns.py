@@ -193,7 +193,8 @@ def evaluate(prompt_model, dataloader):
         _, output_sentence = prompt_model.generate(inputs.cuda(), **generation_arguments)
         generated_sentence.extend(output_sentence)
         groundtruth_sentence.extend(inputs['tgt_text'])
-        
+        if step > 3:
+            break 
         #labels.extend(inputs['label_name'])
     #score = generation_metric(generated_sentence, groundtruth_sentence, "sentence_bleu")
     #print("test_score", score, flush=True)
@@ -231,22 +232,23 @@ for epoch in range(25):
     print("train epoch:", epoch, "loss:", sum(epoch_loss) /len(epoch_loss) )
 
 
-generated_sentence_train, groundtruth_sentence_train = evaluate(prompt_model, train_dataloader)
+    if epoch >= 3:
+        generated_sentence_train, groundtruth_sentence_train = evaluate(prompt_model, train_dataloader)
 
-print('train set:')
-for ii in random.sample(list(zip(ds.df_train['label_name'].tolist(), generated_sentence_train, groundtruth_sentence_train)), 32):
-    print('label==>', ii[0])
-    print('syn==>\n', ii[1])
-    print('ref==>\n', ii[2])
-    print('\n')
-print('\n\n')
+        print('train set:')
+        for ii in random.sample(list(zip(ds.df_train['label_name'].tolist(), generated_sentence_train, groundtruth_sentence_train)), 32):
+            print('label==>', ii[0])
+            print('syn==>\n', ii[1])
+            print('ref==>\n', ii[2])
+            print('\n')
+        print('\n\n')
 
 
-generated_sentence_test, groundtruth_sentence_test = evaluate(prompt_model, test_dataloader)
-print('test set:')
-for ii in random.sample(list(zip(df_test['label_name'].tolist(), generated_sentence_test, groundtruth_sentence_test)), 32):
-    print('syn==>\n', ii[0])
-    print('ref==>\n', ii[1])
-    print('\n')
-print('\n\n')
+        generated_sentence_test, groundtruth_sentence_test = evaluate(prompt_model, test_dataloader)
+        print('test set:')
+        for ii in random.sample(list(zip(df_test['label_name'].tolist(), generated_sentence_test, groundtruth_sentence_test)), 32):
+            print('syn==>\n', ii[0])
+            print('ref==>\n', ii[1])
+            print('\n')
+        print('\n\n')
 
