@@ -7,7 +7,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 import joblib,gensim,transformers
-assert gensim.__version__ == '4.1.2'
+#assert gensim.__version__ == '4.1.2'
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dsn", default="ag", type=str)

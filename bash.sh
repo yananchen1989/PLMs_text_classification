@@ -282,8 +282,8 @@ CUDA_VISIBLE_DEVICES=1  nohup  python -u ./run_summarization_no_trainer.py \
             --model_type bart  --use_slow_tokenizer  > ./finetunes/ft_bart_nat_content2label.log &
 
 
-python -u openprompt_gen_syns.py --model t5-base --gpu 0 --template soft --freeze_plm
-python -u openprompt_gen_syns.py --model t5-base --gpu 1 --template mixed --freeze_plm
+python -u openprompt_gen_syns.py --model t5-base --gpu 0 --template soft  --source_col ners --freeze_plm
+python -u openprompt_gen_syns.py --model t5-base --gpu 1 --template mixed --source_col title --freeze_plm
 
 
 #################################################### mist ########################################################################################

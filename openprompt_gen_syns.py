@@ -53,10 +53,17 @@ df = pd.read_csv("./torch_ds/df_cc_news_ners.csv", lineterminator='\n')
 
 dfs = df.sample(10000)
 
+dfs = dfs.loc[(~dfs['ners'].isnull()) & (dfs['ners'].str.contains('<=>')) & \
+                (~dfs['title'].isnull()) &  \
+                 (~dfs['content'].isnull()) ]
+
+dfs['ners'] = dfs['ners'].map(lambda x: ', '.join(list(set(x.split('<=>')))))
+
 df_train, df_test = train_test_split(dfs, test_size=0.15)
 
 
 from openprompt.data_utils import InputExample
+
 
 
 dataset = {}
