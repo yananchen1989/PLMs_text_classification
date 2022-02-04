@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser("")
 parser.add_argument("--lr", type=float, default=5e-5)
 parser.add_argument("--plm_eval_mode", action="store_true")
 parser.add_argument("--model", type=str, default='t5-base')  # tested model are gpt2/t5
-# parser.add_argument("--model_name_or_path", default='t5-base')
+parser.add_argument("--freeze_plm", action="store_true")
 args = parser.parse_args()
 print(args)
 
@@ -39,7 +39,9 @@ print(args)
 # ds2017 = datasets.load_dataset('web_nlg', 'webnlg_challenge_2017')
 
 from utils.load_data import * 
-ds = load_data(dataset='ag', samplecnt= -1)
+ds = load_data(dataset='ag', samplecnt= 128)
+
+ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
 from openprompt.data_utils import InputExample
 
@@ -52,7 +54,8 @@ for ix, row in ds.df_train.reset_index().iterrows():
     dd = InputExample(
         guid = str(ix),
         tgt_text = row['content'],
-        text_a = row['label_name']
+        text_a = row['label_name'],
+        #text_b = row['content']
     )
     dataset['train'].append(dd)
 
@@ -61,23 +64,51 @@ for ix, row in df_test.reset_index().iterrows():
     dd = InputExample(
         guid = str(ix),
         tgt_text = row['content'],
-        text_a = row['label_name']
+        text_a = row['label_name'],
+        #text_b = row['content']
     )
     dataset['test'].append(dd)
 
 
 # load a pretrained model, its tokenizer, its config, and its TokenzerWrapper by one function 
 from openprompt.plms import load_plm
-plm, tokenizer, model_config, WrapperClass = load_plm(args.model, args.model)
+plm, tokenizer, model_config, WrapperClass = load_plm(args.model, args.model, "./cache")
 
 # Instantiating the PrefixTuning Template !
-from openprompt.prompts.prefix_tuning_template import PrefixTuningTemplate
-# we can use a plain text as the default setting
-# i.e. 
-# mytemplate = PrefixTuningTemplate(model=plm, tokenizer=tokenizer)
-# is equal to 
-# mytemplate = PrefixTuningTemplate(model=plm, tokenizer=tokenizer, text='{"placeholder":"text_a"} {"mask"}')
-mytemplate = PrefixTuningTemplate(model=plm,  tokenizer=tokenizer, text=' {"placeholder":"text_a"} {"special": "<eos>"} {"mask"} ', using_decoder_past_key_values=False)
+
+if args.template == 'prefix':
+    from openprompt.prompts.prefix_tuning_template import PrefixTuningTemplate
+    # we can use a plain text as the default setting
+    # i.e. 
+    # mytemplate = PrefixTuningTemplate(model=plm, tokenizer=tokenizer)
+    # is equal to 
+    # mytemplate = PrefixTuningTemplate(model=plm, tokenizer=tokenizer, text='{"placeholder":"text_a"} {"mask"}')
+    mytemplate = PrefixTuningTemplate(model=plm,  tokenizer=tokenizer, \
+                    text='This is a {"placeholder":"text_a"} News: {"special": "<eos>"} {"mask"} ', \
+                     # {"placeholder":"text_b"}
+                        using_decoder_past_key_values=False, num_token=5)
+
+elif args.template == 'soft':
+    from openprompt.prompts import SoftTemplate
+    mytemplate = SoftTemplate(model=plm, tokenizer=tokenizer,   \
+             #text='{"placeholder":"text_a"} {"soft"} {"soft"} {"soft"} {"placeholder":"text_b"} {"soft"} {"mask"}.'
+            text='{"placeholder":"text_a"} {"soft"} {"soft"} {"soft"} {"soft"} {"mask"}.'
+             )
+
+elif args.template == 'mixed':
+    from openprompt.prompts import MixedTemplate
+    mytemplate = MixedTemplate(model=plm, tokenizer=tokenizer,\
+         #text='{"placeholder":"text_a"} {"soft": "Question:"} {"placeholder":"text_b"}? Is it correct? {"soft"} {"mask"}.')
+    text='{"placeholder":"text_a"} {"soft": "Breaking News:"}. Another related News is {"soft"} {"mask"}.')
+
+elif args.template == 'mannual':
+    from openprompt.prompts import ManualTemplate
+    mytemplate = ManualTemplate(tokenizer=tokenizer, text='This is a {"placeholder":"text_a"} News: {"mask"}.')
+
+#elif args.template == 'p':
+    
+
+
 
 # To better understand how does the template wrap the example, we visualize one instance.
 # You may observe that the example doesn't end with <|endoftext|> token. Don't worry, adding specific end-of-text token
@@ -102,10 +133,8 @@ test_dataloader = PromptDataLoader(dataset=dataset["test"], template=mytemplate,
 
 # load the pipeline model PromptForGeneration.
 from openprompt import PromptForGeneration
-use_cuda = True
-prompt_model = PromptForGeneration(plm=plm,template=mytemplate, freeze_plm=True,tokenizer=tokenizer, plm_eval_mode=args.plm_eval_mode)
-if use_cuda:
-    prompt_model=  prompt_model.cuda()
+
+prompt_model = PromptForGeneration(plm=plm,template=mytemplate, freeze_plm=args.freeze_plm,tokenizer=tokenizer, plm_eval_mode=args.plm_eval_mode).cuda()
 
 
 from transformers import AdamW
@@ -141,9 +170,7 @@ def evaluate(prompt_model, dataloader):
     prompt_model.eval()
 
     for step, inputs in enumerate(dataloader):
-        if use_cuda:
-            inputs = inputs.cuda()
-        _, output_sentence = prompt_model.generate(inputs, **generation_arguments)
+        _, output_sentence = prompt_model.generate(inputs.cuda(), **generation_arguments)
         generated_sentence.extend(output_sentence)
         groundtruth_sentence.extend(inputs['tgt_text'])
         
@@ -163,34 +190,43 @@ generation_arguments = {
     "do_sample": False,
     "top_k": 0,
     "top_p": 0.9,
-    "repetition_penalty": 1.0,
+    "repetition_penalty": 1.2,
     "num_beams": 5,
     "bad_words_ids": [[628], [198]]
 }
 
 # training and generation.
-global_step = 0 
-tot_loss = 0 
-log_loss = 0
+
 for epoch in range(25):
     prompt_model.train()
+    epoch_loss = []
     for step, inputs in enumerate(train_dataloader):
-        global_step +=1
-        if use_cuda:
-            inputs = inputs.cuda()
-        loss = prompt_model(inputs)
+        loss = prompt_model(inputs.cuda())
         loss.backward()
-        tot_loss += loss.item()
+        epoch_loss.append( loss.item()/16 )
         torch.nn.utils.clip_grad_norm_(mytemplate.parameters(), 1.0)
         optimizer.step()
         scheduler.step()
         optimizer.zero_grad()
-        if global_step %10 ==0: 
-            print("Epoch {}, global_step {} average loss: {} lr: {}".format(epoch, global_step, (tot_loss-log_loss)/500, scheduler.get_last_lr()[0]), flush=True)
-            log_loss = tot_loss
-    print("train epoch:", epoch)
+    print("train epoch:", epoch, "loss:", sum(epoch_loss) /len(epoch_loss) )
 
-    generated_sentence, groundtruth_sentence = evaluate(prompt_model, test_dataloader)
-    print(random.sample(generated_sentence, 16))
-    print('\n\n')
+
+generated_sentence_train, groundtruth_sentence_train = evaluate(prompt_model, train_dataloader)
+
+print('train set:')
+for ii in random.sample(list(zip(ds.df_train['label_name'].tolist(), generated_sentence_train, groundtruth_sentence_train)), 32):
+    print('label==>', ii[0])
+    print('syn==>\n', ii[1])
+    print('ref==>\n', ii[2])
+    print('\n')
+print('\n\n')
+
+
+generated_sentence_test, groundtruth_sentence_test = evaluate(prompt_model, test_dataloader)
+print('test set:')
+for ii in random.sample(list(zip(df_test['label_name'].tolist(), generated_sentence_test, groundtruth_sentence_test)), 32):
+    print('syn==>\n', ii[0])
+    print('ref==>\n', ii[1])
+    print('\n')
+print('\n\n')
 

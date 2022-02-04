@@ -144,7 +144,10 @@ nohup python -u zsl.py --dsn ag    --backbone simi --expand pplm --gpu 7 > ./log
 nohup python -u zsl.py --dsn ag    --backbone nspbert --param t5paws --gpu 2   > ./log_zsl/ag.nspbert.t5paws.log & 
 nohup python -u zsl.py --dsn yahoo --backbone nspbert --param t5paws --gpu 4   > ./log_zsl/yahoo.nspbert.t5paws.log & 
 
+nohup python -u zsl.py --dsn ag    --backbone nli --param t5paws --gpu 3   > ./log_zsl/ag.nli.t5paws.log & 
+nohup python -u zsl.py --dsn yahoo --backbone nli --param t5paws --gpu 5   > ./log_zsl/yahoo.nli.t5paws.log & 
 
+nohup python -u zsl.py --dsn ag --backbone roberta --param t5paws --gpu 7   > ./log_zsl/ag.roberta.t5paws.log & 
 
 
 
@@ -181,6 +184,27 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_summarization_no_trainer.py \
             --summary_column content \
             --max_length 128 \
             --model_type t5  --use_slow_tokenizer > ./finetunes/ft_t5_nat.log &
+
+# bart nat label ==> content
+CUDA_VISIBLE_DEVICES=2 nohup python -u ./run_summarization_no_trainer.py \
+            --num_train_epochs 7 \
+            --train_file "./finetunes/df_nat_train.csv" \
+            --validation_file "./finetunes/df_nat_test.csv" \
+            --model_name_or_path facebook/bart-base \
+            --per_device_train_batch_size 16 \
+            --per_device_eval_batch_size 16 \
+            --output_dir './finetunes/bart_natcat_label2content' \
+            --max_target_length 128 \
+            --val_max_target_length 128 \
+            --preprocessing_num_workers 16 --overwrite_cache True \
+            --text_column label \
+            --summary_column content \
+            --max_length 128 \
+            --model_type bart  --use_slow_tokenizer > ./finetunes/ft_bart_nat_label2content.log &
+
+
+
+
 
 
 # bart cc title ===> content
@@ -223,35 +247,35 @@ CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_summarization_no_trainer.py \
 
 
 
-
-CUDA_VISIBLE_DEVICES=0  nohup  python -u ./run_summarization_no_trainer.py \
+# t5 nat content ===> label
+CUDA_VISIBLE_DEVICES=7  nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 7 \
             --train_file "./finetunes/df_nat_train.csv" \
             --validation_file "./finetunes/df_nat_test.csv" \
             --model_name_or_path t5-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
+            --per_device_train_batch_size 4 \
+            --per_device_eval_batch_size 4 \
             --output_dir './finetunes/t5_natcat' \
             --max_target_length 32 \
             --val_max_target_length 32 \
-            --preprocessing_num_workers 128 --overwrite_cache True \
+            --preprocessing_num_workers 8 --overwrite_cache True \
             --text_column content  \
             --summary_column label  \
-            --max_length 128 \
+            --max_length 64 \
             --model_type t5  --use_slow_tokenizer > ./finetunes/ft_t5_nat_content2label.log &
 
-
+# bart nat content ===> label
 CUDA_VISIBLE_DEVICES=1  nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 7 \
             --train_file "./finetunes/df_nat_train.csv" \
             --validation_file "./finetunes/df_nat_test.csv" \
-            --model_name_or_path bart-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
+            --model_name_or_path facebook/bart-base \
+            --per_device_train_batch_size 4 \
+            --per_device_eval_batch_size 4 \
             --output_dir './finetunes/bart_natcat' \
             --max_target_length 32 \
             --val_max_target_length 32 \
-            --preprocessing_num_workers 128 --overwrite_cache False \
+            --preprocessing_num_workers 8 --overwrite_cache True \
             --text_column content  \
             --summary_column label  \
             --max_length 128 \
@@ -278,7 +302,7 @@ source activate env
 
 conda install -c /scinet/mist/ibm/open-ce tensorflow==2.7.0 cudatoolkit=11.2
 
-conda install -c /scinet/mist/ibm/open-ce nltk
+conda install -c /scinet/mist/ibm/open-ce sklearn
 
 
 conda install -c /scinet/mist/ibm/open-ce pytorch=1.10.1 cudatoolkit=11.2

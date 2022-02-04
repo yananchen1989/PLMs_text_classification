@@ -49,16 +49,6 @@ tokenizer_t5.convert_tokens_to_ids(['up'])
 
 
 
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-
-tokenizer = AutoTokenizer.from_pretrained("bigscience/T0pp")
-model = AutoModelForSeq2SeqLM.from_pretrained("bigscience/T0pp")
-
-inputs = tokenizer.encode("Is this review positive or negative? Review: this is the best cast iron skillet you will ever buy", return_tensors="pt")
-outputs = model.generate(inputs)
-print(tokenizer.decode(outputs[0]))
-
-
 
 
 
@@ -86,23 +76,127 @@ for ii in result_gpt:
 
 
 
-from transformers import BartTokenizer, BartModel
-tokenizer_bart = BartTokenizer.from_pretrained('facebook/bart-base',  cache_dir='./cache', local_files_only=True)
-bart = BartModel.from_pretrained('facebook/bart-base',  cache_dir='./cache', local_files_only=True)
 
-gen_nlp_t5  = pipeline("text2text-generation", model=bart, tokenizer=tokenizer_t5, device=-1)
+import json
+import pandas as pd 
+
+with open('articles_full.json', 'r') as f:
+    jfull = json.load(f)
 
 
-from transformers import BartTokenizer, BartModel
-tokenizer_bart = BartTokenizer.from_pretrained('facebook/bart-base',  cache_dir='./cache')
-bart = BartModel.from_pretrained('facebook/bart-base',  cache_dir='./cache')
+
+
+df = pd.DataFrame(jfull)
+
+df['article_ID'] = df['article_ID'].astype(int)
+
+
+
+with open('articles_sample.xml.json', 'r') as f:
+    jxml = json.load(f)
+
+
+for d in jxml:
+    if d['article_id'] == '9882':
+        print(d)
+        break 
+
+df_ent = pd.DataFrame(jxml)
+
+df_ent['article_id'] = df_ent['article_id'].astype(int)
+
+df_ = pd.merge(df, df_ent, left_on='article_ID', right_on='article_id', how='inner')
+
+row = df_.sample(1)
+print(row['post_content'].tolist()[0])
+print(row['Name'].tolist()[0])
+
+
+
+
+
+
+
+
+
+import os 
+os.environ['CUDA_VISIBLE_DEVICES'] = ""
+
+
+from utils.load_data import * 
+ds = load_data(dataset='ag', samplecnt= 8)
+
+
+from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+from transformers import pipeline
+tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+#tokenizer_gpt2.padding_side = "left" 
+tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+tokenizer_gpt2.sep_token = '<|sep|>'
+#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+print(tokenizer_gpt2)
+gpt2.trainable = False
+gpt2.config.pad_token_id=50256
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
+
+labels_candidates = ds.df_train['label_name'].unique().tolist()
+
+
+infos = []
+while True:
+    #prompts = ["topic {} source strait stimes title".format(label) for label in labels_candidates]
+    
+    prompts = ["This is {} News: ".format(label) for label in labels_candidates] # gpt
+    #prompts = ["Links In {} : ".format(label) for label in labels_candidates] # ctrl
+    result_gpt = gen_nlp(prompts, max_length=128, \
+                                                do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                                repetition_penalty=1.2, num_return_sequences= 64,\
+                                                clean_up_tokenization_spaces=True)
+
+    for label, rg in zip(labels_candidates, result_gpt):
+        contents = [ ii['generated_text'] for ii in rg if len(ii['generated_text'])>=20 ] 
+        for sent in contents:
+            infos.append((remove_str(sent) , label ))
+
+
+    if len(infos) > 0 and len(infos) % 128 == 0:
+        df = pd.DataFrame(infos, columns = ['content','label_name'])
+        print(len(infos))
+        df.to_csv("df_gen_ag_nofil.csv", index=False)
+
+    if df['label_name'].value_counts().min() >= 1024  :
+        break 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 input_ids = tokenizer_gpt2.encode(sent, return_tensors="tf")
 # get logits of last hidden state
 next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
-
 
 
 
