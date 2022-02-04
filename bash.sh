@@ -148,6 +148,7 @@ nohup python -u zsl.py --dsn ag    --backbone nli --param t5paws --gpu 3   > ./l
 nohup python -u zsl.py --dsn yahoo --backbone nli --param t5paws --gpu 5   > ./log_zsl/yahoo.nli.t5paws.log & 
 
 nohup python -u zsl.py --dsn ag --backbone roberta --param t5paws --gpu 7   > ./log_zsl/ag.roberta.t5paws.log & 
+nohup python -u zsl.py --dsn yahoo --backbone roberta --param t5paws --gpu 2   > ./log_zsl/yahoo.roberta.t5paws.log & 
 
 
 
@@ -282,6 +283,8 @@ CUDA_VISIBLE_DEVICES=1  nohup  python -u ./run_summarization_no_trainer.py \
             --model_type bart  --use_slow_tokenizer  > ./finetunes/ft_bart_nat_content2label.log &
 
 
+python -u openprompt_gen_syns.py --model t5-base --gpu 0 --template soft --freeze_plm
+python -u openprompt_gen_syns.py --model t5-base --gpu 1 --template mixed --freeze_plm
 
 
 #################################################### mist ########################################################################################
@@ -302,7 +305,7 @@ source activate env
 
 conda install -c /scinet/mist/ibm/open-ce tensorflow==2.7.0 cudatoolkit=11.2
 
-conda install -c /scinet/mist/ibm/open-ce sklearn
+conda install -c /scinet/mist/ibm/open-ce scikit-learn
 
 
 conda install -c /scinet/mist/ibm/open-ce pytorch=1.10.1 cudatoolkit=11.2

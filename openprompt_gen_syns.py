@@ -42,11 +42,18 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 # import datasets
 # ds2020 = datasets.load_dataset('web_nlg', 'release_v3.0_en')
 # ds2017 = datasets.load_dataset('web_nlg', 'webnlg_challenge_2017')
-
+from sklearn.model_selection import train_test_split
 from utils.load_data import * 
-ds = load_data(dataset='ag', samplecnt= 128)
+#ds = load_data(dataset='ag', samplecnt= 128)
 
-ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
+#ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
+
+df = pd.read_csv("./torch_ds/df_cc_news_ners.csv", lineterminator='\n')
+
+dfs = df.sample(10000)
+
+df_train, df_test = train_test_split(dfs, test_size=0.15)
+
 
 from openprompt.data_utils import InputExample
 
@@ -55,21 +62,21 @@ dataset = {}
 dataset['train'] = []
 dataset['test'] = []
 
-for ix, row in ds.df_train.reset_index().iterrows():
+for ix, row in df_train.reset_index().iterrows():
     dd = InputExample(
         guid = str(ix),
         tgt_text = row['content'],
-        text_a = row['label_name'],
+        text_a = row['ners'],
         #text_b = row['content']
     )
     dataset['train'].append(dd)
 
-df_test = ds.df_test.sample(1024)
+# df_test = ds.df_test.sample(1024)
 for ix, row in df_test.reset_index().iterrows():
     dd = InputExample(
         guid = str(ix),
         tgt_text = row['content'],
-        text_a = row['label_name'],
+        text_a = row['ners'],
         #text_b = row['content']
     )
     dataset['test'].append(dd)
@@ -126,13 +133,13 @@ print(wrapped_example)
 # but we have provide a PromptDataLoader for you.
 from openprompt import PromptDataLoader
 train_dataloader = PromptDataLoader(dataset=dataset["train"], template=mytemplate, tokenizer=tokenizer, 
-    tokenizer_wrapper_class=WrapperClass, max_seq_length=128, decoder_max_length=128, 
+    tokenizer_wrapper_class=WrapperClass, max_seq_length=256, decoder_max_length=256, 
     batch_size=16,shuffle=True, teacher_forcing=True, predict_eos_token=True, # be sure to pass predict_eos_token=True if your tempalte doesn't contain one, or you model may fail to stop generation.
     truncate_method="head")
 
 
 test_dataloader = PromptDataLoader(dataset=dataset["test"], template=mytemplate, tokenizer=tokenizer, 
-    tokenizer_wrapper_class=WrapperClass, max_seq_length=128, decoder_max_length=128, 
+    tokenizer_wrapper_class=WrapperClass, max_seq_length=256, decoder_max_length=256, 
     batch_size=16,shuffle=False, teacher_forcing=False, predict_eos_token=True,
     truncate_method="head")
 
