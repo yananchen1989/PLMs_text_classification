@@ -153,7 +153,6 @@ nohup python -u zsl.py --dsn yahoo --backbone roberta --param t5paws --gpu 2   >
 
 
 
-CUDA_VISIBLE_DEVICES=2 nohup python -u openprompt_gen_syns.py > openprompt_gen_syns.log & 
 
 
 #  nat for zsl

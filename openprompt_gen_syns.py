@@ -15,6 +15,7 @@ parser.add_argument("--plm_eval_mode", action="store_true")
 parser.add_argument("--model", type=str, default='t5-base')  # tested model are gpt2/t5
 parser.add_argument("--freeze_plm", action="store_true")
 parser.add_argument("--template", type=str)
+parser.add_argument("--source_col", type=str)
 parser.add_argument("--gpu", default="", type=str)
 args = parser.parse_args()
 
@@ -66,7 +67,7 @@ for ix, row in df_train.reset_index().iterrows():
     dd = InputExample(
         guid = str(ix),
         tgt_text = row['content'],
-        text_a = row['ners'],
+        text_a = row[args.source_col],
         #text_b = row['content']
     )
     dataset['train'].append(dd)
@@ -76,7 +77,7 @@ for ix, row in df_test.reset_index().iterrows():
     dd = InputExample(
         guid = str(ix),
         tgt_text = row['content'],
-        text_a = row['ners'],
+        text_a = row[args.source_col],
         #text_b = row['content']
     )
     dataset['test'].append(dd)
