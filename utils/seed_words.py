@@ -25,23 +25,23 @@ label_expands_self ={
     'business': ['Business','Finance','Oil price','Supply','Inflation','Dollars','Bank','Wall Street','Bitcoin',
                         'Federal Reserve','Accrual','Accountancy','Sluggishness','Consumerism','Trade','Quarterly earnings',\
                          'Deposit','Revenue','Stocks','Recapitalization','Marketing','Futures', 
-                         'startups', 'competition', 'billionaire', 'worker', 'retailer', 'entrepreneurs', 'merger', \
+                          'competition', 'billionaire', 'retailer', 'entrepreneurs', 'merger', \
                     'acquisition', 'manufacturers', 'businesses', 'economist', 'sponsor', 'broker', 'growth',\
-                     'corporation', 'sells', 'giants', 'profit', 'trader', 'brands', 'clients', 'manufacturing', \
-                     'pharma', 'bank', 'investor', 'execs', 'market', 'client', 'shareholder', 'employers',\
+                     'corporation', 'sells', 'giants', 'profit', 'trader', 'brands', 'clients', \
+                     'pharma', 'bank', 'investor', 'execs', 'market', 'client', 'shareholder',\
                       'earnings', 'businesswoman', 'marketing', 'entrepreneur', 'directors', 'dollar',\
                        'professional', 'manager', 'finance', 'estate', 'warehouse', 'companies', 'distributor', \
-                       'chain', 'sales', 'supplier', 'commerce', 'robbery', 'china', 'factory', 'retail', \
-                       'workplace', 'brewers', 'bosses', 'production', 'traders', 'operations', 'executive',\
+                       'chain', 'sales', 'supplier', 'commerce',  'retail', \
+                        'brewers', 'production', 'traders', 'operations', 'executive',\
                         'productivity', 'contractors', 'corp', 'stocks', 'managers', 'employment', 'division',\
                          'recruitment', 'employee', 'mining', 'profits', 'employees', 'manufacturer', 'partnership', \
                          'contractor', 'boss', 'shareholders', 'team', 'enterprise', 'investors', 'workers', 'marketers',\
                           'economy', 'ceo', 'shares', 'services', 'franchise', 'businessman',\
                     'exporters', 'partners', 'conference', 'career', 'commercial', 'markets', 'tycoon', 'meeting', \
-                    'partner', 'retailers', 'launches', 'executives', 'insurer', 'startup', 'employer', 'buys', 'dealer', \
-                    'workplaces', 'industries', 'technology', 'trading', 'customers', 'contract', 'street', 'analysts', 'stores',\
+                    'partner', 'retailers','executives', 'insurer', 'dealer', \
+                    'workplaces', 'industries', 'technology', 'trading', 'customers', 'contract', 'analysts',\
                       'dividend', 'bucks', 'stock', 'supermarket', 'capital', 'customer', 'banks', 'equities', \
-                     'jobs', 'economics', 'revenue', 'investment', 'hires', 'success', 'rate', 'angel funds', 'Venture Capital', 
+                      'economics', 'revenue', 'investment','rate', 'angel funds', 'Venture Capital', 
                      'VC'],
 
 

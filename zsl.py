@@ -300,7 +300,7 @@ def zsl_roberta(content):
         for r in filled_result :
             token = r['token_str'].lower().strip()
 
-            if token  in stopwords or token in string.punctuation or token.isdigit() :
+            if token in stopwords or token in string.punctuation or token.isdigit() :
                 continue
 
             for l in ls.keys():

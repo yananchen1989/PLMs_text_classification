@@ -8,7 +8,7 @@ import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 import joblib,transformers
 #assert gensim.__version__ == '4.1.2'
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from transformers import AutoModelForCausalLM, AutoTokenizer, top_k_top_p_filtering
 import torch,operator
 from torch import nn
@@ -18,49 +18,114 @@ from utils.seed_words import *
 
 
 
-id_token = {ix:token for token, ix in tokenizer.vocab.items()}
-
-
-
-for l, w in label_expands_auto.items():
-
-
-
 from utils.load_data import * 
 
-ds = load_data(dataset='ag', samplecnt= -1)
+ds = load_data(dataset='ag', samplecnt= 8)
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 
 
 
 
-
-for ix, row in ds.df_test.sample(frac=1).iterrows():
-    content = row['content'] 
-
-
-template1 = "{}. This News is about {}".format(content, nlp_fill.tokenizer.mask_token)
-template2 = "{} News: {}.".format(nlp_fill.tokenizer.mask_token, content)
-template3 = "[Category: {} ] {}.".format(nlp_fill.tokenizer.mask_token, content)
-
-ls = {l:0 for l in labels_candidates}
-
-filled_results = nlp_fill([template1, template2, template3])
-
-
+label_expand = {
+    'World': 
+        label_expands_s3['religion'] + label_expands_s3['politics'] + label_expands_s3['military'] \
+            + label_expands_s3['legal'] + label_expands_self['law'] + label_expands_self['politics'],
+    'Sports': 
+        label_expands_self['sports'],
+    'Business':
+        label_expands_self['business'],
+    'science and technology':
+        label_expands_s3['technology'] + label_expands_s3['space'] + label_expands_s3['science'] \
+        + label_expands_self['science and technology'] + label_expands_self['science'] + label_expands_self['technology']
+}
 
 
+for l in label_expand.keys():
+    label_expand[l] = list(set([ii.lower() for ii in label_expand[l]]))
+    print(l, len(label_expand[l]))
 
 
 from transformers import AutoTokenizer, AutoModelWithLMHead
 tokenizer = AutoTokenizer.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True) 
 model = AutoModelWithLMHead.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True)
-nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=-1, top_k = len(tokenizer.vocab) ) 
+nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=0, top_k = len(tokenizer.vocab) ) 
 id_token = {ix:token for token, ix in tokenizer.vocab.items()}
 
 
+from sklearn import metrics
+def check_fallin(seeds, fillin_token):
+    for seed in seeds:
+        if fillin_token in seed:
+            return 1 
+    return 0
+
+accs = []
+for ix, row in ds.df_test.sample(frac=1).reset_index().iterrows():
+    content = row['content'] 
+     
+
+    template1 = "{}. This News is about {}".format(content, nlp_fill.tokenizer.mask_token)
+    template2 = "{} News: {}.".format(nlp_fill.tokenizer.mask_token, content)
+    template3 = "[Category: {} ] {}.".format(nlp_fill.tokenizer.mask_token, content)
+
+    
+    
+
+    filled_results = nlp_fill([template1, template2, template3])
+
+     
+    # auc score
+    ls_auc = {l:0 for l in labels_candidates}
+    for filled_result in filled_results:
+        infos = []
+        for ii in filled_result:
+            fillin_token = ii['token_str'].lower().strip()
+            if fillin_token in stopwords or fillin_token in string.punctuation or fillin_token.isdigit() :
+                continue
+            score = ii['score']
+            #print(fillin_token)
+            rows = [score]
+            for l in labels_candidates:
+                checkin = check_fallin(label_expand[l], fillin_token)
+                rows.append(checkin)
+            infos.append(rows)
+
+        dfr = pd.DataFrame(infos, columns=['score'] + labels_candidates)
+
+        for l in labels_candidates:
+            auc = metrics.roc_auc_score(dfr[l].values, dfr['score'].values)
+            ls_auc[l] += auc 
 
 
+    # ori score
+    for filled_result in filled_results:
+
+        for r in filled_result :
+            token = r['token_str'].lower().strip()
+
+            if token in stopwords or token in string.punctuation or token.isdigit() :
+                continue
+
+            for l in ls.keys():
+                if token in l.lower():
+                    ls[l] += r['score']  
+    df_noexpand = pd.DataFrame(ls.items(), columns=['label','score_noexpand'])
+
+
+    print('pred===>', max(ls, key=ls.get))
+    print('label===>', row['label_name'])
+    
+
+    if row['label_name'] == max(ls, key=ls.get):
+        accs.append(1)
+    else:
+        accs.append(0)
+        print(row['content'])
+
+    if ix % 64 == 0:
+        print(sum(accs) / len(accs))
+
+    print()
 
 
 
