@@ -510,6 +510,9 @@ def main():
             os.makedirs(epoch_output_dir, exist_ok=True)
             unwrapped_model.save_pretrained(epoch_output_dir, save_function=accelerator.save)
 
+            os.makedirs(args.output_dir, exist_ok=True)
+            unwrapped_model.save_pretrained(args.output_dir, save_function=accelerator.save)
+
         # else:
         #     perplexiy_ll.append(-1)
 

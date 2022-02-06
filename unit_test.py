@@ -51,65 +51,68 @@ tokenizer_t5.convert_tokens_to_ids(['up'])
 
 
 
-
-
+import os 
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 from transformers import pipeline
 from transformers import T5Tokenizer, AutoModelWithLMHead
 tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir='./cache', local_files_only=True)
 print(tokenizer_t5)
-t5 = AutoModelWithLMHead.from_pretrained("./finetunes/t5_cc_title/epoch_2")    
+t5 = AutoModelWithLMHead.from_pretrained("./finetunes/t5_natcat/epoch_1")    
 
-gen_nlp_t5  = pipeline("text2text-generation", model=t5, tokenizer=tokenizer_t5, device=-1)
+t5_noft = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir='./cache', local_files_only=True)    
+
+
+from transformers import BartTokenizer, AutoModelWithLMHead
+tokenizer_bart = BartTokenizer.from_pretrained("facebook/bart-base", cache_dir='./cache', local_files_only=True)
+print(tokenizer_bart)
+bart = AutoModelWithLMHead.from_pretrained("./finetunes/bart_natcat_label2content/epoch_0")    
+
+bart_noft = AutoModelWithLMHead.from_pretrained("facebook/bart-base", cache_dir='./cache', local_files_only=True)    
+
+
+gen_nlp_t5  = pipeline("text2text-generation", model=t5_noft, tokenizer=tokenizer_t5, device=0)
+gen_nlp_bart  = pipeline("text2text-generation", model=bart_noft, tokenizer=tokenizer_bart, device=0)
+
+
 
 sent = "Why BlackBerry ( BBRY ) Stock Is Up Today"
 
-sent = "This document is about business BlackBerry mobile phone tech "
-result_gpt = gen_nlp_t5([sent], max_length=64, \
+
+
+sent = "Technology BlackBerry Stock "
+
+sent = "Health HIV vaccine"
+
+
+result = gen_nlp_t5([sent], max_length=128, \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= 16,\
+                                        repetition_penalty=1.2, num_return_sequences= 8,\
                                         clean_up_tokenization_spaces=True)
 
-for ii in result_gpt:
+result = gen_nlp_bart([sent.lower()], max_length=128, \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= 8,\
+                                        clean_up_tokenization_spaces=True)
+
+for ii in result:
     print(ii['generated_text'], '\n')
 
 
 
 
 
-import json
-import pandas as pd 
-
-with open('articles_full.json', 'r') as f:
-    jfull = json.load(f)
+ds.df_train.loc[ds.df_train['label_name']=='Sports'].sample(1)['content'].tolist()[0]
 
 
 
 
-df = pd.DataFrame(jfull)
-
-df['article_ID'] = df['article_ID'].astype(int)
 
 
 
-with open('articles_sample.xml.json', 'r') as f:
-    jxml = json.load(f)
 
 
-for d in jxml:
-    if d['article_id'] == '9882':
-        print(d)
-        break 
 
-df_ent = pd.DataFrame(jxml)
-
-df_ent['article_id'] = df_ent['article_id'].astype(int)
-
-df_ = pd.merge(df, df_ent, left_on='article_ID', right_on='article_id', how='inner')
-
-row = df_.sample(1)
-print(row['post_content'].tolist()[0])
-print(row['Name'].tolist()[0])
 
 
 
@@ -124,7 +127,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
 
 from utils.load_data import * 
-ds = load_data(dataset='ag', samplecnt= 8)
+ds = load_data(dataset='ag', samplecnt= 128)
 
 
 from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM

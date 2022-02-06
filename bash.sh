@@ -127,28 +127,12 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
 #             --max_length 128 \
 #             --model_type t5  --use_slow_tokenizer > ./food/t5_ingre_recipe.log &
 
-#nohup python -u zsl.py --dsn yahoo --backbone roberta  > ./log_zsl/yahoo.roberta.log & 
-nohup python -u zsl.py --dsn ag    --backbone roberta --expand pplm --gpu 0 > ./log_zsl/ag.roberta.pplm.log & 
-
-#nohup python -u zsl.py --dsn yahoo --backbone nspbert  --gpu 1 > ./log_zsl/yahoo.nspbert.softmax.log & 
-nohup python -u zsl.py --dsn ag    --backbone nspbert --expand pplm --gpu 1   > ./log_zsl/ag.nspbert.pplm.log & 
-
-#nohup python -u zsl.py --dsn yahoo --backbone nli --softmax_score 1  --gpu 5 > ./log_zsl/yahoo.nli.softmax.log & 
-nohup python -u zsl.py --dsn ag    --backbone nli --expand pplm --gpu 5  > ./log_zsl/ag.nli.pplm.log & 
-
-#nohup python -u zsl.py --dsn yahoo --backbone simi --gpu 4 > ./log_zsl/yahoo.simi.log & 
-nohup python -u zsl.py --dsn ag    --backbone simi --expand pplm --gpu 7 > ./log_zsl/ag.simi.pplm.log & 
 
 
 
-nohup python -u zsl.py --dsn ag    --backbone nspbert --param t5paws --gpu 2   > ./log_zsl/ag.nspbert.t5paws.log & 
-nohup python -u zsl.py --dsn yahoo --backbone nspbert --param t5paws --gpu 4   > ./log_zsl/yahoo.nspbert.t5paws.log & 
-
-nohup python -u zsl.py --dsn ag    --backbone nli --param t5paws --gpu 3   > ./log_zsl/ag.nli.t5paws.log & 
-nohup python -u zsl.py --dsn yahoo --backbone nli --param t5paws --gpu 5   > ./log_zsl/yahoo.nli.t5paws.log & 
-
-nohup python -u zsl.py --dsn ag --backbone roberta --param t5paws --gpu 7   > ./log_zsl/ag.roberta.t5paws.log & 
-nohup python -u zsl.py --dsn yahoo --backbone roberta --param t5paws --gpu 2   > ./log_zsl/yahoo.roberta.t5paws.log & 
+nohup python -u zsl.py --dsn ag --backbone nli --expand gpt_nofilter --gpu 5     > ./log_zsl/ag.nli.gpt_nofilter.log & 
+nohup python -u zsl.py --dsn ag --backbone roberta --expand gpt_nofilter --gpu 6 > ./log_zsl/ag.roberta.gpt_nofilter.log & 
+nohup python -u zsl.py --dsn ag --backbone simi --expand gpt_nofilter --gpu 7    > ./log_zsl/ag.simi.gpt_nofilter.log & 
 
 
 
@@ -289,6 +273,24 @@ nohup python -u openprompt_gen_syns.py --model t5-base --gpu 3 --template prefix
 python -u openprompt_gen_syns.py --model t5-base --gpu 1 --template prefix --source_col title --freeze_plm
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #################################################### mist ########################################################################################
 python -c "import torch;print(torch.__version__)"
 python -c "import transformers;print(transformers.__version__)"
@@ -320,12 +322,15 @@ conda install -c /scinet/mist/ibm/open-ce tensorflow_hub
 conda env remove --name myenv
 
 
-############################################################################################################################################
-ps aux|grep "run_clm_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "run_cbert.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 
-ps aux|grep "dvrl_iter"|grep -v grep | awk '{print $2}'|xargs kill -9
+
+
+############################################################################################################################################
+ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "zsl.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run_clm_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+
+
 ps aux|grep "dvrl_iter"|grep "3762"|grep -v grep | awk '{print $2}'|xargs kill -9
 
 

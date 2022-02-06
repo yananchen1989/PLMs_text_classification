@@ -16,7 +16,7 @@ parser.add_argument("--fbs_para", default=32, type=int)
 parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--expand", default='gpt_filter', type=str)
 parser.add_argument("--softmax_score", default=0, type=int)
-parser.add_argument("--topn", default=64, type=int)
+
 parser.add_argument("--backbone", default='nli', type=str, choices=['nli','tars','roberta','nspbert','simi'])
 parser.add_argument("--seed_sample", default=8, type=int)
 parser.add_argument("--gpu", default="", type=str)
@@ -348,6 +348,9 @@ ZSL_FUNC = {'nli':zsl_nli, 'roberta':zsl_roberta, 'tars':zsl_tars, 'simi':zsl_si
 
 if args.expand == 'gpt_filter':
     df_contents_arxiv = pd.read_csv("df_gen_{}.csv".format(args.dsn))
+elif args.expand == 'gpt_nofilter':
+    df_contents_arxiv_ = pd.read_csv("df_gen_{}_nofil.csv".format(args.dsn))
+    df_contents_arxiv = df_contents_arxiv_.loc[(~df_contents_arxiv_['content'].isnull()) & (df_contents_arxiv_['content']!='')]
 elif args.expand == 'pplm':
     df_contents_arxiv = pd.read_csv("df_gen_pplm_{}.csv".format(args.dsn))
 elif args.expand == 'seeds':

@@ -23,25 +23,25 @@ label_expands_self ={
     'health': ['Health','Healthcare','Medicine','Clinics','Vaccine','Wellness','Nutrition','Dental','HIV','Disease'],
 
     'business': ['Business','Finance','Oil price','Supply','Inflation','Dollars','Bank','Wall Street','Bitcoin',
-                        'Federal Reserve','Accrual','Accountancy','Sluggishness','Consumerism','Trade','Quarterly earnings',\
+                        'Federal Reserve','Accrual','Accountancy','Consumerism','Trade','Quarterly earnings',\
                          'Deposit','Revenue','Stocks','Recapitalization','Marketing','Futures', 
                           'competition', 'billionaire', 'retailer', 'entrepreneurs', 'merger', \
                     'acquisition', 'manufacturers', 'businesses', 'economist', 'sponsor', 'broker', 'growth',\
-                     'corporation', 'sells', 'giants', 'profit', 'trader', 'brands', 'clients', \
-                     'pharma', 'bank', 'investor', 'execs', 'market', 'client', 'shareholder',\
+                     'corporation', 'sells', 'profit', 'trader', 'brands', 'clients', \
+                     'pharma', 'bank', 'investor', 'market', 'client', 'shareholder',\
                       'earnings', 'businesswoman', 'marketing', 'entrepreneur', 'directors', 'dollar',\
                        'professional', 'manager', 'finance', 'estate', 'warehouse', 'companies', 'distributor', \
                        'chain', 'sales', 'supplier', 'commerce',  'retail', \
                         'brewers', 'production', 'traders', 'operations', 'executive',\
                         'productivity', 'contractors', 'corp', 'stocks', 'managers', 'employment', 'division',\
-                         'recruitment', 'employee', 'mining', 'profits', 'employees', 'manufacturer', 'partnership', \
+                         'recruitment', 'mining', 'profits', 'employees', 'manufacturer', 'partnership', \
                          'contractor', 'boss', 'shareholders', 'team', 'enterprise', 'investors', 'workers', 'marketers',\
                           'economy', 'ceo', 'shares', 'services', 'franchise', 'businessman',\
-                    'exporters', 'partners', 'conference', 'career', 'commercial', 'markets', 'tycoon', 'meeting', \
+                    'exporters', 'partners', 'conference', 'commercial', 'markets', 'tycoon', \
                     'partner', 'retailers','executives', 'insurer', 'dealer', \
                     'workplaces', 'industries', 'technology', 'trading', 'customers', 'contract', 'analysts',\
                       'dividend', 'bucks', 'stock', 'supermarket', 'capital', 'customer', 'banks', 'equities', \
-                      'economics', 'revenue', 'investment','rate', 'angel funds', 'Venture Capital', 
+                      'economics', 'revenue', 'investment', 'angel funds', 'Venture', 'Capital', 
                      'VC'],
 
 
@@ -65,7 +65,7 @@ label_expands_self ={
                    'team',  'league', 'cricketers', 'golfer', 'exercise', 'derby', 'workouts',
                     'match', 'jersey', 'riders', 'coaches', 'swim', 'bowl', 'skating', 'coach', 
                     'linebacker', 'stadium', 'diving', 'boxer', 'captain', 'skateboard', 'golf',
-                     'athletics', 'runners', 'rugby', 'wimbledon', 'quarterbacks', 'cricket', 'columbia'],
+                     'athletics', 'runners', 'rugby', 'wimbledon', 'quarterbacks', 'cricket'],
 
     'science and technology': ['equipment', 'smart', 'rocket', 'weld', 'tools', 'submarine', 'materials', 'lego', 'battery', \
                     'uranium', 'android', 'transplant', 'experiment', 'researchers', 'nasa', 'nobel prize',\
@@ -75,13 +75,13 @@ label_expands_self ={
                       'revolution', 'mobile', 'balloon', 'brain', 'hacker', 'gps', 'toys', 'weapons', 'titans',\
                        'documentary', 'synthetic', 'cybercrime', 'electric', 'coal', 'marvel', 'cellphone', 'energy',\
                         'factories', 'electronics', 'builds', 'laboratories', 'google', 'scientists', 'hackers',\
-                         'laptop', 'space', 'trump', 'study', 'robotics', 'pilot', 'diesel', 'researcher', 'pipeline',\
+                         'laptop', 'space', 'trump', 'robotics', 'pilot', 'diesel', 'researcher', 'pipeline',\
                           'rays', 'nuke', 'chemistry', 'semiconductor', 'machines', 'camera', 'cloud', 'penguins',\
                            'chargers', 'mining', 'engineers', 'chemical', 'gaming', 'technical', 'olympics', 'nukes',\
                             'hack', 'drilling', 'aircraft', 'drones', 'model', 'galaxy', 'science', 'machine', \
                             'technologies', 'tesla', 'weapon', 'hacks', 'tool', 'launches', 'electricity',\
-                     'screening', 'startup', 'laser', 'engineer', 'patent', 'future', 'testing', 'scientist',\
-                      'discovery', 'wireless', 'technology', 'breakthrough', 'video', 'glasses', 'launch', 'satellite',\
+                     'screening', 'startup', 'laser', 'engineer', 'patent', 'future', 'scientist',\
+                      'discovery', 'wireless', 'technology', 'satellite',\
                        'biotech', 'probe', 'magic', 'robot', 'training', 'apple', 'automation', 'artificial Intelligence', 'Musk',
                     'mars', 'solar system', 'arxiv', 'quantum', 'computing', 'nuclear']
 }
@@ -112,6 +112,25 @@ def get_s3_words():
     return label_expands
 
 label_expands_s3 =  get_s3_words()
+
+
+label_expand_ag = {
+    'World': 
+        label_expands_s3['religion'] + label_expands_s3['politics'] + label_expands_s3['military'] \
+            + label_expands_s3['legal'] + label_expands_self['law'] + label_expands_self['politics'],
+    'Sports': 
+        label_expands_self['sports'],
+    'Business':
+        label_expands_self['business'],
+    'science and technology':
+        label_expands_s3['technology'] + label_expands_s3['space'] + label_expands_s3['science'] \
+        + label_expands_self['science and technology'] + label_expands_self['science'] + label_expands_self['technology']
+}
+
+
+for l in label_expand_ag.keys():
+    label_expand_ag[l] = list(set([ii.lower() for ii in label_expand_ag[l]]))
+    print(l, len(label_expand_ag[l]))
 
 
 

@@ -17,10 +17,10 @@ dfl['title'] = dfl['title'].map(lambda x: remove_str(x.lower()) )
 dfl['content'] = dfl['content'].map(lambda x: remove_str(x) )
 
 
-dfl.loc[dfl['content'].isnull()]
 
-df_cc_train, df_cc_test =  train_test_split(dfl, test_size=0.03)
+df_cc_train, df_cc_test =  train_test_split(dfl[['title', 'content', 'ners']], test_size=0.03)
 
+df_cc_train.loc[df_cc_train['content']=='']
 
 df_cc_train.to_csv("./finetunes/df_cc_train.csv", index=False)
 df_cc_test.to_csv("./finetunes/df_cc_test.csv", index=False)

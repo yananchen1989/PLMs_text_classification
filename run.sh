@@ -38,13 +38,13 @@ do
 	seed=$RANDOM
 	for samplecnt in 64 128 
 	do
-		for candidates in 64 128 256 
-		do
-			python -u augf.py --dsn ${1} --samplecnt ${samplecnt} --max_aug_times 1 --aug generate \
+		#for candidates in 64 128 256 
+		#do
+			python -u augf.py --dsn ag --samplecnt ${samplecnt} --max_aug_times 1 --aug generate \
 		            --seed ${seed}  \
-		            --candidates ${candidates} --gpu ${4}  \
-		 	> ./log_lambda/${1}.${samplecnt}.${candidates}.${seed}.log 2>&1 
-		done
+		             --gpu ${1}  \
+		 	> ./log_finetune/ag.${samplecnt}.${seed}.log 2>&1 
+		#done
  	done
 done
 

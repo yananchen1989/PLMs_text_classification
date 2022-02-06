@@ -16,7 +16,7 @@ parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','
 parser.add_argument("--samplecnt", default=8, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
-parser.add_argument("--model", default="albert", type=str)
+parser.add_argument("--backbone", default="albert", type=str)
 parser.add_argument("--verbose", default=0, type=int)
 parser.add_argument("--basemode", default="max", type=str) # rank or thres
 
@@ -24,29 +24,26 @@ parser.add_argument("--basemode", default="max", type=str) # rank or thres
 parser.add_argument("--epochs", default=72, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 parser.add_argument("--testvalid", default='test', type=str)
-parser.add_argument("--filter", default="nlinsp", type=str, choices=['nlinsp', 'clsembed'])
+# parser.add_argument("--filter", default="nlinsp", type=str, choices=['nlinsp', 'clsembed'])
 
-parser.add_argument("--valid_files_cnt", default=16, type=int)
-parser.add_argument("--threads", default=64, type=int)
+#parser.add_argument("--valid_files_cnt", default=16, type=int)
+#parser.add_argument("--threads", default=64, type=int)
 
-parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
-parser.add_argument("--genft", default='no', type=str, choices=['no','lambda','tc','pp', 'ep'])
+# parser.add_argument("--genm", default="gpt", type=str, choices=['gpt','ctrl', 't5'])
 
 # dpfuture
 #parser.add_argument("--future_steps", default=64, type=int)
 #parser.add_argument("--test_beams", default=64, type=int)
-parser.add_argument("--candidates", default=64, type=int)
+parser.add_argument("--candidates", default=8, type=int)
 
 #parser.add_argument("--num_return_sequences", default=4, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="6,7", type=str)
+parser.add_argument("--gpu", default="3", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
-
-
 
 # parser.add_argument("--encm", default='dan', type=str, \
 #      choices=['dan', 'cmlm', \
@@ -95,7 +92,7 @@ from utils.transblock import *
 from utils.encoders import *
 from utils.cbert_cgpt_config import * 
 #from utils.dpp_model import * 
-from utils.flair_ners import *
+#from utils.flair_ners import *
 
 ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
@@ -125,8 +122,9 @@ if args.aug == 'generate':
 
     # ori
     gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    gpt2.trainable = False
+    gpt2.config.pad_token_id=50256
     gen_nlp['gpt2_noft']  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
-
 
     # lambda
     if not os.path.exists('ft_tmp'):
@@ -166,23 +164,21 @@ if args.aug == 'generate':
     gpt2_lambda.config.pad_token_id=50256
     gen_nlp['gpt2_lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-    gpt2_cc_ners = GPT2LMHeadModel.from_pretrained('./gpt2_cc_ners')
-    gpt2_cc_ners.trainable = False
-    gpt2_cc_ners.config.pad_token_id=50256
-    gen_nlp['gpt2_cc_ners']  = pipeline("text-generation", model=gpt2_cc_ners, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+    # gpt2_cc_ners = GPT2LMHeadModel.from_pretrained('./gpt2_cc_ners')
+    # gpt2_cc_ners.trainable = False
+    # gpt2_cc_ners.config.pad_token_id=50256
+    # gen_nlp['gpt2_cc_ners']  = pipeline("text-generation", model=gpt2_cc_ners, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-    gpt2_cc_title = GPT2LMHeadModel.from_pretrained('./gpt2_cc_title')
-    gpt2_cc_title.trainable = False
-    gpt2_cc_title.config.pad_token_id=50256
-    gen_nlp['gpt2_cc_title']  = pipeline("text-generation", model=gpt2_cc_title, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+    # gpt2_cc_title = GPT2LMHeadModel.from_pretrained('./gpt2_cc_title')
+    # gpt2_cc_title.trainable = False
+    # gpt2_cc_title.config.pad_token_id=50256
+    # gen_nlp['gpt2_cc_title']  = pipeline("text-generation", model=gpt2_cc_title, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
     
-    gpt2_natcat = GPT2LMHeadModel.from_pretrained('./gpt2_natcat')
-    gpt2_natcat.trainable = False
-    gpt2_natcat.config.pad_token_id=50256
-    gen_nlp['gpt2_natcat']  = pipeline("text-generation", model=gpt2_natcat, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+    # gpt2_natcat = GPT2LMHeadModel.from_pretrained('./gpt2_natcat')
+    # gpt2_natcat.trainable = False
+    # gpt2_natcat.config.pad_token_id=50256
+    # gen_nlp['gpt2_natcat']  = pipeline("text-generation", model=gpt2_natcat, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
        
-
-
     from transformers import T5Tokenizer, AutoModelWithLMHead
     tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
     print(tokenizer_t5)
@@ -190,14 +186,25 @@ if args.aug == 'generate':
     t5_noft = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
     gen_nlp['t5_noft']  = pipeline("text2text-generation", model=t5_noft, tokenizer=tokenizer_t5, device=0)
 
-    # t5_cc_ners = AutoModelWithLMHead.from_pretrained("t5_ners_cc")
-    # gen_nlp['t5_cc_ners']  = pipeline("text2text-generation", model=t5_cc_ners, tokenizer=tokenizer_t5, device=1)
-
-    t5_cc_title = AutoModelWithLMHead.from_pretrained("t5_title_cc")
-    gen_nlp['t5_cc_title']  = pipeline("text2text-generation", model=t5_cc_title, tokenizer=tokenizer_t5, device=0)
+    t5_cc_title2content = AutoModelWithLMHead.from_pretrained("./finetunes/t5_cc_title2content/epoch_1")
+    gen_nlp['t5_cc_title2content']  = pipeline("text2text-generation", model=t5_cc_title2content, tokenizer=tokenizer_t5, device=0)
     
-    # t5_natcat = AutoModelWithLMHead.from_pretrained("t5_natcat")
-    # gen_nlp['t5_natcat']  = pipeline("text2text-generation", model=t5_natcat, tokenizer=tokenizer_t5, device=1)
+    t5_natcat_label2content = AutoModelWithLMHead.from_pretrained("./finetunes/t5_natcat_label2content/epoch_1")
+    gen_nlp['t5_natcat_label2content']  = pipeline("text2text-generation", model=t5_natcat_label2content, tokenizer=tokenizer_t5, device=0)
+
+
+    from transformers import BartTokenizer, AutoModelWithLMHead
+    tokenizer_bart = BartTokenizer.from_pretrained("facebook/bart-base", cache_dir="./cache", local_files_only=True)
+    print(tokenizer_bart)
+    
+    # bart_noft = AutoModelWithLMHead.from_pretrained("facebook/bart-base", cache_dir="./cache", local_files_only=True)
+    # gen_nlp['bart_noft']  = pipeline("text2text-generation", model=bart_noft, tokenizer=tokenizer_bart, device=0)
+
+    bart_cc_title2content = AutoModelWithLMHead.from_pretrained("./finetunes/bart_cc_title2content/epoch_1")
+    gen_nlp['bart_cc_title2content']  = pipeline("text2text-generation", model=bart_cc_title2content, tokenizer=tokenizer_bart, device=0)
+    
+    bart_natcat_label2content = AutoModelWithLMHead.from_pretrained("./finetunes/bart_natcat_label2content/epoch_1")
+    gen_nlp['bart_natcat_label2content']  = pipeline("text2text-generation", model=bart_natcat_label2content, tokenizer=tokenizer_bart, device=0)
 
     # elif args.genm == 'ctrl':
     #     from transformers import CTRLTokenizer, TFCTRLLMHeadModel
@@ -231,14 +238,14 @@ if args.aug == 'generate':
     # bert_nsp = BertForNextSentencePrediction.from_pretrained('bert-base-uncased', cache_dir='./cache', local_files_only=True)
     # bert_nsp.to(device0)
 
-    #if 'clsembed' in args.filter or 'dvrl' in args.filter:
-    enc = encoder('cmlm-base')
-    enc_dic = {}
-    for l in ds.df_train['label'].unique():
-        contents_ = ds.df_train.loc[ds.df_train['label']==l]['content'].values
-        embeds = enc.infer(contents_)
-        centroid = embeds.mean(axis=0).reshape(1, -1) 
-        enc_dic[l] = centroid
+
+    # enc = encoder('cmlm-base')
+    # enc_dic = {}
+    # for l in ds.df_train['label'].unique():
+    #     contents_ = ds.df_train.loc[ds.df_train['label']==l]['content'].values
+    #     embeds = enc.infer(contents_)
+    #     centroid = embeds.mean(axis=0).reshape(1, -1) 
+    #     enc_dic[l] = centroid
 
     # if 'dvrl' in args.filter:
     #     os.makedirs('dvrl_np_array', exist_ok=True)
@@ -358,49 +365,87 @@ def dvrl_inner_join(files):
 #         model_cls = get_model_bert(ds.df_test.label.unique().shape[0])
 #     model_cls.load_weights("./model_cls/model_full_{}.h5".format(args.dsn))   
 
-def lambda_gen(row):
-    ners = get_ners(row['content'])
+from flair.data import Sentence
+from flair.models import SequenceTagger
 
-    prompt = {}
-    prompt['gpt2_lambda'] = '[{}]'.format(row['label_name']) +  ' '.join(row['content'].split(' ')[:3] )
-    prompt['gpt2_noft'] = row['content']
-    prompt['gpt2_cc_ners'] = "This document is about {}, {} :".format(row['label_name'], ', '.join(ners))
-    prompt['gpt2_cc_title'] = "This document is about {} :".format(row['content'])
+import torch, flair
+flair.device = torch.device('cpu')
+tagger = SequenceTagger.load("flair/ner-english-fast")
 
-    prompt['gpt2_natcat'] = "This document is about {}, {} :".format(row['label_name'], ', '.join(ners))
-    
-    prompt['t5_noft'] = row['content']
-    prompt['t5_cc_title'] = row['content']
+
+def convert_content2ners(content):
+    sentence = Sentence(content)
+    tagger.predict(sentence)
+    result = sentence.to_dict(tag_type='ner')['entities']
+
+    # ents = []
+    # for r in result:
+    #     print(r['text'],  r['labels'][0].to_dict()['value'], r['labels'][0].to_dict()['confidence'])
+    #     ents.append()
+
+    ents_str = ' '.join([r['text'] for r in result])
+    return ents_str.lower()
+
+
+
+def prompt_gen_filter(gen_nlp_sub, prompt):
+    contents_syn = []
+    fbs_gen = 8
+    for _ in range(0, args.candidates//fbs_gen):
+        
+        result_gpt = gen_nlp_sub(prompt, max_length=dsn_maxlen[args.dsn], \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= fbs_gen,\
+                                        clean_up_tokenization_spaces=True)
+        assert len(result_gpt) == fbs_gen
+        contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
+        contents_syn.extend(contents_syn_tmp)
+    torch.cuda.empty_cache()
+
+    return random.sample(contents_syn, 1)[0]
+    # embeds_syn = enc.infer(contents_syn)
+    # embeds_score = cosine_similarity(embeds_syn, enc_dic[row['label']])
+
+    # preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
+    # cls_score = preds[:, row['label'] ]
+
+    # df_tmp = pd.DataFrame(zip(contents_syn, list(embeds_score.reshape(-1)), list(cls_score)),\
+    #              columns=['content', 'embed_score', 'cls_score'])
+
+    # result_syn_cls = df_tmp.sort_values(by=['cls_score'], ascending=False).head(1)['content'].tolist()[0] 
+    # result_syn_embed = df_tmp.sort_values(by=['embed_score'], ascending=False).head(1)['content'].tolist()[0] 
+    # infos.append((genm+'_cls', result_syn_cls))
+    # infos.append((genm+'_embed', result_syn_embed))
+
+from utils.seed_words import * 
+def generate(row):
+
+    prompt_lambda = '[{}] {}'.format(row['label_name'], ' '.join(row['content'].split(' ')[:3]) )
+    prompt_content = row['content']
+    prompt_ners = row['label_name'].lower() + ' ' + convert_content2ners(row['content']) 
+    prompt_seeds = row['label_name'].lower() + ' ' + ' '.join(random.sample(label_expand_ag[row['label_name']], 16))
 
     infos = []
-    for genm in gen_nlp.keys():
- 
-        contents_syn = []
-        fbs_gen = 8
-        for _ in range(0, args.candidates//fbs_gen):
-            torch.cuda.empty_cache()
-            result_gpt = gen_nlp[genm](prompt[genm], max_length=dsn_maxlen[args.dsn], \
-                                            do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                            repetition_penalty=1.2, num_return_sequences= fbs_gen,\
-                                            clean_up_tokenization_spaces=True)
-            assert len(result_gpt) == fbs_gen
-            contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
-            contents_syn.extend(contents_syn_tmp)
-        torch.cuda.empty_cache()
+    for fmark, gen_nlp_sub in gen_nlp.items():
+        if fmark == 'gpt2_lambda':
+            contents_syn = prompt_gen_filter(gen_nlp_sub, prompt_lambda)
+            infos.append((contents_syn, 'gpt2_lambda', row['label_name'], row['label']))
+        else:
+            contents_syn_content = prompt_gen_filter(gen_nlp_sub, prompt_content)
+            contents_syn_ners    = prompt_gen_filter(gen_nlp_sub, prompt_ners)
+            contents_syn_seeds    = prompt_gen_filter(gen_nlp_sub, prompt_seeds)
 
-        embeds_syn = enc.infer(contents_syn)
-        embeds_score = cosine_similarity(embeds_syn, enc_dic[row['label']])
+            infos.append((contents_syn_content, fmark+'__content', row['label_name'], row['label']))
+            print(fmark+'__content', row['label_name'], '===>')
+            print(contents_syn_content,'\n')
 
-        preds = model_cls.predict(np.array(contents_syn),  batch_size=32, verbose=0)
-        cls_score = preds[:, row['label'] ]
+            infos.append((contents_syn_ners, fmark+'__ners', row['label_name'], row['label']))
+            print(fmark+'__ners', row['label_name'], '===>')
+            print(contents_syn_ners,'\n')
 
-        df_tmp = pd.DataFrame(zip(contents_syn, list(embeds_score.reshape(-1)), list(cls_score)),\
-                     columns=['content', 'embed_score', 'cls_score'])
-
-        result_syn_cls = df_tmp.sort_values(by=['cls_score'], ascending=False).head(1)['content'].tolist()[0] 
-        result_syn_embed = df_tmp.sort_values(by=['embed_score'], ascending=False).head(1)['content'].tolist()[0] 
-        infos.append((genm+'_cls', result_syn_cls))
-        infos.append((genm+'_embed', result_syn_embed))
+            infos.append((contents_syn_seeds, fmark+'__seeds', row['label_name'], row['label']))
+            print(fmark+'__seeds', row['label_name'], '===>')
+            print(contents_syn_seeds,'\n')
     return infos
 
 '''
@@ -454,13 +499,13 @@ def nlinsp_gen(row, gen_nlp, nli_nlp, bert_nsp):
     return result_syn
 '''
 
-
+'''
 if args.testbed:
     print("begin_to_test_noaug")
-    acc_noaug, model_cls  = do_train_test_thread(ds.df_train, ds.df_test, args.model, 16, args.epochs)
+    acc_noaug, model_cls  = do_train_test_thread(ds.df_train, ds.df_test, args.backbone, 16, args.epochs)
 else:
     acc_noaug = -1
-
+'''
 
 
 
@@ -484,23 +529,14 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
             print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
 
             t0 = time.time()
-            # if args.filter == 'nlinsp':
-            #     if args.genm == 'gpt':
-            #         result_syn = nlinsp_gen(row, gen_nlp_gpt2, nli_nlp, bert_nsp)
-            #     elif args.genm == 't5':
-            #         result_syn = nlinsp_gen(row, gen_nlp_t5, nli_nlp, bert_nsp)
-            #elif args.filter == 'clsembed':
-            result_syn = lambda_gen(row)
+            result_syns = generate(row)
 
             print("gen===>", row['label_name'] )
-            for fmark, content in result_syn:
-                print("{} ==>{}".format(fmark, content) )
-                infos.append((content, row['label_name'], row['label'], fmark))
-            print('\n')
+            infos.extend(result_syns)
             t1 = time.time()
             print("timecost:", (t1-t0)/60 )
 
-        df_synthesize = pd.DataFrame(infos, columns=['content','label_name','label', 'fmark'])
+        df_synthesize = pd.DataFrame(infos, columns=['content', 'fmark', 'label_name','label'])
 
         print("final generated==>", df_synthesize.shape[0], ds.df_train.shape[0], df_synthesize.shape[0]/ds.df_train.shape[0])
         '''
@@ -709,9 +745,12 @@ for augi in range(args.max_aug_times):
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
 
+df_train_aug.to_csv("./augf_csvs/{}_{}_{}.csv".format(args.dsn, args.samplecnt, args.seed), index=False)
+
+'''
 for fmark in df_synthesize['fmark'].unique():
     acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
-                ds.df_test, args.model, 16, args.epochs)
+                ds.df_test, args.backbone, 16, args.epochs)
 
     summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
         ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
@@ -719,3 +758,4 @@ for fmark in df_synthesize['fmark'].unique():
     # if args.testbed and args.epochs > 10 and gain != -1 :
     #     record_log('log__baselines', summary)
     print('success', ' '.join(summary))
+'''

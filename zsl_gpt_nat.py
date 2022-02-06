@@ -8,7 +8,7 @@ import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
 import joblib,transformers
 #assert gensim.__version__ == '4.1.2'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 from transformers import AutoModelForCausalLM, AutoTokenizer, top_k_top_p_filtering
 import torch,operator
 from torch import nn
@@ -26,23 +26,6 @@ labels_candidates = ds.df_train['label_name'].unique().tolist()
 
 
 
-label_expand = {
-    'World': 
-        label_expands_s3['religion'] + label_expands_s3['politics'] + label_expands_s3['military'] \
-            + label_expands_s3['legal'] + label_expands_self['law'] + label_expands_self['politics'],
-    'Sports': 
-        label_expands_self['sports'],
-    'Business':
-        label_expands_self['business'],
-    'science and technology':
-        label_expands_s3['technology'] + label_expands_s3['space'] + label_expands_s3['science'] \
-        + label_expands_self['science and technology'] + label_expands_self['science'] + label_expands_self['technology']
-}
-
-
-for l in label_expand.keys():
-    label_expand[l] = list(set([ii.lower() for ii in label_expand[l]]))
-    print(l, len(label_expand[l]))
 
 
 from transformers import AutoTokenizer, AutoModelWithLMHead
@@ -68,12 +51,9 @@ for ix, row in ds.df_test.sample(frac=1).reset_index().iterrows():
     template2 = "{} News: {}.".format(nlp_fill.tokenizer.mask_token, content)
     template3 = "[Category: {} ] {}.".format(nlp_fill.tokenizer.mask_token, content)
 
-    
-    
-
     filled_results = nlp_fill([template1, template2, template3])
 
-     
+
     # auc score
     ls_auc = {l:0 for l in labels_candidates}
     for filled_result in filled_results:
@@ -95,9 +75,10 @@ for ix, row in ds.df_test.sample(frac=1).reset_index().iterrows():
         for l in labels_candidates:
             auc = metrics.roc_auc_score(dfr[l].values, dfr['score'].values)
             ls_auc[l] += auc 
-
+    df_auc = pd.DataFrame(ls_auc.items(), columns=['label','score_auc'])
 
     # ori score
+    ls = {l:0 for l in labels_candidates}
     for filled_result in filled_results:
 
         for r in filled_result :
@@ -111,12 +92,17 @@ for ix, row in ds.df_test.sample(frac=1).reset_index().iterrows():
                     ls[l] += r['score']  
     df_noexpand = pd.DataFrame(ls.items(), columns=['label','score_noexpand'])
 
+    df_fuse = pd.merge(df_noexpand, df_auc, on=['label'], how='inner')
+    df_fuse['score'] = df_fuse['score_noexpand'].map(lambda x: math.log(x))    \
+                                + df_fuse['score_auc'].map(lambda x: math.log(x))
 
-    print('pred===>', max(ls, key=ls.get))
+    pred_label = df_fuse.sort_values(by=['score'], ascending=False).head(1)['label'].tolist()[0]
+
+    print('pred===>', pred_label)
     print('label===>', row['label_name'])
     
 
-    if row['label_name'] == max(ls, key=ls.get):
+    if row['label_name'] == pred_label:
         accs.append(1)
     else:
         accs.append(0)

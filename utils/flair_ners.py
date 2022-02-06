@@ -37,6 +37,7 @@ for ii in jxml:
         print(ii)
         print(ii['Name'])
 
+content = ds.df_train.loc[ds.df_train['label_name']=='Sports'].sample(1)['content'].tolist()[0]
 
 print(content)
 sentence = Sentence(content)
