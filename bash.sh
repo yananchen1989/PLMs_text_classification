@@ -274,7 +274,9 @@ python -u openprompt_gen_syns.py --model t5-base --gpu 1 --template prefix --sou
 
 
 
-
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
+                  --seed 456  \
+                   --gpu 0
 
 
 
@@ -322,6 +324,7 @@ conda install -c /scinet/mist/ibm/open-ce tensorflow_hub
 conda env remove --name myenv
 
 
+cd $SCRATCH
 
 
 
