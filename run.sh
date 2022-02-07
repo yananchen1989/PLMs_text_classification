@@ -36,11 +36,11 @@
 for i in {1..10}
 do
 	seed=$RANDOM
-	for samplecnt in 64 128 
+	for samplecnt in 32 64 128 256 512 1024
 	do
 		#for candidates in 64 128 256 
 		#do
-			python -u augf.py --dsn ag --samplecnt ${samplecnt} --max_aug_times 1 --aug generate \
+			python -u augf.py --dsn ag --samplecnt ${samplecnt} --max_aug_times 1  \
 		            --seed ${seed}  \
 		             --gpu ${1}  \
 		 	> ./log_finetune/ag.${samplecnt}.${seed}.log 2>&1 
