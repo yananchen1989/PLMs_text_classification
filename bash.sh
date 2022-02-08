@@ -274,9 +274,9 @@ python -u openprompt_gen_syns.py --model t5-base --gpu 1 --template prefix --sou
 
 
 
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 --aug generate \
-                  --seed 456  \
-                   --gpu 0
+python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 \
+                  --seed 498  \
+                   --gpu 3
 
 
 

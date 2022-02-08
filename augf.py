@@ -40,7 +40,7 @@ parser.add_argument("--candidates", default=8, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="3", type=str)
+parser.add_argument("--gpu", default="", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -105,106 +105,110 @@ ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates(
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 #seed = random.sample(list(range(10000)), 1)[0]
 
-#if args.aug == 'eda':
-from utils.eda import *
+dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
-#if args.aug == 'generate':
+args.aug = args.aug.split(',')
+
+if 'eda' in args.aug:
+    from utils.eda import *
+
+if 'generate' in args.aug:
 ####################### generation setting ######################
-gen_nlp = {}
+    gen_nlp = {}
 
-from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
-tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-#tokenizer_gpt2.padding_side = "left" 
-tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
-tokenizer_gpt2.sep_token = '<|sep|>'
-#tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
-print(tokenizer_gpt2)
+    from transformers import GPT2Tokenizer, GPT2LMHeadModel #TFGPT2LMHeadModel, TFGPT2Model, TFAutoModelForCausalLM
+    tokenizer_gpt2 = GPT2Tokenizer.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    #tokenizer_gpt2.padding_side = "left" 
+    tokenizer_gpt2.pad_token = tokenizer_gpt2.eos_token # to avoid an error "<|endoftext|>": 50256
+    tokenizer_gpt2.sep_token = '<|sep|>'
+    #tokenizer_gpt2.add_tokens(tokenizer_gpt2.sep_token)
+    print(tokenizer_gpt2)
 
-# ori
-gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
-gpt2.trainable = False
-gpt2.config.pad_token_id=50256
-gen_nlp['gpt2_noft']  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+    # ori
+    gpt2 = GPT2LMHeadModel.from_pretrained('gpt2', cache_dir="./cache", local_files_only=True)
+    gpt2.trainable = False
+    gpt2.config.pad_token_id=50256
+    gen_nlp['gpt2_noft']  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-# lambda
-if not os.path.exists('ft_tmp'):
-    os.makedirs('ft_tmp')
+    # lambda
+    if not os.path.exists('ft_tmp'):
+        os.makedirs('ft_tmp')
 
-train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, args.seed)
-validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, args.seed)
+    train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, args.seed)
+    validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, args.seed)
 
-df_train_ft = ds.df_train.copy()
-df_test_ft = ds.df_test.copy()
+    df_train_ft = ds.df_train.copy()
+    df_test_ft = ds.df_test.copy()
 
-df_train_ft['text'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_train_ft['content']
-df_test_ft['text'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_test_ft['content']
+    df_train_ft['text'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_train_ft['content']
+    df_test_ft['text'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_test_ft['content']
 
-with open (train_file, 'w') as f:
-    for line in df_train_ft['text'].tolist():
-        f.write(line + tokenizer_gpt2.eos_token + '\n')
+    with open (train_file, 'w') as f:
+        for line in df_train_ft['text'].tolist():
+            f.write(line + tokenizer_gpt2.eos_token + '\n')
 
-with open (validation_file, 'w') as f:
-    for line in df_test_ft['text'].tolist():
-        f.write(line + tokenizer_gpt2.eos_token + '\n')
+    with open (validation_file, 'w') as f:
+        for line in df_test_ft['text'].tolist():
+            f.write(line + tokenizer_gpt2.eos_token + '\n')
 
-model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
-os.system(
-"CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
-        --num_train_epochs {} \
-        --train_file {} \
-        --validation_file {} \
-        --model_name_or_path gpt2 \
-        --per_device_train_batch_size 8 \
-        --per_device_eval_batch_size 8 \
-        --output_dir {} \
-        --preprocessing_num_workers 8 --overwrite_cache True \
-        --block_size {}".format(args.gpu, 12, train_file, validation_file, model_output_path, 64) ) 
-gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
-gpt2_lambda.trainable = False
-gpt2_lambda.config.pad_token_id=50256
-gen_nlp['gpt2_lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+    model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
+    os.system(
+    "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
+            --num_train_epochs {} \
+            --train_file {} \
+            --validation_file {} \
+            --model_name_or_path gpt2 \
+            --per_device_train_batch_size 8 \
+            --per_device_eval_batch_size 8 \
+            --output_dir {} \
+            --preprocessing_num_workers 8 --overwrite_cache True \
+            --block_size {}".format(args.gpu, 12, train_file, validation_file, model_output_path, 64) ) 
+    gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
+    gpt2_lambda.trainable = False
+    gpt2_lambda.config.pad_token_id=50256
+    gen_nlp['gpt2_lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-# gpt2_cc_ners = GPT2LMHeadModel.from_pretrained('./gpt2_cc_ners')
-# gpt2_cc_ners.trainable = False
-# gpt2_cc_ners.config.pad_token_id=50256
-# gen_nlp['gpt2_cc_ners']  = pipeline("text-generation", model=gpt2_cc_ners, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+    # gpt2_cc_ners = GPT2LMHeadModel.from_pretrained('./gpt2_cc_ners')
+    # gpt2_cc_ners.trainable = False
+    # gpt2_cc_ners.config.pad_token_id=50256
+    # gen_nlp['gpt2_cc_ners']  = pipeline("text-generation", model=gpt2_cc_ners, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-# gpt2_cc_title = GPT2LMHeadModel.from_pretrained('./gpt2_cc_title')
-# gpt2_cc_title.trainable = False
-# gpt2_cc_title.config.pad_token_id=50256
-# gen_nlp['gpt2_cc_title']  = pipeline("text-generation", model=gpt2_cc_title, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+    # gpt2_cc_title = GPT2LMHeadModel.from_pretrained('./gpt2_cc_title')
+    # gpt2_cc_title.trainable = False
+    # gpt2_cc_title.config.pad_token_id=50256
+    # gen_nlp['gpt2_cc_title']  = pipeline("text-generation", model=gpt2_cc_title, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-# gpt2_natcat = GPT2LMHeadModel.from_pretrained('./gpt2_natcat')
-# gpt2_natcat.trainable = False
-# gpt2_natcat.config.pad_token_id=50256
-# gen_nlp['gpt2_natcat']  = pipeline("text-generation", model=gpt2_natcat, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
-   
-from transformers import T5Tokenizer, AutoModelWithLMHead
-tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-print(tokenizer_t5)
+    # gpt2_natcat = GPT2LMHeadModel.from_pretrained('./gpt2_natcat')
+    # gpt2_natcat.trainable = False
+    # gpt2_natcat.config.pad_token_id=50256
+    # gen_nlp['gpt2_natcat']  = pipeline("text-generation", model=gpt2_natcat, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+       
+    from transformers import T5Tokenizer, AutoModelWithLMHead
+    tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    print(tokenizer_t5)
 
-t5_noft = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
-gen_nlp['t5_noft']  = pipeline("text2text-generation", model=t5_noft, tokenizer=tokenizer_t5, device=0)
+    t5_noft = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
+    gen_nlp['t5_noft']  = pipeline("text2text-generation", model=t5_noft, tokenizer=tokenizer_t5, device=0)
 
-t5_cc_title2content = AutoModelWithLMHead.from_pretrained("./finetunes/t5_cc_title2content/epoch_1")
-gen_nlp['t5_cc_title2content']  = pipeline("text2text-generation", model=t5_cc_title2content, tokenizer=tokenizer_t5, device=0)
+    t5_cc_title2content = AutoModelWithLMHead.from_pretrained("./finetunes/t5_cc_title2content/epoch_1")
+    gen_nlp['t5_cc_title2content']  = pipeline("text2text-generation", model=t5_cc_title2content, tokenizer=tokenizer_t5, device=0)
 
-t5_natcat_label2content = AutoModelWithLMHead.from_pretrained("./finetunes/t5_natcat_label2content/epoch_1")
-gen_nlp['t5_natcat_label2content']  = pipeline("text2text-generation", model=t5_natcat_label2content, tokenizer=tokenizer_t5, device=0)
+    t5_natcat_label2content = AutoModelWithLMHead.from_pretrained("./finetunes/t5_natcat_label2content/epoch_1")
+    gen_nlp['t5_natcat_label2content']  = pipeline("text2text-generation", model=t5_natcat_label2content, tokenizer=tokenizer_t5, device=0)
 
 
-from transformers import BartTokenizer, AutoModelWithLMHead
-tokenizer_bart = BartTokenizer.from_pretrained("facebook/bart-base", cache_dir="./cache", local_files_only=True)
-print(tokenizer_bart)
+    from transformers import BartTokenizer, AutoModelWithLMHead
+    tokenizer_bart = BartTokenizer.from_pretrained("facebook/bart-base", cache_dir="./cache", local_files_only=True)
+    print(tokenizer_bart)
 
-# bart_noft = AutoModelWithLMHead.from_pretrained("facebook/bart-base", cache_dir="./cache", local_files_only=True)
-# gen_nlp['bart_noft']  = pipeline("text2text-generation", model=bart_noft, tokenizer=tokenizer_bart, device=0)
+    # bart_noft = AutoModelWithLMHead.from_pretrained("facebook/bart-base", cache_dir="./cache", local_files_only=True)
+    # gen_nlp['bart_noft']  = pipeline("text2text-generation", model=bart_noft, tokenizer=tokenizer_bart, device=0)
 
-bart_cc_title2content = AutoModelWithLMHead.from_pretrained("./finetunes/bart_cc_title2content/epoch_1")
-gen_nlp['bart_cc_title2content']  = pipeline("text2text-generation", model=bart_cc_title2content, tokenizer=tokenizer_bart, device=0)
+    bart_cc_title2content = AutoModelWithLMHead.from_pretrained("./finetunes/bart_cc_title2content/epoch_1")
+    gen_nlp['bart_cc_title2content']  = pipeline("text2text-generation", model=bart_cc_title2content, tokenizer=tokenizer_bart, device=0)
 
-bart_natcat_label2content = AutoModelWithLMHead.from_pretrained("./finetunes/bart_natcat_label2content/epoch_1")
-gen_nlp['bart_natcat_label2content']  = pipeline("text2text-generation", model=bart_natcat_label2content, tokenizer=tokenizer_bart, device=0)
+    bart_natcat_label2content = AutoModelWithLMHead.from_pretrained("./finetunes/bart_natcat_label2content/epoch_1")
+    gen_nlp['bart_natcat_label2content']  = pipeline("text2text-generation", model=bart_natcat_label2content, tokenizer=tokenizer_bart, device=0)
 
 # elif args.genm == 'ctrl':
 #     from transformers import CTRLTokenizer, TFCTRLLMHeadModel
@@ -219,7 +223,6 @@ gen_nlp['bart_natcat_label2content']  = pipeline("text2text-generation", model=b
 
 #print('generate model loaded ==>{}'.format(args.genm))
 
-dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
 ####################### filter setting ######################
 #if 'nlinsp' in args.filter: 
@@ -254,20 +257,20 @@ dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':12
 
 
 
-#if args.aug == 'bt':
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
-model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
-tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
-model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
-nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=len(gpus)-1)
-nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=len(gpus)-1)
-print('bt model loaded')
+if 'bt' in args.aug:
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
+    model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir="./cache", local_files_only=True)
+    tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
+    model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir="./cache", local_files_only=True)
+    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=len(gpus)-1)
+    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=len(gpus)-1)
+    print('bt model loaded')
 
 # if args.aug == 'fillin':
 #     from utils.aug_fillinmask import *
 
-if args.aug == 'cbert':
+if 'cbert' in args.aug:
     from utils.cbert_config import * 
     label_list_len = ds.df_test['label_name'].unique().shape[0]
     if label_list_len > 2:
@@ -510,19 +513,9 @@ else:
 
 
 def synthesize(ds, proper_len, syn_df_ll, seed):
-    # # nli config
-    # if args.dsn in ['ag','uci', 'nyt']:
-    #     ln_extend = {}
-    #     for l in ds.df_test['label_name'].unique():
-    #         ln_extend[l] = expand_label_nli[l]
-    #     ln_extend__rev = {}
-    #     for i, j in ln_extend.items():
-    #         for jj in j:
-    #             ln_extend__rev[jj] = i
-    #     labels_candidates = set()
-    #     for v in ln_extend.values():
-    #         labels_candidates.update(v)   
-    if args.aug == 'generate':
+    df_synthesize_ll = []
+
+    if 'generate' in args.aug:
         infos = []
         for ix, row in ds.df_train.reset_index().iterrows():
             torch.cuda.empty_cache()
@@ -590,37 +583,39 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         '''
         assert df_synthesize_gen.loc[df_synthesize_gen['fmark']==df_synthesize_gen['fmark'].unique()[0],'label_name'].value_counts().min() >= args.samplecnt
         print(df_synthesize_gen.loc[df_synthesize_gen['fmark']==df_synthesize_gen['fmark'].unique()[0], 'label_name'].value_counts())
+        df_synthesize_ll.append(df_synthesize_gen)
 
 
 
+    if 'eda' in args.aug :
+        aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
+                                   alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
+        assert len(aug_sentences) == ds.df_train.shape[0]
 
-    #elif args.aug == 'eda':
-    aug_sentences = ds.df_train['content'].map(lambda x: eda(x, alpha_sr=0.2, alpha_ri=0.2, \
-                               alpha_rs=0.2, p_rd=0.2, num_aug=1)).tolist()
-    assert len(aug_sentences) == ds.df_train.shape[0]
+        infos_eda = []
+        for ix, row in ds.df_train.reset_index().iterrows():
+            infos_eda.append((aug_sentences[ix][0], 'eda', row['label_name'], row['label']))
+        df_synthesize_eda = pd.DataFrame(infos_eda, columns=['content', 'fmark', 'label_name','label'])
+        df_synthesize_ll.append(df_synthesize_eda)
 
-    infos_eda = []
-    for ix, row in ds.df_train.reset_index().iterrows():
-        infos_eda.append((aug_sentences[ix][0], 'eda', row['label_name'], row['label']))
-    df_synthesize_eda = pd.DataFrame(infos_eda, columns=['content', 'fmark', 'label_name','label'])
 
-   # elif args.aug == 'bt':
-    contents_syn_bt = []
-    fbs = 8
-    for i in range(0, ds.df_train.shape[0], fbs):
-        contents_trunk = ds.df_train['content'].tolist()[i:i+fbs]
-        content_ =  nlp_forward(contents_trunk, truncation=True, \
-                   do_sample=True, temperature=0.9, max_length=128, num_return_sequences=1)
-        content__ =  nlp_backward([ii['translation_text'] for ii in content_], truncation=True, \
-                    do_sample=True, max_length=128, temperature=0.9, num_return_sequences=1 )
-        contents_syn_bt.extend([ii['translation_text'] for ii in content__])
-        print('translate trunk==>', i, i+fbs, 'of', ds.df_train.shape[0])
+    if 'bt' in args.aug:
+        contents_syn_bt = []
+        fbs = 8
+        for i in range(0, ds.df_train.shape[0], fbs):
+            contents_trunk = ds.df_train['content'].tolist()[i:i+fbs]
+            content_ =  nlp_forward(contents_trunk, truncation=True, \
+                       do_sample=True, temperature=0.9, max_length=128, num_return_sequences=1)
+            content__ =  nlp_backward([ii['translation_text'] for ii in content_], truncation=True, \
+                        do_sample=True, max_length=128, temperature=0.9, num_return_sequences=1 )
+            contents_syn_bt.extend([ii['translation_text'] for ii in content__])
+            print('translate trunk==>', i, i+fbs, 'of', ds.df_train.shape[0])
 
-    infos_bt = []
-    for ix, row in ds.df_train.reset_index().iterrows():
-        infos_bt.append((contents_syn_bt[ix], 'bt', row['label_name'], row['label']))
-    df_synthesize_bt = pd.DataFrame(infos_bt, columns=['content', 'fmark', 'label_name','label'])
-
+        infos_bt = []
+        for ix, row in ds.df_train.reset_index().iterrows():
+            infos_bt.append((contents_syn_bt[ix], 'bt', row['label_name'], row['label']))
+        df_synthesize_bt = pd.DataFrame(infos_bt, columns=['content', 'fmark', 'label_name','label'])
+        df_synthesize_ll.append(df_synthesize_bt)
 
 
     # elif args.aug == 'cbert':
@@ -739,7 +734,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
     #     df_synthesize = ds.df_train[['label_name','label']]
     #     df_synthesize['content'] = contents_syn
     #     df_synthesize['fmark'] = aug
-    df_synthesize = pd.concat([df_synthesize_gen, df_synthesize_eda, df_synthesize_bt])
+    df_synthesize = pd.concat(df_synthesize_ll)
     return df_synthesize 
 
 

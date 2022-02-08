@@ -41,7 +41,7 @@ do
 		#for candidates in 64 128 256 
 		#do
 			python -u augf.py --dsn ag --samplecnt ${samplecnt} --max_aug_times 1  \
-		            --seed ${seed}  \
+		            --seed ${seed}  --aug generate \
 		             --gpu ${1}  \
 		 	> ./log_finetune/ag.${samplecnt}.${seed}.log 2>&1 
 		#done
