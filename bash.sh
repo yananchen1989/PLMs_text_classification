@@ -274,15 +274,14 @@ python -u openprompt_gen_syns.py --model t5-base --gpu 1 --template prefix --sou
 
 
 
-python -u augf.py --dsn ag --samplecnt 8 --max_aug_times 1 \
-                  --seed 498  \
-                   --gpu 3
+python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 \
+                  --seed 900  --aug eda,bt 
+                   
 
 
-
-
-
-
+nohup python -u augt.py > augt.0.log & 
+nohup python -u augt.py > augt.1.log & 
+nohup python -u augt.py > augt.2.log & 
 
 
 
@@ -305,9 +304,11 @@ python -c "import accelerate;print(accelerate.__version__)"
 
 
 
-module load anaconda3
+module load anaconda3;source activate env
+
+
 conda create -n env python=3.8
-source activate env
+
 
 conda install -c /scinet/mist/ibm/open-ce tensorflow==2.7.0 cudatoolkit=11.2
 

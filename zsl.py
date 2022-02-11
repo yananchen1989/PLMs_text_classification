@@ -6,7 +6,9 @@ import re,operator,joblib
 from sklearn.feature_extraction.text import CountVectorizer
 import tensorflow as tf
 from sklearn.metrics.pairwise import cosine_distances,cosine_similarity 
-import joblib,gensim,transformers
+import joblib,transformers
+
+#import gensim
 #assert gensim.__version__ == '4.1.2'
 
 parser = argparse.ArgumentParser()
@@ -17,9 +19,9 @@ parser.add_argument("--acc_topn", default=1, type=int)
 parser.add_argument("--expand", default='gpt_filter', type=str)
 parser.add_argument("--softmax_score", default=0, type=int)
 
-parser.add_argument("--backbone", default='nli', type=str, choices=['nli','tars','roberta','nspbert','simi'])
+parser.add_argument("--backbone", default='roberta', type=str, choices=['nli','tars','roberta','nspbert','simi'])
 parser.add_argument("--seed_sample", default=8, type=int)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="1", type=str)
 parser.add_argument("--param", default='t5', type=str)
 
 args = parser.parse_args()
@@ -50,7 +52,6 @@ labels_candidates = ds.df_train['label_name'].unique().tolist()
 print(labels_candidates)
 if args.dsn in ['nyt','yahoo']:
     ds, proper_len = process_ds(ds, 256, True)
-ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 
 from transformers import pipeline
 import torch
@@ -68,7 +69,7 @@ elif args.backbone == 'roberta':
     from transformers import AutoTokenizer, AutoModelWithLMHead
     tokenizer = AutoTokenizer.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True) 
     model = AutoModelWithLMHead.from_pretrained("roberta-large",cache_dir="./cache",local_files_only=True)
-    nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=len(gpus)-1, top_k = 2048 ) 
+    nlp_fill = pipeline("fill-mask", model=model, tokenizer=tokenizer, device=len(gpus)-1, top_k = 10000  )  # 50265 2048 len(tokenizer.vocab)
     id_token = {ix:token for token, ix in tokenizer.vocab.items()}
 
     stopwords = joblib.load("./utils/stopwords")
@@ -304,7 +305,7 @@ def zsl_roberta(content):
                 continue
 
             for l in ls.keys():
-                if token in l.lower():
+                if token in l.lower().replace('and', ' ').split():
                     ls[l] += r['score']  
 
     df_noexpand = pd.DataFrame(ls.items(), columns=['label','score_noexpand'])

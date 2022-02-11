@@ -258,44 +258,54 @@ print(tokenizer_t5.decode(decoder_input_ids[0], skip_special_tokens=True, clean_
 
 
 
-#############  计算指标
+#############  计算指标          ##############
 
 import glob
 import pandas as pd 
 
 
-files = glob.glob("./log_lambda/uci.128.64.*.log")
+files = glob.glob("./augt.*.log")
 
 infos = []
 for file in files:
     with open(file,'r') as f: 
         for line in f:
-            if 'success summary===>' in line:
-                #print(line)
-                for ii in tokens:
-                    if ii.startswith("samplecnt:"):
-                        samplecnt = int(ii.split(":")[-1])
-                    if ii.startswith("candidates:"):
-                        candidates = int(ii.split(":")[-1])
-                tokens = line.strip().split('summary==')[-1].split(' ')
-                fmark = tokens[-3].split(':')[-1]
-                acc_base = float(tokens[-2].split(':')[-1])
-                acc_aug = float(tokens[-1].split(':')[-1])
-                infos.append((fmark, acc_base, acc_aug))
-
-df = pd.DataFrame(infos, columns=['fmark','acc_base','acc_aug'])
+             
+            if 'seed:' in line:
+                tokens = line.strip().split('==>')[-1].strip().split()
+                infos.append((int(tokens[0]), tokens[1], float(tokens[-1])))
+df = pd.DataFrame(infos, columns=['samplecnt','fmark','acc'])
 
 
+for samplecnt in [32, 64, 128, 256, 512, 1024]:
+    for fmark in df['fmark'].unique():
+        dfi = df.loc[(df['samplecnt']==samplecnt) & (df['fmark']==fmark)]
+        if dfi.shape[0] == 0:
+            continue 
+        acc_mean = dfi['acc'].mean()
+        print(samplecnt, fmark, dfi['acc'].shape[0], acc_mean)
 
-for fmark in df['fmark'].unique():
-    dfi = df.loc[df['fmark']==fmark]
-    print( fmark, dfi.shape[0], dfi['acc_base'].mean(), dfi['acc_aug'].mean()) 
+    print()
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+############ ctrl ############
 import torch
 device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 
