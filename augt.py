@@ -1,30 +1,11 @@
-import sys,os,logging,glob,pickle,torch,csv,datetime,gc,argparse,math,time,operator,traceback,shutil,string
-from sklearn import metrics
+import sys,os,logging,glob,csv,datetime,gc,argparse,math,time,operator,traceback,string
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-
-# import GPUtil
-# GPUtil.showUtilization()
-# deviceIDs = [0,1,2,3]
-# #deviceIDs = GPUtil.getAvailable(order = 'memory', limit = 4, maxLoad = 1, maxMemory = 0.8, includeNan=False, excludeID=[], excludeUUID=[])
-# print("deviceIDs ==> ", deviceIDs)
-# assert len(deviceIDs) >= 2
-
 parser = argparse.ArgumentParser()
-parser.add_argument("--aug", default="generate", type=str)
 parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--samplecnt", default=64, type=int)
-parser.add_argument("--max_aug_times", default=1, type=int)
-
 parser.add_argument("--backbone", default="former", type=str)
-parser.add_argument("--verbose", default=0, type=int)
-parser.add_argument("--basemode", default="max", type=str) # rank or thres
-
-#parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--epochs", default=100, type=int)
-parser.add_argument("--testbed", default=1, type=int)
-parser.add_argument("--testvalid", default='test', type=str)
-parser.add_argument("--seed", default=0, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 
 
@@ -43,13 +24,8 @@ import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
-from transformers import pipeline
-from threading import Thread
-#tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
-#tf.keras.backend.set_floatx('float16')
-import nltk 
-from sklearn.metrics.pairwise import cosine_distances,cosine_similarity
-#nltk.download('wordnet')
+
+
 gpus = tf.config.list_physical_devices('GPU')
 print('======>',gpus,'<=======')
 if gpus:
@@ -62,8 +38,6 @@ if gpus:
     print(e)
 
 print("number of gpus==>", len(gpus))
-#device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
-#assert device0.type=='cuda' 
 
 from utils.load_data import * 
 from utils.transblock import * 
