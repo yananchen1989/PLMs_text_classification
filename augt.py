@@ -25,7 +25,7 @@ parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--testbed", default=1, type=int)
 parser.add_argument("--testvalid", default='test', type=str)
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 
 
 args = parser.parse_args()
@@ -62,13 +62,11 @@ if gpus:
     print(e)
 
 print("number of gpus==>", len(gpus))
-device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
+#device0 = torch.device("cuda:{}".format(0) if torch.cuda.is_available() else "cpu")
 #assert device0.type=='cuda' 
 
 from utils.load_data import * 
 from utils.transblock import * 
-from utils.encoders import *
-from utils.cbert_cgpt_config import * 
 
 ds = load_data(dataset=args.dsn, samplecnt= 8)
 
@@ -82,7 +80,8 @@ for epoch in range(100):
              
             seed = file_csv.split('.')[1].split('_')[-1]
             df_train = pd.read_csv(file_csv)
-            
+            print('fmarkdist==>', file_csv)
+            print(df_train['fmark'].value_counts())
             df_train_noaug = df_train.loc[df_train['fmark'] == 'ori']
             acc_noaug, _  = do_train_test_thread(df_train_noaug, ds.df_test, args.backbone, 32, args.epochs)
 
