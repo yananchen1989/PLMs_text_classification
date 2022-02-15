@@ -52,57 +52,34 @@ tokenizer_t5.convert_tokens_to_ids(['up'])
 
 
 import os 
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 from transformers import pipeline
-from transformers import T5Tokenizer, AutoModelWithLMHead
-tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir='./cache', local_files_only=True)
-print(tokenizer_t5)
-t5 = AutoModelWithLMHead.from_pretrained("./finetunes/t5_natcat/epoch_1")    
-
-t5_noft = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir='./cache', local_files_only=True)    
-
-
 from transformers import BartTokenizer, AutoModelWithLMHead
 tokenizer_bart = BartTokenizer.from_pretrained("facebook/bart-base", cache_dir='./cache', local_files_only=True)
 print(tokenizer_bart)
-bart = AutoModelWithLMHead.from_pretrained("./finetunes/bart_natcat_label2content/epoch_0")    
-
-bart_noft = AutoModelWithLMHead.from_pretrained("facebook/bart-base", cache_dir='./cache', local_files_only=True)    
+bart = AutoModelWithLMHead.from_pretrained("./finetunes/bart_natcat/epoch_1")    
 
 
-gen_nlp_t5  = pipeline("text2text-generation", model=t5_noft, tokenizer=tokenizer_t5, device=0)
-gen_nlp_bart  = pipeline("text2text-generation", model=bart_noft, tokenizer=tokenizer_bart, device=0)
+gen_nlp_bart  = pipeline("text2text-generation", model=bart, tokenizer=tokenizer_bart, device=0)
 
 
 
-sent = "Why BlackBerry ( BBRY ) Stock Is Up Today"
 
+from utils.load_data import * 
+ds = load_data(dataset='yahoo', samplecnt= 8)
 
+for ix, row in ds.df_test.sample(frac=1).iterrows():
 
-sent = "Technology BlackBerry Stock "
-
-sent = "Health HIV vaccine"
-
-
-result = gen_nlp_t5([sent], max_length=128, \
+    result = gen_nlp_bart([row['content']], max_length=64, \
                                         do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= 8,\
+                                        repetition_penalty=1.2, num_return_sequences= 16,\
                                         clean_up_tokenization_spaces=True)
-
-result = gen_nlp_bart([sent.lower()], max_length=128, \
-                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= 8,\
-                                        clean_up_tokenization_spaces=True)
-
-for ii in result:
-    print(ii['generated_text'], '\n')
-
-
-
-
-
-ds.df_train.loc[ds.df_train['label_name']=='Sports'].sample(1)['content'].tolist()[0]
+    print(row['label_name'])
+    preds = list(set(ii['generated_text'] for ii in result))
+    random.shuffle(preds)
+    print(preds)
+    print()
 
 
 
@@ -288,6 +265,37 @@ for samplecnt in [32, 64, 128, 256, 512, 1024]:
     print()
 
 
+
+
+
+
+
+
+import pandas as pd 
+df = pd.read_csv("ag.result.txt", sep='\t')
+
+import numpy as np 
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+for dsn in ['ag', 'yahoo']:
+    sns.set()
+    g_ag = sns.catplot( x="Testbed", y="Accuracy", hue="Approach", \
+                     data=df.loc[df['dsn']==dsn], height=6, kind="bar", palette="muted", legend_out=False)
+    g_ag.set_ylabels("Accuracy")
+    #g_ag.set_titles('dataset: AG')
+    if dsn == 'ag':
+        plt.ylim(0.4, 0.95)
+    elif dsn == 'yahoo':
+        plt.ylim(0.35, 0.75)
+    #plt.xticks(np.arange(0.4, 0.95, 0.5))
+    plt.title('Improvement for accuracy on {} dataset'.format(dsn.upper()))
+    plt.legend(loc=2, prop={'size': 10})
+    plt.subplots_adjust(top=0.9)
+    #plt.subplots_adjust(left=0.1, bottom=0.1, right=0.6, top=0.8)
+    plt.savefig("{}.png".format(dsn), dpi=1000)
+    plt.close()
+    #plt.show()
 
 
 

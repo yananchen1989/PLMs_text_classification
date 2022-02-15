@@ -751,7 +751,7 @@ for augi in range(args.max_aug_times):
 df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
 print("begin_to_test_aug")
 
-df_train_aug.to_csv("./augf_csvs/{}_{}_{}.csv".format(args.dsn, args.samplecnt, args.seed), index=False)
+df_train_aug.to_csv("./augf_csvs/{}_{}_{}_{}.csv".format(args.dsn, args.samplecnt, ''.join(args.aug), args.seed), index=False)
 
 '''
 for fmark in df_synthesize['fmark'].unique():

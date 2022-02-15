@@ -232,7 +232,7 @@ CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_summarization_no_trainer.py \
 
 
 # t5 nat content ===> label
-CUDA_VISIBLE_DEVICES=7  nohup  python -u ./run_summarization_no_trainer.py \
+CUDA_VISIBLE_DEVICES=0  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 7 \
             --train_file "./finetunes/df_nat_train.csv" \
             --validation_file "./finetunes/df_nat_test.csv" \
@@ -242,7 +242,7 @@ CUDA_VISIBLE_DEVICES=7  nohup  python -u ./run_summarization_no_trainer.py \
             --output_dir './finetunes/t5_natcat' \
             --max_target_length 32 \
             --val_max_target_length 32 \
-            --preprocessing_num_workers 8 --overwrite_cache True \
+            --preprocessing_num_workers 16 --overwrite_cache True \
             --text_column content  \
             --summary_column label  \
             --max_length 64 \
@@ -284,7 +284,7 @@ nohup python -u augt.py > augt.1.log &
 nohup python -u augt.py > augt.2.log & 
 
 
-
+nohup python -u augt.py --backbone albert --gpu 0 > augt.albert.0.log & 
 
 
 
@@ -327,7 +327,7 @@ conda env remove --name myenv
 
 cd $SCRATCH
 
-
+squeue -me
 
 ############################################################################################################################################
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
