@@ -1,24 +1,4 @@
 
-
-
-############## ft gpt 
-nohup python -u ft_gpt2.py --genm gpt2 --num_train_epochs 4 --ccsample 1 --ft_pattern ep --gpu 0 --batch_size 8 \
- > ft.gpt2.ep.log &
-
-# ft t5
-
-CUDA_VISIBLE_DEVICES=7 nohup ./envcbert/bin/python -u ft_t5.py --ft_pattern pp --num_workers 4 \
-   --maxlen 256 --ccsample 1 --ftepochs 4 --batch_size 4 > ft.t5.ep.log & 
-nohup python -u ft.py --genm t5 --dsn_summary xsum --num_train_epochs 3 --ft_pattern summary --ccsample 0.1 --gpu 0
-
-
-
-
-
-
-# norm
-
-
  CUDA_VISIBLE_DEVICES=5 nohup envcbert/bin/python -u pplm.py --pretrained_model gpt2-medium  --dsn yahoo  --length 64 --gamma 1.5 \
    --num_iterations 3 --num_samples 64 --stepsize 0.03 --window_length 5 --kl_scale 0.01 \
    --gm_scale 0.99   --sample  > pplm.yahoo.log & 
@@ -70,19 +50,35 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
 
 
 ########## food
-# CUDA_VISIBLE_DEVICES=7 nohup python run_mlm_no_trainer.py \
-#     --num_train_epochs 12 \
-#     --train_file './food/indgredients_train.txt' \
-#     --validation_file './food/indgredients_test.txt' \
-#     --model_name_or_path bert-base-uncased \
-#     --per_device_train_batch_size 4 \
-#     --per_device_eval_batch_size 4 \
-#     --output_dir './food/bert_indgredients' \
-#     --preprocessing_num_workers 8 --overwrite_cache True \
-#     --mlm_probability 0.15 \
-#     --use_slow_tokenizer \
-#          > ./food/bert_indgredients.log &
 
+         
+
+CUDA_VISIBLE_DEVICES=7 nohup python run_mlm_no_trainer.py \
+    --num_train_epochs 12 \
+    --train_file './food/df_arxiv.train.txt' \
+    --validation_file './food/df_arxiv.test.txt' \
+    --model_name_or_path "roberta-large" \
+    --per_device_train_batch_size 4 \
+    --per_device_eval_batch_size 4 \
+    --output_dir './food/arxiv_roberta' \
+    --preprocessing_num_workers 48 --overwrite_cache True \
+    --mlm_probability 0.15 \
+    --max_seq_length 200 \
+    --use_slow_tokenizer > ./food/arxiv_roberta.log &
+
+
+CUDA_VISIBLE_DEVICES=7 nohup python run_mlm_no_trainer.py \
+    --num_train_epochs 12 \
+    --train_file './food/df_arxiv.train.txt' \
+    --validation_file './food/df_arxiv.test.txt' \
+    --model_name_or_path "allenai/scibert_scivocab_uncased" \
+    --per_device_train_batch_size 8 \
+    --per_device_eval_batch_size 8 \
+    --output_dir './food/arxiv_scibert' \
+    --preprocessing_num_workers 48 --overwrite_cache True \
+    --mlm_probability 0.15 \
+    --max_seq_length 256 \
+    --use_slow_tokenizer > ./food/arxiv_scibert.log &
 
 
 # CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
@@ -266,30 +262,32 @@ CUDA_VISIBLE_DEVICES=1  nohup  python -u ./run_summarization_no_trainer.py \
             --model_type bart  --use_slow_tokenizer  > ./finetunes/ft_bart_nat_content2label.log &
 
 
-nohup python -u openprompt_gen_syns.py --model t5-base --gpu 0 --template soft  --source_col ners --freeze_plm > t5.soft.ners.log & 
-nohup python -u openprompt_gen_syns.py --model t5-base --gpu 1 --template mixed --source_col ners --freeze_plm > t5.mixed.ners.log &
-nohup python -u openprompt_gen_syns.py --model t5-base --gpu 3 --template prefix  --source_col ners --freeze_plm > t5.prefix.ners.log &
-
-python -u openprompt_gen_syns.py --model t5-base --gpu 1 --template prefix --source_col title --freeze_plm
-
-
-
-python -u augf.py --dsn ag --samplecnt 32 --max_aug_times 1 \
-                  --seed 900  --aug eda,bt 
-                   
+            
 
 
 nohup python -u augt.py > augt.0.log & 
 nohup python -u augt.py > augt.1.log & 
 nohup python -u augt.py > augt.2.log & 
 
-
-nohup python -u augt.py --backbone albert --gpu 0 > augt.albert.0.log & 
-
-
-
+nohup python -u augt.py > augt.512.0.log & 
+nohup python -u augt.py > augt.512.1.log & 
+nohup python -u augt.py > augt.512.2.log & 
 
 
+for gpu in 0 1 2 3 4 5 6 7
+do
+   nohup bash run_albert.sh ${gpu} & 
+done
+
+
+
+
+for gpu in  1 2 3 4 5 6 7
+do
+   nohup bash run.sh ${gpu} & 
+done
+
+nohup bash run_edabt.sh & 
 
 
 #################################################### mist ########################################################################################
@@ -322,6 +320,8 @@ conda install -c /scinet/mist/ibm/open-ce tensorflow-text
 conda install -c /scinet/mist/ibm/open-ce tensorflow_hub
 
 
+conda install -c /scinet/mist/ibm/open-ce matplotlib
+
 conda env remove --name myenv
 
 
@@ -331,7 +331,7 @@ squeue -me
 
 ############################################################################################################################################
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "zsl.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "augf.py --dsn ag --samplecnt 1024"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "run_clm_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 
 

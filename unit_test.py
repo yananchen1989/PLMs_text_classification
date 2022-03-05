@@ -241,7 +241,7 @@ import glob
 import pandas as pd 
 
 
-files = glob.glob("./augt.*.log")
+files = glob.glob("./augt.512.*.log")
 
 infos = []
 for file in files:
@@ -254,7 +254,7 @@ for file in files:
 df = pd.DataFrame(infos, columns=['samplecnt','fmark','acc'])
 
 
-for samplecnt in [32, 64, 128, 256, 512, 1024]:
+for samplecnt in [ 512]: # 32, 64, 128, 256,
     for fmark in df['fmark'].unique():
         dfi = df.loc[(df['samplecnt']==samplecnt) & (df['fmark']==fmark)]
         if dfi.shape[0] == 0:
@@ -299,11 +299,37 @@ for dsn in ['ag', 'yahoo']:
 
 
 
+import pandas as pd 
+df = pd.read_csv("vary.samples.result.txt", sep='\t')
+
+
+for exp in ['with_exp', 'with_aug']:
+    sns.lineplot(hue='Dataset', data=df.loc[df['exp']==exp], x="# of samples", y="Accurancy", markers=True, style="Dataset", dashes=False)
+    plt.ylim(0.5, 1)
+    plt.xticks(np.unique(df.loc[df['exp']==exp]['# of samples'].values))
+    plt.title('Accurancy with respect to # of samples in the setting of "{}"'.format(' '.join(exp.split('_'))))
+    #plt.show()
+    plt.savefig("{}.png".format(exp), dpi=1000)
+    plt.close()
 
 
 
 
 
+
+
+import pandas as pd 
+df = pd.read_csv("aug_former.tsv", sep='\t')
+
+
+sns.lineplot(hue='model', data=df, x="samplecnt", y="accurancy", markers=True, style="model", dashes=False)
+plt.ylim(0.5, 1)
+plt.xticks(np.unique(df['samplecnt'].values))
+#plt.title('Accurancy with respect to # of samples in the setting of "{}"')
+plt.show()
+
+plt.savefig("{}.png".format(exp), dpi=1000)
+plt.close()
 
 
 

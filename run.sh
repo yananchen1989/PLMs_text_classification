@@ -36,7 +36,7 @@
 for i in {1..10}
 do
 	seed=$RANDOM
-	for samplecnt in 32 64 128 256 512 1024
+	for samplecnt in  512 1024
 	do
 		#for candidates in 64 128 256 
 		#do
