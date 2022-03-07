@@ -462,7 +462,6 @@ def main():
     ###########
 
     cur_perplexity = perplexity
-    best_model = model
 
     perplexiy_ll = []
     for epoch in range(args.num_train_epochs):
@@ -502,7 +501,6 @@ def main():
         if perplexity < cur_perplexity:
             logger.info("<==perplexity dropped==>")
             cur_perplexity = perplexity
-            best_model = model
 
             accelerator.wait_for_everyone()
             unwrapped_model = accelerator.unwrap_model(model)

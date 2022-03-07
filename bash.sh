@@ -53,32 +53,7 @@ CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
 
          
 
-CUDA_VISIBLE_DEVICES=7 nohup python run_mlm_no_trainer.py \
-    --num_train_epochs 12 \
-    --train_file './food/df_arxiv.train.txt' \
-    --validation_file './food/df_arxiv.test.txt' \
-    --model_name_or_path "roberta-large" \
-    --per_device_train_batch_size 4 \
-    --per_device_eval_batch_size 4 \
-    --output_dir './food/arxiv_roberta' \
-    --preprocessing_num_workers 48 --overwrite_cache True \
-    --mlm_probability 0.15 \
-    --max_seq_length 200 \
-    --use_slow_tokenizer > ./food/arxiv_roberta.log &
 
-
-CUDA_VISIBLE_DEVICES=7 nohup python run_mlm_no_trainer.py \
-    --num_train_epochs 12 \
-    --train_file './food/df_arxiv.train.txt' \
-    --validation_file './food/df_arxiv.test.txt' \
-    --model_name_or_path "allenai/scibert_scivocab_uncased" \
-    --per_device_train_batch_size 8 \
-    --per_device_eval_batch_size 8 \
-    --output_dir './food/arxiv_scibert' \
-    --preprocessing_num_workers 48 --overwrite_cache True \
-    --mlm_probability 0.15 \
-    --max_seq_length 256 \
-    --use_slow_tokenizer > ./food/arxiv_scibert.log &
 
 
 # CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
@@ -302,32 +277,7 @@ python -c "import accelerate;print(accelerate.__version__)"
 
 
 
-module load anaconda3;source activate env
 
-
-conda create -n env python=3.8
-
-
-conda install -c /scinet/mist/ibm/open-ce tensorflow==2.7.0 cudatoolkit=11.2
-
-conda install -c /scinet/mist/ibm/open-ce scikit-learn
-
-
-conda install -c /scinet/mist/ibm/open-ce pytorch=1.10.1 cudatoolkit=11.2
-conda install -c /scinet/mist/ibm/open-ce transformers==4.9.2
-
-conda install -c /scinet/mist/ibm/open-ce tensorflow-text
-conda install -c /scinet/mist/ibm/open-ce tensorflow_hub
-
-
-conda install -c /scinet/mist/ibm/open-ce matplotlib
-
-conda env remove --name myenv
-
-
-cd $SCRATCH
-
-squeue -me
 
 ############################################################################################################################################
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9

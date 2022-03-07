@@ -60,14 +60,16 @@ df_train = pd.read_csv(file_csv)
 print(df_train['fmark'].value_counts())
 
 df_train_noaug = df_train.loc[df_train['fmark'] == 'ori']
-acc_noaug, _  = do_train_test_thread(df_train_noaug, ds.df_test, args.backbone, 32, args.epochs)
-print('seed:', seed, '==>', samplecnt, 'noaug', acc_noaug)
+# acc_noaug, _  = do_train_test_thread(df_train_noaug, ds.df_test, args.backbone, 32, args.epochs)
+# print('seed:', seed, '==>', samplecnt, 'noaug', acc_noaug)
 
 fmarks = df_train['fmark'].unique().tolist()
 random.shuffle(fmarks)
 
 for fmark in fmarks:
     if fmark == 'ori':
+        continue
+    if fmark in ['eda', 'bt']:
         continue
     df_train_fmark = df_train.loc[df_train['fmark'] == fmark]
     df_train_aug = pd.concat([df_train_noaug, df_train_fmark]).sample(frac=1)
