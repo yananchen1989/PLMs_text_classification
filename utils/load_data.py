@@ -201,7 +201,7 @@ def para_split2(para):
     paras = [' '.join(sents[:mid]).strip(), ' '.join(sents[mid:]).strip()]
   return paras
 
-#import datasets
+import datasets
 def get_cc_news(s=1):
     cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='/home/w/wluyliu/yananc/topic_classification_augmentation/torch_ds')
     '''
@@ -221,12 +221,6 @@ def get_cc_news(s=1):
     return df.sample(frac=s) #615019  
 
 
-def get_cc_text_single(s=1):
-    #if ft_pattern in ['pp', 'tc']:
-    df_cc = get_cc_news(s)
-    df_cc = df_cc.loc[(df_cc['content']!='')  & (~df_cc['content'].isnull())]
-    return df_cc.rename(columns={'content': 'text'})[['text']]
-    
 
 def get_cc_text_double(ft_pattern, s=1):
 

@@ -3,17 +3,12 @@ import glob
 from sklearn.model_selection import train_test_split
 from utils.load_data import * 
 
-#ds = load_data(dataset='ag', samplecnt= -1)
 
-# cc
-df = pd.read_csv("./torch_ds/df_cc_news_ners.csv", lineterminator='\n')
-dfl = df.loc[(~df['ners'].isnull()) & (df['ners'].str.contains('<=>')) & (~df['title'].isnull()) ]
 
-dfl['ners'] = dfl['ners'].map(lambda x:  ' '.join(x.split("<=>")).lower() )
+df = get_cc_text_double('pp')
+
 
 dfl['title'] = dfl['title'].map(lambda x: remove_str(x.lower()) )
-
-
 dfl['content'] = dfl['content'].map(lambda x: remove_str(x) )
 
 
@@ -25,19 +20,7 @@ df_cc_train.loc[df_cc_train['content']=='']
 df_cc_train.to_csv("./finetunes/df_cc_train.csv", index=False)
 df_cc_test.to_csv("./finetunes/df_cc_test.csv", index=False)
 
-# ners ===> content
-# title ===> content
 
-# import fasttext
-# model = fasttext.load_model('lid.176.bin')
-
-# cc = 0
-# for text in df_cc_test['content'].tolist():
-#     preds = model.predict(text, k=5)
-#     if (not preds[0][0].endswith("__en")) or (preds[0][0].endswith("__en") and preds[1][0] <= 0.5):
-#         print(text)
-#         cc += 1
-# print(cc)
 
 
 
