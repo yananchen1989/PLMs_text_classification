@@ -154,6 +154,8 @@ def gpt4zsl_pred(sent):
         preds.append(''.join(syn_sent).strip().split('This document is about')[-1].strip() )
     return preds 
 
+
+
 def get_ppl(sent, ori_sent):
     encodings_ori = tokenizer(ori_sent, return_tensors='pt')
     ori_tokens_cnt = encodings_ori.input_ids.size(1)

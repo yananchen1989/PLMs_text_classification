@@ -83,7 +83,9 @@ label_expands_self ={
                      'screening', 'startup', 'laser', 'engineer', 'patent', 'future', 'scientist',\
                       'discovery', 'wireless', 'technology', 'satellite',\
                        'biotech', 'probe', 'magic', 'robot', 'training', 'apple', 'automation', 'artificial Intelligence', 'Musk',
-                    'mars', 'solar system', 'arxiv', 'quantum', 'computing', 'nuclear']
+                    'mars', 'solar system', 'arxiv', 'quantum', 'computing', 'nuclear'],
+
+    'entertainment': ['Entertainment','Pop music','Film','Music','Reality show','Drama','Concert','Rock music','Opera']
 }
 
 
@@ -114,7 +116,8 @@ def get_s3_words():
 label_expands_s3 =  get_s3_words()
 
 
-label_expand_ag = {
+label_expand = {}
+label_expand['ag'] = {
     'World': 
         label_expands_s3['religion'] + label_expands_s3['politics'] + label_expands_s3['military'] \
             + label_expands_s3['legal'] + label_expands_self['law'] + label_expands_self['politics'],
@@ -127,10 +130,18 @@ label_expand_ag = {
         + label_expands_self['science and technology'] + label_expands_self['science'] + label_expands_self['technology']
 }
 
+label_expand['uci'] = {
+    'business': label_expands_self['business'],
+    'science and technology': label_expands_s3['technology'] + label_expands_s3['space'] + label_expands_s3['science'] \
+        + label_expands_self['science and technology'] + label_expands_self['science'] + label_expands_self['technology'],
+    'entertainment': label_expands_self['entertainment'], 
+    'health': label_expands_self['health']
+}
 
-for l in label_expand_ag.keys():
-    label_expand_ag[l] = list(set([ii.lower() for ii in label_expand_ag[l]]))
-    print(l, len(label_expand_ag[l]))
+for dsn in label_expand.keys():
+    for l in label_expand[dsn].keys():
+        label_expand[dsn][l] = list(set([ii.lower() for ii in label_expand[dsn][l]]))
+        print(l, len(label_expand[dsn][l]))
 
 
 

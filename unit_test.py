@@ -100,8 +100,7 @@ for ix, row in ds.df_test.sample(frac=1).iterrows():
 
 
 import os 
-os.environ['CUDA_VISIBLE_DEVICES'] = ""
-
+os.environ['CUDA_VISIBLE_DEVICES'] = "7"
 
 from utils.load_data import * 
 ds = load_data(dataset='ag', samplecnt= 128)
@@ -118,50 +117,23 @@ tokenizer_gpt2.sep_token = '<|sep|>'
 print(tokenizer_gpt2)
 gpt2.trainable = False
 gpt2.config.pad_token_id=50256
-gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=-1, return_full_text=False)
+gen_nlp  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
 labels_candidates = ds.df_train['label_name'].unique().tolist()
 
-
-infos = []
-while True:
-    #prompts = ["topic {} source strait stimes title".format(label) for label in labels_candidates]
-    
-    prompts = ["This is {} News: ".format(label) for label in labels_candidates] # gpt
-    #prompts = ["Links In {} : ".format(label) for label in labels_candidates] # ctrl
-    result_gpt = gen_nlp(prompts, max_length=128, \
+import time
+secs = []
+while 1:
+    t0 = time.time()
+    sent = ds.df_train.sample(1)['content'].tolist()[0]
+    result_gpt = gen_nlp(sent, max_length=128, \
                                                 do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                                repetition_penalty=1.2, num_return_sequences= 64,\
+                                                repetition_penalty=1.2, num_return_sequences= 16,\
                                                 clean_up_tokenization_spaces=True)
-
-    for label, rg in zip(labels_candidates, result_gpt):
-        contents = [ ii['generated_text'] for ii in rg if len(ii['generated_text'])>=20 ] 
-        for sent in contents:
-            infos.append((remove_str(sent) , label ))
-
-
-    if len(infos) > 0 and len(infos) % 128 == 0:
-        df = pd.DataFrame(infos, columns = ['content','label_name'])
-        print(len(infos))
-        df.to_csv("df_gen_ag_nofil.csv", index=False)
-
-    if df['label_name'].value_counts().min() >= 1024  :
-        break 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    t1 = time.time()
+    gap = t1-t0
+    secs.append(gap)
+    print(sum(secs) / len(secs))
 
 
 
@@ -241,7 +213,8 @@ import glob
 import pandas as pd 
 
 
-files = glob.glob("./augt.512.*.log")
+#files = glob.glob("./augt_accs/augt.uci.former.*.*.log")
+files = glob.glob("./augt_accs/augt.uci.albert.*.*.log")
 
 infos = []
 for file in files:
@@ -254,7 +227,7 @@ for file in files:
 df = pd.DataFrame(infos, columns=['samplecnt','fmark','acc'])
 
 
-for samplecnt in [ 512]: # 32, 64, 128, 256,
+for samplecnt in [32, 64, 128, 256, 512]: # 
     for fmark in df['fmark'].unique():
         dfi = df.loc[(df['samplecnt']==samplecnt) & (df['fmark']==fmark)]
         if dfi.shape[0] == 0:
@@ -270,13 +243,16 @@ for samplecnt in [ 512]: # 32, 64, 128, 256,
 
 
 
-
-import pandas as pd 
-df = pd.read_csv("ag.result.txt", sep='\t')
-
 import numpy as np 
+import pandas as pd 
 import seaborn as sns
 import matplotlib.pyplot as plt
+
+
+
+df = pd.read_csv("ag.result.txt", sep='\t')
+
+
 
 for dsn in ['ag', 'yahoo']:
     sns.set()
@@ -315,15 +291,13 @@ for exp in ['with_exp', 'with_aug']:
 
 
 
+####### DA 折线图
 
-
-
-import pandas as pd 
-df = pd.read_csv("aug_former.tsv", sep='\t')
+df = pd.read_csv("aug_former_uci.tsv", sep='\t')
 
 
 sns.lineplot(hue='model', data=df, x="samplecnt", y="accurancy", markers=True, style="model", dashes=False)
-plt.ylim(0.5, 1)
+plt.ylim(df['accurancy'].min()-0.02, df['accurancy'].max()+0.02)
 plt.xticks(np.unique(df['samplecnt'].values))
 #plt.title('Accurancy with respect to # of samples in the setting of "{}"')
 plt.show()

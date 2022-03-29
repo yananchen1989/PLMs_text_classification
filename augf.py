@@ -105,7 +105,7 @@ ixl = {ii[0]:ii[1] for ii in ds.df_test[['label','label_name']].drop_duplicates(
 ixl_rev = {ii[1]:ii[0] for ii in ds.df_test[['label','label_name']].drop_duplicates().values}
 #seed = random.sample(list(range(10000)), 1)[0]
 
-dsn_maxlen = {'uci':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
+dsn_maxlen = {'uci':64, 'stsa':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128, 'yelp2':128}
 
 args.aug = args.aug.split(',')
 
@@ -131,58 +131,44 @@ if 'generate' in args.aug:
     gen_nlp['gpt2_noft']  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
     # lambda
-    if not os.path.exists('ft_tmp'):
-        os.makedirs('ft_tmp')
+    # if not os.path.exists('ft_tmp'):
+    #     os.makedirs('ft_tmp')
 
-    train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, args.seed)
-    validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, args.seed)
+    # train_file = './ft_tmp/{}_train_finetune_{}_{}.txt'.format(args.dsn, args.samplecnt, args.seed)
+    # validation_file = './ft_tmp/{}_test_finetune_{}_{}.txt'.format(args.dsn,  args.samplecnt, args.seed)
 
-    df_train_ft = ds.df_train.copy()
-    df_test_ft = ds.df_test.copy()
+    # df_train_ft = ds.df_train.copy()
+    # df_test_ft = ds.df_test.copy()
 
-    df_train_ft['text'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_train_ft['content']
-    df_test_ft['text'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_test_ft['content']
+    # df_train_ft['text'] = df_train_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_train_ft['content']
+    # df_test_ft['text'] = df_test_ft['label_name'].map(lambda x: '[{}]'.format(x) ) + df_test_ft['content']
 
-    with open (train_file, 'w') as f:
-        for line in df_train_ft['text'].tolist():
-            f.write(line + tokenizer_gpt2.eos_token + '\n')
+    # with open (train_file, 'w') as f:
+    #     for line in df_train_ft['text'].tolist():
+    #         f.write(line + tokenizer_gpt2.eos_token + '\n')
 
-    with open (validation_file, 'w') as f:
-        for line in df_test_ft['text'].tolist():
-            f.write(line + tokenizer_gpt2.eos_token + '\n')
+    # with open (validation_file, 'w') as f:
+    #     for line in df_test_ft['text'].tolist():
+    #         f.write(line + tokenizer_gpt2.eos_token + '\n')
 
-    model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
-    os.system(
-    "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
-            --num_train_epochs {} \
-            --train_file {} \
-            --validation_file {} \
-            --model_name_or_path gpt2 \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
-            --output_dir {} \
-            --preprocessing_num_workers 8 --overwrite_cache True \
-            --block_size {}".format(args.gpu, 12, train_file, validation_file, model_output_path, 64) ) 
-    gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
-    gpt2_lambda.trainable = False
-    gpt2_lambda.config.pad_token_id=50256
-    gen_nlp['gpt2_lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+    # model_output_path = "./ft_tmp/{}_{}_{}".format(args.dsn, args.samplecnt, args.seed) 
+    # os.system(
+    # "CUDA_VISIBLE_DEVICES={} python -u ./run_clm_no_trainer.py \
+    #         --num_train_epochs {} \
+    #         --train_file {} \
+    #         --validation_file {} \
+    #         --model_name_or_path gpt2 \
+    #         --per_device_train_batch_size 8 \
+    #         --per_device_eval_batch_size 8 \
+    #         --output_dir {} \
+    #         --preprocessing_num_workers 8 --overwrite_cache True \
+    #         --block_size {}".format(args.gpu, 12, train_file, validation_file, model_output_path, 64) ) 
+    # gpt2_lambda = GPT2LMHeadModel.from_pretrained(model_output_path)
+    # gpt2_lambda.trainable = False
+    # gpt2_lambda.config.pad_token_id=50256
+    # gen_nlp['gpt2_lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
-    # gpt2_cc_ners = GPT2LMHeadModel.from_pretrained('./gpt2_cc_ners')
-    # gpt2_cc_ners.trainable = False
-    # gpt2_cc_ners.config.pad_token_id=50256
-    # gen_nlp['gpt2_cc_ners']  = pipeline("text-generation", model=gpt2_cc_ners, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
-
-    # gpt2_cc_title = GPT2LMHeadModel.from_pretrained('./gpt2_cc_title')
-    # gpt2_cc_title.trainable = False
-    # gpt2_cc_title.config.pad_token_id=50256
-    # gen_nlp['gpt2_cc_title']  = pipeline("text-generation", model=gpt2_cc_title, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
-
-    # gpt2_natcat = GPT2LMHeadModel.from_pretrained('./gpt2_natcat')
-    # gpt2_natcat.trainable = False
-    # gpt2_natcat.config.pad_token_id=50256
-    # gen_nlp['gpt2_natcat']  = pipeline("text-generation", model=gpt2_natcat, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
-       
+ 
     from transformers import T5Tokenizer, AutoModelWithLMHead
     tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir="./cache", local_files_only=True)
     print(tokenizer_t5)
@@ -426,7 +412,8 @@ def generate(row):
     prompt_lambda = '[{}] {}'.format(row['label_name'], ' '.join(row['content'].split(' ')[:3]) )
     prompt_content = row['content']
     prompt_ners = row['label_name'].lower() + ' ' + convert_content2ners(row['content']) 
-    prompt_seeds = row['label_name'].lower() + ' ' + ' '.join(random.sample(label_expand_ag[row['label_name']], 16))
+    prompt_seeds = row['label_name'].lower() + ' ' + \
+    ' '.join(random.sample(label_expand[args.dsn][row['label_name']], min(len(label_expand[args.dsn][row['label_name']]),16)) )
 
     infos = []
     for fmark, gen_nlp_sub in gen_nlp.items():

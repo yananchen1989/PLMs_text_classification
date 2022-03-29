@@ -239,31 +239,26 @@ CUDA_VISIBLE_DEVICES=1  nohup  python -u ./run_summarization_no_trainer.py \
 
             
 
-
-nohup python -u augt.py > augt.0.log & 
-nohup python -u augt.py > augt.1.log & 
-nohup python -u augt.py > augt.2.log & 
-
-nohup python -u augt.py > augt.512.0.log & 
-nohup python -u augt.py > augt.512.1.log & 
-nohup python -u augt.py > augt.512.2.log & 
-
-
 for gpu in 0 1 2 3 4 5 6 7
 do
    nohup bash run_albert.sh ${gpu} & 
 done
 
 
+nohup bash run_former.sh & 
 
 
-for gpu in  1 2 3 4 5 6 7
+
+
+for gpu in 0 1 2 3 4 5 6 7
 do
    nohup bash run.sh ${gpu} & 
 done
 
+for i in 0 1 2 3
+do
 nohup bash run_edabt.sh & 
-
+done
 
 #################################################### mist ########################################################################################
 python -c "import torch;print(torch.__version__)"
@@ -276,8 +271,13 @@ python -c "import tensorflow_text;print(tensorflow_text.__version__)"
 python -c "import accelerate;print(accelerate.__version__)"
 
 
+python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1  \
+                  --seed 873  --aug generate \
+                   --gpu 7
 
 
+python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1  \
+                            --seed 77777  --aug eda,bt
 
 ############################################################################################################################################
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9

@@ -203,21 +203,21 @@ def para_split2(para):
 
 #import datasets
 def get_cc_news(s=1):
-    #cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='./torch_ds')
+    cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='/home/w/wluyliu/yananc/topic_classification_augmentation/torch_ds')
     '''
     Dataset({
         features: ['date', 'description', 'domain', 'image_url', 'text', 'title', 'url'],
         num_rows: 708241
     })
     '''
-    #df = pd.DataFrame(zip(cc_news['title'], cc_news['text'], cc_news['description'] ))
-    #df.columns = ['title','content','description']
+    df = pd.DataFrame(zip(cc_news['title'], cc_news['text'], cc_news['description'] ))
+    df.columns = ['title','content','description']
 
-    #df.drop_duplicates(['title','content'], inplace=True) # 708241
+    df.drop_duplicates(['title','content'], inplace=True) # 708241
 
     #df.to_csv("./torch_ds/df_cc_news.csv", index=False)
 
-    df = pd.read_csv("./torch_ds/df_cc_news_ners.csv", lineterminator='\n')
+    #df = pd.read_csv("./torch_ds/df_cc_news_ners.csv", lineterminator='\n')
     return df.sample(frac=s) #615019  
 
 
@@ -232,13 +232,13 @@ def get_cc_text_double(ft_pattern, s=1):
 
     df_cc = get_cc_news(s)
     df_cc = df_cc.loc[(df_cc['title']!='') & (df_cc['content']!='') & (~df_cc['title'].isnull()) & (~df_cc['content'].isnull())]
-    df_cc = df_cc.loc[(df_cc['ners']!='') & (~df_cc['ners'].isnull())]
+    #df_cc = df_cc.loc[(df_cc['ners']!='') & (~df_cc['ners'].isnull())]
 
     if ft_pattern == 'tc':
         return df_cc.rename(columns={'title': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
 
-    elif ft_pattern == 'ep':
-        return df_cc.rename(columns={'ners': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
+    #elif ft_pattern == 'ep':
+    #    return df_cc.rename(columns={'ners': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
   
     elif ft_pattern == 'pp':
         rr = df_cc['content'].map(lambda x: para_split2(x)).tolist()
