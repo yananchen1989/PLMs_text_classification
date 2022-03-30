@@ -23,84 +23,6 @@ done
 
 
 
-CUDA_VISIBLE_DEVICES=5 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 3 \
-                --train_file './df_cc_ners_train.txt' \
-                --validation_file './df_cc_ners_test.txt' \
-                --model_name_or_path gpt2 \
-                --per_device_train_batch_size 16 \
-                --per_device_eval_batch_size 16 \
-                --output_dir './gpt2_cc_ners' \
-                --preprocessing_num_workers 1 --overwrite_cache True \
-                --block_size 128 > ft_gpt_cc_ners.log &
-
-
-CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
-                --num_train_epochs 3 \
-                --train_file './df_cc_title_train.txt' \
-                --validation_file './df_cc_title_test.txt' \
-                --model_name_or_path gpt2 \
-                --per_device_train_batch_size 16 \
-                --per_device_eval_batch_size 16 \
-                --output_dir './gpt2_cc_title' \
-                --preprocessing_num_workers 1 --overwrite_cache True \
-                --block_size 128 > ft_gpt_cc_title.log &
-
-
-
-
-########## food
-
-         
-
-
-
-
-# CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_clm_no_trainer.py \
-#                 --num_train_epochs 12 \
-#                 --train_file './food/recipe_train.txt' \
-#                 --validation_file './food/recipe_test.txt' \
-#                 --model_name_or_path gpt2 \
-#                 --per_device_train_batch_size 8 \
-#                 --per_device_eval_batch_size 8 \
-#                 --output_dir './food/gpt_recipe' \
-#                 --preprocessing_num_workers 8 --overwrite_cache True \
-#                 --block_size 128 > ./food/gpt_recipe.log &
-
-
-# CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_clm_no_trainer.py \
-#                 --num_train_epochs 12 \
-#                 --train_file './food/ingre_recipe_train.txt' \
-#                 --validation_file './food/ingre_recipe_test.txt' \
-#                 --model_name_or_path gpt2 \
-#                 --per_device_train_batch_size 8 \
-#                 --per_device_eval_batch_size 8 \
-#                 --output_dir './food/gpt_ingre_recipe' \
-#                 --preprocessing_num_workers 8 --overwrite_cache True \
-#                 --block_size 128 > ./food/gpt_ingre_recipe.log &
-
-
-
-
-# CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_summarization_no_trainer.py \
-#             --num_train_epochs 12 \
-#             --train_file "./food/ic_csv_train.csv" \
-#             --validation_file "./food/ic_csv_test.csv" \
-#             --model_name_or_path t5-base \
-#             --per_device_train_batch_size 8 \
-#             --per_device_eval_batch_size 8 \
-#             --output_dir './food/t5_ingre_recipe' \
-#             --max_target_length 128 \
-#             --val_max_target_length 128 \
-#             --preprocessing_num_workers 8 --overwrite_cache True \
-#             --text_column ingredient_content \
-#             --summary_column recipe \
-#             --max_length 128 \
-#             --model_type t5  --use_slow_tokenizer > ./food/t5_ingre_recipe.log &
-
-
-
-
 nohup python -u zsl.py --dsn ag --backbone nli --expand gpt_nofilter --gpu 5     > ./log_zsl/ag.nli.gpt_nofilter.log & 
 nohup python -u zsl.py --dsn ag --backbone roberta --expand gpt_nofilter --gpu 6 > ./log_zsl/ag.roberta.gpt_nofilter.log & 
 nohup python -u zsl.py --dsn ag --backbone simi --expand gpt_nofilter --gpu 7    > ./log_zsl/ag.simi.gpt_nofilter.log & 
@@ -108,136 +30,31 @@ nohup python -u zsl.py --dsn ag --backbone simi --expand gpt_nofilter --gpu 7   
 
 
 
-
-
-#  nat for zsl
-# CUDA_VISIBLE_DEVICES=1 nohup python -u ./run_clm_no_trainer.py \
-#                 --num_train_epochs 12 \
-#                 --train_file './finetunes/nat4gptzsl_train.txt' \
-#                 --validation_file './finetunes/nat4gptzsl_test.txt' \
-#                 --model_name_or_path gpt2 \
-#                 --per_device_train_batch_size 16 \
-#                 --per_device_eval_batch_size 16 \
-#                 --output_dir './finetunes/gpt_nat_zsl' \
-#                 --preprocessing_num_workers 8 --overwrite_cache True \
-#                 --block_size 128  > ./finetunes/ft_gpt_nat_zsl.log & 
-
-
-# t5 nat label ==> content
-CUDA_VISIBLE_DEVICES=6 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 7 \
-            --train_file "./finetunes/df_nat_train.csv" \
-            --validation_file "./finetunes/df_nat_test.csv" \
-            --model_name_or_path t5-base \
-            --per_device_train_batch_size 16 \
-            --per_device_eval_batch_size 16 \
-            --output_dir './finetunes/t5_natcat' \
-            --max_target_length 128 \
-            --val_max_target_length 128 \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column label \
-            --summary_column content \
-            --max_length 128 \
-            --model_type t5  --use_slow_tokenizer > ./finetunes/ft_t5_nat.log &
-
-# bart nat label ==> content
-CUDA_VISIBLE_DEVICES=2 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 7 \
-            --train_file "./finetunes/df_nat_train.csv" \
-            --validation_file "./finetunes/df_nat_test.csv" \
-            --model_name_or_path facebook/bart-base \
-            --per_device_train_batch_size 16 \
-            --per_device_eval_batch_size 16 \
-            --output_dir './finetunes/bart_natcat_label2content' \
-            --max_target_length 128 \
-            --val_max_target_length 128 \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column label \
-            --summary_column content \
-            --max_length 128 \
-            --model_type bart  --use_slow_tokenizer > ./finetunes/ft_bart_nat_label2content.log &
-
-
-
-
-
-
 # bart cc title ===> content
-CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 7 \
-            --train_file "./finetunes/df_cc_train.csv" \
-            --validation_file "./finetunes/df_cc_test.csv" \
-            --model_name_or_path facebook/bart-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
-            --output_dir './finetunes/bart_cc_title' \
+
+
+CUDA_VISIBLE_DEVICES=0 nohup python -u /home/w/wluyliu/yananc/topic_classification_augmentation/run_summarization_no_trainer.py \
+            --num_train_epochs 12 \
+            --train_file "/home/w/wluyliu/yananc/topic_classification_augmentation/finetunes/df_cc_train_tc.csv" \
+            --validation_file "/home/w/wluyliu/yananc/topic_classification_augmentation/finetunes/df_cc_test_tc.csv" \
+            --model_name_or_path  t5-base \
+            --per_device_train_batch_size 32 \
+            --per_device_eval_batch_size 32 \
+            --output_dir '/scratch/w/wluyliu/yananc/finetune/bart_cc_tc' \
             --max_target_length 128 \
             --val_max_target_length 128 \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column title \
-            --summary_column content \
+            --preprocessing_num_workers 32 --overwrite_cache True \
+            --text_column text1 \
+            --summary_column text2 \
             --max_length 128 \
-            --model_type bart  --use_slow_tokenizer > ./finetunes/ft_bart_cc_title.log &
+            --model_type bart  --use_slow_tokenizer  &
 
-
-# t5 cc title ===> content
-CUDA_VISIBLE_DEVICES=3 nohup python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 7 \
-            --train_file "./finetunes/df_cc_train.csv" \
-            --validation_file "./finetunes/df_cc_test.csv" \
-            --model_name_or_path t5-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
-            --output_dir './finetunes/t5_cc_title' \
-            --max_target_length 128 \
-            --val_max_target_length 128 \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column title \
-            --summary_column content \
-            --max_length 128 \
-            --model_type t5  --use_slow_tokenizer > ./finetunes/ft_t5_cc_title.log &
+# t5-base facebook/bart-base
 
 
 
 
 
-
-# t5 nat content ===> label
-CUDA_VISIBLE_DEVICES=0  python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 7 \
-            --train_file "./finetunes/df_nat_train.csv" \
-            --validation_file "./finetunes/df_nat_test.csv" \
-            --model_name_or_path t5-base \
-            --per_device_train_batch_size 4 \
-            --per_device_eval_batch_size 4 \
-            --output_dir './finetunes/t5_natcat' \
-            --max_target_length 32 \
-            --val_max_target_length 32 \
-            --preprocessing_num_workers 16 --overwrite_cache True \
-            --text_column content  \
-            --summary_column label  \
-            --max_length 64 \
-            --model_type t5  --use_slow_tokenizer > ./finetunes/ft_t5_nat_content2label.log &
-
-# bart nat content ===> label
-CUDA_VISIBLE_DEVICES=1  nohup  python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 7 \
-            --train_file "./finetunes/df_nat_train.csv" \
-            --validation_file "./finetunes/df_nat_test.csv" \
-            --model_name_or_path facebook/bart-base \
-            --per_device_train_batch_size 4 \
-            --per_device_eval_batch_size 4 \
-            --output_dir './finetunes/bart_natcat' \
-            --max_target_length 32 \
-            --val_max_target_length 32 \
-            --preprocessing_num_workers 8 --overwrite_cache True \
-            --text_column content  \
-            --summary_column label  \
-            --max_length 128 \
-            --model_type bart  --use_slow_tokenizer  > ./finetunes/ft_bart_nat_content2label.log &
-
-
-            
 
 for gpu in 0 1 2 3 4 5 6 7
 do
