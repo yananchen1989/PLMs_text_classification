@@ -34,10 +34,10 @@ nohup python -u zsl.py --dsn ag --backbone simi --expand gpt_nofilter --gpu 7   
 
 
 CUDA_VISIBLE_DEVICES=0 nohup python -u /home/w/wluyliu/yananc/topic_classification_augmentation/run_summarization_no_trainer.py \
-            --num_train_epochs 12 \
+            --num_train_epochs 10 \
             --train_file "/home/w/wluyliu/yananc/topic_classification_augmentation/finetunes/df_cc_train_tc.csv" \
             --validation_file "/home/w/wluyliu/yananc/topic_classification_augmentation/finetunes/df_cc_test_tc.csv" \
-            --model_name_or_path  t5-base \
+            --model_name_or_path  facebook/bart-base \
             --per_device_train_batch_size 32 \
             --per_device_eval_batch_size 32 \
             --output_dir '/scratch/w/wluyliu/yananc/finetune/bart_cc_tc' \
