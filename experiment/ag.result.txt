@@ -1,0 +1,25 @@
+dsn	Testbed	Accuracy	Approach
+ag	EMBED	0.4893	baseline
+ag	EMBED	0.5314	with aug
+ag	EMBED	0.7907	with exp
+ag	EMBED	0.7988	with aug & exp
+ag	NLI	0.7612	baseline
+ag	NLI	0.7876	with aug
+ag	NLI	0.7901	with exp
+ag	NLI	0.8092	with aug & exp
+ag	CLOZE	0.8622	baseline
+ag	CLOZE	0.8686	with aug
+ag	CLOZE	0.8963	with exp
+ag	CLOZE	0.9004	with aug & exp
+yahoo	EMBED	0.401	baseline
+yahoo	EMBED	0.4422	with aug
+yahoo	EMBED	0.5695	with exp
+yahoo	EMBED	0.5757	with aug & exp
+yahoo	NLI	0.5489	baseline
+yahoo	NLI	0.5682	with aug
+yahoo	NLI	0.5783	with exp
+yahoo	NLI	0.5902	with aug & exp
+yahoo	CLOZE	0.6097	baseline
+yahoo	CLOZE	0.6452	with aug
+yahoo	CLOZE	0.6731	with exp
+yahoo	CLOZE	0.6978	with aug & exp
