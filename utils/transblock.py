@@ -3,7 +3,7 @@ import pandas as pd
 from tensorflow.keras import layers
 from tensorflow.keras.callbacks import *
 import tensorflow_hub as hub
-# import tensorflow_text as text
+import tensorflow_text as text
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
