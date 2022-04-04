@@ -490,7 +490,7 @@ else:
 
 
 
-def synthesize(ds, proper_len, syn_df_ll, seed):
+def synthesize(ds):
     df_synthesize_ll = []
 
     if 'generate' in args.aug:
@@ -719,7 +719,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
 ds.df_train['fmark'] = 'ori'
 
-df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
+df_synthesize = synthesize(ds)
 
 df_train_aug = pd.concat([ds.df_train, df_synthesize]).sample(frac=1)
 print("begin_to_test_aug==>", df_synthesize['fmark'].unique())
