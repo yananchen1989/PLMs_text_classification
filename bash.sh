@@ -33,7 +33,8 @@ python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1  \
                   --seed 345  --aug generate \
                    --gpu 3
 
-
+python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1  \
+                            --seed 77777  --aug eda,bt
 
 
 
@@ -115,45 +116,8 @@ CUDA_VISIBLE_DEVICES=6 nohup  python -u ./run_summarization_no_trainer.py \
 
 
 
-for gpu in 0 1 2 3 4 5 6 7
-do
-   nohup bash run_albert.sh ${gpu} & 
-done
 
 
-nohup bash run_former.sh & 
-
-
-
-
-for gpu in 0 1 2 3 4 5 6 7
-do
-   nohup bash run.sh ${gpu} & 
-done
-
-for i in 0 1 2 3
-do
-nohup bash run_edabt.sh & 
-done
-
-#################################################### mist ########################################################################################
-python -c "import torch;print(torch.__version__)"
-python -c "import transformers;print(transformers.__version__)"
-python -c "import tensorflow;print(tensorflow.__version__)"
-python -c "import datasets;print(datasets.__version__)"
-
-python -c "import tensorflow_hub;print(tensorflow_hub.__version__)"
-python -c "import tensorflow_text;print(tensorflow_text.__version__)"
-python -c "import accelerate;print(accelerate.__version__)"
-
-
-python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1  \
-                  --seed 873  --aug generate \
-                   --gpu 7
-
-
-python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1  \
-                            --seed 77777  --aug eda,bt
 
 ############################################################################################################################################
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9

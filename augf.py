@@ -40,7 +40,7 @@ parser.add_argument("--candidates", default=8, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="", type=str)
+parser.add_argument("--gpu", default="3", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -382,16 +382,16 @@ def dvrl_inner_join(files):
 
 def prompt_gen_filter(gen_nlp_sub, prompt):
     contents_syn = []
-    fbs_gen = 16
-    for _ in range(0, args.candidates//fbs_gen):
+    # fbs_gen = 8
+    # for _ in range(0, args.candidates//fbs_gen):
         
-        result_gpt = gen_nlp_sub(prompt, max_length=dsn_maxlen[args.dsn], \
-                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                        repetition_penalty=1.2, num_return_sequences= fbs_gen,\
-                                        clean_up_tokenization_spaces=True)
-        assert len(result_gpt) == fbs_gen
-        contents_syn_tmp = [remove_str(ii['generated_text']) for ii in result_gpt if ii]
-        contents_syn.extend(contents_syn_tmp)
+    result_gpt = gen_nlp_sub(prompt, max_length=dsn_maxlen[args.dsn], \
+                                    do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                    repetition_penalty=1.2, num_return_sequences= 8,\
+                                    clean_up_tokenization_spaces=True)
+    assert len(result_gpt) == 8
+    contents_syn = [remove_str(ii['generated_text']) for ii in result_gpt if ii['generated_text'] and ii['generated_text']!=prompt]
+    #contents_syn.extend(contents_syn_tmp)
     torch.cuda.empty_cache()
 
     return random.sample(contents_syn, 1)[0]
@@ -409,25 +409,23 @@ def prompt_gen_filter(gen_nlp_sub, prompt):
     # infos.append((genm+'_cls', result_syn_cls))
     # infos.append((genm+'_embed', result_syn_embed))
 
-from utils.seed_words import * 
+# from utils.seed_words import * 
 def generate(row):
 
     prompt_lambda = '[{}] {}'.format(row['label_name'], ' '.join(row['content'].split(' ')[:3]) )
     prompt_content = row['content']
-    #prompt_ners = row['label_name'].lower() + ' ' + convert_content2ners(row['content']) 
-    # prompt_seeds = row['label_name'].lower() + ' ' + \
-    # ' '.join(random.sample(label_expand[args.dsn][row['label_name']], min(len(label_expand[args.dsn][row['label_name']]),16)) )
-
+    
+    print("ori_content==>", prompt_content)
     infos = []
     for fmark, gen_nlp_sub in gen_nlp.items():
         if fmark == 'gpt2_lambda':
             contents_syn = prompt_gen_filter(gen_nlp_sub, prompt_lambda)
             infos.append((contents_syn, 'gpt2_lambda', row['label_name'], row['label']))
         else:
-            contents_syn_content = prompt_gen_filter(gen_nlp_sub, prompt_content)
-            infos.append((contents_syn_content, fmark, row['label_name'], row['label']))
-            print(fmark, row['label_name'], '===>')
-            print(contents_syn_content,'\n')
+            contents_syn = prompt_gen_filter(gen_nlp_sub, prompt_content)
+            infos.append((contents_syn, fmark, row['label_name'], row['label']))
+            print(fmark, '===>')
+            print(contents_syn,'\n')
 
     return infos
 
@@ -499,7 +497,7 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
         infos = []
         for ix, row in ds.df_train.reset_index().iterrows():
             torch.cuda.empty_cache()
-            print(ix, "of", ds.df_train.shape[0], "ori====>", row['content'], "<===", row['label_name'])
+            print(ix, "of", ds.df_train.shape[0])
 
             t0 = time.time()
             result_syns = generate(row)
@@ -721,14 +719,9 @@ def synthesize(ds, proper_len, syn_df_ll, seed):
 
 ds.df_train['fmark'] = 'ori'
 
+df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
 
-syn_df_ll = []
-for augi in range(args.max_aug_times):
-    print("augi==>{}".format(augi))
-    df_synthesize = synthesize(ds, proper_len, syn_df_ll, args.seed)
-    syn_df_ll.append(df_synthesize)
-
-df_train_aug = pd.concat([ds.df_train] + syn_df_ll ).sample(frac=1)
+df_train_aug = pd.concat([ds.df_train, df_synthesize]).sample(frac=1)
 print("begin_to_test_aug==>", df_synthesize['fmark'].unique())
 
 #df_train_aug.to_csv("./augf_csvs/{}_{}_{}_{}.csv".format(args.dsn, args.samplecnt, ''.join(args.aug), args.seed), index=False)
