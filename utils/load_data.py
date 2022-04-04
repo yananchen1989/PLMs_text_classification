@@ -8,18 +8,8 @@ from sklearn.model_selection import train_test_split
 from transformers import AutoTokenizer
 import transformers
 
-if transformers.__version__.startswith("4."):
-    try:
-        tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache", local_files_only=True)
-    except:
-        tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache")
-
-if transformers.__version__.startswith("2."):
-    try:
-        tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache_cbert", local_files_only=True)
-    except:
-        tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir="./cache_cbert")
-
+PATH_SCRATCH_CACHE = "/scratch/w/wluyliu/yananc/cache"
+tokenizer_bert = AutoTokenizer.from_pretrained('bert-base-cased',cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
 
 def truncate(sent, max_length):
     ids = tokenizer_bert.encode(sent, truncation=True, max_length=max_length)
@@ -51,10 +41,10 @@ def sample_stratify(df, samplecnt):
     return pd.concat(ll).sample(frac=1)
 
 class load_data():
-    def __init__(self, samplecnt = -1, dataset='yahoo', samplecnt_test=10000):
+    def __init__(self, samplecnt = -1, dataset='yahoo', samplecnt_test=10000, path='./torch_ds'):
         self.samplecnt = samplecnt
         self.dataset = dataset
-        self.path = './torch_ds'
+        self.path = path
         self.samplecnt_test = samplecnt_test
 
         if self.dataset in ['ag','yahoo', 'agt', 'agp']:
@@ -131,7 +121,7 @@ class load_data():
             self.df_test['label'] = self.df_test['label'].map({'neg':0, 'pos':1})
 
         elif self.dataset == 'uci':
-            df = pd.read_csv("./torch_ds/uci-news-aggregator.csv")  
+            df = pd.read_csv("{}/uci-news-aggregator.csv".format(self.path))  
             df = df[['CATEGORY','TITLE']]
             df.rename(
                     columns={"CATEGORY": "label", "TITLE":"content"},
@@ -144,19 +134,19 @@ class load_data():
 
         elif self.dataset == 'nyt':
             infos = []
-            with open('./torch_ds/nyt/dataset.txt','r') as f:
+            with open('{}/nyt/dataset.txt'.format(self.path),'r') as f:
                 for line in f:
                     infos.append(line.strip())
 
             labels = []
-            with open('./torch_ds/nyt/labels.txt','r') as f:
+            with open('{}/nyt/labels.txt'.format(self.path),'r') as f:
                 for line in f:
                     labels.append(int(line.strip()))
 
             df = pd.DataFrame(zip(infos, labels), columns=['content','label'])
 
             names = []
-            with open('./torch_ds/nyt/classes.txt','r') as f:
+            with open('{}/nyt/classes.txt'.format(self.path),'r') as f:
                 for line in f:
                     names.append(line.strip())
             ixl = {ix:l for ix, l in enumerate(names)}
@@ -187,11 +177,14 @@ technology     293
 '''
 
  
-import nltk 
+import nltk,random
 nltk.data.path.append('./nltk_data')
 from nltk.tokenize import sent_tokenize
-def para_split2(para):
+
+def para_split2(para, shuffle=False):
   sents = sent_tokenize(para)
+  if shuffle:
+    random.shuffle(sents)
   assert len(sents) > 0 and len(para.split(' ')) >= 4
   if len(sents)==1:
     tokens = para.split(' ')

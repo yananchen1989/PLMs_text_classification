@@ -7,12 +7,13 @@ from utils.load_data import *
 
 df = get_cc_text_double('pp')
 
+df = get_cc_text_double('tc')
 
 df_cc_train, df_cc_test =  train_test_split(df, test_size=0.05)
+ # all: 614805 
 
-
-df_cc_train.to_csv("./finetunes/df_cc_train_pp.csv", index=False)
-df_cc_test.to_csv("./finetunes/df_cc_test_pp.csv", index=False)
+df_cc_train.to_csv("./finetunes/df_cc_train_tc.csv", index=False)
+df_cc_test.to_csv("./finetunes/df_cc_test_tc.csv", index=False)
 
 
 

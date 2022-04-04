@@ -20,7 +20,10 @@ if gpus:
       #      [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
   except RuntimeError as e:
     print(e)
-    
+
+PATH_HOME = "/home/w/wluyliu/yananc/topic_classification_augmentation"
+
+
 def check_weights_no_identical(w1, w2):
     assert len(w2.trainable_weights) == len(w1.trainable_weights)
     for i in range(len(w2.trainable_weights)):
@@ -71,7 +74,8 @@ class TokenAndPositionEmbedding(layers.Layer):
         x = self.token_emb(x)
         return x + positions
 
-preprocessor_file = "./resource/albert_en_preprocess_3" # https://tfhub.dev/tensorflow/albert_en_preprocess/3
+
+preprocessor_file = "{}/resource/albert_en_preprocess_3".format(PATH_HOME) # https://tfhub.dev/tensorflow/albert_en_preprocess/3
 preprocessor_layer = hub.KerasLayer(preprocessor_file)
 
 
@@ -108,7 +112,7 @@ def get_model_bert(num_classes):
 
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 
-    encoder = hub.KerasLayer("./resource/albert_en_base_2", trainable=True, name=str(random.sample(list(range(10000)), 1)[0]))
+    encoder = hub.KerasLayer("{}/resource/albert_en_base_2".format(PATH_HOME), trainable=True, name=str(random.sample(list(range(10000)), 1)[0]))
 
     encoder_inputs = preprocessor_layer(text_input)
     outputs = encoder(encoder_inputs)
@@ -129,7 +133,7 @@ def get_model_bert_ac(num_actions):
 
     text_input = tf.keras.layers.Input(shape=(), dtype=tf.string) # shape=(None,) dtype=string
 
-    encoder = hub.KerasLayer("./resource/albert_en_base_2", trainable=True, name=str(random.sample(list(range(10000)), 1)[0]))
+    encoder = hub.KerasLayer("{}/resource/albert_en_base_2".format(PATH_HOME), trainable=True, name=str(random.sample(list(range(10000)), 1)[0]))
 
     encoder_inputs = preprocessor_layer(text_input)
     outputs = encoder(encoder_inputs)
@@ -182,17 +186,6 @@ def get_model_bert_ac(num_actions):
 #     return model
 
 
-def get_model_mlp(x_train, num_classes):
-    text_input = tf.keras.layers.Input(shape=(x_train.shape[1]), dtype=tf.float32) 
-    if num_classes == 2:
-        out = tf.keras.layers.Dense(1, activation='sigmoid')(text_input)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(tf.keras.optimizers.Adam(learning_rate=0.01), "binary_crossentropy", metrics=["binary_accuracy"])
-    else:
-        out = tf.keras.layers.Dense(num_classes, activation="softmax")(text_input)
-        model = tf.keras.Model(inputs=text_input, outputs=out)
-        model.compile(tf.keras.optimizers.Adam(learning_rate=0.01), "sparse_categorical_crossentropy", metrics=["acc"])
-    return model
 
 def get_keras_data(df):
     #num_classes = df_test['label'].unique().shape[0]
