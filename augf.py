@@ -61,12 +61,12 @@ import pandas as pd
 from tensorflow.keras import layers
 from tensorflow.keras.callbacks import *
 import tensorflow_hub as hub
-import tensorflow_text as text
+# import tensorflow_text 
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 from transformers import pipeline
-from threading import Thread
+# from threading import Thread
 #tf.keras.mixed_precision.experimental.set_policy('mixed_float16')
 #tf.keras.backend.set_floatx('float16')
 import nltk 

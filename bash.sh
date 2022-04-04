@@ -29,6 +29,12 @@ nohup python -u zsl.py --dsn ag --backbone simi --expand gpt_nofilter --gpu 7   
 
 
 
+python -u augf.py --dsn ag --samplecnt 16 --max_aug_times 1  \
+                  --seed 345  --aug generate \
+                   --gpu 3
+
+
+
 
 
 
