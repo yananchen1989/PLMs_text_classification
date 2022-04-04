@@ -381,19 +381,19 @@ def dvrl_inner_join(files):
 
 
 def prompt_gen_filter(gen_nlp_sub, prompt):
-    contents_syn = []
     # fbs_gen = 8
     # for _ in range(0, args.candidates//fbs_gen):
-        
-    result_gpt = gen_nlp_sub(prompt, max_length=dsn_maxlen[args.dsn], \
-                                    do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
-                                    repetition_penalty=1.2, num_return_sequences= 8,\
-                                    clean_up_tokenization_spaces=True)
-    assert len(result_gpt) == 8
-    contents_syn = [remove_str(ii['generated_text']) for ii in result_gpt if ii['generated_text'] and ii['generated_text']!=prompt]
-    #contents_syn.extend(contents_syn_tmp)
-    torch.cuda.empty_cache()
-
+    while  1:
+        result_gpt = gen_nlp_sub(prompt, max_length=dsn_maxlen[args.dsn], \
+                                        do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                        repetition_penalty=1.2, num_return_sequences= 8,\
+                                        clean_up_tokenization_spaces=True)
+        assert len(result_gpt) == 8
+        contents_syn = [remove_str(ii['generated_text']) for ii in result_gpt if ii['generated_text'] and ii['generated_text']!=prompt]
+        #contents_syn.extend(contents_syn_tmp)
+        torch.cuda.empty_cache()
+        if len(contents_syn) >= 1:
+            break 
     return random.sample(contents_syn, 1)[0]
     # embeds_syn = enc.infer(contents_syn)
     # embeds_score = cosine_similarity(embeds_syn, enc_dic[row['label']])
