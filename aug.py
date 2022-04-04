@@ -40,7 +40,7 @@ parser.add_argument("--candidates", default=8, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="3", type=str)
+parser.add_argument("--gpu", default="0", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -726,14 +726,14 @@ print("begin_to_test_aug==>", df_synthesize['fmark'].unique())
 
 #df_train_aug.to_csv("./augf_csvs/{}_{}_{}_{}.csv".format(args.dsn, args.samplecnt, ''.join(args.aug), args.seed), index=False)
 
+for ite in range(7):
+    for fmark in df_synthesize['fmark'].unique():
+        acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
+                    ds.df_test, args.backbone, 16, args.epochs)
 
-for fmark in df_synthesize['fmark'].unique():
-    acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
-                ds.df_test, args.backbone, 16, args.epochs)
+        summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] + \
+            ['ite:{} fmark:{} acc_aug:{} '.format(ite, fmark, acc_aug )]
 
-    summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items() if not k.startswith('eda_')] + \
-        ['fmark:{} acc_base:{} acc_aug:{} '.format(fmark, acc_noaug, acc_aug )]
-
-    # if args.testbed and args.epochs > 10 and gain != -1 :
-    #     record_log('log__baselines', summary)
-    print('success', ' '.join(summary))
+        # if args.testbed and args.epochs > 10 and gain != -1 :
+        #     record_log('log__baselines', summary)
+        print('success', ' '.join(summary))
