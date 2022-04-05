@@ -39,7 +39,7 @@ parser.add_argument("--candidates", default=8, type=int)
 #parser.add_argument("--num_return_sequences", default=4, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
-parser.add_argument("--seed", default=0, type=int)
+# parser.add_argument("--seed", default=0, type=int)
 parser.add_argument("--gpu", default="0", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
