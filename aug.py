@@ -93,8 +93,12 @@ from utils.encoders import *
 from utils.cbert_cgpt_config import * 
 #from utils.dpp_model import * 
 #from utils.flair_ners import *
+PATH_SCRATCH_CACHE = "/scratch/w/wluyliu/yananc/cache"
+PATH_SCRATCH = "/scratch/w/wluyliu/yananc"
+PATH_HOME = "/home/w/wluyliu/yananc/topic_classification_augmentation"
 
-ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt)
+
+ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, path=PATH_HOME)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 ds, proper_len = process_ds(ds, 128)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
@@ -109,9 +113,6 @@ dsn_maxlen = {'uci':64, 'stsa':64, 'agt':64, 'ag':128, 'nyt':128, 'amazon2':128,
 
 args.aug = args.aug.split(',')
 
-PATH_SCRATCH_CACHE = "/scratch/w/wluyliu/yananc/cache"
-PATH_SCRATCH = "/scratch/w/wluyliu/yananc"
-PATH_HOME = "/home/w/wluyliu/yananc/topic_classification_augmentation"
 
 if 'eda' in args.aug:
     from utils.eda import *
