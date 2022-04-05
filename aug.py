@@ -17,13 +17,13 @@ parser.add_argument("--samplecnt", default=8, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
 parser.add_argument("--backbone", default="albert", type=str)
-parser.add_argument("--verbose", default=0, type=int)
-parser.add_argument("--basemode", default="max", type=str) # rank or thres
+# parser.add_argument("--verbose", default=0, type=int)
+# parser.add_argument("--basemode", default="max", type=str) # rank or thres
 
 #parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
-parser.add_argument("--epochs", default=72, type=int)
-parser.add_argument("--testbed", default=1, type=int)
-parser.add_argument("--testvalid", default='test', type=str)
+parser.add_argument("--epochs", default=100, type=int)
+# parser.add_argument("--testbed", default=1, type=int)
+# parser.add_argument("--testvalid", default='test', type=str)
 # parser.add_argument("--filter", default="nlinsp", type=str, choices=['nlinsp', 'clsembed'])
 
 #parser.add_argument("--valid_files_cnt", default=16, type=int)
@@ -34,13 +34,13 @@ parser.add_argument("--testvalid", default='test', type=str)
 # dpfuture
 #parser.add_argument("--future_steps", default=64, type=int)
 #parser.add_argument("--test_beams", default=64, type=int)
-parser.add_argument("--candidates", default=8, type=int)
+# parser.add_argument("--candidates", default=8, type=int)
 
 #parser.add_argument("--num_return_sequences", default=4, type=int)
 #parser.add_argument("--abundance", default=1, type=int)
 
 # parser.add_argument("--seed", default=0, type=int)
-parser.add_argument("--gpu", default="0", type=str)
+# parser.add_argument("--gpu", default="0", type=str)
 
 # parser.add_argument("--ddi", default=2, type=int)
 # parser.add_argument("--di", default=2, type=int)
@@ -52,7 +52,7 @@ parser.add_argument("--gpu", default="0", type=str)
 
 args = parser.parse_args()
 print('args==>', args)
-os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+# os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 #args.filter = args.gpu.split(',')
 
 import numpy as np
@@ -726,15 +726,9 @@ df_train_aug = pd.concat([ds.df_train, df_synthesize]).sample(frac=1)
 print("begin_to_test_aug==>", df_synthesize['fmark'].unique())
 
 #df_train_aug.to_csv("./augf_csvs/{}_{}_{}_{}.csv".format(args.dsn, args.samplecnt, ''.join(args.aug), args.seed), index=False)
-
-for ite in range(7):
-    for fmark in df_synthesize['fmark'].unique():
-        acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
-                    ds.df_test, args.backbone, 16, args.epochs)
-
-        summary = ['summary===>'] + ['{}:{}'.format(k, v) for k, v in vars(args).items()] + \
-            ['ite:{} fmark:{} acc_aug:{} '.format(ite, fmark, acc_aug )]
-
-        # if args.testbed and args.epochs > 10 and gain != -1 :
-        #     record_log('log__baselines', summary)
-        print('success', ' '.join(summary))
+for args.backbone in ['former', 'albert']:
+    for ite in range(7):
+        for fmark in df_synthesize['fmark'].unique():
+            acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
+                        ds.df_test, args.backbone, 16, args.epochs)
+            print('summary____', args.dsn, args.samplecnt, args.backbone,  ite, fmark, acc_aug)
