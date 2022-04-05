@@ -98,7 +98,7 @@ PATH_SCRATCH = "/scratch/w/wluyliu/yananc"
 PATH_HOME = "/home/w/wluyliu/yananc/topic_classification_augmentation"
 
 
-ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, path=PATH_HOME)
+ds = load_data(dataset=args.dsn, samplecnt= args.samplecnt, path='{}/torch_ds'.format(PATH_HOME))
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
 ds, proper_len = process_ds(ds, 128)
 ds.df_train['content'] = ds.df_train['content'].map(lambda x: remove_str(x))
