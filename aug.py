@@ -726,13 +726,13 @@ df_train_aug = pd.concat([ds.df_train, df_synthesize]).sample(frac=1)
 print("begin_to_test_aug==>", df_synthesize['fmark'].unique())
 
 #df_train_aug.to_csv("./augf_csvs/{}_{}_{}_{}.csv".format(args.dsn, args.samplecnt, ''.join(args.aug), args.seed), index=False)
-for args.backbone in ['former', 'albert']:
-    for ite in range(7):
-        acc_noaug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori'])], \
-                        ds.df_test, args.backbone, 16, args.epochs)
 
-        for fmark in df_synthesize['fmark'].unique():
-            acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
-                        ds.df_test, args.backbone, 16, args.epochs)
+for ite in range(12):
+    acc_noaug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori'])], \
+                    ds.df_test, args.backbone, 16, args.epochs)
 
-            print('summary____', args.dsn, args.samplecnt, args.backbone,  ite, fmark, acc_noaug, acc_aug)
+    for fmark in df_synthesize['fmark'].unique():
+        acc_aug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori',fmark])], \
+                    ds.df_test, args.backbone, 16, args.epochs)
+
+        print('summary____', args.dsn, args.samplecnt, args.backbone,  ite, fmark, acc_noaug, acc_aug)

@@ -64,8 +64,8 @@ avg_pool_3 = keras.layers.GlobalAveragePooling1D()(title_conv3)
 max_pool_2 = keras.layers.GlobalMaxPooling1D()(title_conv2)
 
 
-
-
+# when used for RNN model, mask the padding
+embedding = keras.layers.Embedding(10000, 300,  trainable=True, mask_zero=True)
 
 
 
