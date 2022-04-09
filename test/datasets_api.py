@@ -72,23 +72,19 @@ dsnf = {'ag':torchtext.datasets.AG_NEWS, 'yahoo':torchtext.datasets.YahooAnswers
 	'dbpedia':torchtext.datasets.DBpedia, 'yelp2':torchtext.datasets.YelpReviewPolarity,
         'yelp5':torchtext.datasets.YelpReviewFull, 
         'amazon2':torchtext.datasets.AmazonReviewPolarity, 'amazon5':torchtext.datasets.AmazonReviewFull,
-        'imdb':torchtext.datasets.IMDB}
+        'imdb':torchtext.datasets.IMDB, 'stsa':torchtext.datasets.SST2 }
 
-path = './torch_ds'
+path = '/scratch/w/wluyliu/yananc/torch_ds'
 for dsn, f in dsnf.items():
-	if dsn != 'yahoo':
-		continue
-	ds_train, ds_test =  f(root=path, split=('train', 'test'))
-	df_train,df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
-	# df_train.to_csv('{}/{}_train.csv'.format(path, dsn), index=False)
-	# df_test.to_csv('{}/{}_test.csv'.format(path, dsn), index=False)
-
-
-ds_train, ds_test  = torchtext.datasets.AG_NEWS(root='.data', split=('train', 'test'))
+    if dsn != 'yahoo':
+        continue
+    ds_train, ds_test =  f(root=path, split=('train', 'test'))
+    df_train, df_test = pd.DataFrame(ds_train, columns=['label', 'content']), pd.DataFrame(ds_test, columns=['label','content'])
+    print(dsn, df_train.shape[0], df_test.shape[0])
 
 
 
-next(ds_train)
+
 
 # AG_NEWS YahooAnswers  DBpedia YelpReviewPolarity YelpReviewFull  AmazonReviewPolarity AmazonReviewFull 
 # IMDB

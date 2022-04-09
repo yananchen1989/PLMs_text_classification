@@ -102,7 +102,7 @@ class load_data():
             self.df_train['label'] = self.df_train['label'].map({'Negative':0, 'Positive':1})
             self.df_test['label'] = self.df_test['label'].map({'Negative':0, 'Positive':1})
         
-        elif self.dataset in ['yelp2','amazon2']:
+        elif self.dataset in ['yelp2','amazon2', 'yelp5', 'amazon5']:
             self.df_train = pd.read_csv('{}/{}_train.csv'.format(self.path, self.dataset))
             self.df_test = pd.read_csv('{}/{}_test.csv'.format(self.path, self.dataset))
             ixl = {1:'negative', 2:'positive'}
@@ -232,6 +232,9 @@ def get_cc_text_double(ft_pattern, s=1):
         df_cc['text1'] = [c[0] for c in rr]
         df_cc['text2'] = [c[1] for c in rr]
         return df_cc[['text1','text2']]
+
+
+
 
 def get_summary_text_double(dsn, s=1):
 

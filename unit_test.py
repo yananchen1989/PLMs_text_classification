@@ -127,6 +127,8 @@ for _ in range(64):
 print(tokenizer_t5.decode(decoder_input_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True))
 
 
+ag_news_train = datasets.load_dataset('c4', split="train", cache_dir='/scratch/w/wluyliu/yananc/cache')
+
 
 
 #############  计算指标          ##############
@@ -134,30 +136,44 @@ print(tokenizer_t5.decode(decoder_input_ids[0], skip_special_tokens=True, clean_
 import glob
 import pandas as pd 
 
-
-#files = glob.glob("./augt_accs/augt.uci.former.*.*.log")
-files = glob.glob("./augt_accs/augt.uci.albert.*.*.log")
-
+import glob
+files = glob.glob("./slurm-*.out")
 infos = []
 for file in files:
-    with open(file,'r') as f: 
+
+    with open(file, 'r') as f:
         for line in f:
-             
-            if 'seed:' in line:
-                tokens = line.strip().split('==>')[-1].strip().split()
-                infos.append((int(tokens[0]), tokens[1], float(tokens[-1])))
-df = pd.DataFrame(infos, columns=['samplecnt','fmark','acc'])
+            if 'summary____' in line:
+                tokens = line.strip().split(' ')
+                if len(tokens) != 8:
+                    continue
+                infos.append(tokens)
+
+import pandas as pd 
+df = pd.DataFrame(infos, columns=['summary', 'dsn', 'samplecnt', 'model', 'ite', 'famrk', 'noaug_acc', 'aug_acc'])
+
+df['aug_acc'] = df['aug_acc'].astype('float')
+df['noaug_acc'] = df['noaug_acc'].astype('float')
+
+df['samplecnt'] = df['samplecnt'].astype('int')
+
+df['ite'] = df['ite'].astype('int')
 
 
-for samplecnt in [32, 64, 128, 256, 512]: # 
-    for fmark in df['fmark'].unique():
-        dfi = df.loc[(df['samplecnt']==samplecnt) & (df['fmark']==fmark)]
-        if dfi.shape[0] == 0:
-            continue 
-        acc_mean = dfi['acc'].mean()
-        print(samplecnt, fmark, dfi['acc'].shape[0], acc_mean)
+model = 'albert'
+for samplecnt in df['samplecnt'].unique():
+    for fmark in df['famrk'].unique():
+        dfi = df.loc[(df['samplecnt']==samplecnt) & (df['famrk']==fmark) & (df['model']==model)]
+        print(samplecnt, fmark, dfi['noaug_acc'].mean(), dfi['aug_acc'].mean(), dfi.shape[0])
 
-    print()
+
+
+
+
+
+
+
+
 
 
 
