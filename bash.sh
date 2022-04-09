@@ -55,7 +55,7 @@ CUDA_VISIBLE_DEVICES=0 nohup  python -u ./run_summarization_no_trainer.py \
             --text_column text1 \
             --summary_column text2 \
             --max_length 128 \
-            --model_type bart  --use_slow_tokenizer  > ./finetunes/bart_st_pp.log & 
+            --model_type bart  --use_slow_tokenizer --local_files_only > ./finetunes/bart_st_pp.log & 
 
 CUDA_VISIBLE_DEVICES=1 nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
@@ -72,7 +72,7 @@ CUDA_VISIBLE_DEVICES=1 nohup  python -u ./run_summarization_no_trainer.py \
             --text_column text1 \
             --summary_column text2 \
             --max_length 128 \
-            --model_type bart  --use_slow_tokenizer  > ./finetunes/bart_st_pps.log & 
+            --model_type bart  --use_slow_tokenizer --local_files_only  > ./finetunes/bart_st_pps.log & 
 
 
 # t5
@@ -91,7 +91,7 @@ CUDA_VISIBLE_DEVICES=2 nohup  python -u ./run_summarization_no_trainer.py \
             --text_column text1 \
             --summary_column text2 \
             --max_length 128 \
-            --model_type t5  --use_slow_tokenizer  > ./finetunes/t5_st_pp.log & 
+            --model_type t5  --use_slow_tokenizer --local_files_only  > ./finetunes/t5_st_pp.log & 
 
 CUDA_VISIBLE_DEVICES=3 nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
@@ -108,7 +108,7 @@ CUDA_VISIBLE_DEVICES=3 nohup  python -u ./run_summarization_no_trainer.py \
             --text_column text1 \
             --summary_column text2 \
             --max_length 128 \
-            --model_type t5  --use_slow_tokenizer  > ./finetunes/t5_st_pps.log & 
+            --model_type t5  --use_slow_tokenizer --local_files_only > ./finetunes/t5_st_pps.log & 
 
 
 
