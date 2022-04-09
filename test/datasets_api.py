@@ -68,12 +68,13 @@ df.loc[df['document'].isnull()].shape
 import torchtext 
 import pandas as pd 
 
-dsnf = {'ag':torchtext.datasets.AG_NEWS, 'yahoo':torchtext.datasets.YahooAnswers, 
+dsnf = { 'yahoo':torchtext.datasets.YahooAnswers, 'ag':torchtext.datasets.AG_NEWS,
 	'dbpedia':torchtext.datasets.DBpedia, 'yelp2':torchtext.datasets.YelpReviewPolarity,
         'yelp5':torchtext.datasets.YelpReviewFull, 
         'amazon2':torchtext.datasets.AmazonReviewPolarity, 'amazon5':torchtext.datasets.AmazonReviewFull,
-        'imdb':torchtext.datasets.IMDB, 'stsa':torchtext.datasets.SST2 }
+        'imdb':torchtext.datasets.IMDB } # , 'stsa':torchtext.datasets.SST2
 
+path = '/Users/chen0040/Downloads/'
 path = '/scratch/w/wluyliu/yananc/torch_ds'
 for dsn, f in dsnf.items():
     if dsn != 'yahoo':

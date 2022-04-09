@@ -183,15 +183,15 @@ from nltk.tokenize import sent_tokenize
 
 def para_split2(para, shuffle=False):
   sents = sent_tokenize(para)
+
+  if len(sents) < 4:
+    return []
+
   if shuffle:
     random.shuffle(sents)
-  assert len(sents) > 0 and len(para.split(' ')) >= 4
-  if len(sents)==1:
-    tokens = para.split(' ')
-    paras = [' '.join(tokens[:int(len(tokens)/2)]).strip(), ' '.join(tokens[int(len(tokens)/2):]).strip()]
-  else:
-    mid = int(len(sents) / 2)
-    paras = [' '.join(sents[:mid]).strip(), ' '.join(sents[mid:]).strip()]
+
+  mid = int(len(sents) / 2)
+  paras = [' '.join(sents[:mid]).strip(), ' '.join(sents[mid:]).strip()]
   return paras
 
 import datasets
