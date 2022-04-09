@@ -39,15 +39,15 @@ python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1  \
 
 
 
-######## tc
+######## bart
 CUDA_VISIBLE_DEVICES=0 nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
-            --train_file "./finetunes/df_cc_train_tc.csv" \
-            --validation_file "./finetunes/df_cc_test_tc.csv" \
+            --train_file "./finetunes/df_st_train_pp.csv" \
+            --validation_file "./finetunes/df_st_test_pp.csv" \
             --model_name_or_path  facebook/bart-base \
             --per_device_train_batch_size 16 \
             --per_device_eval_batch_size 16 \
-            --output_dir './finetunes/bart_tc' \
+            --output_dir './finetunes/bart_st_pp' \
             --max_target_length 128 \
             --max_source_length 128 \
             --val_max_target_length 128 \
@@ -55,35 +55,16 @@ CUDA_VISIBLE_DEVICES=0 nohup  python -u ./run_summarization_no_trainer.py \
             --text_column text1 \
             --summary_column text2 \
             --max_length 128 \
-            --model_type bart  --use_slow_tokenizer  > ./finetunes/bart_tc.log & 
+            --model_type bart  --use_slow_tokenizer  > ./finetunes/bart_st_pp.log & 
 
 CUDA_VISIBLE_DEVICES=1 nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
-            --train_file "./finetunes/df_cc_train_tc.csv" \
-            --validation_file "./finetunes/df_cc_test_tc.csv" \
-            --model_name_or_path  t5-base \
-            --per_device_train_batch_size 16 \
-            --per_device_eval_batch_size 16 \
-            --output_dir './finetunes/t5_tc' \
-            --max_target_length 128 \
-            --max_source_length 128 \
-            --val_max_target_length 128 \
-            --preprocessing_num_workers 56 --overwrite_cache True \
-            --text_column text1 \
-            --summary_column text2 \
-            --max_length 128 \
-            --model_type t5  --use_slow_tokenizer  > ./finetunes/t5_tc.log & 
-
-
-###### pp
-CUDA_VISIBLE_DEVICES=2 nohup  python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 12 \
-            --train_file "./finetunes/df_cc_train_pp.csv" \
-            --validation_file "./finetunes/df_cc_test_pp.csv" \
+            --train_file "./finetunes/df_st_train_pps.csv" \
+            --validation_file "./finetunes/df_st_test_pps.csv" \
             --model_name_or_path  facebook/bart-base \
             --per_device_train_batch_size 16 \
             --per_device_eval_batch_size 16 \
-            --output_dir './finetunes/bart_pp' \
+            --output_dir './finetunes/bart_st_pps' \
             --max_target_length 128 \
             --max_source_length 128 \
             --val_max_target_length 128 \
@@ -91,38 +72,18 @@ CUDA_VISIBLE_DEVICES=2 nohup  python -u ./run_summarization_no_trainer.py \
             --text_column text1 \
             --summary_column text2 \
             --max_length 128 \
-            --model_type bart  --use_slow_tokenizer  > ./finetunes/bart_pp.log & 
+            --model_type bart  --use_slow_tokenizer  > ./finetunes/bart_st_pps.log & 
 
 
-CUDA_VISIBLE_DEVICES=3 nohup  python -u ./run_summarization_no_trainer.py \
+# t5
+CUDA_VISIBLE_DEVICES=2 nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
-            --train_file "./finetunes/df_cc_train_pp.csv" \
-            --validation_file "./finetunes/df_cc_test_pp.csv" \
-            --model_name_or_path  t5-base \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
-            --output_dir './finetunes/t5_pp' \
-            --max_target_length 128 \
-            --max_source_length 128 \
-            --val_max_target_length 128 \
-            --preprocessing_num_workers 56 --overwrite_cache True \
-            --text_column text1 \
-            --summary_column text2 \
-            --max_length 128 \
-            --model_type t5  --use_slow_tokenizer  > ./finetunes/t5_pp.log & 
-
-
-
-
-
-CUDA_VISIBLE_DEVICES=0  python -u ./run_summarization_no_trainer.py \
-            --num_train_epochs 12 \
-            --train_file "/scratch/w/wluyliu/yananc/finetunes/df_st_pp_train.csv" \
-            --validation_file "/scratch/w/wluyliu/yananc/finetunes/df_st_pp_test.csv" \
+            --train_file "./finetunes/df_st_train_pp.csv" \
+            --validation_file "./finetunes/df_st_test_pp.csv" \
             --model_name_or_path  t5-base \
             --per_device_train_batch_size 16 \
             --per_device_eval_batch_size 16 \
-            --output_dir '/scratch/w/wluyliu/yananc/finetunes/t5_st_pp' \
+            --output_dir './finetunes/t5_st_pp' \
             --max_target_length 128 \
             --max_source_length 128 \
             --val_max_target_length 128 \
@@ -130,7 +91,25 @@ CUDA_VISIBLE_DEVICES=0  python -u ./run_summarization_no_trainer.py \
             --text_column text1 \
             --summary_column text2 \
             --max_length 128 \
-            --model_type t5  --use_slow_tokenizer  > /scratch/w/wluyliu/yananc/finetunes/t5_st_pp.log & 
+            --model_type t5  --use_slow_tokenizer  > ./finetunes/t5_st_pp.log & 
+
+CUDA_VISIBLE_DEVICES=3 nohup  python -u ./run_summarization_no_trainer.py \
+            --num_train_epochs 12 \
+            --train_file "./finetunes/df_st_train_pps.csv" \
+            --validation_file "./finetunes/df_st_test_pps.csv" \
+            --model_name_or_path  t5-base \
+            --per_device_train_batch_size 16 \
+            --per_device_eval_batch_size 16 \
+            --output_dir './finetunes/t5_st_pps' \
+            --max_target_length 128 \
+            --max_source_length 128 \
+            --val_max_target_length 128 \
+            --preprocessing_num_workers 56 --overwrite_cache True \
+            --text_column text1 \
+            --summary_column text2 \
+            --max_length 128 \
+            --model_type t5  --use_slow_tokenizer  > ./finetunes/t5_st_pps.log & 
+
 
 
 
