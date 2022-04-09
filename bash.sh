@@ -42,8 +42,8 @@ python -u augf.py --dsn uci --samplecnt 8 --max_aug_times 1  \
 ######## bart
 CUDA_VISIBLE_DEVICES=0 nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
-            --train_file "./finetunes/df_st_train_pp.csv" \
-            --validation_file "./finetunes/df_st_test_pp.csv" \
+            --train_file "./finetunes/df_st_pp_train.csv" \
+            --validation_file "./finetunes/df_st_pp_test.csv" \
             --model_name_or_path  facebook/bart-base \
             --per_device_train_batch_size 16 \
             --per_device_eval_batch_size 16 \
@@ -59,8 +59,8 @@ CUDA_VISIBLE_DEVICES=0 nohup  python -u ./run_summarization_no_trainer.py \
 
 CUDA_VISIBLE_DEVICES=1 nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
-            --train_file "./finetunes/df_st_train_pps.csv" \
-            --validation_file "./finetunes/df_st_test_pps.csv" \
+            --train_file "./finetunes/df_st_pps_train.csv" \
+            --validation_file "./finetunes/df_st_pps_test.csv" \
             --model_name_or_path  facebook/bart-base \
             --per_device_train_batch_size 16 \
             --per_device_eval_batch_size 16 \
@@ -78,8 +78,8 @@ CUDA_VISIBLE_DEVICES=1 nohup  python -u ./run_summarization_no_trainer.py \
 # t5
 CUDA_VISIBLE_DEVICES=2 nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
-            --train_file "./finetunes/df_st_train_pp.csv" \
-            --validation_file "./finetunes/df_st_test_pp.csv" \
+            --train_file "./finetunes/df_st_pp_train.csv" \
+            --validation_file "./finetunes/df_st_pp_test.csv" \
             --model_name_or_path  t5-base \
             --per_device_train_batch_size 16 \
             --per_device_eval_batch_size 16 \
@@ -95,8 +95,8 @@ CUDA_VISIBLE_DEVICES=2 nohup  python -u ./run_summarization_no_trainer.py \
 
 CUDA_VISIBLE_DEVICES=3 nohup  python -u ./run_summarization_no_trainer.py \
             --num_train_epochs 12 \
-            --train_file "./finetunes/df_st_train_pps.csv" \
-            --validation_file "./finetunes/df_st_test_pps.csv" \
+            --train_file "./finetunes/df_st_pps_train.csv" \
+            --validation_file "./finetunes/df_st_pps_test.csv" \
             --model_name_or_path  t5-base \
             --per_device_train_batch_size 16 \
             --per_device_eval_batch_size 16 \
