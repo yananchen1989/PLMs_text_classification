@@ -81,8 +81,8 @@ CUDA_VISIBLE_DEVICES=2 nohup  python -u ./run_summarization_no_trainer.py \
             --train_file "./finetunes/df_st_pp_train.csv" \
             --validation_file "./finetunes/df_st_pp_test.csv" \
             --model_name_or_path  t5-base \
-            --per_device_train_batch_size 16 \
-            --per_device_eval_batch_size 16 \
+            --per_device_train_batch_size 8 \
+            --per_device_eval_batch_size 8 \
             --output_dir './finetunes/t5_st_pp' \
             --max_target_length 128 \
             --max_source_length 128 \
@@ -98,8 +98,8 @@ CUDA_VISIBLE_DEVICES=3 nohup  python -u ./run_summarization_no_trainer.py \
             --train_file "./finetunes/df_st_pps_train.csv" \
             --validation_file "./finetunes/df_st_pps_test.csv" \
             --model_name_or_path  t5-base \
-            --per_device_train_batch_size 16 \
-            --per_device_eval_batch_size 16 \
+            --per_device_train_batch_size 8 \
+            --per_device_eval_batch_size 8 \
             --output_dir './finetunes/t5_st_pps' \
             --max_target_length 128 \
             --max_source_length 128 \
