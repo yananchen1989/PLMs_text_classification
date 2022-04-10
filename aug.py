@@ -253,8 +253,8 @@ if 'bt' in args.aug:
     model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
     tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
     model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
-    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=len(gpus)-1)
-    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=len(gpus)-1)
+    nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=0)
+    nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=0)
     print('bt model loaded')
 
 # if args.aug == 'fillin':
@@ -580,7 +580,7 @@ def synthesize(ds):
 
     if 'bt' in args.aug:
         contents_syn_bt = []
-        fbs = 8
+        fbs = 32
         for i in range(0, ds.df_train.shape[0], fbs):
             contents_trunk = ds.df_train['content'].tolist()[i:i+fbs]
             content_ =  nlp_forward(contents_trunk, truncation=True, \

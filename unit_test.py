@@ -135,8 +135,6 @@ ag_news_train = datasets.load_dataset('c4', split="train", cache_dir='/scratch/w
 
 import glob
 import pandas as pd 
-
-import glob
 files = glob.glob("./slurm-*.out")
 infos = []
 for file in files:
@@ -154,18 +152,17 @@ df = pd.DataFrame(infos, columns=['summary', 'dsn', 'samplecnt', 'model', 'ite',
 
 df['aug_acc'] = df['aug_acc'].astype('float')
 df['noaug_acc'] = df['noaug_acc'].astype('float')
-
 df['samplecnt'] = df['samplecnt'].astype('int')
-
 df['ite'] = df['ite'].astype('int')
 
 
-model = 'albert'
+model = 'former'
+dsn = 'uci'
 for samplecnt in df['samplecnt'].unique():
     for fmark in df['famrk'].unique():
-        dfi = df.loc[(df['samplecnt']==samplecnt) & (df['famrk']==fmark) & (df['model']==model)]
+        dfi = df.loc[(df['samplecnt']==samplecnt) & (df['famrk']==fmark) & (df['model']==model) & (df['dsn']==dsn)]
         print(samplecnt, fmark, dfi['noaug_acc'].mean(), dfi['aug_acc'].mean(), dfi.shape[0])
-
+    print()
 
 
 
