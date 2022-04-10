@@ -19,7 +19,10 @@ parser.add_argument("--max_aug_times", default=1, type=int)
 parser.add_argument("--backbone", default="albert", type=str)
 # parser.add_argument("--verbose", default=0, type=int)
 # parser.add_argument("--basemode", default="max", type=str) # rank or thres
-
+parser.add_argument(
+    "--local_files_only",
+    action="store_true",
+)
 #parser.add_argument("--nlim", default="joeddav/bart-large-mnli-yahoo-answers", type=str)
 parser.add_argument("--epochs", default=100, type=int)
 # parser.add_argument("--testbed", default=1, type=int)
@@ -249,10 +252,10 @@ if 'generate' in args.aug:
 
 if 'bt' in args.aug:
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-    tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
-    model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
-    tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
-    model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
+    tokenizer_backward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir=PATH_SCRATCH_CACHE, local_files_only=args.local_files_only)
+    model_backward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-zh-en", cache_dir=PATH_SCRATCH_CACHE, local_files_only=args.local_files_only)
+    tokenizer_forward = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir=PATH_SCRATCH_CACHE, local_files_only=args.local_files_only)
+    model_forward = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-zh", cache_dir=PATH_SCRATCH_CACHE, local_files_only=args.local_files_only)
     nlp_backward = pipeline("translation", model=model_backward, tokenizer=tokenizer_backward, device=0)
     nlp_forward = pipeline("translation", model=model_forward, tokenizer=tokenizer_forward, device=0)
     print('bt model loaded')
