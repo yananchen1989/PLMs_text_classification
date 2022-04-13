@@ -19,7 +19,7 @@ do
 done 
 
 
-for i in 1 2 3 4 5 6 7 8 9
+for i in 1 2 3 4 5 6 7 8 9 10
 do 
    sbatch submit_aug.slurm
 done
@@ -32,11 +32,10 @@ nohup python -u zsl.py --dsn ag --backbone simi --expand gpt_nofilter --gpu 7   
 
 
 
-python -u augf.py --dsn ag --samplecnt 16  \
-                  --seed 345  --aug generate \
-                   --gpu 3
+python -u aug.py --dsn ag --samplecnt 16  \
+                  --seed 345  --aug generate 
 
-python -u augf.py --dsn ag --samplecnt 16 --aug eda,bt --gpu 3
+python -u aug.py --dsn ag --samplecnt 16 --aug eda,bt --backbone former
 
 
 

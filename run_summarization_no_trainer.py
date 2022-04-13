@@ -506,7 +506,7 @@ def main():
     )
 
     # Metric
-    metric = datasets.load_metric('rouge')
+    metric = datasets.load_metric('rouge', cache_dir='/scratch/w/wluyliu/yananc/cache')
 
     # Train!
     total_batch_size = args.per_device_train_batch_size * accelerator.num_processes * args.gradient_accumulation_steps

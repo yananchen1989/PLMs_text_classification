@@ -156,13 +156,15 @@ df['samplecnt'] = df['samplecnt'].astype('int')
 df['ite'] = df['ite'].astype('int')
 
 
-model = 'former'
-dsn = 'uci'
-for samplecnt in df['samplecnt'].unique():
-    for fmark in df['famrk'].unique():
-        dfi = df.loc[(df['samplecnt']==samplecnt) & (df['famrk']==fmark) & (df['model']==model) & (df['dsn']==dsn)]
-        print(samplecnt, fmark, dfi['noaug_acc'].mean(), dfi['aug_acc'].mean(), dfi.shape[0])
-    print()
+
+for model in ['former', 'albert']:
+    for dsn in ['ag', 'uci']:
+        print(model, dsn)
+        for samplecnt in df['samplecnt'].unique():
+            for fmark in df['famrk'].unique():
+                dfi = df.loc[(df['samplecnt']==samplecnt) & (df['famrk']==fmark) & (df['model']==model) & (df['dsn']==dsn)]
+                print(samplecnt, fmark, dfi['noaug_acc'].mean(), dfi['aug_acc'].mean(), dfi.shape[0])
+            print()
 
 
 
