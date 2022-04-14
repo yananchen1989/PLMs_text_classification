@@ -176,7 +176,8 @@ if 'generate' in args.aug:
     # gpt2_lambda.config.pad_token_id=50256
     # gen_nlp['gpt2_lambda']  = pipeline("text-generation", model=gpt2_lambda, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
- 
+    
+    # t5 noft
     from transformers import T5Tokenizer, AutoModelWithLMHead
     tokenizer_t5 = T5Tokenizer.from_pretrained("t5-base", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
     print(tokenizer_t5)
@@ -184,12 +185,7 @@ if 'generate' in args.aug:
     t5_noft = AutoModelWithLMHead.from_pretrained("t5-base", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
     gen_nlp['t5_noft']  = pipeline("text2text-generation", model=t5_noft, tokenizer=tokenizer_t5, device=0)
 
-    t5_tc = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_tc/epoch_10".format(PATH_SCRATCH))
-    gen_nlp['t5_tc']  = pipeline("text2text-generation", model=t5_tc, tokenizer=tokenizer_t5, device=0)
-
-    t5_pp = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_pp/epoch_6".format(PATH_SCRATCH))
-    gen_nlp['t5_pp']  = pipeline("text2text-generation", model=t5_pp, tokenizer=tokenizer_t5, device=0)
-
+    # bart 
     from transformers import BartTokenizer, AutoModelWithLMHead
     tokenizer_bart = BartTokenizer.from_pretrained("facebook/bart-base", cache_dir=PATH_SCRATCH_CACHE, local_files_only=True)
     print(tokenizer_bart)
@@ -197,11 +193,31 @@ if 'generate' in args.aug:
     # bart_noft = AutoModelWithLMHead.from_pretrained("facebook/bart-base", cache_dir="./cache", local_files_only=True)
     # gen_nlp['bart_noft']  = pipeline("text2text-generation", model=bart_noft, tokenizer=tokenizer_bart, device=0)
 
-    bart_tc = AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_tc/epoch_9".format(PATH_SCRATCH))
-    gen_nlp['bart_tc']  = pipeline("text2text-generation", model=bart_tc, tokenizer=tokenizer_bart, device=0)
+    if args.dsn in ['ag','uci']:
+        t5_tc = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_tc/epoch_10".format(PATH_SCRATCH))
+        t5_pp = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_pp/epoch_6".format(PATH_SCRATCH))
+        
+        bart_tc = AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_tc/epoch_9".format(PATH_SCRATCH))
+        bart_pp= AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_pp/epoch_11".format(PATH_SCRATCH))
 
-    bart_pp= AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_pp/epoch_11".format(PATH_SCRATCH))
-    gen_nlp['bart_pp']  = pipeline("text2text-generation", model=bart_pp, tokenizer=tokenizer_bart, device=0)
+        gen_nlp['t5_tc']  = pipeline("text2text-generation", model=t5_tc, tokenizer=tokenizer_t5, device=0)
+        gen_nlp['t5_pp']  = pipeline("text2text-generation", model=t5_pp, tokenizer=tokenizer_t5, device=0)
+        gen_nlp['bart_tc']  = pipeline("text2text-generation", model=bart_tc, tokenizer=tokenizer_bart, device=0)
+        gen_nlp['bart_pp']  = pipeline("text2text-generation", model=bart_pp, tokenizer=tokenizer_bart, device=0)
+
+       
+    elif args.dsn in ['stsa']:
+        t5_pp = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_st_pp/epoch_2".format(PATH_SCRATCH))
+        t5_pps = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_st_pps/epoch_2".format(PATH_SCRATCH))
+        
+        bart_pp = AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_st_pp/epoch_5".format(PATH_SCRATCH))
+        bart_pps= AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_st_pps/epoch_5".format(PATH_SCRATCH))        
+
+        gen_nlp['t5_pps']  = pipeline("text2text-generation", model=t5_pps, tokenizer=tokenizer_t5, device=0)
+        gen_nlp['t5_pp']  = pipeline("text2text-generation", model=t5_pp, tokenizer=tokenizer_t5, device=0)
+        gen_nlp['bart_pps']  = pipeline("text2text-generation", model=bart_pps, tokenizer=tokenizer_bart, device=0)
+        gen_nlp['bart_pp']  = pipeline("text2text-generation", model=bart_pp, tokenizer=tokenizer_bart, device=0)
+
 
 # elif args.genm == 'ctrl':
 #     from transformers import CTRLTokenizer, TFCTRLLMHeadModel
