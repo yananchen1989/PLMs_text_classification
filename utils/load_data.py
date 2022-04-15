@@ -196,7 +196,7 @@ def para_split2(para, shuffle=False):
 
 import datasets
 def get_cc_news(s=1):
-    cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='/home/w/wluyliu/yananc/topic_classification_augmentation/torch_ds')
+    cc_news = datasets.load_dataset('cc_news', split="train", cache_dir='/scratch/w/wluyliu/yananc/cache')
     '''
     Dataset({
         features: ['date', 'description', 'domain', 'image_url', 'text', 'title', 'url'],

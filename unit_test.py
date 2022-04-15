@@ -158,7 +158,7 @@ df['ite'] = df['ite'].astype('int')
 
 
 for model in ['former', 'albert']:
-    for dsn in ['ag', 'uci']:
+    for dsn in [ 'stsa']: # 'ag', 'uci',
         print(model, dsn)
         for samplecnt in df['samplecnt'].unique():
             for fmark in df['famrk'].unique():
