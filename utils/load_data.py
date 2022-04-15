@@ -208,9 +208,6 @@ def get_cc_news(s=1):
 
     df.drop_duplicates(['title','content'], inplace=True) # 708241
 
-    #df.to_csv("./torch_ds/df_cc_news.csv", index=False)
-
-    #df = pd.read_csv("./torch_ds/df_cc_news_ners.csv", lineterminator='\n')
     return df.sample(frac=s) #615019  
 
 
@@ -230,12 +227,11 @@ def get_cc_text_double(ft_pattern, s=1):
     elif ft_pattern == 'pp':
         rr = df_cc['content'].map(lambda x: para_split2(x, False)).tolist()
     elif ft_pattern == 'ss':
-        rr = df_cc['content'].map(lambda x: para_split2(x, False)).tolist()
+        rr = df_cc['content'].map(lambda x: para_split2(x, True)).tolist()
 
-    df_cc['text1'] = [c[0] for c in rr if len(c)==2]
-    df_cc['text2'] = [c[1] for c in rr if len(c)==2]
-    
-    return df_cc[['text1','text2']]
+    df_text2text = pd.DataFrame([r for r in rr if r], columns=['text1', 'text2'])
+
+    return df_text2text
 
 
 
