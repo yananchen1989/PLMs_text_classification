@@ -228,10 +228,14 @@ def get_cc_text_double(ft_pattern, s=1):
     #    return df_cc.rename(columns={'ners': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
   
     elif ft_pattern == 'pp':
-        rr = df_cc['content'].map(lambda x: para_split2(x)).tolist()
-        df_cc['text1'] = [c[0] for c in rr]
-        df_cc['text2'] = [c[1] for c in rr]
-        return df_cc[['text1','text2']]
+        rr = df_cc['content'].map(lambda x: para_split2(x, False)).tolist()
+    elif ft_pattern == 'ss':
+        rr = df_cc['content'].map(lambda x: para_split2(x, False)).tolist()
+
+    df_cc['text1'] = [c[0] for c in rr if len(c)==2]
+    df_cc['text2'] = [c[1] for c in rr if len(c)==2]
+    
+    return df_cc[['text1','text2']]
 
 
 
