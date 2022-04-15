@@ -12,7 +12,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--aug", default="generate", type=str)
-parser.add_argument("--dsn", default="ag", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
+parser.add_argument("--dsn", default="stsa", type=str, choices=['uci','ag','agt','nyt','yelp2','amazon2','stsa'])
 parser.add_argument("--samplecnt", default=8, type=int)
 parser.add_argument("--max_aug_times", default=1, type=int)
 
@@ -745,6 +745,8 @@ df_train_aug = pd.concat([ds.df_train, df_synthesize]).sample(frac=1)
 print("begin_to_test_aug==>", df_synthesize['fmark'].unique())
 
 #df_train_aug.to_csv("./augf_csvs/{}_{}_{}_{}.csv".format(args.dsn, args.samplecnt, ''.join(args.aug), args.seed), index=False)
+
+
 
 for ite in range(12):
     acc_noaug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori'])], \

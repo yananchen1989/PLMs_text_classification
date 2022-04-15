@@ -5,21 +5,24 @@ from utils.load_data import *
 
 
 
-df = get_cc_text_double('pp')
+df = get_cc_text_double('ss')
 
-df = get_cc_text_double('tc')
 
-df_cc_train, df_cc_test =  train_test_split(df, test_size=0.05)
+df_cc_train, df_cc_test =  train_test_split(df_text2text, test_size=0.05)
  # all: 614805 
-
-df_cc_train.to_csv("./finetunes/df_cc_train_tc.csv", index=False)
-df_cc_test.to_csv("./finetunes/df_cc_test_tc.csv", index=False)
+print(df_cc_train.shape[0], df_cc_test.shape[0])
 
 
+df_cc_train.to_csv("/scratch/w/wluyliu/yananc/finetunes/df_cc_train_ss.csv", index=False)
+df_cc_test.to_csv("/scratch/w/wluyliu/yananc/finetunes/df_cc_test_ss.csv", index=False)
 
 
 
 
+
+
+
+PATH_HOME = "/home/w/wluyliu/yananc/topic_classification_augmentation"
 ds_yelp2 = load_data(dataset='yelp2', samplecnt= -1, path='{}/torch_ds'.format(PATH_HOME))
 ds_amzon2 = load_data(dataset='amazon2', samplecnt= -1, path='{}/torch_ds'.format(PATH_HOME))
 ds_yelp5 = load_data(dataset='yelp5', samplecnt= -1, path='{}/torch_ds'.format(PATH_HOME))
@@ -33,6 +36,10 @@ df_all = pd.concat([ds_yelp2.df_train, ds_yelp2.df_test, ds_amzon2.df_train, ds_
 
 
 df_all.drop_duplicates(['content'], inplace=True)
+df_st_train, df_st_test =  train_test_split(df_all, test_size=0.05)
+print(df_st_train.shape[0], df_st_test.shape[0])
+
+
 
 
 rr = df_all['content'].map(lambda x: para_split2(x, True)).tolist()
@@ -41,7 +48,7 @@ rr_ = [i for i in rr if i]
 df_text12 = pd.DataFrame(zip([c[0] for c in rr_], [c[1] for c in rr_]), columns=['text1', 'text2'])
 
 
-df_st_train, df_st_test =  train_test_split(df_text12, test_size=0.01)
+df_st_train, df_st_test =  train_test_split(df_all, test_size=0.05)
 
 df_st_train.to_csv("/scratch/w/wluyliu/yananc/finetunes/df_st_pp_train.csv", index=False)
 df_st_test.to_csv("/scratch/w/wluyliu/yananc/finetunes/df_st_pp_test.csv", index=False)
