@@ -171,8 +171,16 @@ for model in ['former', 'albert']:
 
 
 
-acc_noaug, _  = do_train_test_thread(ds.df_train, \
-                    ds.df_test, args.backbone, 16, 5)
+c4_news = datasets.load_dataset('c4', split="realnewslike", cache_dir='/scratch/w/wluyliu/yananc/cache')
+
+
+samples = random.sample(c4_news['train']['text'], 50)
+
+
+
+
+
+
 
 
 

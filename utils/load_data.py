@@ -182,17 +182,19 @@ nltk.data.path.append('./nltk_data')
 from nltk.tokenize import sent_tokenize
 
 def para_split2(para, shuffle=False):
-  sents = sent_tokenize(para)
+    sents = sent_tokenize(para)
 
-  if len(sents) < 4:
-    return []
+    if len(sents) <= 5:
+        return []
 
-  if shuffle:
-    random.shuffle(sents)
+    #sents = sents[:-1]
+    
+    if shuffle:
+        random.shuffle(sents)
 
-  mid = int(len(sents) / 2)
-  paras = [' '.join(sents[:mid]).strip(), ' '.join(sents[mid:]).strip()]
-  return paras
+    mid = int(len(sents) / 2)
+    paras = [' '.join(sents[:mid]).strip(), ' '.join(sents[mid:]).strip()]
+    return paras
 
 import datasets
 def get_cc_news(s=1):
@@ -212,26 +214,36 @@ def get_cc_news(s=1):
 
 
 
-def get_cc_text_double(ft_pattern, s=1):
 
-    df_cc = get_cc_news(s)
-    df_cc = df_cc.loc[(df_cc['title']!='') & (df_cc['content']!='') & (~df_cc['title'].isnull()) & (~df_cc['content'].isnull())]
-    #df_cc = df_cc.loc[(df_cc['ners']!='') & (~df_cc['ners'].isnull())]
+def get_cc_text_double(ft_pattern, dsn, s=1):
 
-    if ft_pattern == 'tc':
-        return df_cc.rename(columns={'title': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
+    if dsn == 'cc':
+        df_cc = get_cc_news(s)
+        df_cc = df_cc.loc[(df_cc['title']!='') & (df_cc['content']!='') & (~df_cc['title'].isnull()) & (~df_cc['content'].isnull())]
+        df_train, df_test =  train_test_split(df_cc, test_size=0.05)
 
-    #elif ft_pattern == 'ep':
-    #    return df_cc.rename(columns={'ners': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']]
-  
+    elif dsn == 'c4':
+        c4_news = datasets.load_dataset('c4', "realnewslike", cache_dir='/scratch/w/wluyliu/yananc/cache')
+        df_train = pd.DataFrame(c4_news['train']['text'], columns=['content']) # 13799838
+        df_test = pd.DataFrame(c4_news['validation']['text'], columns=['content'])
+
+    if ft_pattern == 'tc' and dsn == 'cc':
+        return df_train.rename(columns={'title': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']],\
+               df_test.rename(columns={'title': 'text1'}).rename(columns={'content': 'text2'})[['text1','text2']],\
+                 
     elif ft_pattern == 'pp':
-        rr = df_cc['content'].map(lambda x: para_split2(x, False)).tolist()
+        rr_train = df_train['content'].map(lambda x: para_split2(x, False)).tolist()
+        rr_test = df_test['content'].map(lambda x: para_split2(x, False)).tolist()
+
     elif ft_pattern == 'ss':
-        rr = df_cc['content'].map(lambda x: para_split2(x, True)).tolist()
+        rr_train = df_train['content'].map(lambda x: para_split2(x, True)).tolist()
+        rr_test = df_test['content'].map(lambda x: para_split2(x, True)).tolist()
 
-    df_text2text = pd.DataFrame([r for r in rr if r], columns=['text1', 'text2'])
+    df_text2text_train = pd.DataFrame([r for r in rr_train if r], columns=['text1', 'text2'])
+    df_text2text_test = pd.DataFrame([r for r in rr_test if r], columns=['text1', 'text2'])
 
-    return df_text2text
+    return df_text2text_train, df_text2text_test
+
 
 
 
