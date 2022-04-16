@@ -580,13 +580,13 @@ def main():
                 decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
                 metric.add_batch(predictions=decoded_preds, references=decoded_labels)
-        result = metric.compute(use_stemmer=True)
-        # Extract a few results from ROUGE
-        result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
 
-        result = {k: round(v, 4) for k, v in result.items()}
 
-        logger.info(result)
+        # result = metric.compute(use_stemmer=True)
+        # # Extract a few results from ROUGE
+        # result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
+        # result = {k: round(v, 4) for k, v in result.items()}
+        # logger.info(result)
 
     
         accelerator.wait_for_everyone()

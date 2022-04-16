@@ -161,16 +161,18 @@ for model in ['former', 'albert']:
     for dsn in [ 'stsa']: # 'ag', 'uci',
         print(model, dsn)
         for samplecnt in df['samplecnt'].unique():
+            noaug_acc = df.loc[(df['samplecnt']==samplecnt) & (df['model']==model) & (df['dsn']==dsn), 'noaug_acc'].mean()
             for fmark in df['famrk'].unique():
                 dfi = df.loc[(df['samplecnt']==samplecnt) & (df['famrk']==fmark) & (df['model']==model) & (df['dsn']==dsn)]
-                print(samplecnt, fmark, dfi['noaug_acc'].mean(), dfi['aug_acc'].mean(), dfi.shape[0])
+                print(samplecnt, fmark, noaug_acc, dfi['aug_acc'].mean(), dfi.shape[0])
             print()
 
 
 
 
 
-
+acc_noaug, _  = do_train_test_thread(ds.df_train, \
+                    ds.df_test, args.backbone, 16, 5)
 
 
 
