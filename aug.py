@@ -196,26 +196,31 @@ if 'generate' in args.aug:
     if args.dsn in ['ag','uci']:
         t5_tc = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_tc/epoch_10".format(PATH_SCRATCH))
         t5_pp = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_pp/epoch_6".format(PATH_SCRATCH))
+        t5_ss = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_cc_ss/epoch_0".format(PATH_SCRATCH))
         
         bart_tc = AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_tc/epoch_9".format(PATH_SCRATCH))
         bart_pp= AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_pp/epoch_11".format(PATH_SCRATCH))
+        bart_ss = AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_cc_ss/epoch_2".format(PATH_SCRATCH))
 
         gen_nlp['t5_tc']  = pipeline("text2text-generation", model=t5_tc, tokenizer=tokenizer_t5, device=0)
         gen_nlp['t5_pp']  = pipeline("text2text-generation", model=t5_pp, tokenizer=tokenizer_t5, device=0)
+        gen_nlp['t5_ss']  = pipeline("text2text-generation", model=t5_ss, tokenizer=tokenizer_t5, device=0)
+
         gen_nlp['bart_tc']  = pipeline("text2text-generation", model=bart_tc, tokenizer=tokenizer_bart, device=0)
         gen_nlp['bart_pp']  = pipeline("text2text-generation", model=bart_pp, tokenizer=tokenizer_bart, device=0)
+        gen_nlp['bart_ss']  = pipeline("text2text-generation", model=bart_ss, tokenizer=tokenizer_bart, device=0)
 
        
     elif args.dsn in ['stsa']:
         t5_pp = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_st_pp/epoch_2".format(PATH_SCRATCH))
-        t5_pps = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_st_pps/epoch_2".format(PATH_SCRATCH))
+        t5_ss = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_st_pps/epoch_2".format(PATH_SCRATCH))
         
         bart_pp = AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_st_pp/epoch_5".format(PATH_SCRATCH))
-        bart_pps= AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_st_pps/epoch_5".format(PATH_SCRATCH))        
+        bart_ss= AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_st_pps/epoch_5".format(PATH_SCRATCH))        
 
-        gen_nlp['t5_pps']  = pipeline("text2text-generation", model=t5_pps, tokenizer=tokenizer_t5, device=0)
+        gen_nlp['t5_ss']  = pipeline("text2text-generation", model=t5_ss, tokenizer=tokenizer_t5, device=0)
         gen_nlp['t5_pp']  = pipeline("text2text-generation", model=t5_pp, tokenizer=tokenizer_t5, device=0)
-        gen_nlp['bart_pps']  = pipeline("text2text-generation", model=bart_pps, tokenizer=tokenizer_bart, device=0)
+        gen_nlp['bart_ss']  = pipeline("text2text-generation", model=bart_ss, tokenizer=tokenizer_bart, device=0)
         gen_nlp['bart_pp']  = pipeline("text2text-generation", model=bart_pp, tokenizer=tokenizer_bart, device=0)
 
 
@@ -438,6 +443,12 @@ def generate(row):
     print("ori_content==>", prompt_content)
     infos = []
     for fmark, gen_nlp_sub in gen_nlp.items():
+
+        # temp 
+        if fmark not in ['bart_ss', 't5_ss']:
+            continue
+
+
         if fmark == 'gpt2_lambda':
             contents_syn = prompt_gen_filter(gen_nlp_sub, prompt_lambda)
             infos.append((contents_syn, 'gpt2_lambda', row['label_name'], row['label']))
