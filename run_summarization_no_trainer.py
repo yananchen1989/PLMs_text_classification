@@ -475,7 +475,7 @@ def main():
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
-    if args.dataset_name in ['cc_news', 'c4'] and args.para in ['pp','ss']:
+    # if args.dataset_name in ['cc_news', 'c4'] and args.para in ['pp','ss']:
 
         # raw_datasets = raw_datasets.map(split_func, 
         #         batched=False,
