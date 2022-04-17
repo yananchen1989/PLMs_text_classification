@@ -402,23 +402,25 @@ def main():
     print("columns==>", column_names)
 
     # Get the column names for input/target.
-    dataset_columns = summarization_name_mapping.get(args.dataset_name, None)
-    if args.text_column is None:
-        text_column = column_names[0] #if dataset_columns is not None else column_names[0]
-    else:
-        text_column = args.text_column
-        if text_column not in column_names:
-            raise ValueError(
-                f"--text_column' value '{args.text_column}' needs to be one of: {', '.join(column_names)}"
-            )
-    if args.summary_column is None:
-        summary_column = column_names[1] #if dataset_columns is not None else column_names[1]
-    else:
-        summary_column = args.summary_column
-        if summary_column not in column_names:
-            raise ValueError(
-                f"--summary_column' value '{args.summary_column}' needs to be one of: {', '.join(column_names)}"
-            )
+
+    # dataset_columns = summarization_name_mapping.get(args.dataset_name, None)
+    # if args.text_column is None:
+    #     text_column = column_names[0] #if dataset_columns is not None else column_names[0]
+    # else:
+    #     text_column = args.text_column
+    #     if text_column not in column_names:
+    #         raise ValueError(
+    #             f"--text_column' value '{args.text_column}' needs to be one of: {', '.join(column_names)}"
+    #         )
+
+    # if args.summary_column is None:
+    #     summary_column = column_names[1] #if dataset_columns is not None else column_names[1]
+    # else:
+    #     summary_column = args.summary_column
+    #     if summary_column not in column_names:
+    #         raise ValueError(
+    #             f"--summary_column' value '{args.summary_column}' needs to be one of: {', '.join(column_names)}"
+    #         )
 
     # Temporarily set max_target_length for training.
     max_target_length = args.max_target_length
@@ -444,8 +446,8 @@ def main():
         return {'text1': text1, 'text2': text2}
 
     def preprocess_function(examples):
-        inputs = examples[text_column]
-        targets = examples[summary_column]
+        inputs = examples[args.text_column]
+        targets = examples[args.summary_column]
         inputs = [prefix + inp for inp in inputs]
         model_inputs = tokenizer(inputs, max_length=args.max_source_length, padding=padding, truncation=True)
 
@@ -468,7 +470,6 @@ def main():
         raw_datasets = raw_datasets.map(split_func, 
                 batched=False,
                 num_proc=args.preprocessing_num_workers,
-                remove_columns= raw_datasets.column_names['train'],
                 load_from_cache_file=False).filter(lambda example: example['text1']!='' and example['text2']!='')
 
 
