@@ -359,10 +359,10 @@ def main():
         extension = args.train_file.split(".")[-1]
         raw_datasets = load_dataset(extension, data_files=data_files, cache_dir='./cache')
 
-        if args.debug_cnt > 0: 
-            for split in raw_datasets.keys():
-                raw_datasets[split] = raw_datasets[split].select(range(args.debug_cnt))   
-                         
+
+    if args.debug_cnt > 0: 
+        raw_datasets['train'] = raw_datasets['train'].select(range(args.debug_cnt))   
+
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
