@@ -475,31 +475,24 @@ def main():
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
-    # if args.dataset_name in ['cc_news', 'c4'] and args.para in ['pp','ss']:
+    if args.dataset_name in ['cc_news', 'c4'] and args.para in ['pp','ss']:
 
-        # raw_datasets = raw_datasets.map(split_func, 
-        #         batched=False,
-        #         num_proc=args.preprocessing_num_workers,
-        #         load_from_cache_file=not args.overwrite_cache,
-        #         desc = "running split para ==>")\
-        #         .filter(lambda example: example['text1']!='' and example['text2']!='', \
-        #             num_proc=args.preprocessing_num_workers, desc="filtering ==>")
-
-
-    processed_datasets = raw_datasets.map(split_func, 
+        raw_datasets = raw_datasets.map(split_func, 
                 batched=False,
                 num_proc=args.preprocessing_num_workers,
-                load_from_cache_file=not args.overwrite_cache,
+                load_from_cache_file=not args.overwrite_cache, #keep_in_memory=True,
                 desc = "running split para ==>")\
-                .filter(lambda example: example['text1']!='' and example['text2']!='', \
-                    num_proc=args.preprocessing_num_workers, desc="filtering ==>")\
-                .map(
-                    preprocess_function,
-                    batched=True,
-                    num_proc=args.preprocessing_num_workers,
-                    remove_columns=column_names,
-                    load_from_cache_file=not args.overwrite_cache,
-                    desc="Running tokenizer on dataset==>",
+                .filter(lambda example: example['text1']!='' and example['text2']!='', #keep_in_memory=True, 
+                    num_proc=args.preprocessing_num_workers, desc="filtering ==>")
+
+
+    processed_datasets = raw_datasets.map(
+        preprocess_function,
+        batched=False, #keep_in_memory=True, 
+        num_proc=args.preprocessing_num_workers,
+        remove_columns=column_names,
+        load_from_cache_file=not args.overwrite_cache,
+        desc="Running tokenizer on dataset===>",
     )
 
 
