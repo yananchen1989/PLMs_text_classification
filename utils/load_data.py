@@ -177,24 +177,9 @@ technology     293
 '''
 
  
-import nltk,random
-nltk.data.path.append('./nltk_data')
-from nltk.tokenize import sent_tokenize
 
-def para_split2(para, shuffle=False):
-    sents = sent_tokenize(para)
 
-    if len(sents) <= 5:
-        return []
 
-    #sents = sents[:-1]
-    
-    if shuffle:
-        random.shuffle(sents)
-
-    mid = int(len(sents) / 2)
-    paras = [' '.join(sents[:mid]).strip(), ' '.join(sents[mid:]).strip()]
-    return paras
 
 import datasets
 def get_cc_news(s=1):
@@ -247,19 +232,6 @@ def get_cc_text_double(ft_pattern, dsn, s=1):
 
 
 
-
-def get_summary_text_double(dsn, s=1):
-
-    df = pd.read_csv("./torch_ds/df_{}_news.csv".format(dsn), lineterminator='\n').sample(frac=s)
-    if dsn == 'cnndm':
-        df = df.rename(columns={'highlights': 'text1'}).rename(columns={'article': 'text2'})[['text1','text2']]
-    elif dsn == 'xsum':
-        df = df.rename(columns={'summary': 'text1'}).rename(columns={'document': 'text2'})[['text1','text2']]
-
-    df = df.loc[(df['text1']!='') & (df['text2']!='') & (~df['text1'].isnull()) & (~df['text2'].isnull())]
-    df.drop_duplicates(['text1','text2'], inplace=True) 
-    
-    return df 
 
 
 '''

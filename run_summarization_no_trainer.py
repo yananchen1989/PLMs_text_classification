@@ -207,6 +207,13 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--para",
+        type=str,
+        default=None,
+        choices=['tc','ss','pp']
+    )
+
+    parser.add_argument(
         "--local_files_only",
         action="store_true",
     )
@@ -331,7 +338,13 @@ def main():
     # download the dataset.
     if args.dataset_name is not None:
         # Downloading and loading a dataset from the hub.
-        raw_datasets = load_dataset(args.dataset_name, args.dataset_config_name)
+        if args.dataset_name == 'cc_news':
+            raw_datasets = load_dataset(args.dataset_name, split="train", cache_dir='/scratch/w/wluyliu/yananc/cache')
+            raw_datasets = raw_datasets.train_test_split(test_size=0.05)
+
+        elif args.dataset_name == 'c4':
+            raw_datasets = datasets.load_dataset(args.dataset_name, "realnewslike", cache_dir='/scratch/w/wluyliu/yananc/cache')
+        
     else:
         data_files = {}
         if args.train_file is not None:
@@ -411,6 +424,25 @@ def main():
     max_target_length = args.max_target_length
     padding = "max_length" if args.pad_to_max_length else False
 
+
+
+    import nltk,random
+    nltk.data.path.append('./nltk_data')
+    from nltk.tokenize import sent_tokenize
+
+    def para_split2(para):
+        sents = sent_tokenize(para)
+        if len(sents) <= 5:
+            return '', ''
+        if args.para == 'ss':
+            random.shuffle(sents)
+        mid = int(len(sents) / 2)
+        return ' '.join(sents[:mid]).strip(), ' '.join(sents[mid:]).strip()
+
+    def split_func(example):
+        text1, text2 = para_split2(example['text'])
+        return {'text1': text1, 'text2': text2}
+
     def preprocess_function(examples):
         inputs = examples[text_column]
         targets = examples[summary_column]
@@ -431,6 +463,15 @@ def main():
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
+    if args.dataset_name in ['cc_news', 'c4'] and args.para in ['pp','ss']:
+
+        raw_datasets = raw_datasets.map(split_func, 
+                batched=False,
+                num_proc=args.preprocessing_num_workers,
+                remove_columns= raw_datasets.column_names['train'],
+                load_from_cache_file=False).filter(lambda example: example['text1']!='' and example['text2']!='')
+
+
     processed_datasets = raw_datasets.map(
         preprocess_function,
         batched=True,
@@ -439,6 +480,7 @@ def main():
         load_from_cache_file=not args.overwrite_cache,
         desc="Running tokenizer on dataset",
     )
+
 
     train_dataset = processed_datasets["train"]
     eval_dataset = processed_datasets["validation"]
