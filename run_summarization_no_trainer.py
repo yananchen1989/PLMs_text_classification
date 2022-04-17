@@ -480,7 +480,9 @@ def main():
         raw_datasets = raw_datasets.map(split_func, 
                 batched=False,
                 num_proc=args.preprocessing_num_workers,
-                load_from_cache_file=False).filter(lambda example: example['text1']!='' and example['text2']!='')
+                load_from_cache_file=not args.overwrite_cache,
+                desc = "running split para")\
+                .filter(lambda example: example['text1']!='' and example['text2']!='')
 
 
     processed_datasets = raw_datasets.map(
