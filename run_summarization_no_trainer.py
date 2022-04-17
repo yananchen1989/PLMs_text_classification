@@ -159,6 +159,11 @@ def parse_args():
         ),
     )
     parser.add_argument(
+        "--debug_cnt",
+        type=int,
+        default=5000,
+    )
+    parser.add_argument(
         "--num_beams",
         type=int,
         default=None,
@@ -353,6 +358,11 @@ def main():
             data_files["validation"] = args.validation_file
         extension = args.train_file.split(".")[-1]
         raw_datasets = load_dataset(extension, data_files=data_files, cache_dir='./cache')
+
+        if args.debug_cnt > 0: 
+            for split in raw_datasets.keys():
+                raw_datasets[split] = raw_datasets[split].select(range(args.debug_cnt))   
+                         
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
