@@ -482,7 +482,7 @@ def main():
                 num_proc=args.preprocessing_num_workers,
                 load_from_cache_file=not args.overwrite_cache, #keep_in_memory=True,
                 desc = "running split para ==>")\
-                .filter(lambda example: example['text1']!='' and example['text2']!='', #keep_in_memory=True, 
+                .filter(lambda example: example['text1']!='' and example['text2']!='', 
                     num_proc=args.preprocessing_num_workers, desc="filtering ==>")
 
 
@@ -497,7 +497,10 @@ def main():
 
 
     train_dataset = processed_datasets["train"]
-    eval_dataset = processed_datasets["validation"]
+    if args.dataset_name == 'c4':
+        eval_dataset = processed_datasets["validation"]
+    elif args.dataset_name == 'cc_news':
+        eval_dataset = processed_datasets["test"]
 
     # Log a few random samples from the training set:
     for index in random.sample(range(len(train_dataset)), 1):
