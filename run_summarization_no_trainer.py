@@ -480,7 +480,7 @@ def main():
         raw_datasets = raw_datasets.map(split_func, 
                 batched=False,
                 num_proc=args.preprocessing_num_workers,
-                load_from_cache_file=not args.overwrite_cache, #keep_in_memory=True,
+                load_from_cache_file=not args.overwrite_cache, 
                 desc = "running split para ==>")\
                 .filter(lambda example: example['text1']!='' and example['text2']!='', 
                     num_proc=args.preprocessing_num_workers, desc="filtering ==>")
@@ -488,7 +488,7 @@ def main():
 
     processed_datasets = raw_datasets.map(
         preprocess_function,
-        batched=False, #keep_in_memory=True, 
+        batched=True,
         num_proc=args.preprocessing_num_workers,
         remove_columns=column_names,
         load_from_cache_file=not args.overwrite_cache,
