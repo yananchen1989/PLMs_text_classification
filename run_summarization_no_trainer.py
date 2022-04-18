@@ -490,7 +490,7 @@ def main():
         preprocess_function,
         batched=True,
         num_proc=args.preprocessing_num_workers,
-        remove_columns=column_names,
+        remove_columns=raw_datasets["train"].column_names,
         load_from_cache_file=not args.overwrite_cache,
         desc="Running tokenizer on dataset===>",
     )
@@ -503,8 +503,9 @@ def main():
         eval_dataset = processed_datasets["test"]
 
     # Log a few random samples from the training set:
-    for index in random.sample(range(len(train_dataset)), 1):
+    for index in random.sample(range(len(train_dataset)), 8):
         logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
+        logger.info("\n")
 
     label_pad_token_id = -100 if args.ignore_pad_token_for_loss else tokenizer.pad_token_id
     data_collator = DataCollatorForSeq2Seq(
