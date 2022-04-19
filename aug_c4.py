@@ -194,21 +194,16 @@ if 'generate' in args.aug:
     # gen_nlp['bart_noft']  = pipeline("text2text-generation", model=bart_noft, tokenizer=tokenizer_bart, device=0)
 
     if args.dsn in ['ag','uci']:
-        #t5_tc = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_tc/epoch_10".format(PATH_SCRATCH))
-        t5_pp = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_c4_pp/epoch_2".format(PATH_SCRATCH))
-        t5_ss = AutoModelWithLMHead.from_pretrained("{}/finetunes/t5_c4_ss/epoch_2".format(PATH_SCRATCH))
-        
-        #bart_tc = AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_tc/epoch_9".format(PATH_SCRATCH))
-        bart_pp= AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_c4_pp/epoch_2".format(PATH_SCRATCH))
-        bart_ss = AutoModelWithLMHead.from_pretrained("{}/finetunes/bart_c4_ss/epoch_2".format(PATH_SCRATCH))
-
-        # gen_nlp['t5_tc']  = pipeline("text2text-generation", model=t5_tc, tokenizer=tokenizer_t5, device=0)
-        gen_nlp['t5_c4_pp']  = pipeline("text2text-generation", model=t5_pp, tokenizer=tokenizer_t5, device=0)
-        gen_nlp['t5_c4_ss']  = pipeline("text2text-generation", model=t5_ss, tokenizer=tokenizer_t5, device=0)
-
-        # gen_nlp['bart_tc']  = pipeline("text2text-generation", model=bart_tc, tokenizer=tokenizer_bart, device=0)
-        gen_nlp['bart_c4_pp']  = pipeline("text2text-generation", model=bart_pp, tokenizer=tokenizer_bart, device=0)
-        gen_nlp['bart_c4_ss']  = pipeline("text2text-generation", model=bart_ss, tokenizer=tokenizer_bart, device=0)
+        for genm in ['t5','bart']:
+            for ftdsn in ['c4','cc']:
+                for para in ['pp','ss']:
+                    fmark = "{}_{}_{}".format(genm, ftdsn, para)
+                    model_tmp = AutoModelWithLMHead.from_pretrained("{}/finetunes/{}/epoch_2".format(PATH_SCRATCH, fmark))
+                    if genm == 't5':
+                        tokenizer_tmp = tokenizer_t5
+                    elif genm == 'bart':
+                        tokenizer_tmp = tokenizer_bart
+                    gen_nlp[fmark]  = pipeline("text2text-generation", model=model_tmp, tokenizer=tokenizer_tmp, device=0)
 
        
     elif args.dsn in ['stsa']:
@@ -755,7 +750,7 @@ print("begin_to_test_aug==>", df_synthesize['fmark'].unique())
 
 
 
-for ite in range(12):
+for ite in range(5):
     acc_noaug, _  = do_train_test_thread(df_train_aug.loc[df_train_aug['fmark'].isin(['ori'])], \
                     ds.df_test, args.backbone, 16, args.epochs)
 
