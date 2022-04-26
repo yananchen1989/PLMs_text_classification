@@ -1,4 +1,4 @@
-exp	Dataset	# of samples	Accurancy
+exp	Dataset	# of samples	Accuracy
 with_aug	ag	4	0.6698
 with_aug	ag	8	0.6814
 with_aug	ag	16	0.7078

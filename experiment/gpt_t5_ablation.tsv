@@ -1,0 +1,13 @@
+K	Model	Accuracy
+32	T5_noft	63.93
+64	T5_noft	71.84
+128	T5_noft	77.78
+256	T5_noft	80.93
+32	T5_ss	67.21
+64	T5_ss	73.40
+128	T5_ss	78.16
+256	T5_ss	81.82
+32	GPT2_noft	62.09
+64	GPT2_noft	70.43
+128	GPT2_noft	76.56
+256	GPT2_noft	80.14

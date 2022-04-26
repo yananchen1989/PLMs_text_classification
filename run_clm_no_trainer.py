@@ -231,7 +231,14 @@ def main():
     # download the dataset.
     if args.dataset_name is not None:
         # Downloading and loading a dataset from the hub.
-        raw_datasets = load_dataset(args.dataset_name, args.dataset_config_name)
+        if args.dataset_name == 'cc_news':
+            raw_datasets = load_dataset(args.dataset_name, split="train", cache_dir='/scratch/w/wluyliu/yananc/cache')
+            raw_datasets = raw_datasets.train_test_split(test_size=0.05)
+
+        elif args.dataset_name == 'c4':
+            raw_datasets = datasets.load_dataset(args.dataset_name, "realnewslike", cache_dir='/scratch/w/wluyliu/yananc/cache')
+        
+        # raw_datasets = load_dataset(args.dataset_name, args.dataset_config_name)
         if "validation" not in raw_datasets.keys():
             raw_datasets["validation"] = load_dataset(
                 args.dataset_name,
@@ -276,15 +283,15 @@ def main():
     if args.config_name:
         config = AutoConfig.from_pretrained(args.config_name)
     elif args.model_name_or_path:
-        config = AutoConfig.from_pretrained(args.model_name_or_path, cache_dir="./cache", local_files_only=True)
+        config = AutoConfig.from_pretrained(args.model_name_or_path, cache_dir='/scratch/w/wluyliu/yananc/cache', local_files_only=True)
     else:
         config = CONFIG_MAPPING[args.model_type]()
         logger.warning("You are instantiating a new config instance from scratch.")
 
     if args.tokenizer_name:
-        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, use_fast=not args.use_slow_tokenizer, cache_dir="./cache", local_files_only=True)
+        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, use_fast=not args.use_slow_tokenizer, cache_dir='/scratch/w/wluyliu/yananc/cache', local_files_only=True)
     elif args.model_name_or_path:
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=not args.use_slow_tokenizer, cache_dir="./cache", local_files_only=True)
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=not args.use_slow_tokenizer, cache_dir='/scratch/w/wluyliu/yananc/cache', local_files_only=True)
     else:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
@@ -298,7 +305,7 @@ def main():
         model = AutoModelForCausalLM.from_pretrained(
             args.model_name_or_path,
             from_tf=bool(".ckpt" in args.model_name_or_path),
-            config=config, cache_dir="./cache", local_files_only=True
+            config=config, cache_dir='/scratch/w/wluyliu/yananc/cache', local_files_only=True
         )
     else:
         logger.info("Training new model from scratch")

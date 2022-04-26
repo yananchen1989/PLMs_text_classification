@@ -127,7 +127,6 @@ for _ in range(64):
 print(tokenizer_t5.decode(decoder_input_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True))
 
 
-ag_news_train = datasets.load_dataset('c4', split="train", cache_dir='/scratch/w/wluyliu/yananc/cache')
 
 
 
@@ -148,7 +147,7 @@ for file in files:
                 infos.append(tokens)
 
 import pandas as pd 
-df = pd.DataFrame(infos, columns=['summary', 'dsn', 'samplecnt', 'model', 'ite', 'famrk', 'noaug_acc', 'aug_acc'])
+df = pd.DataFrame(infos, columns=['summary', 'dsn', 'samplecnt', 'model', 'ite', 'fmark', 'noaug_acc', 'aug_acc'])
 
 df['aug_acc'] = df['aug_acc'].astype('float')
 df['noaug_acc'] = df['noaug_acc'].astype('float')
@@ -157,24 +156,19 @@ df['ite'] = df['ite'].astype('int')
 
 
 
-for model in ['former', 'albert']:
+for model in [ 'albert']:
     for dsn in [ 'stsa']: # 'ag', 'uci',
         print(model, dsn)
         for samplecnt in df['samplecnt'].unique():
             noaug_acc = df.loc[(df['samplecnt']==samplecnt) & (df['model']==model) & (df['dsn']==dsn), 'noaug_acc'].mean()
-            for fmark in df['famrk'].unique():
-                dfi = df.loc[(df['samplecnt']==samplecnt) & (df['famrk']==fmark) & (df['model']==model) & (df['dsn']==dsn)]
+            for fmark in df.loc[(df['dsn']==dsn) & (df['model']==model),'fmark'].unique():
+                dfi = df.loc[(df['samplecnt']==samplecnt) & (df['fmark']==fmark) & (df['model']==model) & (df['dsn']==dsn)]
                 print(samplecnt, fmark, noaug_acc, dfi['aug_acc'].mean(), dfi.shape[0])
             print()
 
 
 
 
-
-c4_news = datasets.load_dataset('c4', split="realnewslike", cache_dir='/scratch/w/wluyliu/yananc/cache')
-
-
-samples = random.sample(c4_news['train']['text'], 50)
 
 
 
@@ -197,7 +191,7 @@ import matplotlib.pyplot as plt
 
 
 
-df = pd.read_csv("ag.result.txt", sep='\t')
+df = pd.read_csv("./experiment/ag.result.txt", sep='\t')
 
 
 
@@ -212,27 +206,29 @@ for dsn in ['ag', 'yahoo']:
     elif dsn == 'yahoo':
         plt.ylim(0.35, 0.75)
     #plt.xticks(np.arange(0.4, 0.95, 0.5))
-    plt.title('Improvement for accuracy on {} dataset'.format(dsn.upper()))
+    # plt.title('Improvement for accuracy on {} dataset'.format(dsn.upper()))
     plt.legend(loc=2, prop={'size': 10})
     plt.subplots_adjust(top=0.9)
+    # plt.show()
     #plt.subplots_adjust(left=0.1, bottom=0.1, right=0.6, top=0.8)
-    plt.savefig("{}.png".format(dsn), dpi=1000)
+    # plt.savefig("{}.png".format(dsn), dpi=1000)
+    plt.savefig("/Users/yanan/Downloads/{}_bar_.svg".format(dsn), format='svg', dpi='figure')
     plt.close()
     #plt.show()
 
 
 
-import pandas as pd 
-df = pd.read_csv("vary.samples.result.txt", sep='\t')
 
+df = pd.read_csv("./experiment/vary.samples.result.txt", sep='\t')
+df = df.loc[df['# of samples']!=1024]
 
 for exp in ['with_exp', 'with_aug']:
-    sns.lineplot(hue='Dataset', data=df.loc[df['exp']==exp], x="# of samples", y="Accurancy", markers=True, style="Dataset", dashes=False)
+    sns.lineplot(hue='Dataset', data=df.loc[df['exp']==exp], x="# of samples", y="Accuracy", markers=True, style="Dataset", dashes=False)
     plt.ylim(0.5, 1)
     plt.xticks(np.unique(df.loc[df['exp']==exp]['# of samples'].values))
-    plt.title('Accurancy with respect to # of samples in the setting of "{}"'.format(' '.join(exp.split('_'))))
+    # plt.title('Accuracy with respect to # of samples in the setting of "{}"'.format(' '.join(exp.split('_'))))
     #plt.show()
-    plt.savefig("{}.png".format(exp), dpi=1000)
+    plt.savefig("/Users/yanan/Downloads/{}.svg".format(exp), format='svg', dpi='figure')
     plt.close()
 
 
@@ -240,16 +236,16 @@ for exp in ['with_exp', 'with_aug']:
 
 ####### DA 折线图
 
-df = pd.read_csv("aug_former_uci.tsv", sep='\t')
+df = pd.read_csv("./experiment/gpt_t5_ablation.tsv", sep='\t')
 
 
-sns.lineplot(hue='model', data=df, x="samplecnt", y="accurancy", markers=True, style="model", dashes=False)
-plt.ylim(df['accurancy'].min()-0.02, df['accurancy'].max()+0.02)
-plt.xticks(np.unique(df['samplecnt'].values))
-#plt.title('Accurancy with respect to # of samples in the setting of "{}"')
+sns.lineplot(hue='Model', data=df, x="K", y="Accuracy", markers=True, style="Model", dashes=False)
+plt.ylim(df['Accuracy'].min()-1, df['Accuracy'].max()+1)
+plt.xticks(np.unique(df['K'].values))
+# plt.title('Accuracy with respect to K ')
 plt.show()
 
-plt.savefig("{}.png".format(exp), dpi=1000)
+plt.savefig("/Users/yanan/Downloads/t5_ablation.svg",  format="svg")
 plt.close()
 
 
@@ -279,6 +275,36 @@ result_gpt = gen_nlp_ctrl(prompts, max_length=128, \
                                 do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
                                 repetition_penalty=1.2, num_return_sequences= 16,\
                                 clean_up_tokenization_spaces=True)
+
+
+from transformers import BartTokenizer, AutoModelWithLMHead
+from transformers import pipeline
+tokenizer_bart = BartTokenizer.from_pretrained("facebook/bart-base", cache_dir="/scratch/w/wluyliu/yananc/cache", local_files_only=True)
+print(tokenizer_bart)
+bart_noft = AutoModelWithLMHead.from_pretrained("facebook/bart-base", cache_dir="/scratch/w/wluyliu/yananc/cache", local_files_only=True)
+
+
+gen_nlp = pipeline("text2text-generation", model=bart_noft, tokenizer=tokenizer_bart, device=0)
+prompt = "Obamacare offers health insurance, not health care."
+
+result = gen_nlp(prompt, max_length=128, \
+                                do_sample=True, top_p=0.9, top_k=0, temperature=1.2,\
+                                repetition_penalty=1.2, num_return_sequences= 32,\
+                                clean_up_tokenization_spaces=True)
+
+
+
+assert len(result_gpt) == 32
+
+contents_syn = [remove_str(ii['generated_text']) for ii in result_gpt if ii['generated_text'] and ii['generated_text']!=prompt]
+
+for ii in contents_syn:
+    print(ii, '\n')
+
+
+
+
+
 
 
 
