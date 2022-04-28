@@ -120,6 +120,11 @@ def parse_args():
         help="Batch size (per device) for the evaluation dataloader.",
     )
     parser.add_argument(
+        "--debug_cnt",
+        type=int,
+        default=5000,
+    )
+    parser.add_argument(
         "--learning_rate",
         type=float,
         default=5e-5,
@@ -273,6 +278,9 @@ def main():
                 split=f"train[{args.validation_split_percentage}%:]",
             )
 
+    if args.debug_cnt > 0:
+        raw_datasets['train'] = raw_datasets['train'].shuffle().select(range(args.debug_cnt))   
+
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
@@ -382,8 +390,8 @@ def main():
     eval_dataset = lm_datasets["validation"]
 
     # Log a few random samples from the training set:
-    # for index in random.sample(range(len(train_dataset)), 3):
-    #     logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
+    for index in random.sample(range(len(train_dataset)), 3):
+        logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
 
     # DataLoaders creation:
     train_dataloader = DataLoader(

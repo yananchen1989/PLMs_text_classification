@@ -29,7 +29,7 @@ nohup python -u zsl.py --dsn ag --backbone simi --expand gpt_nofilter --gpu 7   
 
 for i in 1 2 3 4 5 6 7 8 9 10
 do 
-   sbatch submit_ag.slurm
+   sbatch submit_stsa.slurm
 done
 
 
@@ -38,10 +38,33 @@ done
 CUDA_VISIBLE_DEVICES=3 python -u /home/w/wluyliu/yananc/topic_classification_augmentation/aug_c4.py --dsn ag \
         --samplecnt 16 --backbone former  --aug generate  --local_files_only
 
+
+
+
+
+
+
+CUDA_VISIBLE_DEVICES=3 python -u /home/w/wluyliu/yananc/topic_classification_augmentation/run_clm_no_trainer.py \
+        --num_train_epochs 1 \
+        --dataset_name "c4" \
+        --model_name_or_path gpt2 \
+        --per_device_train_batch_size 32 \
+        --per_device_eval_batch_size 32 \
+        --output_dir /scratch/w/wluyliu/yananc/finetunes/gpt2_c4 \
+        --preprocessing_num_workers 128 --overwrite_cache True \
+        --block_size 256 --debug_cnt 5000000
+
+
+
+
+
+
+
+
 ############################################################################################################################################
 ps aux|grep "run.sh"|grep -v grep | awk '{print $2}'|xargs kill -9
 ps aux|grep "augf.py --dsn ag --samplecnt 1024"|grep -v grep | awk '{print $2}'|xargs kill -9
-ps aux|grep "run_summarization_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
+ps aux|grep "run_clm_no_trainer.py"|grep -v grep | awk '{print $2}'|xargs kill -9
 
 
 ps aux|grep "dvrl_iter"|grep "3762"|grep -v grep | awk '{print $2}'|xargs kill -9
