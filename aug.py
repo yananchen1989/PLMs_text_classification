@@ -138,6 +138,12 @@ if 'generate' in args.aug:
     gpt2.config.pad_token_id=50256
     gen_nlp['gpt2_noft']  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
 
+
+    gpt2 = GPT2LMHeadModel.from_pretrained("/scratch/w/wluyliu/yananc/finetunes/gpt2_c4/epoch_0_ppl_25.330070435403076")
+    gpt2.trainable = False
+    gpt2.config.pad_token_id=50256
+    gen_nlp['gpt2_ft']  = pipeline("text-generation", model=gpt2, tokenizer=tokenizer_gpt2, device=0, return_full_text=False)
+
     # lambda
     # if not os.path.exists('ft_tmp'):
     #     os.makedirs('ft_tmp')
@@ -439,6 +445,8 @@ def generate(row):
     infos = []
     for fmark, gen_nlp_sub in gen_nlp.items():
 
+        if fmark != 'gpt2_ft':
+            continue
 
         if fmark == 'gpt2_lambda':
             contents_syn = prompt_gen_filter(gen_nlp_sub, prompt_lambda)

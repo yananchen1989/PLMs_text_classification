@@ -61,11 +61,46 @@ ESPN is making a difference this coming weekend—but I won't mention anything a
 
 
 
-
-
 \toprule
 
 \midrule 
 
 \midrule
 \bottomrule
+
+
+
+
+% DA related work
+\section{Related Work}
+
+\subsection{Data Augmentation For Text Classification}
+
+{\textbf{\textit{Token-manipulation-based augmentations}}}
+perform local manipulations for tokens, such as synonym replacement, and noise injection \cite{wei2019eda,miller1990introduction,kolomiyets2011model,miao2020snippext,kobayashi2018contextual,wu2019conditional}. While these methods are controllable and transparent, 
+a change caused by token flips in keynote style may happen, leading to low readability and lack of fluency \cite{kolomiyets2011model,chen2021empirical,bayer2021survey}. \noindent \textbf{\textit{Paraphrasing-based augmentations}} attempt to provide more diversities by paraphrasing the original text, exemplified by back-translation (BT) \cite{sennrich2016improving,edunov-etal-2018-understanding}. However, samples from BT tend to skew towards high frequency words and can not reform long-tail words, which not only causes redundancy but also leads to lexical shrinkage in the augmented data \cite{liu2020data}. 
+\noindent \textbf{\textit{Generation-based augmentations}} introduce a revolutionary way to improve diversity by exploiting generative models to obtain synthetic samples conditioned on labels and prompts. 
+%\cite{anaby2019not,kumar2020data,yang2020g,bayer2021data,liu2020data}. 
+As two representatives, 
+LAMBDA \cite{anaby2019not} uses GPT2 to generate samples based on given short prompts;
+DataBoost \cite{liu2020data} integrates a reinforcement learning framework to steer the generation of GPT2 based on labels. 
+% Other studies are mostly based on conditional VAE \cite{bowman-etal-2016-generating,hu2017toward,guu2018generating,malandrakis-etal-2019-controlled} and GAN \cite{sun2020novel}. 
+
+However, in a nutshell, most of above methods report the superiority only in a low-data regime
+\cite{anaby2019not,kumar2020data}, implying their deficiency in a relatively large sample set. 
+On the other hand, it has been argued that the setting of constructing classifier with PLMs, such as BERT or RoBERTa, makes EDA and BT obsolete \cite{longpre2020effective}. 
+Hence, how to take advantage of the results obtained from pre-training to boost the text classification performance still calls for further investigations. 
+
+
+A part of the NLP community has shifted its focus on understanding and devising advanced methods for optimizing prompt-based approaches\cite{schick2020exploiting,autoprompt:emnlp20,reynolds2021prompt}. Sophisticate prompts can be used to induce large LMs to produce augmentation samples. For example, in-context learning utilizes a prompt, which usually consists of a task description and few examples, to solve unseen tasks, such as DA, without the hefty price of fine-tuning\cite{yoo2021gpt3mix}. 
+
+
+\subsection{text-to-text language models}
+Like pre-trained LMs, pre-training seq2seq models such as T5 \cite{raffel2019exploring} and BART \cite{lewis2020bart} have shown to improve performance across NLP tasks, such as abstractive summarization, question answering, dialogue and translation. They are also be called text-to-text models. 
+
+Both of T5 and BART are pre-trained by (1) corrupting text with an arbitrary noising function, such as spans of text are replaced by masked tokens, and (2) learning a model to reconstruct(denoise) the original text by predicting the true replacement of corrupted tokens. During pre-training, regeneration loss is optimized using cross-entropy loss between output and the decoder’s output.
+
+These models are particularly effective and versatile when fine-tuned for text generation but also works well for comprehension tasks. The reason behind this is they take the best of both the worlds by combining BERT-like mechanism for encoding the (corrupted) source text(fully visible) and GPT-like mechanism for decoding the target text(causal).
+Therefore, they are widely used as backbone models in many academic studies and powerful workhorses in industrial scenarios \cite{liu2020multilingual}. 
+
+In this paper, we incorporate pre-trained seq2seq model into the DA framework, after finetuning it to related unsupervised datasets. We choose BART and T5 as representative seq2seq models with their relatively lower computational cost and commonality in many empirical studies.
