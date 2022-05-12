@@ -98,13 +98,19 @@ print(results["rouge1"].mid.fmeasure)
 
 # kl divergence
 
-y_true = np.random.randint(0, 2, size=(1, 3)).astype(np.float64)
-y_pred = np.random.random(size=(1, 3))
+import tensorflow as tf 
 p = np.array([[0.99, 0.005, 0.005]])
 q = np.array([[0.005, 0.99, 0.005]])
 
-p = np.array([1] + 15*[0])
-q = np.array(15*[0] + [1])
+def kl_divergence(p, q):
+    return sum(p[i] * log2(p[i]/q[i]) for i in range(len(p)))
+
+# calculate the js divergence
+def js_divergence(p, q):
+    m = 0.5 * (p + q)
+    return 0.5 * kl_divergence(p, m) + 0.5 * kl_divergence(q, m)
+
+
 m = (p+q)/2
 loss_pm = tf.keras.losses.kullback_leibler_divergence(p, m)
 loss_qm = tf.keras.losses.kullback_leibler_divergence(q, m)
@@ -113,6 +119,11 @@ print(jsd)
 
 
 
+kl = tf.keras.losses.KLDivergence()
+loss_pm = kl([list(p[0])], [list(m[0])]).numpy()
+loss_qm = kl([list(q[0])], [list(m[0])]).numpy()
+
+(loss_pm+loss_qm) / 2
 
 
 # token generation by step

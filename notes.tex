@@ -68,31 +68,26 @@ ESPN is making a difference this coming weekend—but I won't mention anything a
 \midrule
 \bottomrule
 
+\begin{figure}
+%   \centering
+%   \hspace*{-8cm}
+        \includesvg[scale=.40]{figs/with_aug.svg}
+%   \caption{ studies:}
+%   \label{var_sample_aug}
+%   \centering
+%   \hspace*{8cm}
+        \includesvg[scale=.40]{figs/with_exp.svg}
+    %\caption{Accuracy averaged among three testbeds by varying number of synthetic samples in the experiment setting of \textbf{with aug} and \textbf{with exp}.}
+    \caption{Impact of number of synthetic samples, under setting of left: \textbf{with aug} and right:\textbf{with exp}}
+    \label{var_sample_augexp}
+\end{figure}
 
-
-
-% DA related work
-\section{Related Work}
-
-\subsection{Data Augmentation For Text Classification}
-
-{\textbf{\textit{Token-manipulation-based augmentations}}}
-perform local manipulations for tokens, such as synonym replacement, and noise injection \cite{wei2019eda,miller1990introduction,kolomiyets2011model,miao2020snippext,kobayashi2018contextual,wu2019conditional}. While these methods are controllable and transparent, 
-a change caused by token flips in keynote style may happen, leading to low readability and lack of fluency \cite{kolomiyets2011model,chen2021empirical,bayer2021survey}. \noindent \textbf{\textit{Paraphrasing-based augmentations}} attempt to provide more diversities by paraphrasing the original text, exemplified by back-translation (BT) \cite{sennrich2016improving,edunov-etal-2018-understanding}. However, samples from BT tend to skew towards high frequency words and can not reform long-tail words, which not only causes redundancy but also leads to lexical shrinkage in the augmented data \cite{liu2020data}. 
-\noindent \textbf{\textit{Generation-based augmentations}} introduce a revolutionary way to improve diversity by exploiting generative models to obtain synthetic samples conditioned on labels and prompts. 
-%\cite{anaby2019not,kumar2020data,yang2020g,bayer2021data,liu2020data}. 
-As two representatives, 
-LAMBDA \cite{anaby2019not} uses GPT2 to generate samples based on given short prompts;
-DataBoost \cite{liu2020data} integrates a reinforcement learning framework to steer the generation of GPT2 based on labels. 
-% Other studies are mostly based on conditional VAE \cite{bowman-etal-2016-generating,hu2017toward,guu2018generating,malandrakis-etal-2019-controlled} and GAN \cite{sun2020novel}. 
-
-However, in a nutshell, most of above methods report the superiority only in a low-data regime
-\cite{anaby2019not,kumar2020data}, implying their deficiency in a relatively large sample set. 
-On the other hand, it has been argued that the setting of constructing classifier with PLMs, such as BERT or RoBERTa, makes EDA and BT obsolete \cite{longpre2020effective}. 
-Hence, how to take advantage of the results obtained from pre-training to boost the text classification performance still calls for further investigations. 
-
-
-A part of the NLP community has shifted its focus on understanding and devising advanced methods for optimizing prompt-based approaches\cite{schick2020exploiting,autoprompt:emnlp20,reynolds2021prompt}. Sophisticate prompts can be used to induce large LMs to produce augmentation samples. For example, in-context learning utilizes a prompt, which usually consists of a task description and few examples, to solve unseen tasks, such as DA, without the hefty price of fine-tuning\cite{yoo2021gpt3mix}. 
+\begin{figure}
+    \centering
+        \includegraphics[scale=.15]{figs/zsl.jpg}
+    \caption{The proposed framework}
+    \label{whole_frame}
+\end{figure}
 
 
 \subsection{text-to-text language models}

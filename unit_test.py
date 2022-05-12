@@ -63,11 +63,6 @@ tokenizer_t5.convert_tokens_to_ids(['up'])
 
 
 
-
-
-
-
-
 input_ids = tokenizer_gpt2.encode(sent, return_tensors="tf")
 # get logits of last hidden state
 next_token_logits = gpt2(input_ids).logits[:, -1, :] / 1.0
@@ -156,8 +151,8 @@ df['ite'] = df['ite'].astype('int')
 
 
 
-for model in [ 'albert']:
-    for dsn in [ 'stsa']: # 'ag', 'uci',
+for model in [ 'former']:
+    for dsn in [ 'ag']: # 'ag', 'uci',
         print(model, dsn)
         for samplecnt in df['samplecnt'].unique():
             noaug_acc = df.loc[(df['samplecnt']==samplecnt) & (df['model']==model) & (df['dsn']==dsn), 'noaug_acc'].mean()
@@ -234,10 +229,9 @@ for exp in ['with_exp', 'with_aug']:
 
 
 
-####### DA 折线图
+####### DA ablation 折线图
 
 df = pd.read_csv("./experiment/gpt_t5_ablation.tsv", sep='\t')
-
 
 sns.lineplot(hue='Model', data=df, x="K", y="Accuracy", markers=True, style="Model", dashes=False)
 plt.ylim(df['Accuracy'].min()-1, df['Accuracy'].max()+1)
