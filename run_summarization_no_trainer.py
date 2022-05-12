@@ -497,6 +497,8 @@ def main():
 
 
     train_dataset = processed_datasets["train"]
+    eval_dataset = processed_datasets["validation"]
+    
     if args.dataset_name == 'c4':
         eval_dataset = processed_datasets["validation"]
     elif args.dataset_name == 'cc_news':
