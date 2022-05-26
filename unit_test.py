@@ -233,10 +233,13 @@ for exp in ['with_exp', 'with_aug']:
 
 df = pd.read_csv("./experiment/gpt_t5_ablation.tsv", sep='\t')
 
-sns.lineplot(hue='Model', data=df, x="K", y="Accuracy", markers=True, style="Model", dashes=False)
+p = sns.lineplot(hue='Model', data=df, x="K", y="Accuracy", markers=True, style="Model", dashes=False)
 plt.ylim(df['Accuracy'].min()-1, df['Accuracy'].max()+1)
 plt.xticks(np.unique(df['K'].values))
 # plt.title('Accuracy with respect to K ')
+p.set_xlabel("K", fontsize = 20)
+p.set_ylabel("Accuracy", fontsize = 20)
+# plt.legend(labels=["Legend_Day1","Legend_Day2"], fontsize = 20)
 plt.show()
 
 plt.savefig("/Users/yanan/Downloads/t5_ablation.svg",  format="svg")

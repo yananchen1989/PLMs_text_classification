@@ -161,7 +161,7 @@ def parse_args():
     parser.add_argument(
         "--debug_cnt",
         type=int,
-        default=5000,
+        default=-1,
     )
     parser.add_argument(
         "--num_beams",

@@ -303,9 +303,62 @@ with open('test.json', 'r') as f:
 
 
 
+# encoder - decoder
 
 
+from transformers import MarianMTModel, MarianTokenizer
+import torch
 
+tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-de")
+model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-de")
+
+# create ids of encoded input vectors
+input_ids = tokenizer("I want to buy a car", return_tensors="pt").input_ids
+# tensor([[  38,  392,   12, 2387,   14,  564,    0]])
+
+# create BOS token
+decoder_input_ids = tokenizer("<pad>", add_special_tokens=False, return_tensors="pt").input_ids
+
+assert decoder_input_ids[0, 0].item() == model.config.decoder_start_token_id, "`decoder_input_ids` should correspond to `model.config.decoder_start_token_id`"
+
+# STEP 1
+
+# pass input_ids to encoder and to decoder and pass BOS token to decoder to retrieve first logit
+outputs = model(input_ids, decoder_input_ids=decoder_input_ids, return_dict=True)
+# odict_keys(['logits', 'past_key_values', 'encoder_last_hidden_state'])
+
+
+# get encoded sequence
+encoded_sequence = (outputs.encoder_last_hidden_state,) # torch.Size([1, 7, 512])
+# get logits
+lm_logits = outputs.logits # torch.Size([1, 1, 58101])
+
+# sample last token with highest prob
+next_decoder_input_ids = torch.argmax(lm_logits[:, -1:], axis=-1) # tensor([[105]])
+
+# concat
+decoder_input_ids = torch.cat([decoder_input_ids, next_decoder_input_ids], axis=-1) # tensor([[58100,   105]])
+
+# STEP 2
+
+# reuse encoded_inputs and pass BOS + "Ich" to decoder to second logit
+lm_logits = model(None, encoder_outputs=encoded_sequence, decoder_input_ids=decoder_input_ids, return_dict=True).logits
+
+# sample last token with highest prob again
+next_decoder_input_ids = torch.argmax(lm_logits[:, -1:], axis=-1) # tensor([[73]])
+
+# concat again
+decoder_input_ids = torch.cat([decoder_input_ids, next_decoder_input_ids], axis=-1) # tensor([[58100,   105,   105]])
+
+# STEP 3
+lm_logits = model(None, encoder_outputs=encoded_sequence, decoder_input_ids=decoder_input_ids, return_dict=True).logits
+next_decoder_input_ids = torch.argmax(lm_logits[:, -1:], axis=-1)
+decoder_input_ids = torch.cat([decoder_input_ids, next_decoder_input_ids], axis=-1) # tensor([[58100,   105,   105,    73]])
+
+# let's see what we have generated so far!
+print(f"Generated so far: {tokenizer.decode(decoder_input_ids[0], skip_special_tokens=True)}")
+
+# This can be written in a loop as well.
 
 
 
