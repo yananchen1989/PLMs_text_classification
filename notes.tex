@@ -58,7 +58,8 @@ $\mathbf{F}_{expand}$
 
 
 
-{Politics} &  \itshape{CNNPolitics Morning_Joe A side-by-side poll of what makes Obama the most popular politician in the US shows him as much closer to winning the Electoral College than he was a year ago. From CNN.} \\
+{Politics} &  \itshape{CNNPolitics Morning_Joe A side-by-side poll of what makes Obama the most popular politician in the US shows him as mu
+ch closer to winning the Electoral College than he was a year ago. From CNN.} \\
 {Politics}  & \itshape{The Trump era was about to turn into a nightmare. The administration had the right guy. The right guy was Steve Bannon. That is why I'm very glad he ended up in the White House.} \\
 
 
@@ -96,12 +97,12 @@ ESPN is making a difference this coming weekend—but I won't mention anything a
 \end{figure}
 
 
-\subsection{text-to-text language models}
-Like pre-trained LMs, pre-training seq2seq models such as T5 \cite{raffel2019exploring} and BART \cite{lewis2020bart} have shown to improve performance across NLP tasks, such as abstractive summarization, question answering, dialogue and translation. They are also be called text-to-text models. 
 
-Both of T5 and BART are pre-trained by (1) corrupting text with an arbitrary noising function, such as spans of text are replaced by masked tokens, and (2) learning a model to reconstruct(denoise) the original text by predicting the true replacement of corrupted tokens. During pre-training, regeneration loss is optimized using cross-entropy loss between output and the decoder’s output.
 
-These models are particularly effective and versatile when fine-tuned for text generation but also works well for comprehension tasks. The reason behind this is they take the best of both the worlds by combining BERT-like mechanism for encoding the (corrupted) source text(fully visible) and GPT-like mechanism for decoding the target text(causal).
-Therefore, they are widely used as backbone models in many academic studies and powerful workhorses in industrial scenarios \cite{liu2020multilingual}. 
 
-In this paper, we incorporate pre-trained seq2seq model into the DA framework, after finetuning it to related unsupervised datasets. We choose BART and T5 as representative seq2seq models with their relatively lower computational cost and commonality in many empirical studies.
+
+
+
+
+
+

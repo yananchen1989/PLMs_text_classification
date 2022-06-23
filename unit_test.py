@@ -247,9 +247,11 @@ plt.close()
 
 
 
-
-
-
+df = pd.read_csv("tqi_exp.tsv", sep='\t')
+p = sns.lineplot( data=df, x="samplecnt", y="f1", markers=True, dashes=True, palette=['g'])
+plt.xticks(np.unique(df['samplecnt'].values))
+# plt.legend(labels=["Legend_Day1","Legend_Day2"], fontsize = 20)
+plt.show()
 
 
 
