@@ -1,7 +1,7 @@
 
 ##### main reference: https://keras.io/examples/rl/actor_critic_cartpole/
 
-import gym
+import gym,math
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -32,7 +32,7 @@ print(env.observation_space)
 print(env.observation_space.high)
 print(env.observation_space.low)
 
-
+temperature = 1.2
 num_inputs = 4
 num_actions = 2
 num_hidden = 256
@@ -79,7 +79,14 @@ while True:  # Run until solved
             critic_value_history.append(critic_value[0, 0])
 
             # Sample action from action probability distribution
-            action = np.random.choice(num_actions, p=np.squeeze(action_probs))
+            # randomly select based on actions distribution
+            # temperature can also be used, inverse proportional to the number of episode trained
+            # temperature = math.exp(-episode_count * alpha)
+            action_probs_softmax = np.exp(action_probs / temperature) / np.sum(np.exp(action_probs/temperature))
+            action = np.random.choice(num_actions, p=np.squeeze(action_probs_softmax))
+            
+
+
             action_probs_history.append(tf.math.log(action_probs[0, action]))
 
             # Apply the sampled action in our environment
