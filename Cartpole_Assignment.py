@@ -32,7 +32,7 @@ print(env.observation_space)
 print(env.observation_space.high)
 print(env.observation_space.low)
 
-temperature = 1.2
+temperature = 1.5
 num_inputs = 4
 num_actions = 2
 num_hidden = 256
@@ -47,7 +47,12 @@ critic = layers.Dense(1)(common)
 
 model = keras.Model(inputs=inputs, outputs=[action, critic])
 
-
+# to mitigate overconfidence with only one model,
+# One possibility is to train K different models with different datasets. 
+# For each episode, we randomly select one of the models to be used throughout the whole episode. 
+# So we will have a more coherent strategy for our actions rather than introducing some random actions. 
+# Since different episodes may use different models, 
+# we open ourselves to a different perspective and being less overconfident to a single perspective (a training model).
 
 #   training part
 optimizer = keras.optimizers.Adam(learning_rate=0.01)
@@ -166,6 +171,6 @@ sns.lineplot(data=df, x="episode", y="reward", markers=True, dashes=False)
 plt.show()
 
 
-
+# sometimes, ,odel parameters oscillate and do not converge.
 
 
