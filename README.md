@@ -25,10 +25,6 @@ https://cn.overleaf.com/read/vvbfyvgbtpqq
 
 
 
-Another project using BERT for recipe recommendation:
-
-https://cn.overleaf.com/read/tychnxqyjyrr
-
 
 
 
